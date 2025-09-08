@@ -1,0 +1,19 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* Reseturi & variabile mici */
+:root {
+  --radius: 1rem;
+}
+
+html, body {
+  height: 100%;
+  background: #f8fafc; /* mist */
+  color: #0f172a;      /* ink */
+}
+
+@layer base {
+  * { @apply border-slate-200; }
+  body { @apply font-sans; }
+}
