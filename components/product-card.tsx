@@ -14,7 +14,8 @@ type ProductCardProps = {
 
 export function ProductCard({ id, slug, title, price, currency = "RON", imageUrl, sellerSlug }: ProductCardProps) {
   return (
-    <div className="group rounded-2xl bg-white border hover:shadow-soft transition p-3">
+    <div className="group rounded-2xl bg-white dark:bg-slate-900/50 border border-slate-200 dark:border-white/10
+                    hover:shadow-soft transition p-3 hover:-translate-y-[1px]">
       <Link href={`/p/${id}-${slug}`} className="block relative aspect-square overflow-hidden rounded-xl">
         <Image
           src={imageUrl}
@@ -27,7 +28,7 @@ export function ProductCard({ id, slug, title, price, currency = "RON", imageUrl
       <div className="mt-3 space-y-1">
         <Link href={`/p/${id}-${slug}`} className="line-clamp-1 font-medium">{title}</Link>
         {sellerSlug && (
-          <Link href={`/s/${sellerSlug}`} className="text-xs text-slate-500 hover:text-brand">
+          <Link href={`/s/${sellerSlug}`} className="text-xs text-slate-500 dark:text-slate-400 hover:text-brand">
             {sellerSlug}
           </Link>
         )}

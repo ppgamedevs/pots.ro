@@ -1,6 +1,9 @@
+"use client";
+import { motion } from "framer-motion";
 import { Navbar } from "@/components/navbar";
 import { Footer } from "@/components/footer";
 import { ProductCard } from "@/components/product-card";
+import { stagger, fadeInUp } from "@/components/motion";
 
 const demo = [
   { id: 1, slug: "ghiveci-ceramic-alb", title: "Ghiveci ceramic alb", price: 49.9, imageUrl: "/placeholder.svg", sellerSlug: "atelier-ceramic" },
@@ -13,14 +16,28 @@ export default function Home() {
     <>
       <Navbar />
       <main className="mx-auto max-w-6xl px-4 py-10">
-        <section className="mb-8 rounded-2xl bg-white border p-8 text-center shadow-soft">
+        <motion.section
+          initial={{ opacity: 0, y: 8 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.35, ease: "easeOut" }}
+          className="mb-8 rounded-2xl bg-white dark:bg-slate-900/60 border border-slate-200 dark:border-white/10 p-8 text-center shadow-soft"
+        >
           <h1 className="text-2xl md:text-3xl font-semibold">Marketplace românesc pentru floristică</h1>
-          <p className="mt-2 text-slate-600">Cutii, ghivece, accesorii — tot ce ai nevoie, într-un singur loc.</p>
-        </section>
+          <p className="mt-2 text-slate-600 dark:text-slate-300">Cutii, ghivece, accesorii — tot ce ai nevoie, într-un singur loc.</p>
+        </motion.section>
 
-        <section className="grid gap-4 sm:grid-cols-2 md:grid-cols-3">
-          {demo.map((p) => <ProductCard key={p.id} {...p} />)}
-        </section>
+        <motion.section
+          initial="hidden"
+          animate="visible"
+          variants={stagger}
+          className="grid gap-4 sm:grid-cols-2 md:grid-cols-3"
+        >
+          {demo.map((p) => (
+            <motion.div key={p.id} variants={fadeInUp}>
+              <ProductCard {...p} />
+            </motion.div>
+          ))}
+        </motion.section>
       </main>
       <Footer />
     </>

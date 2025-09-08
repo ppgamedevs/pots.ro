@@ -13,6 +13,11 @@ html, body {
   color: #0f172a;      /* ink */
 }
 
+html.dark body {
+  background: #0b1220;
+  color: #e5e7eb;
+}
+
 @layer base {
   * { @apply border-slate-200; }
   body { @apply font-sans; }

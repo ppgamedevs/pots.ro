@@ -1,7 +1,9 @@
 "use client";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import { motion } from "framer-motion";
 import { Button } from "./ui/button";
+import { ThemeToggle } from "./theme-toggle";
 
 export function Navbar() {
   const pathname = usePathname();
@@ -12,7 +14,12 @@ export function Navbar() {
   ];
 
   return (
-    <header className="sticky top-0 z-50 w-full bg-white/80 backdrop-blur border-b">
+    <motion.header
+      initial={{ y: -10, opacity: 0 }}
+      animate={{ y: 0, opacity: 1 }}
+      transition={{ duration: 0.25, ease: "easeOut" }}
+      className="sticky top-0 z-50 w-full bg-white/80 dark:bg-slate-900/70 backdrop-blur border-b border-slate-200 dark:border-white/10"
+    >
       <div className="mx-auto max-w-6xl px-4 h-16 flex items-center justify-between">
         <Link href="/" className="font-semibold text-lg">Pots<span className="text-brand">.ro</span></Link>
 
@@ -22,7 +29,7 @@ export function Navbar() {
               key={i.href}
               href={i.href}
               className={`text-sm hover:text-brand transition ${
-                pathname?.startsWith(i.href) ? "text-brand font-medium" : "text-slate-700"
+                pathname?.startsWith(i.href) ? "text-brand font-medium" : "text-slate-700 dark:text-slate-300"
               }`}
             >
               {i.label}
@@ -31,6 +38,7 @@ export function Navbar() {
         </nav>
 
         <div className="flex items-center gap-2">
+          <ThemeToggle />
           <Link href="/search" className="text-sm hover:text-brand">Căutare</Link>
           <Link href="/cart">
             <Button variant="secondary" size="sm">Coș</Button>
@@ -40,6 +48,6 @@ export function Navbar() {
           </Link>
         </div>
       </div>
-    </header>
+    </motion.header>
   );
 }
