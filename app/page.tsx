@@ -20,7 +20,7 @@ export default function Home() {
           initial={{ opacity: 0, y: 8 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.35, ease: "easeOut" }}
-          className="mb-8 rounded-2xl bg-white dark:bg-slate-900/60 border border-slate-200 dark:border-white/10 p-8 text-center shadow-soft"
+          className="mb-8 rounded-2xl bg-white dark:bg-slate-900/60 border border-slate-200 dark:border-white/10 p-8 text-center shadow-soft hover:shadow-soft transition-all duration-200 hover:-translate-y-[1px]"
         >
           <h1 className="text-2xl md:text-3xl font-semibold">Marketplace românesc pentru floristică</h1>
           <p className="mt-2 text-slate-600 dark:text-slate-300">Cutii, ghivece, accesorii — tot ce ai nevoie, într-un singur loc.</p>

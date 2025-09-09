@@ -4,7 +4,7 @@ import clsx from "clsx";
 
 // opțional: npm i class-variance-authority @radix-ui/react-slot clsx
 const buttonVariants = cva(
-  "inline-flex items-center justify-center rounded-xl text-sm font-medium transition-all active:scale-[0.98] disabled:opacity-50 disabled:pointer-events-none focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 ring-offset-white",
+  "inline-flex items-center justify-center rounded-xl text-sm font-medium transition-all active:scale-[0.98] disabled:opacity-50 disabled:pointer-events-none focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 ring-offset-white dark:ring-offset-slate-900",
   {
     variants: {
       variant: {

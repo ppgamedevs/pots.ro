@@ -10,7 +10,7 @@ const badgeVariants = cva(
         default:
           "border-transparent bg-brand text-white hover:bg-brand-dark",
         secondary:
-          "border-transparent bg-slate-100 dark:bg-slate-800 text-slate-900 dark:text-slate-100 hover:bg-slate-200 dark:hover:bg-slate-700",
+          "border-transparent bg-slate-100 dark:bg-slate-900/60 text-slate-900 dark:text-slate-100 hover:bg-slate-200 dark:hover:bg-slate-700",
         destructive:
           "border-transparent bg-red-500 text-white hover:bg-red-600",
         outline: "text-slate-950 dark:text-slate-100 border-slate-200 dark:border-white/10",

@@ -17,6 +17,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/modal";
 import { H1, H2, H3, P, Lead, Large, Small, Muted } from "@/components/ui/typography";
+import { Card, CardHeader, CardFooter, CardTitle, CardDescription, CardContent } from "@/components/ui/card";
 import { stagger, fadeInUp } from "@/components/motion";
 
 export default function ComponentsDemo() {
@@ -222,6 +223,39 @@ export default function ComponentsDemo() {
                   </div>
                 </DialogContent>
               </Dialog>
+            </div>
+          </motion.section>
+
+          {/* Card Components */}
+          <motion.section
+            initial="hidden"
+            animate="visible"
+            variants={stagger}
+            className="space-y-6"
+          >
+            <H2>Card Components</H2>
+            <div className="grid gap-4 md:grid-cols-2">
+              <Card>
+                <CardHeader>
+                  <CardTitle>Card Title</CardTitle>
+                  <CardDescription>Card description with consistent hover effects</CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <p>This card demonstrates the consistent hover elevate effect and dark mode styling.</p>
+                </CardContent>
+                <CardFooter>
+                  <Button size="sm">Action</Button>
+                </CardFooter>
+              </Card>
+              <Card hover={false}>
+                <CardHeader>
+                  <CardTitle>Static Card</CardTitle>
+                  <CardDescription>This card has hover effects disabled</CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <p>Notice how this card doesn't have the hover elevate effect.</p>
+                </CardContent>
+              </Card>
             </div>
           </motion.section>
 
