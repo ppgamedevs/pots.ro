@@ -14,7 +14,7 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Switch } from "@/components/ui/switch";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { UITabs } from "@/components/ui/tabs";
 import { Breadcrumbs } from "@/components/ui/breadcrumbs";
 import { Pagination } from "@/components/ui/pagination";
 import { EmptyState } from "@/components/ui/empty-state";
@@ -153,13 +153,13 @@ export default function FormsDemo() {
             className="space-y-6"
           >
             <h2 className="text-2xl font-semibold text-slate-900 dark:text-slate-100">Tabs</h2>
-            <Tabs defaultValue="checkout" className="w-full">
-              <TabsList className="grid w-full grid-cols-2">
-                <TabsTrigger value="checkout">Checkout</TabsTrigger>
-                <TabsTrigger value="product">Adaugă Produs</TabsTrigger>
-              </TabsList>
-              
-              <TabsContent value="checkout">
+            <UITabs
+              defaultValue="checkout"
+              tabs={[
+                {
+                  value: "checkout",
+                  label: "Checkout",
+                  content: (
                 <Card>
                   <CardHeader>
                     <CardTitle>Formular Checkout</CardTitle>
@@ -362,9 +362,12 @@ export default function FormsDemo() {
                     </Form>
                   </CardContent>
                 </Card>
-              </TabsContent>
-
-              <TabsContent value="product">
+                  ),
+                },
+                {
+                  value: "product",
+                  label: "Adaugă Produs",
+                  content: (
                 <Card>
                   <CardHeader>
                     <CardTitle>Adaugă Produs Nou</CardTitle>
@@ -501,8 +504,10 @@ export default function FormsDemo() {
                     </Form>
                   </CardContent>
                 </Card>
-              </TabsContent>
-            </Tabs>
+                  ),
+                },
+              ]}
+            />
           </motion.section>
 
           {/* Pagination */}
