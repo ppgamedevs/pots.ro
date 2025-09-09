@@ -2,6 +2,7 @@ import Image from "next/image";
 import Link from "next/link";
 import { Button } from "./ui/button";
 import { useToast } from "@/lib/hooks/use-toast";
+import { AspectRatio } from "./ui/layout-stable";
 
 type ProductCardProps = {
   id: string | number;
@@ -23,13 +24,15 @@ export function ProductCard({ id, slug, title, price, currency = "RON", imageUrl
   return (
     <div className="group rounded-2xl bg-white dark:bg-slate-900/60 border border-slate-200 dark:border-white/10
                     hover:shadow-soft transition-all duration-200 p-3 hover:-translate-y-[1px]">
-      <Link href={`/p/${id}-${slug}`} className="block relative aspect-square overflow-hidden rounded-xl">
-        <Image
-          src={imageUrl}
-          alt={title}
-          fill
-          className="object-cover transition duration-300 group-hover:scale-[1.03]"
-        />
+      <Link href={`/p/${id}-${slug}`} className="block">
+        <AspectRatio ratio={1} className="overflow-hidden rounded-xl">
+          <Image
+            src={imageUrl}
+            alt={title}
+            fill
+            className="object-cover transition duration-300 group-hover:scale-[1.03]"
+          />
+        </AspectRatio>
       </Link>
 
       <div className="mt-3 space-y-1">
