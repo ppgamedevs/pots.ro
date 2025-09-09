@@ -114,11 +114,11 @@ export default function FormsDemo() {
           initial={{ opacity: 0, y: 8 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.35, ease: "easeOut" }}
-          className="space-y-8"
+          className="space-y-8 min-h-screen bg-white dark:bg-slate-900"
         >
           <div className="space-y-4">
             <Breadcrumbs items={breadcrumbItems} />
-            <h1 className="text-3xl font-bold">Kit Formulare</h1>
+            <h1 className="text-3xl font-bold text-slate-900 dark:text-slate-100">Kit Formulare</h1>
             <p className="text-slate-600 dark:text-slate-300">
               Formulare cu validare, toast notifications și componente reutilizabile
             </p>
@@ -131,7 +131,7 @@ export default function FormsDemo() {
             variants={stagger}
             className="space-y-6"
           >
-            <h2 className="text-2xl font-semibold">Toast Notifications</h2>
+            <h2 className="text-2xl font-semibold text-slate-900 dark:text-slate-100">Toast Notifications</h2>
             <div className="flex flex-wrap gap-3">
               <Button onClick={handleAddToCart}>
                 Add to Cart Toast
@@ -152,7 +152,7 @@ export default function FormsDemo() {
             variants={stagger}
             className="space-y-6"
           >
-            <h2 className="text-2xl font-semibold">Tabs</h2>
+            <h2 className="text-2xl font-semibold text-slate-900 dark:text-slate-100">Tabs</h2>
             <Tabs defaultValue="checkout" className="w-full">
               <TabsList className="grid w-full grid-cols-2">
                 <TabsTrigger value="checkout">Checkout</TabsTrigger>
@@ -512,7 +512,7 @@ export default function FormsDemo() {
             variants={stagger}
             className="space-y-6"
           >
-            <h2 className="text-2xl font-semibold">Pagination</h2>
+            <h2 className="text-2xl font-semibold text-slate-900 dark:text-slate-100">Pagination</h2>
             <div className="space-y-4">
               <Pagination
                 currentPage={currentPage}
@@ -534,7 +534,7 @@ export default function FormsDemo() {
             variants={stagger}
             className="space-y-6"
           >
-            <h2 className="text-2xl font-semibold">Empty States</h2>
+            <h2 className="text-2xl font-semibold text-slate-900 dark:text-slate-100">Empty States</h2>
             <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
               <Card>
                 <CardContent className="p-0">
