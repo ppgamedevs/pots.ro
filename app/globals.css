@@ -42,7 +42,7 @@ img {
   }
   
   .text-slate-400 {
-    @apply dark:text-slate-500;
+    @apply dark:text-slate-600;
   }
   
   /* Ensure focus states are visible */
