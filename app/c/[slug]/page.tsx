@@ -275,15 +275,11 @@ export default function CategoryPage({ params }: { params: { slug: string } }) {
                 <ProductGrid products={category.products} columns={4} />
 
                 {/* Pagination */}
-                <div className="flex justify-center">
-                  <Pagination
-                    currentPage={currentPage}
-                    totalPages={Math.ceil(category.products.length / 12)}
-                    onPageChange={setCurrentPage}
-                    showFirstLast={true}
-                    maxVisiblePages={5}
-                  />
-                </div>
+                <Pagination
+                  totalPages={Math.ceil(category.products.length / 12)}
+                  currentPage={currentPage}
+                  ariaLabel="Paginare produse"
+                />
               </>
             ) : (
               <EmptyState

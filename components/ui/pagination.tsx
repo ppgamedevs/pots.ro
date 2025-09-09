@@ -1,124 +1,95 @@
-import * as React from "react";
-import { ChevronLeft, ChevronRight, MoreHorizontal } from "lucide-react";
-import { cn } from "@/lib/utils";
-import { Button } from "./button";
+"use client";
+import Link from "next/link";
+import { usePathname, useSearchParams } from "next/navigation";
+import clsx from "clsx";
 
-export interface PaginationProps {
-  currentPage: number;
+export function Pagination({
+  totalPages,
+  currentPage,
+  maxPagesToShow = 5,
+  ariaLabel = "Pagination",
+}: {
   totalPages: number;
-  onPageChange: (page: number) => void;
-  showPrevNext?: boolean;
-  showFirstLast?: boolean;
-  maxVisiblePages?: number;
-  className?: string;
-}
+  currentPage: number; // 1-based
+  maxPagesToShow?: number;
+  ariaLabel?: string;
+}) {
+  const pathname = usePathname();
+  const search = useSearchParams();
 
-const Pagination = React.forwardRef<HTMLDivElement, PaginationProps>(
-  ({ 
-    currentPage, 
-    totalPages, 
-    onPageChange, 
-    showPrevNext = true,
-    showFirstLast = false,
-    maxVisiblePages = 5,
-    className,
-    ...props 
-  }, ref) => {
-    const getVisiblePages = () => {
-      const pages: (number | string)[] = [];
-      const half = Math.floor(maxVisiblePages / 2);
-      
-      let start = Math.max(1, currentPage - half);
-      let end = Math.min(totalPages, currentPage + half);
-      
-      // Adjust if we're near the beginning or end
-      if (currentPage <= half) {
-        end = Math.min(totalPages, maxVisiblePages);
-      }
-      if (currentPage > totalPages - half) {
-        start = Math.max(1, totalPages - maxVisiblePages + 1);
-      }
-      
-      // Add first page and ellipsis if needed
-      if (showFirstLast && start > 1) {
-        pages.push(1);
-        if (start > 2) {
-          pages.push("...");
-        }
-      }
-      
-      // Add visible pages
-      for (let i = start; i <= end; i++) {
-        pages.push(i);
-      }
-      
-      // Add ellipsis and last page if needed
-      if (showFirstLast && end < totalPages) {
-        if (end < totalPages - 1) {
-          pages.push("...");
-        }
-        pages.push(totalPages);
-      }
-      
-      return pages;
-    };
+  const buildHref = (page: number) => {
+    const params = new URLSearchParams(search.toString());
+    if (page <= 1) params.delete("page");
+    else params.set("page", String(page));
+    return `${pathname}?${params.toString()}`.replace(/\?$/, "");
+  };
 
-    const visiblePages = getVisiblePages();
+  if (totalPages <= 1) return null;
 
-    return (
-      <div
-        ref={ref}
-        className={cn("flex items-center justify-center space-x-1", className)}
-        {...props}
+  // windowing
+  const half = Math.floor(maxPagesToShow / 2);
+  let start = Math.max(1, currentPage - half);
+  let end = Math.min(totalPages, start + maxPagesToShow - 1);
+  if (end - start + 1 < maxPagesToShow) start = Math.max(1, end - maxPagesToShow + 1);
+
+  const pages = [];
+  for (let p = start; p <= end; p++) pages.push(p);
+
+  const buttonBase =
+    "min-w-9 h-9 px-2 inline-flex items-center justify-center rounded-lg border text-sm transition-all duration-200 " +
+    "border-slate-200 dark:border-white/10 bg-white dark:bg-slate-900/60 " +
+    "hover:shadow-soft hover:-translate-y-[1px] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand focus-visible:ring-offset-2 ring-offset-white dark:ring-offset-slate-950";
+
+  return (
+    <nav aria-label={ariaLabel} className="mt-6 flex items-center justify-center gap-2">
+      {/* Prev */}
+      <Link
+        aria-label="Pagina anterioară"
+        href={buildHref(Math.max(1, currentPage - 1))}
+        className={clsx(buttonBase, currentPage === 1 && "pointer-events-none opacity-50")}
       >
-        {showPrevNext && (
-          <Button
-            variant="ghost"
-            size="sm"
-            onClick={() => onPageChange(currentPage - 1)}
-            disabled={currentPage === 1}
-            className="h-8 w-8 p-0"
-          >
-            <ChevronLeft className="h-4 w-4" />
-            <span className="sr-only">Pagina anterioară</span>
-          </Button>
-        )}
+        ‹
+      </Link>
 
-        {visiblePages.map((page, index) => (
-          <React.Fragment key={index}>
-            {page === "..." ? (
-              <span className="flex h-8 w-8 items-center justify-center text-slate-500 dark:text-slate-400">
-                <MoreHorizontal className="h-4 w-4" />
-              </span>
-            ) : (
-              <Button
-                variant={currentPage === page ? "default" : "ghost"}
-                size="sm"
-                onClick={() => onPageChange(page as number)}
-                className="h-8 w-8 p-0"
-              >
-                {page}
-              </Button>
-            )}
-          </React.Fragment>
-        ))}
+      {/* First + ellipsis */}
+      {start > 1 && (
+        <>
+          <Link href={buildHref(1)} className={buttonBase}>1</Link>
+          {start > 2 && <span className="px-1 text-slate-500 dark:text-slate-400">…</span>}
+        </>
+      )}
 
-        {showPrevNext && (
-          <Button
-            variant="ghost"
-            size="sm"
-            onClick={() => onPageChange(currentPage + 1)}
-            disabled={currentPage === totalPages}
-            className="h-8 w-8 p-0"
-          >
-            <ChevronRight className="h-4 w-4" />
-            <span className="sr-only">Pagina următoare</span>
-          </Button>
-        )}
-      </div>
-    );
-  }
-);
-Pagination.displayName = "Pagination";
+      {/* Window */}
+      {pages.map((p) => (
+        <Link
+          key={p}
+          href={buildHref(p)}
+          aria-current={p === currentPage ? "page" : undefined}
+          className={clsx(
+            buttonBase,
+            p === currentPage && "bg-brand text-white border-brand hover:shadow-none hover:translate-y-0"
+          )}
+        >
+          {p}
+        </Link>
+      ))}
 
-export { Pagination };
+      {/* Last + ellipsis */}
+      {end < totalPages && (
+        <>
+          {end < totalPages - 1 && <span className="px-1 text-slate-500 dark:text-slate-400">…</span>}
+          <Link href={buildHref(totalPages)} className={buttonBase}>{totalPages}</Link>
+        </>
+      )}
+
+      {/* Next */}
+      <Link
+        aria-label="Pagina următoare"
+        href={buildHref(Math.min(totalPages, currentPage + 1))}
+        className={clsx(buttonBase, currentPage === totalPages && "pointer-events-none opacity-50")}
+      >
+        ›
+      </Link>
+    </nav>
+  );
+}

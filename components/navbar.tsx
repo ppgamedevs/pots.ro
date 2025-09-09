@@ -42,6 +42,7 @@ export function Navbar() {
           <Link href="/components-demo" className="text-sm hover:text-brand">Components</Link>
           <Link href="/forms-demo" className="text-sm hover:text-brand">Forms</Link>
           <Link href="/demo-form" className="text-sm hover:text-brand">Demo Form</Link>
+          <Link href="/ui-demo" className="text-sm hover:text-brand">UI Demo</Link>
           <Link href="/search" className="text-sm hover:text-brand">Căutare</Link>
           <Link href="/cart">
             <Button variant="secondary" size="sm">Coș</Button>
