@@ -30,7 +30,7 @@ export async function generateMetadata({ params }: { params: { id: string; slug:
     openGraph: {
       title: `${product.title} | Pots.ro`,
       description: product.description,
-      type: "product",
+      type: "website",
       images: ["/placeholder.svg"],
     },
   };

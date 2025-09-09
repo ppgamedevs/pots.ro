@@ -13,19 +13,20 @@ export interface FilterChipProps {
 
 const FilterChip = React.forwardRef<HTMLDivElement, FilterChipProps>(
   ({ label, value, onRemove, className, ...props }, ref) => (
-    <Badge
+    <div
       ref={ref}
-      variant="secondary"
+      onClick={onRemove}
       className={cn(
         "cursor-pointer hover:bg-slate-200 dark:hover:bg-slate-700 transition-colors",
         className
       )}
-      onClick={onRemove}
       {...props}
     >
-      {label}
-      <X className="h-3 w-3 ml-1" />
-    </Badge>
+      <Badge variant="secondary">
+        {label}
+        <X className="h-3 w-3 ml-1" />
+      </Badge>
+    </div>
   )
 );
 FilterChip.displayName = "FilterChip";

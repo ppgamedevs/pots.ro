@@ -35,8 +35,8 @@ export async function listPublicProducts(params: {
   }
 
   // Simulate pagination
-  const startIndex = pg.from;
-  const endIndex = Math.min(pg.to + 1, filteredProducts.length);
+  const startIndex = pg.offset;
+  const endIndex = Math.min(pg.offset + pg.limit, filteredProducts.length);
   const items = filteredProducts.slice(startIndex, endIndex);
   
   const total = filteredProducts.length;

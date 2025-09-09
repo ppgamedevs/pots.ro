@@ -63,7 +63,7 @@ export default function DashboardDemoPage() {
                   <td className="py-3 text-slate-900 dark:text-slate-100 font-medium">{order.amount} RON</td>
                   <td className="py-3 text-slate-600 dark:text-slate-300">{order.date}</td>
                   {status === "refunds" && (
-                    <td className="py-3 text-slate-600 dark:text-slate-300">{order.reason}</td>
+                    <td className="py-3 text-slate-600 dark:text-slate-300">{'reason' in order ? order.reason : 'N/A'}</td>
                   )}
                 </tr>
               ))}

@@ -32,7 +32,7 @@ const checkoutSchema = z.object({
   city: z.string().min(2, "Orașul trebuie să aibă cel puțin 2 caractere"),
   county: z.string().min(1, "Selectează județul"),
   paymentMethod: z.enum(["card", "cash", "transfer"], {
-    required_error: "Selectează metoda de plată",
+    message: "Selectează metoda de plată",
   }),
   terms: z.boolean().refine((val) => val === true, "Trebuie să accepți termenii și condițiile"),
   newsletter: z.boolean().optional(),
@@ -522,9 +522,6 @@ export default function FormsDemo() {
               <Pagination
                 currentPage={currentPage}
                 totalPages={10}
-                onPageChange={setCurrentPage}
-                showFirstLast={true}
-                maxVisiblePages={5}
               />
               <p className="text-sm text-slate-600 dark:text-slate-300 text-center">
                 Pagina curentă: {currentPage} din 10

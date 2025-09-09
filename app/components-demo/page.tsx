@@ -102,7 +102,7 @@ export default function ComponentsDemo() {
                     <Checkbox 
                       id="terms" 
                       checked={isChecked}
-                      onCheckedChange={setIsChecked}
+                      onCheckedChange={(checked) => setIsChecked(checked === true)}
                     />
                     <Label htmlFor="terms">Accept terms and conditions</Label>
                   </div>

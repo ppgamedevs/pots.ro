@@ -5,14 +5,14 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm, FormProvider, type FieldValues } from "react-hook-form";
 
 export function useZodForm<TSchema extends z.ZodTypeAny>(schema: TSchema, defaults?: Partial<z.infer<TSchema>>) {
-  return useForm<z.infer<TSchema>>({
-    resolver: zodResolver(schema),
+  return useForm({
+    resolver: zodResolver(schema as any),
     defaultValues: defaults as any,
     mode: "onTouched",
   });
 }
 
-export function RHFProvider({ children, methods }: { children: React.ReactNode; methods: ReturnType<typeof useForm<FieldValues>> }) {
+export function RHFProvider({ children, methods }: { children: React.ReactNode; methods: any }) {
   return <FormProvider {...methods}>{children}</FormProvider>;
 }
 

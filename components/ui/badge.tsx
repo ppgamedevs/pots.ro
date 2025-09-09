@@ -7,7 +7,7 @@ export function Badge({
 }: {
   children: React.ReactNode;
   className?: string;
-  variant?: "neutral" | "success" | "warning" | "danger" | "brand";
+  variant?: "neutral" | "success" | "warning" | "danger" | "brand" | "secondary" | "destructive" | "outline";
 }) {
   const palette: Record<string, string> = {
     neutral: "bg-slate-100 text-slate-700 dark:bg-white/10 dark:text-slate-200",
@@ -15,6 +15,9 @@ export function Badge({
     warning: "bg-amber-100 text-amber-800 dark:bg-amber-400/10 dark:text-amber-300",
     danger:  "bg-rose-100 text-rose-700 dark:bg-rose-400/10 dark:text-rose-300",
     brand:   "bg-brand/15 text-brand dark:bg-brand/20 dark:text-brand",
+    secondary: "bg-slate-100 text-slate-700 dark:bg-white/10 dark:text-slate-200",
+    destructive: "bg-rose-100 text-rose-700 dark:bg-rose-400/10 dark:text-rose-300",
+    outline: "border border-slate-200 dark:border-white/10 bg-transparent text-slate-700 dark:text-slate-300",
   };
 
   return (

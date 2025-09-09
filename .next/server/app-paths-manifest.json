@@ -1,8 +1,14 @@
 {
   "/_not-found/page": "app/_not-found/page.js",
-  "/page": "app/page.js",
-  "/forms-demo/page": "app/forms-demo/page.js",
+  "/components-demo/page": "app/components-demo/page.js",
+  "/api/products/route": "app/api/products/route.js",
+  "/dashboard-demo/page": "app/dashboard-demo/page.js",
   "/demo-form/page": "app/demo-form/page.js",
+  "/forms-demo/page": "app/forms-demo/page.js",
+  "/page": "app/page.js",
+  "/seller-dashboard/page": "app/seller-dashboard/page.js",
   "/ui-demo/page": "app/ui-demo/page.js",
-  "/dashboard-demo/page": "app/dashboard-demo/page.js"
+  "/c/[slug]/page": "app/c/[slug]/page.js",
+  "/p/[id]-[slug]/page": "app/p/[id]-[slug]/page.js",
+  "/s/[slug]/page": "app/s/[slug]/page.js"
 }

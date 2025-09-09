@@ -135,7 +135,7 @@ export default function ProductPage({ params }: { params: { id: string; slug: st
     // TODO: Implement wishlist functionality
   };
 
-  const discountPercentage = product.originalPrice 
+  const discountPercentage = 'originalPrice' in product && product.originalPrice
     ? Math.round(((product.originalPrice - product.price) / product.originalPrice) * 100)
     : 0;
 
@@ -234,7 +234,7 @@ export default function ProductPage({ params }: { params: { id: string; slug: st
                   <span className="text-3xl font-bold text-slate-900 dark:text-slate-100">
                     {product.price.toFixed(2)} {product.currency}
                   </span>
-                  {product.originalPrice && (
+                  {'originalPrice' in product && product.originalPrice && (
                     <span className="text-xl text-slate-500 line-through">
                       {product.originalPrice.toFixed(2)} {product.currency}
                     </span>

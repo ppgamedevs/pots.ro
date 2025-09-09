@@ -1,4 +1,3 @@
-import { listPublicProducts } from "@/lib/data/products";
 import { Pagination } from "@/components/ui/pagination";
 import { Breadcrumbs } from "@/components/ui/breadcrumbs";
 import { Navbar } from "@/components/navbar";
@@ -6,6 +5,7 @@ import { Footer } from "@/components/footer";
 import { ProductGrid } from "@/components/ui/product-grid";
 import { H1, P } from "@/components/ui/typography";
 import { EmptyState } from "@/components/ui/empty-state";
+import { getPagination, buildPaginationMeta } from "@/lib/pagination";
 
 // Category metadata
 const categoryMetadata = {
@@ -30,8 +30,12 @@ export default async function CategoryPage({
   params: { slug: string }; 
   searchParams: Record<string, string> 
 }) {
-  const page = Number(searchParams.page ?? 1);
-  const pageSize = Number(searchParams.pageSize ?? 24);
+  const calc = getPagination({ 
+    page: searchParams?.page, 
+    pageSize: searchParams?.pageSize,
+    maxPageSize: 60,
+    defaultPageSize: 24
+  });
 
   // Get category metadata
   const category = categoryMetadata[params.slug as keyof typeof categoryMetadata];
@@ -56,67 +60,101 @@ export default async function CategoryPage({
     );
   }
 
-  // Fetch products with server-side pagination
-  const { items, totalPages, total } = await listPublicProducts({
-    page: Number.isFinite(page) && page > 0 ? page : 1,
-    pageSize: Number.isFinite(pageSize) && pageSize > 0 ? pageSize : 24,
-    categorySlug: params.slug,
-  });
+  // Fetch products from API
+  const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || 'http://localhost:3000';
+  const apiUrl = new URL('/api/products', baseUrl);
+  apiUrl.searchParams.set('categorySlug', params.slug);
+  apiUrl.searchParams.set('page', calc.page.toString());
+  apiUrl.searchParams.set('pageSize', calc.pageSize.toString());
 
-  const breadcrumbItems = [
-    { label: "Acasă", href: "/" },
-    { label: "Categorii", href: "/c" },
-    { label: category.title },
-  ];
+  try {
+    const response = await fetch(apiUrl.toString(), { 
+      next: { revalidate: 60 } // Cache for 1 minute
+    });
+    
+    if (!response.ok) {
+      throw new Error('Failed to fetch products');
+    }
+    
+    const data = await response.json();
+    const { items, meta } = data;
 
-  return (
-    <>
-      <Navbar />
-      <main className="mx-auto max-w-6xl px-4 py-10">
-        <div className="space-y-8">
-          {/* Breadcrumbs */}
-          <Breadcrumbs items={breadcrumbItems} />
+    const breadcrumbItems = [
+      { label: "Acasă", href: "/" },
+      { label: "Categorii", href: "/c" },
+      { label: category.title },
+    ];
 
-          {/* Header */}
-          <div className="space-y-4">
-            <H1>{category.title}</H1>
-            <P className="text-lg text-slate-600 dark:text-slate-300 max-w-3xl">
-              {category.description}
-            </P>
-          </div>
+    return (
+      <>
+        <Navbar />
+        <main className="mx-auto max-w-6xl px-4 py-10">
+          <div className="space-y-8">
+            {/* Breadcrumbs */}
+            <Breadcrumbs items={breadcrumbItems} />
 
-          {/* Products Section */}
-          <div className="space-y-6">
-            <div className="flex items-center justify-between">
-              <p className="text-sm text-slate-600 dark:text-slate-300">
-                {total} produse găsite
-              </p>
+            {/* Header */}
+            <div className="space-y-4">
+              <H1>{category.title}</H1>
+              <P className="text-lg text-slate-600 dark:text-slate-300 max-w-3xl">
+                {category.description}
+              </P>
             </div>
 
-            {items.length > 0 ? (
-              <>
-                <ProductGrid products={items} columns={4} />
-                <Pagination
-                  totalPages={totalPages}
-                  currentPage={page}
-                  ariaLabel="Paginare produse"
+            {/* Products Section */}
+            <div className="space-y-6">
+              <div className="flex items-center justify-between">
+                <p className="text-sm text-slate-600 dark:text-slate-300">
+                  {meta.totalItems} produse găsite
+                </p>
+              </div>
+
+              {items.length > 0 ? (
+                <>
+                  <ProductGrid products={items} columns={4} />
+                  <Pagination
+                    totalPages={meta.totalPages}
+                    currentPage={meta.page}
+                    ariaLabel="Paginare produse"
+                  />
+                </>
+              ) : (
+                <EmptyState
+                  variant="search"
+                  title="Nu am găsit produse"
+                  description="Încearcă să modifici filtrele pentru a vedea mai multe rezultate."
+                  action={{
+                    label: "Vezi toate produsele",
+                    onClick: () => window.location.href = "/",
+                  }}
                 />
-              </>
-            ) : (
-              <EmptyState
-                variant="search"
-                title="Nu am găsit produse"
-                description="Încearcă să modifici filtrele pentru a vedea mai multe rezultate."
-                action={{
-                  label: "Vezi toate produsele",
-                  onClick: () => window.location.href = "/",
-                }}
-              />
-            )}
+              )}
+            </div>
           </div>
-        </div>
-      </main>
-      <Footer />
-    </>
-  );
+        </main>
+        <Footer />
+      </>
+    );
+
+  } catch (error) {
+    console.error('Error fetching products:', error);
+    
+    return (
+      <>
+        <Navbar />
+        <main className="mx-auto max-w-6xl px-4 py-10">
+          <EmptyState
+            variant="search"
+            title="Eroare la încărcare"
+            description="A apărut o eroare la încărcarea produselor. Vă rugăm să încercați din nou."
+            action={{
+              label: "Reîncarcă pagina",
+              onClick: () => window.location.reload(),
+            }}
+          />
+        </main>
+        <Footer />
+      </>
+    );
+  }
 }

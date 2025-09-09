@@ -102,7 +102,7 @@ const Large = React.forwardRef<HTMLDivElement, React.HTMLAttributes<HTMLDivEleme
 );
 Large.displayName = "Large";
 
-const Small = React.forwardRef<HTMLSmallElement, React.HTMLAttributes<HTMLElement>>(
+const Small = React.forwardRef<HTMLElement, React.HTMLAttributes<HTMLElement>>(
   ({ className, ...props }, ref) => (
     <small
       ref={ref}
