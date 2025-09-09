@@ -27,6 +27,13 @@ const config: Config = {
       fontFamily: {
         sans: ["var(--font-inter)", "system-ui", "sans-serif"],
       },
+      ringOffsetWidth: {
+        DEFAULT: "2px",
+      },
+      ringOffsetColor: {
+        DEFAULT: "white",
+        dark: "#0b1220",
+      },
     },
   },
   plugins: [],
