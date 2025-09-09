@@ -40,6 +40,7 @@ export function Navbar() {
         <div className="flex items-center gap-2">
           <ThemeToggle />
           <Link href="/components-demo" className="text-sm hover:text-brand">Components</Link>
+          <Link href="/forms-demo" className="text-sm hover:text-brand">Forms</Link>
           <Link href="/search" className="text-sm hover:text-brand">Căutare</Link>
           <Link href="/cart">
             <Button variant="secondary" size="sm">Coș</Button>

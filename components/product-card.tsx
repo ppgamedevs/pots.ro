@@ -1,6 +1,7 @@
 import Image from "next/image";
 import Link from "next/link";
 import { Button } from "./ui/button";
+import { useToast } from "@/lib/hooks/use-toast";
 
 type ProductCardProps = {
   id: string | number;
@@ -13,6 +14,12 @@ type ProductCardProps = {
 };
 
 export function ProductCard({ id, slug, title, price, currency = "RON", imageUrl, sellerSlug }: ProductCardProps) {
+  const { showAddToCart } = useToast();
+
+  const handleAddToCart = () => {
+    showAddToCart(title);
+  };
+
   return (
     <div className="group rounded-2xl bg-white dark:bg-slate-900/60 border border-slate-200 dark:border-white/10
                     hover:shadow-soft transition-all duration-200 p-3 hover:-translate-y-[1px]">
@@ -34,7 +41,7 @@ export function ProductCard({ id, slug, title, price, currency = "RON", imageUrl
         )}
         <div className="flex items-center justify-between pt-2">
           <div className="text-base font-semibold text-slate-900 dark:text-slate-100">{price.toFixed(2)} {currency}</div>
-          <Button variant="secondary" size="sm">Adaugă</Button>
+          <Button variant="secondary" size="sm" onClick={handleAddToCart}>Adaugă</Button>
         </div>
       </div>
     </div>
