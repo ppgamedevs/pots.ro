@@ -11,6 +11,8 @@ import { Breadcrumbs } from "@/components/ui/breadcrumbs";
 import { H1, H2, H3, P, Lead } from "@/components/ui/typography";
 import { useToast } from "@/lib/hooks/use-toast";
 import { stagger, fadeInUp } from "@/components/motion";
+import { ProductPageSkeleton } from "@/components/ui/loading-skeletons";
+import { ProductErrorState } from "@/components/ui/error-states";
 import { Heart, Share2, Truck, Shield, RotateCcw, Star, MapPin } from "lucide-react";
 
 // Mock data
@@ -103,13 +105,7 @@ export default function ProductPage({ params }: { params: { id: string; slug: st
       <>
         <Navbar />
         <main className="mx-auto max-w-6xl px-4 py-10">
-          <div className="text-center">
-            <H1>Produs nu găsit</H1>
-            <P>Produsul pe care îl căutați nu există sau a fost mutat.</P>
-            <Button className="mt-4" onClick={() => window.history.back()}>
-              Înapoi
-            </Button>
-          </div>
+          <ProductErrorState id={params.id} />
         </main>
         <Footer />
       </>

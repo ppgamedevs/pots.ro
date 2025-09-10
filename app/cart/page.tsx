@@ -12,6 +12,8 @@ import { OptimizedImage } from "@/components/ui/optimized-image";
 import { Input } from "@/components/ui/input";
 import { useToast } from "@/lib/hooks/use-toast";
 import { stagger, fadeInUp } from "@/components/motion";
+import { CartPageSkeleton } from "@/components/ui/loading-skeletons";
+import { CartErrorState } from "@/components/ui/error-states";
 import { Trash2, Plus, Minus, ShoppingBag, ArrowLeft } from "lucide-react";
 import Link from "next/link";
 

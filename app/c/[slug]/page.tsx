@@ -6,7 +6,10 @@ import { Footer } from "@/components/footer";
 import { ProductGrid } from "@/components/ui/product-grid";
 import { H1, P } from "@/components/ui/typography";
 import { EmptyState } from "@/components/ui/empty-state";
+import { CategoryPageSkeleton } from "@/components/ui/loading-skeletons";
+import { CategoryErrorState } from "@/components/ui/error-states";
 import { getPagination, buildPaginationMeta } from "@/lib/pagination";
+import { Suspense } from "react";
 
 // Category metadata
 const categoryMetadata = {
@@ -46,15 +49,7 @@ export default async function CategoryPage({
       <>
         <Navbar />
         <main className="mx-auto max-w-6xl px-4 py-10">
-          <EmptyState
-            variant="category"
-            title="Categorie nu există"
-            description="Categoria pe care o căutați nu există sau a fost mutată."
-            action={{
-              label: "Vezi toate categoriile",
-              onClick: () => window.location.href = "/",
-            }}
-          />
+          <CategoryErrorState slug={params.slug} />
         </main>
         <Footer />
       </>
@@ -149,15 +144,7 @@ export default async function CategoryPage({
       <>
         <Navbar />
         <main className="mx-auto max-w-6xl px-4 py-10">
-          <EmptyState
-            variant="search"
-            title="Eroare la încărcare"
-            description="A apărut o eroare la încărcarea produselor. Vă rugăm să încercați din nou."
-            action={{
-              label: "Reîncarcă pagina",
-              onClick: () => window.location.reload(),
-            }}
-          />
+          <CategoryErrorState slug={params.slug} />
         </main>
         <Footer />
       </>

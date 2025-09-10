@@ -11,6 +11,8 @@ import { UITabs } from "@/components/ui/tabs";
 import { Breadcrumbs } from "@/components/ui/breadcrumbs";
 import { H1, H2, H3, P, Lead } from "@/components/ui/typography";
 import { stagger, fadeInUp } from "@/components/motion";
+import { SellerPageSkeleton } from "@/components/ui/loading-skeletons";
+import { SellerErrorState } from "@/components/ui/error-states";
 import { Star, MapPin, Calendar, Award, Users, Package, MessageCircle } from "lucide-react";
 
 // Mock data
@@ -57,12 +59,7 @@ export default function SellerPage({ params }: { params: { slug: string } }) {
       <>
         <Navbar />
         <main className="mx-auto max-w-6xl px-4 py-10">
-          <div className="text-center py-12">
-            <H1>Vânzător nu găsit</H1>
-            <P className="text-slate-600 dark:text-slate-300 mt-2">
-              Vânzătorul pe care îl căutați nu există sau a fost mutat.
-            </P>
-          </div>
+          <SellerErrorState slug={params.slug} />
         </main>
         <Footer />
       </>
