@@ -1,5 +1,6 @@
 import { Pagination } from "@/components/ui/pagination";
 import { Breadcrumbs } from "@/components/ui/breadcrumbs";
+import { FiltersTrigger } from "./filters-trigger";
 import { Navbar } from "@/components/navbar";
 import { Footer } from "@/components/footer";
 import { ProductGrid } from "@/components/ui/product-grid";
@@ -95,10 +96,15 @@ export default async function CategoryPage({
 
             {/* Header */}
             <div className="space-y-4">
-              <H1>{category.title}</H1>
-              <P className="text-lg text-slate-600 dark:text-slate-300 max-w-3xl">
-                {category.description}
-              </P>
+              <div className="flex items-center justify-between">
+                <div>
+                  <H1>{category.title}</H1>
+                  <P className="text-lg text-slate-600 dark:text-slate-300 max-w-3xl">
+                    {category.description}
+                  </P>
+                </div>
+                <FiltersTrigger />
+              </div>
             </div>
 
             {/* Products Section */}
