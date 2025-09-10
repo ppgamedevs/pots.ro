@@ -10,6 +10,8 @@ import { CategoryPageSkeleton } from "@/components/ui/loading-skeletons";
 import { CategoryErrorState } from "@/components/ui/error-states";
 import { getPagination, buildPaginationMeta } from "@/lib/pagination";
 import { Suspense } from "react";
+import { Metadata } from "next";
+import { unstable_cache } from "next/cache";
 
 // Category metadata
 const categoryMetadata = {
@@ -27,6 +29,107 @@ const categoryMetadata = {
   }
 };
 
+// Generate metadata for SEO
+export async function generateMetadata({ 
+  params, 
+  searchParams 
+}: { 
+  params: { slug: string }; 
+  searchParams: Record<string, string> 
+}): Promise<Metadata> {
+  const category = categoryMetadata[params.slug as keyof typeof categoryMetadata];
+
+  if (!category) {
+    return {
+      title: "Categorie nu există | Pots.ro",
+      description: "Categoria căutată nu a fost găsită pe Pots.ro",
+    };
+  }
+
+  const page = searchParams?.page ? ` - Pagina ${searchParams.page}` : "";
+  const title = `${category.title}${page} | Pots.ro`;
+  const description = `${category.description} Descoperă o gamă largă de ${category.title.toLowerCase()} de calitate. Livrare rapidă în toată România.`;
+
+  // Build canonical URL
+  const baseUrl = "https://pots.ro";
+  const canonicalParams = new URLSearchParams();
+  if (searchParams?.page) canonicalParams.set("page", searchParams.page);
+  if (searchParams?.sort) canonicalParams.set("sort", searchParams.sort);
+  if (searchParams?.filter) canonicalParams.set("filter", searchParams.filter);
+  
+  const canonicalUrl = `${baseUrl}/c/${params.slug}${canonicalParams.toString() ? `?${canonicalParams.toString()}` : ""}`;
+
+  return {
+    title,
+    description,
+    keywords: [
+      category.title.toLowerCase(),
+      "floristică",
+      "pots.ro",
+      "ghivece",
+      "cutii",
+      "accesorii",
+      "plante",
+      "aranjamente florale"
+    ],
+    openGraph: {
+      title,
+      description,
+      type: "website",
+      url: canonicalUrl,
+      siteName: "Pots.ro",
+    },
+    twitter: {
+      card: "summary",
+      title,
+      description,
+    },
+    alternates: {
+      canonical: canonicalUrl,
+    },
+  };
+}
+
+// Cached function for category data
+const getCachedCategoryData = unstable_cache(
+  async (slug: string, page: number, pageSize: number) => {
+    // Mock data - in production, fetch from database
+    const category = categoryMetadata[slug as keyof typeof categoryMetadata];
+    if (!category) {
+      return { category: null, products: [], totalCount: 0 };
+    }
+
+    // Mock products for the category
+    const mockProducts = Array.from({ length: 24 }, (_, i) => ({
+      id: i + 1,
+      title: `${category.title} ${i + 1}`,
+      price: 50 + Math.random() * 200,
+      currency: "RON",
+      imageUrl: `https://images.unsplash.com/photo-${1578662996442 + i}?w=400&h=400&fit=crop&crop=center`,
+      sellerSlug: `seller-${i % 3 + 1}`,
+      slug: `${slug}-${i + 1}`,
+    }));
+
+    const startIndex = (page - 1) * pageSize;
+    const endIndex = startIndex + pageSize;
+    const products = mockProducts.slice(startIndex, endIndex);
+
+    return {
+      category,
+      products,
+      totalCount: mockProducts.length,
+    };
+  },
+  ['category-data'],
+  {
+    tags: ['categories', 'products'],
+    revalidate: 1800, // 30 minutes
+  }
+);
+
+// ISR Configuration
+export const revalidate = 1800; // 30 minutes for categories
+
 export default async function CategoryPage({ 
   params, 
   searchParams 
@@ -41,8 +144,12 @@ export default async function CategoryPage({
     defaultPageSize: 24
   });
 
-  // Get category metadata
-  const category = categoryMetadata[params.slug as keyof typeof categoryMetadata];
+  // Get cached category data
+  const { category, products, totalCount } = await getCachedCategoryData(
+    params.slug,
+    calc.page,
+    calc.limit
+  );
   
   if (!category) {
     return (
@@ -56,41 +163,26 @@ export default async function CategoryPage({
     );
   }
 
-  // Fetch products from API
-  const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || 'http://localhost:3000';
-  const apiUrl = new URL('/api/products', baseUrl);
-  apiUrl.searchParams.set('categorySlug', params.slug);
-  apiUrl.searchParams.set('page', calc.page.toString());
-  apiUrl.searchParams.set('pageSize', calc.pageSize.toString());
+  // Products are already fetched from cache
+  const items = products;
+  const meta = buildPaginationMeta(totalCount, calc);
 
-  try {
-    const response = await fetch(apiUrl.toString(), { 
-      next: { revalidate: 60 } // Cache for 1 minute
-    });
-    
-    if (!response.ok) {
-      throw new Error('Failed to fetch products');
-    }
-    
-    const data = await response.json();
-    const { items, meta } = data;
+  const breadcrumbItems = [
+    { label: "Acasă", href: "/" },
+    { label: "Categorii", href: "/c" },
+    { label: category.title },
+  ];
 
-    const breadcrumbItems = [
-      { label: "Acasă", href: "/" },
-      { label: "Categorii", href: "/c" },
-      { label: category.title },
-    ];
+  return (
+    <>
+      <Navbar />
+      <main className="mx-auto max-w-6xl px-4 py-10">
+        <div className="space-y-8">
+          {/* Breadcrumbs */}
+          <Breadcrumbs items={breadcrumbItems} />
 
-    return (
-      <>
-        <Navbar />
-        <main className="mx-auto max-w-6xl px-4 py-10">
-          <div className="space-y-8">
-            {/* Breadcrumbs */}
-            <Breadcrumbs items={breadcrumbItems} />
-
-            {/* Header */}
-            <div className="space-y-4">
+          {/* Header */}
+          <div className="space-y-4">
               <div className="flex items-center justify-between">
                 <div>
                   <H1>{category.title}</H1>
@@ -136,18 +228,4 @@ export default async function CategoryPage({
         <Footer />
       </>
     );
-
-  } catch (error) {
-    console.error('Error fetching products:', error);
-    
-    return (
-      <>
-        <Navbar />
-        <main className="mx-auto max-w-6xl px-4 py-10">
-          <CategoryErrorState slug={params.slug} />
-        </main>
-        <Footer />
-      </>
-    );
-  }
 }

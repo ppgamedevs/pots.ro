@@ -13,6 +13,7 @@ import { useToast } from "@/lib/hooks/use-toast";
 import { stagger, fadeInUp } from "@/components/motion";
 import { ProductPageSkeleton } from "@/components/ui/loading-skeletons";
 import { ProductErrorState } from "@/components/ui/error-states";
+import { ProductStructuredData } from "@/components/seo/structured-data";
 import { Heart, Share2, Truck, Shield, RotateCcw, Star, MapPin } from "lucide-react";
 
 // Mock data
@@ -24,10 +25,10 @@ const products = {
     originalPrice: 69.9,
     currency: "RON",
     images: [
-      "/placeholder.svg",
-      "/placeholder.svg", 
-      "/placeholder.svg",
-      "/placeholder.svg",
+      "https://images.unsplash.com/photo-1578662996442-48f60103fc96?w=800&h=800&fit=crop&crop=center",
+      "https://images.unsplash.com/photo-1586023492125-27b2c045efd7?w=800&h=800&fit=crop&crop=center", 
+      "https://images.unsplash.com/photo-1513475382585-d06e58bcb0e0?w=800&h=800&fit=crop&crop=center",
+      "https://images.unsplash.com/photo-1416879595882-3373a0480b5b?w=800&h=800&fit=crop&crop=center",
     ],
     description: "Ghiveci ceramic alb de calitate superioară, perfect pentru plante de interior. Design modern și elegant care se potrivește în orice decor. Materialul ceramic oferă izolație termică excelentă și menține umiditatea optimă pentru rădăcini.",
     specifications: {
@@ -60,9 +61,9 @@ const products = {
     price: 79.0,
     currency: "RON",
     images: [
-      "/placeholder.svg",
-      "/placeholder.svg",
-      "/placeholder.svg",
+      "https://images.unsplash.com/photo-1586023492125-27b2c045efd7?w=800&h=800&fit=crop&crop=center",
+      "https://images.unsplash.com/photo-1513475382585-d06e58bcb0e0?w=800&h=800&fit=crop&crop=center",
+      "https://images.unsplash.com/photo-1416879595882-3373a0480b5b?w=800&h=800&fit=crop&crop=center",
     ],
     description: "Cutie înaltă din carton reciclat, perfectă pentru aranjamente florale înalte. Design clasic și elegant, ideală pentru cadouri și evenimente speciale. Materialul natural oferă o estetică rustică și eco-friendly.",
     specifications: {
@@ -90,6 +91,7 @@ const products = {
     tags: ["carton", "natur", "eco", "cadou"]
   }
 };
+
 
 export default function ProductPage({ params }: { params: { id: string; slug: string } }) {
   const { showAddToCart, showError } = useToast();
@@ -137,6 +139,7 @@ export default function ProductPage({ params }: { params: { id: string; slug: st
 
   return (
     <>
+      <ProductStructuredData product={product} />
       <Navbar />
       <main className="mx-auto max-w-6xl px-4 py-10">
         <motion.div
@@ -163,6 +166,7 @@ export default function ProductPage({ params }: { params: { id: string; slug: st
                   alt={product.title}
                   fill
                   priority
+                  sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 40vw"
                 />
                 {discountPercentage > 0 && (
                   <Badge variant="destructive" className="absolute top-4 left-4">
@@ -188,6 +192,7 @@ export default function ProductPage({ params }: { params: { id: string; slug: st
                       alt={`${product.title} ${index + 1}`}
                       width={80}
                       height={80}
+                      sizes="80px"
                       className="object-cover w-full h-full"
                     />
                   </button>

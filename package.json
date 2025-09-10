@@ -6,7 +6,15 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "lint": "next lint"
+    "lint": "next lint",
+    "perf": "node scripts/quick-perf-test.js",
+    "perf:lighthouse": "node scripts/performance-test.js",
+    "perf:analyze": "ANALYZE=true npm run build",
+    "seo": "node scripts/seo-test.js",
+    "test:images": "node scripts/test-images.js",
+    "test:image-config": "node scripts/test-image-config.js",
+    "test:revalidation": "node scripts/test-revalidation.js",
+    "test:env": "node scripts/test-env.js"
   },
   "dependencies": {
     "@hookform/resolvers": "^5.2.1",
@@ -28,6 +36,7 @@
     "class-variance-authority": "^0.7.0",
     "clsx": "^2.0.0",
     "cmdk": "^1.1.1",
+    "dotenv": "^17.2.2",
     "framer-motion": "^12.23.12",
     "lucide-react": "^0.543.0",
     "next": "^14.0.0",
