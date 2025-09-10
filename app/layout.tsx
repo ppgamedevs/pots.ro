@@ -1,6 +1,7 @@
 import "./globals.css";
 import { Inter } from "next/font/google";
 import { ThemeProvider } from "@/components/theme-provider";
+import { ConfirmProvider } from "@/components/ui/use-confirm";
 import { Toaster } from "@/components/ui/toast";
 import { PerformanceMonitor } from "@/components/ui/performance-monitor";
 import { Toaster as SonnerToaster } from "sonner";
@@ -17,10 +18,12 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
     <html lang="ro" className={inter.variable} suppressHydrationWarning>
       <body className="min-h-screen antialiased">
         <ThemeProvider>
-          {children}
-          <Toaster />
-          <SonnerToaster richColors position="top-center" closeButton />
-          <PerformanceMonitor />
+          <ConfirmProvider>
+            {children}
+            <Toaster />
+            <SonnerToaster richColors position="top-center" closeButton />
+            <PerformanceMonitor />
+          </ConfirmProvider>
         </ThemeProvider>
       </body>
     </html>

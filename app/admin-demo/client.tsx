@@ -6,6 +6,8 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { UITabs } from "@/components/ui/tabs";
 import { RowActions } from "@/components/ui/row-actions";
+import { useConfirm } from "@/components/ui/use-confirm";
+import { toast } from "sonner";
 import { Code, Database, Table, Settings } from "lucide-react";
 
 type ProductRow = {
@@ -31,6 +33,7 @@ type OrderRow = {
 export default function AdminDemoClient() {
   const [selectedProducts, setSelectedProducts] = useState<(string | number)[]>([]);
   const [selectedOrders, setSelectedOrders] = useState<(string | number)[]>([]);
+  const confirm = useConfirm();
 
   // Mock data
   const products: ProductRow[] = [
@@ -159,20 +162,53 @@ export default function AdminDemoClient() {
           published={r.status === "active"}
           onEdit={() => console.log("Edit product", r.id)}
           onPublish={async () => {
-            console.log("Publishing product", r.id);
-            // await fetch(`/api/admin/products/${r.id}/publish`, { method: "POST" });
-            // mutate(); // re-fetch list
+            const ok = await confirm({
+              title: "Publish product?",
+              description: "Produsul va deveni vizibil public.",
+              confirmText: "Publish",
+            });
+            if (!ok) return;
+            try {
+              // await fetch(`/api/admin/products/${r.id}/publish`, { method: "POST" });
+              console.log("Publishing product", r.id);
+              toast.success("Produs publicat");
+              // mutate(); // re-fetch list
+            } catch (error) {
+              toast.error("Eroare la publicare");
+            }
           }}
           onUnpublish={async () => {
-            console.log("Unpublishing product", r.id);
-            // await fetch(`/api/admin/products/${r.id}/unpublish`, { method: "POST" });
-            // mutate();
+            const ok = await confirm({
+              title: "Unpublish product?",
+              description: "Produsul nu va mai fi vizibil public.",
+              confirmText: "Unpublish",
+            });
+            if (!ok) return;
+            try {
+              // await fetch(`/api/admin/products/${r.id}/unpublish`, { method: "POST" });
+              console.log("Unpublishing product", r.id);
+              toast.success("Produs ascuns");
+              // mutate();
+            } catch (error) {
+              toast.error("Eroare la ascundere");
+            }
           }}
           onDelete={async () => {
-            if (!confirm("Ștergi acest produs?")) return;
-            console.log("Deleting product", r.id);
-            // await fetch(`/api/admin/products/${r.id}`, { method: "DELETE" });
-            // mutate();
+            const ok = await confirm({
+              title: "Delete product?",
+              description: "Acțiune ireversibilă. Produsul va fi șters definitiv.",
+              confirmText: "Delete",
+              variant: "danger",
+            });
+            if (!ok) return;
+            try {
+              // await fetch(`/api/admin/products/${r.id}`, { method: "DELETE" });
+              console.log("Deleting product", r.id);
+              toast.success("Produs șters");
+              // mutate();
+            } catch (error) {
+              toast.error("Eroare la ștergere");
+            }
           }}
         />
       ),
