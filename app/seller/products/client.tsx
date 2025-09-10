@@ -5,6 +5,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { RowActions } from "@/components/ui/row-actions";
 import { Search, Plus, Edit, Eye, Trash2, MoreHorizontal } from "lucide-react";
 
 type Row = {
@@ -111,22 +112,31 @@ export default function SellerProductsClient({
     },
     {
       key: "actions",
-      header: "Acțiuni",
-      align: "center",
-      width: "140px",
+      header: "",
+      align: "right",
+      width: "60px",
       render: (r) => (
-        <div className="flex items-center gap-1">
-          <Button variant="ghost" size="sm" title="Vizualizează">
-            <Eye className="h-4 w-4" />
-          </Button>
-          <Button variant="ghost" size="sm" title="Editează">
-            <Edit className="h-4 w-4" />
-          </Button>
-          <Button variant="ghost" size="sm" title="Șterge">
-            <Trash2 className="h-4 w-4 text-red-500" />
-          </Button>
-        </div>
-      )
+        <RowActions
+          published={r.status === "active"}
+          onEdit={() => console.log("Edit product", r.id)}
+          onPublish={async () => {
+            console.log("Publishing product", r.id);
+            // await fetch(`/api/seller/products/${r.id}/publish`, { method: "POST" });
+            // mutate(); // re-fetch list
+          }}
+          onUnpublish={async () => {
+            console.log("Unpublishing product", r.id);
+            // await fetch(`/api/seller/products/${r.id}/unpublish`, { method: "POST" });
+            // mutate();
+          }}
+          onDelete={async () => {
+            if (!confirm("Ștergi acest produs?")) return;
+            console.log("Deleting product", r.id);
+            // await fetch(`/api/seller/products/${r.id}`, { method: "DELETE" });
+            // mutate();
+          }}
+        />
+      ),
     },
   ];
 

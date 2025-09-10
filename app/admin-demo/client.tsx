@@ -5,6 +5,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { UITabs } from "@/components/ui/tabs";
+import { RowActions } from "@/components/ui/row-actions";
 import { Code, Database, Table, Settings } from "lucide-react";
 
 type ProductRow = {
@@ -147,6 +148,34 @@ export default function AdminDemoClient() {
       header: "Creat", 
       sortable: true, 
       render: (r) => new Date(r.created_at).toLocaleDateString("ro-RO")
+    },
+    {
+      key: "actions",
+      header: "",
+      align: "right",
+      width: "60px",
+      render: (r) => (
+        <RowActions
+          published={r.status === "active"}
+          onEdit={() => console.log("Edit product", r.id)}
+          onPublish={async () => {
+            console.log("Publishing product", r.id);
+            // await fetch(`/api/admin/products/${r.id}/publish`, { method: "POST" });
+            // mutate(); // re-fetch list
+          }}
+          onUnpublish={async () => {
+            console.log("Unpublishing product", r.id);
+            // await fetch(`/api/admin/products/${r.id}/unpublish`, { method: "POST" });
+            // mutate();
+          }}
+          onDelete={async () => {
+            if (!confirm("Ștergi acest produs?")) return;
+            console.log("Deleting product", r.id);
+            // await fetch(`/api/admin/products/${r.id}`, { method: "DELETE" });
+            // mutate();
+          }}
+        />
+      ),
     },
   ];
 
