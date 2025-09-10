@@ -5,6 +5,7 @@ import { ConfirmProvider } from "@/components/ui/use-confirm";
 import { Toaster } from "@/components/ui/toast";
 import { PerformanceMonitor } from "@/components/ui/performance-monitor";
 import { Toaster as SonnerToaster } from "sonner";
+import { CommandPalette } from "@/components/search/command-palette";
 
 const inter = Inter({ subsets: ["latin"], display: "swap", variable: "--font-inter" });
 
@@ -18,12 +19,13 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
     <html lang="ro" className={inter.variable} suppressHydrationWarning>
       <body className="min-h-screen antialiased">
         <ThemeProvider>
-          <ConfirmProvider>
-            {children}
-            <Toaster />
-            <SonnerToaster richColors position="top-center" closeButton />
-            <PerformanceMonitor />
-          </ConfirmProvider>
+                 <ConfirmProvider>
+                   {children}
+                   <Toaster />
+                   <SonnerToaster richColors position="top-center" closeButton />
+                   <PerformanceMonitor />
+                   <CommandPalette />
+                 </ConfirmProvider>
         </ThemeProvider>
       </body>
     </html>

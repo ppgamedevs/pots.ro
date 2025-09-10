@@ -2,11 +2,14 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { motion } from "framer-motion";
+import { useState } from "react";
 import { Button } from "./ui/button";
 import { ThemeToggle } from "./theme-toggle";
+import { CommandPaletteControlled } from "./search/command-palette-controlled";
 
 export function Navbar() {
   const pathname = usePathname();
+  const [searchOpen, setSearchOpen] = useState(false);
   const nav = [
     { href: "/c/ghivece", label: "Ghivece" },
     { href: "/c/cutii", label: "Cutii" },
@@ -39,6 +42,9 @@ export function Navbar() {
 
         <div className="flex items-center gap-2">
           <ThemeToggle />
+          <Button variant="secondary" size="sm" onClick={() => setSearchOpen(true)}>
+            Căutare ⌘K
+          </Button>
           <Link href="/components-demo" className="text-sm hover:text-brand">Components</Link>
           <Link href="/forms-demo" className="text-sm hover:text-brand">Forms</Link>
           <Link href="/demo-form" className="text-sm hover:text-brand">Demo Form</Link>
@@ -46,7 +52,6 @@ export function Navbar() {
           <Link href="/dashboard-demo" className="text-sm hover:text-brand">Dashboard</Link>
           <Link href="/seller-dashboard" className="text-sm hover:text-brand">Vânzător</Link>
           <Link href="/admin-demo" className="text-sm hover:text-brand">Admin</Link>
-          <Link href="/search" className="text-sm hover:text-brand">Căutare</Link>
           <Link href="/cart">
             <Button variant="secondary" size="sm">Coș</Button>
           </Link>
@@ -55,6 +60,7 @@ export function Navbar() {
           </Link>
         </div>
       </div>
+      <CommandPaletteControlled open={searchOpen} onOpenChange={setSearchOpen} />
     </motion.header>
   );
 }
