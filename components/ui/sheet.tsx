@@ -69,6 +69,7 @@ export function Sheet({
               <motion.div
                 role="dialog"
                 aria-modal="true"
+                aria-label="Panou lateral"
                 className={clsx(
                   "fixed z-[60] rounded-t-2xl md:rounded-none border border-slate-200 dark:border-white/10",
                   "bg-white dark:bg-slate-900 shadow-soft flex flex-col",

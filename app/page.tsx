@@ -8,18 +8,98 @@ import { stagger, fadeInUp } from "@/components/motion";
 import { WebsiteStructuredData } from "@/components/seo/structured-data";
 
 const demo = [
-  { id: 1, slug: "ghiveci-ceramic-alb", title: "Ghiveci ceramic alb", price: 49.9, imageUrl: "https://images.unsplash.com/photo-1578662996442-48f60103fc96?w=400&h=400&fit=crop&crop=center", sellerSlug: "atelier-ceramic" },
-  { id: 2, slug: "cutie-inalta-nevopsita", title: "Cutie înaltă natur", price: 79.0, imageUrl: "https://images.unsplash.com/photo-1586023492125-27b2c045efd7?w=400&h=400&fit=crop&crop=center", sellerSlug: "cardboard-street" },
-  { id: 3, slug: "panglica-satin", title: "Panglică satin 25mm", price: 14.5, imageUrl: "https://images.unsplash.com/photo-1513475382585-d06e58bcb0e0?w=400&h=400&fit=crop&crop=center", sellerSlug: "accesorii-florale" },
+  { 
+    id: 1, 
+    slug: "ghiveci-ceramic-alb", 
+    title: "Ghiveci ceramic alb", 
+    price: 4990, // price in cents
+    imageUrl: "https://images.unsplash.com/photo-1578662996442-48f60103fc96?w=400&h=400&fit=crop&crop=center", 
+    sellerSlug: "atelier-ceramic",
+    attributes: {
+      price_cents: 4990,
+      stock_qty: 15,
+      is_in_stock: true,
+      vendor_id: 1,
+      material: "ceramic" as const,
+      color: "white" as const,
+      shape: "round" as const,
+      style: "modern" as const,
+      finish: "matte" as const,
+      diameter_mm: 200,
+      height_mm: 150,
+      drainage_hole: true,
+      saucer_included: false,
+      indoor_outdoor: "indoor",
+      personalizable: false,
+      painted: false,
+      tags: ["ceramic", "white", "modern"],
+      ribbon_included: false,
+      created_at: new Date().toISOString(),
+      popularity_score: 850,
+    }
+  },
+  { 
+    id: 2, 
+    slug: "cutie-inalta-nevopsita", 
+    title: "Cutie înaltă natur", 
+    price: 7900, 
+    imageUrl: "https://images.unsplash.com/photo-1586023492125-27b2c045efd7?w=400&h=400&fit=crop&crop=center", 
+    sellerSlug: "cardboard-street",
+    attributes: {
+      price_cents: 7900,
+      stock_qty: 8,
+      is_in_stock: true,
+      vendor_id: 2,
+      material: "cardboard" as const,
+      color: "natural" as const,
+      shape: "rectangle" as const,
+      style: "rustic" as const,
+      finish: "matte" as const,
+      length_mm: 300,
+      height_mm: 400,
+      tall_or_normal: "tall",
+      painted: false,
+      personalizable: true,
+      tags: ["cardboard", "natural", "rustic"],
+      ribbon_included: false,
+      created_at: new Date(Date.now() - 86400000).toISOString(),
+      popularity_score: 720,
+    }
+  },
+  { 
+    id: 3, 
+    slug: "panglica-satin", 
+    title: "Panglică satin 25mm", 
+    price: 1450, 
+    imageUrl: "https://images.unsplash.com/photo-1513475382585-d06e58bcb0e0?w=400&h=400&fit=crop&crop=center", 
+    sellerSlug: "accesorii-florale",
+    attributes: {
+      price_cents: 1450,
+      stock_qty: 25,
+      is_in_stock: true,
+      vendor_id: 3,
+      material: "textile" as const,
+      color: "natural" as const,
+      style: "classic" as const,
+      finish: "satin" as const,
+      pack_units: 10,
+      compatibility: ["bouquet", "box"],
+      personalizable: false,
+      painted: false,
+      tags: ["textile", "natural", "classic"],
+      ribbon_included: true,
+      created_at: new Date(Date.now() - 172800000).toISOString(),
+      popularity_score: 650,
+    }
+  },
 ];
-
 
 export default function Home() {
   return (
     <>
       <WebsiteStructuredData 
         name="Pots.ro" 
-        description="Marketplace românesc pentru floristică" 
+        description="Cutii, ghivece, accesorii — tot ce ai nevoie, într-un singur loc." 
         url="https://pots.ro" 
       />
       <Navbar />
@@ -33,7 +113,7 @@ export default function Home() {
           <div className="relative mb-6 h-48 w-full overflow-hidden rounded-xl">
             <Image
               src="https://images.unsplash.com/photo-1416879595882-3373a0480b5b?w=1200&h=600&fit=crop&crop=center"
-              alt="Marketplace românesc pentru floristică"
+              alt="Pots.ro - Marketplace românesc pentru floristică"
               fill
               priority
               sizes="(max-width: 768px) 100vw, (max-width: 1200px) 80vw, 70vw"
@@ -43,7 +123,7 @@ export default function Home() {
               blurDataURL="data:image/jpeg;base64,/9j/4AAQSkZJRgABAQAAAQABAAD/2wBDAAYEBQYFBAYGBQYHBwYIChAKCgkJChQODwwQFxQYGBcUFhYaHSUfGhsjHBYWICwgIyYnKSopGR8tMC0oMCUoKSj/2wBDAQcHBwoIChMKChMoGhYaKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCj/wAARCAABAAEDASIAAhEBAxEB/8QAFQABAQAAAAAAAAAAAAAAAAAAAAv/xAAhEAACAQMDBQAAAAAAAAAAAAABAgMABAUGIWGRkqGx0f/EABUBAQEAAAAAAAAAAAAAAAAAAAMF/8QAGhEAAgIDAAAAAAAAAAAAAAAAAAECEgMRkf/aAAwDAQACEQMRAD8AltJagyeH0AthI5xdrLcNM91BF5pX2HaH9bcfaSXWGaRmknyJckliyjqTzSlT54b6bk+h0R//2Q=="
             />
           </div>
-          <h1 className="text-2xl md:text-3xl font-semibold">Marketplace românesc pentru floristică</h1>
+          <h1 className="text-2xl md:text-3xl font-semibold">Pots.ro - Marketplace românesc pentru floristică</h1>
           <p className="mt-2 text-slate-600 dark:text-slate-300">Cutii, ghivece, accesorii — tot ce ai nevoie, într-un singur loc.</p>
         </motion.section>
 
@@ -55,7 +135,16 @@ export default function Home() {
         >
           {demo.map((p) => (
             <motion.div key={p.id} variants={fadeInUp}>
-              <ProductCard {...p} />
+              <ProductCard 
+                id={p.id}
+                slug={p.slug}
+                title={p.title}
+                price={p.price}
+                currency="RON"
+                imageUrl={p.imageUrl}
+                sellerSlug={p.sellerSlug}
+                attributes={p.attributes}
+              />
             </motion.div>
           ))}
         </motion.section>

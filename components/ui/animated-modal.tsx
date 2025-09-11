@@ -26,6 +26,7 @@ export function Modal({ open, onOpenChange, title, children }: {
               <motion.div
                 role="dialog"
                 aria-modal="true"
+                aria-label="Fereastră modală"
                 className="fixed left-1/2 top-1/2 z-[60] w-[95vw] max-w-lg -translate-x-1/2 -translate-y-1/2
                            rounded-2xl border border-slate-200 dark:border-white/10 bg-white dark:bg-slate-900 p-6 shadow-soft"
                 initial={{ opacity: 0, y: 8, scale: 0.98 }}

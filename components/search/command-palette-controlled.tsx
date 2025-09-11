@@ -39,7 +39,10 @@ export function CommandPaletteControlled({
     <Dialog.Root open={open} onOpenChange={onOpenChange}>
       <Dialog.Portal>
         <Dialog.Overlay className="fixed inset-0 z-50 bg-black/40 backdrop-blur-[2px]" />
-        <Dialog.Content className="fixed left-1/2 top-24 z-[60] w-[92vw] max-w-2xl -translate-x-1/2 rounded-2xl border border-slate-200 dark:border-white/10 bg-white dark:bg-slate-900 shadow-soft">
+        <Dialog.Content 
+          className="fixed left-1/2 top-24 z-[60] w-[92vw] max-w-2xl -translate-x-1/2 rounded-2xl border border-slate-200 dark:border-white/10 bg-white dark:bg-slate-900 shadow-soft"
+          aria-label="Căutare produse"
+        >
           <div className="flex items-center justify-between px-3 pt-2">
             <span className="text-xs text-slate-500 dark:text-slate-400">Caută produse, categorii, vânzători</span>
             <Dialog.Close className="rounded-md p-1 hover:bg-slate-100 dark:hover:bg-white/10" aria-label="Închide">
@@ -58,6 +61,7 @@ export function CommandPaletteControlled({
               placeholder="Ex: ghiveci alb, cutii înalte, atelier ceramic…"
               className="h-12 w-full bg-transparent px-3 text-sm outline-none placeholder:text-slate-400"
               autoFocus
+              aria-label="Căutare"
             />
             <Command.List className="max-h-[60vh] overflow-auto border-t border-slate-200 dark:border-white/10">
               {!q && (
@@ -81,7 +85,7 @@ export function CommandPaletteControlled({
                           {/* thumb */}
                           <div className="h-9 w-9 overflow-hidden rounded-md bg-slate-100">
                             {/* poți schimba cu next/image dacă vrei */}
-                            {p.image_url ? <img src={p.image_url} alt={p.title} className="h-full w-full object-cover" /> : null}
+                            {p.image_url ? <img src={p.image_url} alt={`${p.title} - product thumbnail`} className="h-full w-full object-cover" /> : null}
                           </div>
                           <div className="min-w-0">
                             <div className="truncate">{highlight(p.title, debounced)}</div>

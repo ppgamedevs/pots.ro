@@ -44,7 +44,7 @@ export function Pagination({
     <nav aria-label={ariaLabel} className="mt-6 flex items-center justify-center gap-2">
       {/* Prev */}
       <Link
-        aria-label="Pagina anterioară"
+        aria-label="Anterior"
         href={buildHref(Math.max(1, currentPage - 1))}
         className={clsx(buttonBase, currentPage === 1 && "pointer-events-none opacity-50")}
       >
@@ -84,7 +84,7 @@ export function Pagination({
 
       {/* Next */}
       <Link
-        aria-label="Pagina următoare"
+        aria-label="Următor"
         href={buildHref(Math.min(totalPages, currentPage + 1))}
         className={clsx(buttonBase, currentPage === totalPages && "pointer-events-none opacity-50")}
       >

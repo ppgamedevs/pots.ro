@@ -58,6 +58,7 @@ export function FullHeightFilters({
     <motion.div
       role="dialog"
       aria-modal="true"
+      aria-label="Filtre produse"
       className={clsx(
         "z-[60] border border-slate-200 dark:border-white/10 bg-white dark:bg-slate-900 shadow-soft flex flex-col",
         containerClasses,
@@ -108,25 +109,25 @@ export function FullHeightFilters({
 
       {/* Body scrollable */}
       <div className="flex-1 overflow-auto px-4 py-4">
-        {/* Exemplu: Culoare */}
+        {/* Culoare */}
         <Section title="Culoare">
           <ChipGroup
-            options={["Alb", "Negru", "Roșu", "Verde", "Auriu"]}
+            options={["white", "black", "natural", "red", "green", "blue", "pink", "purple", "brown", "gray", "gold", "silver"]}
             values={state.color ?? []}
             onChange={(vals) => setState((s) => ({ ...s, color: vals }))}
           />
         </Section>
 
         {/* Preț */}
-        <Section title="Preț">
+        <Section title="Preț (RON)">
           <div className="grid grid-cols-2 gap-3">
             <NumberInput
-              placeholder="Min"
+              placeholder="Preț minim"
               value={state.priceMin ?? ""}
               onChange={(v) => setState((s) => ({ ...s, priceMin: v }))}
             />
             <NumberInput
-              placeholder="Max"
+              placeholder="Preț maxim"
               value={state.priceMax ?? ""}
               onChange={(v) => setState((s) => ({ ...s, priceMax: v }))}
             />
@@ -136,7 +137,7 @@ export function FullHeightFilters({
         {/* Material */}
         <Section title="Material">
           <CheckboxList
-            options={["Ceramică", "Plastic", "Metal", "Carton", "Sticlă"]}
+            options={["ceramic", "porcelain", "glass", "plastic", "metal", "wood", "concrete", "terracotta", "cardboard", "textile"]}
             values={state.material ?? []}
             onToggle={(val) =>
               setState((s) => {
@@ -151,13 +152,13 @@ export function FullHeightFilters({
         {/* Sortare */}
         <Section title="Sortare">
           <SelectNative
-            value={state.sort ?? "popular"}
+            value={state.sort ?? "popularity_desc"}
             onChange={(v) => setState((s) => ({ ...s, sort: v }))}
             options={[
-              { value: "popular", label: "Cele mai populare" },
-              { value: "price-asc", label: "Preț crescător" },
-              { value: "price-desc", label: "Preț descrescător" },
-              { value: "new", label: "Cele mai noi" },
+              { value: "popularity_desc", label: "Cele mai populare" },
+              { value: "price_asc", label: "Preț crescător" },
+              { value: "price_desc", label: "Preț descrescător" },
+              { value: "newest", label: "Cele mai noi" },
             ]}
           />
         </Section>
@@ -221,11 +222,13 @@ function Chip({ selected, label, onClick }: { selected?: boolean; label: string;
     <button
       onClick={onClick}
       className={clsx(
-        "px-3 h-9 rounded-lg text-sm border transition",
+        "px-3 h-9 rounded-lg text-sm border transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand focus-visible:ring-offset-2",
         selected
           ? "bg-brand text-white border-brand"
           : "bg-white dark:bg-slate-900/60 text-slate-700 dark:text-slate-200 border-slate-200 dark:border-white/10 hover:shadow-soft"
       )}
+      aria-pressed={selected}
+      aria-label={`Filter by ${label}`}
     >
       {label}
     </button>
@@ -259,7 +262,7 @@ function NumberInput({ value, onChange, placeholder }: { value: number | string 
     <input
       inputMode="numeric"
       pattern="[0-9]*"
-      className="h-10 w-full rounded-xl border border-slate-200 dark:border-white/10 bg-white dark:bg-slate-900/60 px-3 text-sm"
+      className="h-10 w-full rounded-xl border border-slate-200 dark:border-white/10 bg-white dark:bg-slate-900/60 px-3 text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand focus-visible:ring-offset-2"
       value={value === null ? "" : value}
       placeholder={placeholder}
       onChange={(e) => {
@@ -268,6 +271,7 @@ function NumberInput({ value, onChange, placeholder }: { value: number | string 
         const n = Number(raw);
         onChange(Number.isFinite(n) ? n : null);
       }}
+      aria-label={placeholder}
     />
   );
 }
@@ -278,12 +282,13 @@ function CheckboxList({ options, values, onToggle }: { options: string[]; values
       {options.map((opt) => {
         const checked = values.includes(opt);
         return (
-          <label key={opt} className="inline-flex items-center gap-2 text-sm">
+          <label key={opt} className="inline-flex items-center gap-2 text-sm cursor-pointer">
             <input
               type="checkbox"
-              className="h-4 w-4 rounded border-slate-300 dark:border-white/20 text-brand focus:ring-brand"
+              className="h-4 w-4 rounded border-slate-300 dark:border-white/20 text-brand focus:ring-brand focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand focus-visible:ring-offset-2"
               checked={checked}
               onChange={() => onToggle(opt)}
+              aria-label={`Filter by ${opt}`}
             />
             <span>{opt}</span>
           </label>
@@ -298,7 +303,8 @@ function SelectNative({ value, onChange, options }: { value: string; onChange: (
     <select
       value={value}
       onChange={(e) => onChange(e.target.value)}
-      className="h-10 w-full rounded-xl border border-slate-200 dark:border-white/10 bg-white dark:bg-slate-900/60 px-3 text-sm"
+      className="h-10 w-full rounded-xl border border-slate-200 dark:border-white/10 bg-white dark:bg-slate-900/60 px-3 text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand focus-visible:ring-offset-2"
+      aria-label="Sort options"
     >
       {options.map((o) => (
         <option key={o.value} value={o.value}>{o.label}</option>

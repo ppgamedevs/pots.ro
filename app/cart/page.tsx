@@ -1,116 +1,125 @@
 "use client";
+
 import { useState } from "react";
-import { motion } from "framer-motion";
 import { Navbar } from "@/components/navbar";
 import { Footer } from "@/components/footer";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Breadcrumbs } from "@/components/ui/breadcrumbs";
-import { H1, H2, P } from "@/components/ui/typography";
-import { OptimizedImage } from "@/components/ui/optimized-image";
-import { Input } from "@/components/ui/input";
 import { useToast } from "@/lib/hooks/use-toast";
-import { stagger, fadeInUp } from "@/components/motion";
-import { CartPageSkeleton } from "@/components/ui/loading-skeletons";
-import { CartErrorState } from "@/components/ui/error-states";
-import { Trash2, Plus, Minus, ShoppingBag, ArrowLeft } from "lucide-react";
+import { ShoppingCart, Plus, Minus, Trash2, ArrowLeft, ArrowRight } from "lucide-react";
+import { mutate } from "swr";
+import useSWR from "swr";
 import Link from "next/link";
-
-// Mock cart data
-const mockCartItems = [
-  {
-    id: 1,
-    title: "Ghiveci ceramic alb",
-    price: 49.9,
-    currency: "RON",
-    image: "/placeholder.png",
-    quantity: 2,
-    seller: "Atelier Ceramic",
-    slug: "ghiveci-ceramic-alb"
-  },
-  {
-    id: 2,
-    title: "Cutie înaltă natur",
-    price: 79.0,
-    currency: "RON",
-    image: "/placeholder.png",
-    quantity: 1,
-    seller: "Cardboard Street",
-    slug: "cutie-inalta-nevopsita"
-  },
-  {
-    id: 3,
-    title: "Panglică satin 25mm",
-    price: 14.5,
-    currency: "RON",
-    image: "/placeholder.png",
-    quantity: 3,
-    seller: "Accesorii Florale",
-    slug: "panglica-satin"
-  }
-];
+import Image from "next/image";
+import type { Cart, CartItem } from "@/lib/types";
 
 export default function CartPage() {
-  const [cartItems, setCartItems] = useState(mockCartItems);
   const { toast } = useToast();
+  const [loading, setLoading] = useState<Record<number, boolean>>({});
 
-  const updateQuantity = (id: number, newQuantity: number) => {
-    if (newQuantity <= 0) {
-      removeItem(id);
-      return;
-    }
+  const { data: cart, error, isLoading } = useSWR<Cart>('/api/cart', (url) =>
+    fetch(url).then(res => res.json())
+  );
+
+  const updateQuantity = async (productId: number, newQty: number) => {
+    if (newQty < 1 || newQty > 99) return;
+
+    setLoading(prev => ({ ...prev, [productId]: true }));
     
-    setCartItems(items =>
-      items.map(item =>
-        item.id === id ? { ...item, quantity: newQuantity } : item
-      )
-    );
+    try {
+      const response = await fetch(`/api/cart/items/${productId}`, {
+        method: 'PATCH',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ qty: newQty }),
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to update quantity');
+      }
+
+      // Refresh cart data
+      mutate('/api/cart');
+
+      toast({
+        title: "Cantitate actualizată",
+        description: "Cantitatea produsului a fost actualizată.",
+      });
+    } catch (error) {
+      toast({
+        title: "Eroare",
+        description: "Nu s-a putut actualiza cantitatea.",
+        variant: "destructive",
+      });
+    } finally {
+      setLoading(prev => ({ ...prev, [productId]: false }));
+    }
   };
 
-  const removeItem = (id: number) => {
-    setCartItems(items => items.filter(item => item.id !== id));
-    toast("Produs eliminat din coș");
+  const removeItem = async (productId: number) => {
+    setLoading(prev => ({ ...prev, [productId]: true }));
+    
+    try {
+      const response = await fetch(`/api/cart/items/${productId}`, {
+        method: 'DELETE',
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to remove item');
+      }
+
+      // Refresh cart data
+      mutate('/api/cart');
+
+      toast({
+        title: "Produs eliminat",
+        description: "Produsul a fost eliminat din coș.",
+      });
+    } catch (error) {
+      toast({
+        title: "Eroare",
+        description: "Nu s-a putut elimina produsul.",
+        variant: "destructive",
+      });
+    } finally {
+      setLoading(prev => ({ ...prev, [productId]: false }));
+    }
   };
 
-  const subtotal = cartItems.reduce((sum, item) => sum + (item.price * item.quantity), 0);
-  const shipping = subtotal > 200 ? 0 : 25; // Free shipping over 200 RON
-  const total = subtotal + shipping;
+  const formatPrice = (price: number, currency: string) => {
+    return new Intl.NumberFormat('ro-RO', {
+      style: 'currency',
+      currency: currency,
+    }).format(price);
+  };
 
-  if (cartItems.length === 0) {
+  const breadcrumbItems = [
+    { label: "Acasă", href: "/" },
+    { label: "Coș de cumpărături" },
+  ];
+
+  if (error) {
     return (
       <>
         <Navbar />
-        <main className="mx-auto max-w-6xl px-4 py-8">
-          <Breadcrumbs items={[
-            { label: "Acasă", href: "/" },
-            { label: "Coș" }
-          ]} />
-          
-          <motion.div
-            initial="hidden"
-            animate="visible"
-            variants={stagger}
-            className="text-center py-16"
-          >
-            <motion.div variants={fadeInUp} className="mb-8">
-              <ShoppingBag className="h-24 w-24 mx-auto text-slate-300 dark:text-slate-600 mb-4" />
-              <H1>Coșul tău este gol</H1>
-              <P className="text-slate-600 dark:text-slate-300 mt-2">
-                Adaugă produse în coș pentru a continua cu cumpărăturile.
-              </P>
-            </motion.div>
-            
-            <motion.div variants={fadeInUp}>
-              <Link href="/">
-                <Button size="lg">
-                  <ArrowLeft className="h-4 w-4 mr-2" />
-                  Continuă cumpărăturile
-                </Button>
-              </Link>
-            </motion.div>
-          </motion.div>
-        </main>
+        <div className="min-h-screen bg-slate-50 dark:bg-slate-900">
+          <div className="max-w-7xl mx-auto px-4 py-8">
+            <Breadcrumbs items={breadcrumbItems} />
+            <div className="text-center py-12">
+              <h1 className="text-2xl font-bold text-slate-900 dark:text-slate-100 mb-4">
+                Eroare la încărcarea coșului
+              </h1>
+              <p className="text-slate-600 dark:text-slate-300 mb-6">
+                Nu s-a putut încărca coșul de cumpărături. Vă rugăm să încercați din nou.
+              </p>
+              <Button onClick={() => window.location.reload()}>
+                Încearcă din nou
+              </Button>
+            </div>
+          </div>
+        </div>
         <Footer />
       </>
     );
@@ -119,151 +128,187 @@ export default function CartPage() {
   return (
     <>
       <Navbar />
-      <main className="mx-auto max-w-6xl px-4 py-8">
-        <Breadcrumbs items={[
-          { label: "Acasă", href: "/" },
-          { label: "Coș" }
-        ]} />
+      <div className="min-h-screen bg-slate-50 dark:bg-slate-900">
+        <div className="max-w-7xl mx-auto px-4 py-8">
+          <Breadcrumbs items={breadcrumbItems} />
 
-        <motion.div
-          initial="hidden"
-          animate="visible"
-          variants={stagger}
-          className="space-y-8"
-        >
-          {/* Header */}
-          <motion.div variants={fadeInUp}>
-            <H1>Coșul tău</H1>
-            <P className="text-slate-600 dark:text-slate-300">
-              {cartItems.length} produse în coș
-            </P>
-          </motion.div>
+          <div className="mt-8">
+            <h1 className="text-3xl font-bold text-slate-900 dark:text-slate-100 mb-8">
+              Coșul tău de cumpărături
+            </h1>
 
-          <div className="grid gap-8 lg:grid-cols-3">
-            {/* Cart Items */}
-            <motion.div variants={fadeInUp} className="lg:col-span-2 space-y-4">
-              {cartItems.map((item) => (
-                <Card key={item.id} className="overflow-hidden">
-                  <CardContent className="p-4">
-                    <div className="flex items-center gap-4">
-                      {/* Product Image */}
-                      <div className="h-20 w-20 overflow-hidden rounded-lg bg-slate-100 dark:bg-slate-800">
-                        <OptimizedImage
-                          src={item.image}
-                          alt={item.title}
-                          width={80}
-                          height={80}
-                          className="h-full w-full object-cover"
-                        />
+            {isLoading ? (
+              <div className="text-center py-12">
+                <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-brand mx-auto mb-4"></div>
+                <p className="text-slate-600 dark:text-slate-300">Se încarcă coșul...</p>
+              </div>
+            ) : !cart || cart.items.length === 0 ? (
+              <div className="text-center py-12">
+                <ShoppingCart className="h-24 w-24 mx-auto text-slate-300 dark:text-slate-600 mb-6" />
+                <h2 className="text-2xl font-semibold text-slate-900 dark:text-slate-100 mb-4">
+                  Coșul tău este gol
+                </h2>
+                <p className="text-slate-600 dark:text-slate-300 mb-8">
+                  Adaugă produse în coș pentru a începe cumpărăturile.
+                </p>
+                <Link href="/">
+                  <Button size="lg">
+                    <ArrowLeft className="h-5 w-5 mr-2" />
+                    Continuă cumpărăturile
+                  </Button>
+                </Link>
+              </div>
+            ) : (
+              <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+                {/* Cart Items */}
+                <div className="lg:col-span-2">
+                  <div className="bg-white dark:bg-slate-800 rounded-lg border border-slate-200 dark:border-slate-700 overflow-hidden">
+                    <div className="p-6 border-b border-slate-200 dark:border-slate-700">
+                      <h2 className="text-lg font-semibold text-slate-900 dark:text-slate-100">
+                        Produse în coș ({cart.items.length})
+                      </h2>
+                    </div>
+                    
+                    <div className="divide-y divide-slate-200 dark:divide-slate-700">
+                      {cart.items.map((item) => (
+                        <div
+                          key={item.productId}
+                          className="p-6 flex items-center gap-4"
+                        >
+                          {/* Product Image */}
+                          <div className="relative w-20 h-20 flex-shrink-0">
+                            <Image
+                              src={item.image}
+                              alt={item.title}
+                              fill
+                              className="object-cover rounded-lg"
+                            />
+                          </div>
+
+                          {/* Product Info */}
+                          <div className="flex-1 min-w-0">
+                            <h3 className="font-medium text-slate-900 dark:text-slate-100 mb-1">
+                              {item.title}
+                            </h3>
+                            <p className="text-slate-600 dark:text-slate-400 text-sm">
+                              Preț unitar: {formatPrice(item.price, item.currency)}
+                            </p>
+                            <p className="text-slate-600 dark:text-slate-400 text-sm">
+                              Total: {formatPrice(item.price * item.qty, item.currency)}
+                            </p>
+                          </div>
+
+                          {/* Quantity Controls */}
+                          <div className="flex items-center gap-2">
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              onClick={() => updateQuantity(item.productId, item.qty - 1)}
+                              disabled={loading[item.productId] || item.qty <= 1}
+                              className="h-8 w-8 p-0"
+                              aria-label="Scade cantitatea"
+                            >
+                              <Minus className="h-4 w-4" />
+                            </Button>
+                            
+                            <span className="text-sm font-medium w-8 text-center">
+                              {item.qty}
+                            </span>
+                            
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              onClick={() => updateQuantity(item.productId, item.qty + 1)}
+                              disabled={loading[item.productId] || item.qty >= 99}
+                              className="h-8 w-8 p-0"
+                              aria-label="Crește cantitatea"
+                            >
+                              <Plus className="h-4 w-4" />
+                            </Button>
+                          </div>
+
+                          {/* Remove Button */}
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => removeItem(item.productId)}
+                            disabled={loading[item.productId]}
+                            className="text-red-500 hover:text-red-700"
+                            aria-label="Elimină produsul"
+                          >
+                            <Trash2 className="h-4 w-4" />
+                          </Button>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                </div>
+
+                {/* Order Summary */}
+                <div className="lg:col-span-1">
+                  <div className="bg-white dark:bg-slate-800 rounded-lg border border-slate-200 dark:border-slate-700 p-6 sticky top-4">
+                    <h3 className="text-lg font-semibold text-slate-900 dark:text-slate-100 mb-4">
+                      Rezumat comandă
+                    </h3>
+                    
+                    <div className="space-y-3 mb-6">
+                      <div className="flex justify-between text-sm">
+                        <span className="text-slate-600 dark:text-slate-400">
+                          Produse ({cart.items.reduce((sum, item) => sum + item.qty, 0)})
+                        </span>
+                        <span className="text-slate-900 dark:text-slate-100">
+                          {formatPrice(cart.subtotal, cart.currency)}
+                        </span>
                       </div>
-
-                      {/* Product Info */}
-                      <div className="flex-1 min-w-0">
-                        <Link href={`/p/${item.id}-${item.slug}`}>
-                          <h3 className="font-medium hover:text-brand transition-colors">
-                            {item.title}
-                          </h3>
-                        </Link>
-                        <p className="text-sm text-slate-500 dark:text-slate-400">
-                          Vândut de {item.seller}
-                        </p>
-                        <div className="flex items-center gap-2 mt-2">
-                          <span className="text-lg font-semibold">
-                            {item.price.toFixed(2)} {item.currency}
+                      
+                      <div className="flex justify-between text-sm">
+                        <span className="text-slate-600 dark:text-slate-400">
+                          Livrare
+                        </span>
+                        <span className="text-slate-900 dark:text-slate-100">
+                          Gratuită
+                        </span>
+                      </div>
+                      
+                      <div className="border-t border-slate-200 dark:border-slate-700 pt-3">
+                        <div className="flex justify-between text-lg font-semibold">
+                          <span className="text-slate-900 dark:text-slate-100">
+                            Total
                           </span>
-                          <Badge variant="secondary">
-                            {item.quantity} buc
-                          </Badge>
+                          <span className="text-slate-900 dark:text-slate-100">
+                            {formatPrice(cart.subtotal, cart.currency)}
+                          </span>
                         </div>
                       </div>
-
-                      {/* Quantity Controls */}
-                      <div className="flex items-center gap-2">
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          onClick={() => updateQuantity(item.id, item.quantity - 1)}
-                        >
-                          <Minus className="h-4 w-4" />
-                        </Button>
-                        <span className="w-8 text-center">{item.quantity}</span>
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          onClick={() => updateQuantity(item.id, item.quantity + 1)}
-                        >
-                          <Plus className="h-4 w-4" />
-                        </Button>
-                      </div>
-
-                      {/* Remove Button */}
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        onClick={() => removeItem(item.id)}
-                        className="text-red-600 hover:text-red-700 hover:bg-red-50 dark:hover:bg-red-500/10"
-                      >
-                        <Trash2 className="h-4 w-4" />
-                      </Button>
                     </div>
-                  </CardContent>
-                </Card>
-              ))}
-            </motion.div>
 
-            {/* Order Summary */}
-            <motion.div variants={fadeInUp}>
-              <Card className="sticky top-24">
-                <CardHeader>
-                  <CardTitle>Sumar comandă</CardTitle>
-                </CardHeader>
-                <CardContent className="space-y-4">
-                  <div className="space-y-2">
-                    <div className="flex justify-between">
-                      <span>Subtotal</span>
-                      <span>{subtotal.toFixed(2)} RON</span>
-                    </div>
-                    <div className="flex justify-between">
-                      <span>Livrare</span>
-                      <span>
-                        {shipping === 0 ? (
-                          <Badge variant="secondary">Gratuită</Badge>
-                        ) : (
-                          `${shipping.toFixed(2)} RON`
-                        )}
-                      </span>
-                    </div>
-                    {shipping > 0 && (
-                      <p className="text-sm text-slate-600 dark:text-slate-400">
-                        Adaugă {(200 - subtotal).toFixed(2)} RON pentru livrare gratuită
-                      </p>
-                    )}
-                    <div className="border-t pt-2">
-                      <div className="flex justify-between font-semibold text-lg">
-                        <span>Total</span>
-                        <span>{total.toFixed(2)} RON</span>
-                      </div>
-                    </div>
-                  </div>
-
-                  <div className="space-y-2">
-                    <Link href="/checkout" className="w-full">
+                    <div className="space-y-3">
                       <Button className="w-full" size="lg">
-                        Continuă la plată
+                        Continuă către plată
+                        <ArrowRight className="h-5 w-5 ml-2" />
                       </Button>
-                    </Link>
-                    <Link href="/" className="w-full">
-                      <Button variant="outline" className="w-full">
-                        Continuă cumpărăturile
-                      </Button>
-                    </Link>
+                      
+                      <Link href="/" className="block">
+                        <Button variant="outline" className="w-full">
+                          <ArrowLeft className="h-4 w-4 mr-2" />
+                          Continuă cumpărăturile
+                        </Button>
+                      </Link>
+                    </div>
+
+                    <div className="mt-6 p-4 bg-slate-50 dark:bg-slate-700 rounded-lg">
+                      <p className="text-xs text-slate-600 dark:text-slate-400">
+                        <strong>Notă:</strong> Această pagină este în versiunea de dezvoltare. 
+                        Funcționalitatea de plată va fi implementată în versiunea finală.
+                      </p>
+                    </div>
                   </div>
-                </CardContent>
-              </Card>
-            </motion.div>
+                </div>
+              </div>
+            )}
           </div>
-        </motion.div>
-      </main>
+        </div>
+      </div>
       <Footer />
     </>
   );

@@ -6,6 +6,7 @@ import { useState } from "react";
 import { Button } from "./ui/button";
 import { ThemeToggle } from "./theme-toggle";
 import { CommandPaletteControlled } from "./search/command-palette-controlled";
+import MiniCart from "./cart/MiniCart";
 
 export function Navbar() {
   const pathname = usePathname();
@@ -26,14 +27,15 @@ export function Navbar() {
       <div className="mx-auto max-w-6xl px-4 h-16 flex items-center justify-between">
         <Link href="/" className="font-semibold text-lg">Pots<span className="text-brand">.ro</span></Link>
 
-        <nav className="hidden md:flex gap-6">
+        <nav className="hidden md:flex gap-6" role="navigation" aria-label="Main navigation">
           {nav.map((i) => (
             <Link
               key={i.href}
               href={i.href}
-              className={`text-sm hover:text-brand transition ${
+              className={`text-sm hover:text-brand transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand focus-visible:ring-offset-2 rounded-md px-1 ${
                 pathname?.startsWith(i.href) ? "text-brand font-medium" : "text-slate-700 dark:text-slate-300"
               }`}
+              aria-current={pathname?.startsWith(i.href) ? "page" : undefined}
             >
               {i.label}
             </Link>
@@ -42,21 +44,59 @@ export function Navbar() {
 
         <div className="flex items-center gap-2">
           <ThemeToggle />
-          <Button variant="secondary" size="sm" onClick={() => setSearchOpen(true)}>
+          <Button 
+            variant="secondary" 
+            size="sm" 
+            onClick={() => setSearchOpen(true)}
+            aria-label="Open search dialog"
+          >
             Căutare ⌘K
           </Button>
-          <Link href="/components-demo" className="text-sm hover:text-brand">Components</Link>
-          <Link href="/forms-demo" className="text-sm hover:text-brand">Forms</Link>
-          <Link href="/demo-form" className="text-sm hover:text-brand">Demo Form</Link>
-          <Link href="/ui-demo" className="text-sm hover:text-brand">UI Demo</Link>
-          <Link href="/dashboard-demo" className="text-sm hover:text-brand">Dashboard</Link>
-          <Link href="/seller-dashboard" className="text-sm hover:text-brand">Vânzător</Link>
-          <Link href="/admin-demo" className="text-sm hover:text-brand">Admin</Link>
-          <Link href="/cart">
-            <Button variant="secondary" size="sm">Coș</Button>
+          <Link 
+            href="/components-demo" 
+            className="text-sm hover:text-brand focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand focus-visible:ring-offset-2 rounded-md px-1"
+          >
+            Components
           </Link>
+          <Link 
+            href="/forms-demo" 
+            className="text-sm hover:text-brand focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand focus-visible:ring-offset-2 rounded-md px-1"
+          >
+            Forms
+          </Link>
+          <Link 
+            href="/demo-form" 
+            className="text-sm hover:text-brand focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand focus-visible:ring-offset-2 rounded-md px-1"
+          >
+            Demo Form
+          </Link>
+          <Link 
+            href="/ui-demo" 
+            className="text-sm hover:text-brand focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand focus-visible:ring-offset-2 rounded-md px-1"
+          >
+            UI Demo
+          </Link>
+          <Link 
+            href="/dashboard-demo" 
+            className="text-sm hover:text-brand focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand focus-visible:ring-offset-2 rounded-md px-1"
+          >
+            Dashboard
+          </Link>
+          <Link 
+            href="/seller-dashboard" 
+            className="text-sm hover:text-brand focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand focus-visible:ring-offset-2 rounded-md px-1"
+          >
+            Vânzător
+          </Link>
+          <Link 
+            href="/admin-demo" 
+            className="text-sm hover:text-brand focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand focus-visible:ring-offset-2 rounded-md px-1"
+          >
+            Admin
+          </Link>
+          <MiniCart />
           <Link href="/auth/login">
-            <Button size="sm">Autentificare</Button>
+            <Button size="sm" aria-label="Sign in to your account">Autentificare</Button>
           </Link>
         </div>
       </div>

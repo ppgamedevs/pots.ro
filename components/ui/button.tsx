@@ -2,22 +2,22 @@ import { Slot } from "@radix-ui/react-slot";
 import { cva, type VariantProps } from "class-variance-authority";
 import clsx from "clsx";
 
-// opțional: npm i class-variance-authority @radix-ui/react-slot clsx
+// Base button styles with improved UX
 const buttonVariants = cva(
-  "inline-flex items-center justify-center rounded-xl text-sm font-medium transition-all active:scale-[0.98] disabled:opacity-50 disabled:pointer-events-none focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 ring-offset-white dark:ring-offset-slate-900",
+  "inline-flex items-center justify-center rounded-2xl border border-gray-300 px-4 py-2 font-medium shadow-sm hover:border-gray-400 hover:shadow focus:outline-none focus:ring-2 focus:ring-black/20 active:translate-y-[1px] transition-all disabled:opacity-50 disabled:pointer-events-none",
   {
     variants: {
       variant: {
-        primary: "bg-brand text-white hover:bg-brand-dark",
-        secondary: "bg-white dark:bg-slate-800 text-ink dark:text-slate-200 border border-slate-200 dark:border-white/10 hover:shadow-soft",
-        ghost: "bg-transparent hover:bg-slate-100 dark:hover:bg-slate-800",
-        outline: "border border-slate-200 dark:border-white/10 bg-transparent hover:bg-slate-50 dark:hover:bg-slate-800",
-        destructive: "bg-red-500 text-white hover:bg-red-600",
+        primary: "bg-brand text-white border-brand hover:bg-brand-dark hover:border-brand-dark shadow-brand/25",
+        secondary: "bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-200 border-slate-200 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-700",
+        ghost: "bg-transparent text-slate-700 dark:text-slate-300 border-slate-200 dark:border-slate-700 hover:bg-slate-100 dark:hover:bg-slate-800",
+        outline: "bg-transparent text-slate-700 dark:text-slate-300 border-slate-200 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-800",
+        destructive: "bg-red-500 text-white border-red-500 hover:bg-red-600 hover:border-red-600",
       },
       size: {
-        sm: "h-9 px-3",
-        md: "h-10 px-4",
-        lg: "h-11 px-6 text-base",
+        sm: "h-8 px-3 text-sm",
+        md: "h-10 px-4 text-sm",
+        lg: "h-12 px-6 text-base",
       },
     },
     defaultVariants: { variant: "primary", size: "md" },

@@ -4,8 +4,9 @@ import { motion } from "framer-motion";
 import { ProductCard } from "../product-card";
 import { ProductCardSkeleton } from "./loading-skeleton";
 import { fadeInUp } from "../motion";
+import { Product } from "@/lib/schemas/product-attributes";
 
-export interface Product {
+export interface ProductGridProduct {
   id: string | number;
   slug: string;
   title: string;
@@ -13,10 +14,11 @@ export interface Product {
   currency?: string;
   imageUrl: string;
   sellerSlug?: string;
+  attributes?: Product["attributes"];
 }
 
 export interface ProductGridProps {
-  products: Product[];
+  products: ProductGridProduct[];
   loading?: boolean;
   className?: string;
   columns?: 2 | 3 | 4;
@@ -58,7 +60,16 @@ const ProductGrid = React.forwardRef<HTMLDivElement, ProductGridProps>(
             animate="visible"
             transition={{ delay: index * 0.05 }}
           >
-            <ProductCard {...product} />
+            <ProductCard 
+              id={product.id}
+              slug={product.slug}
+              title={product.title}
+              price={product.price}
+              currency={product.currency}
+              imageUrl={product.imageUrl}
+              sellerSlug={product.sellerSlug}
+              attributes={product.attributes}
+            />
           </motion.div>
         ))}
       </div>

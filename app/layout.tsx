@@ -6,6 +6,7 @@ import { Toaster } from "@/components/ui/toast";
 import { PerformanceMonitor } from "@/components/ui/performance-monitor";
 import { Toaster as SonnerToaster } from "sonner";
 import { CommandPalette } from "@/components/search/command-palette";
+import { CookieConsent } from "@/components/cookie-consent";
 // import { PerformanceOptimizer, criticalCSS, criticalResources } from "@/components/ui/performance-optimizer";
 
 const inter = Inter({ subsets: ["latin"], display: "swap", variable: "--font-inter" });
@@ -78,6 +79,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
             <SonnerToaster richColors position="top-center" closeButton />
             <PerformanceMonitor />
             <CommandPalette />
+            <CookieConsent />
           </ConfirmProvider>
         </ThemeProvider>
       </body>
