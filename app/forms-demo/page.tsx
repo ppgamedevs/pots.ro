@@ -102,8 +102,8 @@ export default function FormsDemo() {
   };
 
   const breadcrumbItems = [
-    { label: "Demo", href: "/components-demo" },
-    { label: "Formulare", href: "/forms-demo" },
+    { name: "Demo", href: "/components-demo" },
+    { name: "Formulare", href: "/forms-demo" },
   ];
 
   return (

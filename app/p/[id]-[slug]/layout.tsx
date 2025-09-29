@@ -75,8 +75,9 @@ const getCachedProductData = unstable_cache(
 );
 
 // Generate metadata for SEO
-export async function generateMetadata({ params }: { params: { id: string; slug: string } }): Promise<Metadata> {
-  const productId = `${params.id}-${params.slug}`;
+export async function generateMetadata({ params }: { params: Promise<{ id: string; slug: string }> }): Promise<Metadata> {
+  const { id, slug } = await params;
+  const productId = `${id}-${slug}`;
   const product = await getCachedProductData(productId);
 
   if (!product) {
@@ -106,7 +107,7 @@ export async function generateMetadata({ params }: { params: { id: string; slug:
       title,
       description,
       type: "website",
-      url: `https://pots.ro/p/${params.id}-${params.slug}`,
+      url: `https://pots.ro/p/${id}-${slug}`,
       images: [
         {
           url: product.images[0],
@@ -124,7 +125,7 @@ export async function generateMetadata({ params }: { params: { id: string; slug:
       images: [product.images[0]],
     },
     alternates: {
-      canonical: `https://pots.ro/p/${params.id}-${params.slug}`,
+      canonical: `https://pots.ro/p/${id}-${slug}`,
     },
   };
 }

@@ -4,9 +4,9 @@ import { cacheHeaders } from "@/lib/http";
 
 export async function GET(
   _req: Request,
-  { params }: { params: { slug: string } }
+  { params }: { params: Promise<{ slug: string }> }
 ) {
-  const { slug } = params;
+  const { slug } = await params;
   const url = new URL(_req.url);
   const limit = Math.min(Number(url.searchParams.get("limit") || 24), 48);
   const cursor = url.searchParams.get("cursor"); // base64 id sau index

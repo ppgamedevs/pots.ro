@@ -7,7 +7,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Select } from "@/components/ui/select";
 import { ProductGrid } from "@/components/ui/product-grid";
-import { EmptyState } from "@/components/ui/empty-states";
+import { EmptyState } from "@/components/ui/empty-state";
 import { Badge } from "@/components/ui/badge";
 import { useDebouncedValue } from "@/lib/hooks/use-debounced-value";
 import type { ProductCard } from "@/lib/types";
@@ -355,32 +355,24 @@ export default function SearchPage() {
             {/* Results Grid */}
             {filteredResults.length === 0 ? (
               <EmptyState
-                type="search"
-                searchQuery={debouncedQuery}
+                variant="search"
                 title={debouncedQuery ? "Nu am găsit rezultate" : "Caută produse"}
                 description={
                   debouncedQuery 
                     ? `Nu am găsit produse pentru "${debouncedQuery}". Încearcă alți termeni de căutare.`
                     : "Introdu un termen de căutare pentru a găsi produse."
                 }
-                actions={[
-                  {
-                    label: "Vezi toate produsele",
-                    href: "/",
-                    variant: "primary"
-                  },
-                  {
-                    label: "Contactează-ne",
-                    href: "/contact",
-                    variant: "ghost"
-                  }
-                ]}
+                action={{
+                  label: "Vezi toate produsele",
+                  onClick: () => window.location.href = "/"
+                }}
               />
             ) : (
               <ProductGrid
                 products={filteredResults.map(product => ({
                   ...product,
-                  title: highlightText(product.title, debouncedQuery) as any
+                  title: highlightText(product.title, debouncedQuery) as any,
+                  imageUrl: product.image
                 }))}
                 columns={3}
               />

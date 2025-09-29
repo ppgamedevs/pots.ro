@@ -25,7 +25,7 @@ const mockProduct: SellerProduct = {
   updatedAt: "2024-12-15T14:30:00Z"
 };
 
-export default function EditProductPage({ params }: { params: { id: string } }) {
+export default function EditProductPage({ params }: { params: Promise<{ id: string }> }) {
   const router = useRouter();
   const { toast } = useToast();
 
@@ -37,14 +37,11 @@ export default function EditProductPage({ params }: { params: { id: string } }) 
     // Simulate API call to fetch product
     const fetchProduct = async () => {
       try {
+        const { id } = await params;
         await new Promise(resolve => setTimeout(resolve, 500));
         setProduct(mockProduct);
       } catch (error) {
-        toast({
-          title: "Eroare",
-          description: "Nu s-a putut încărca produsul.",
-          variant: "destructive",
-        });
+        toast("Nu s-a putut încărca produsul.", "error");
         router.push("/dashboard/products");
       } finally {
         setInitialLoading(false);
@@ -52,7 +49,7 @@ export default function EditProductPage({ params }: { params: { id: string } }) 
     };
 
     fetchProduct();
-  }, [params.id, router, toast]);
+  }, [params, router, toast]);
 
   const handleSave = async (data: SellerProduct, action: "draft" | "publish") => {
     setLoading(true);
@@ -60,18 +57,11 @@ export default function EditProductPage({ params }: { params: { id: string } }) 
       // Simulate API call
       await new Promise(resolve => setTimeout(resolve, 1000));
       
-      toast({
-        title: "Succes",
-        description: `Produsul a fost ${action === "publish" ? "publicat" : "salvat"} cu succes.`,
-      });
+      toast(`Produsul a fost ${action === "publish" ? "publicat" : "salvat"} cu succes.`, "success");
 
       router.push("/dashboard/products");
     } catch (error) {
-      toast({
-        title: "Eroare",
-        description: "Nu s-a putut salva produsul.",
-        variant: "destructive",
-      });
+      toast("Nu s-a putut salva produsul.", "error");
     } finally {
       setLoading(false);
     }

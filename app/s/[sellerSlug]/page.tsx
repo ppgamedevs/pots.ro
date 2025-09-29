@@ -76,9 +76,10 @@ Pentru întrebări despre produse, vă rugăm să folosiți [mesageria platforme
 export async function generateMetadata({
   params,
 }: {
-  params: { sellerSlug: string };
+  params: Promise<{ sellerSlug: string }>;
 }): Promise<Metadata> {
-  const seller = await getSellerAnon(params.sellerSlug);
+  const { sellerSlug } = await params;
+  const seller = await getSellerAnon(sellerSlug);
   
   if (!seller) {
     return {
@@ -101,9 +102,10 @@ export async function generateMetadata({
 export default async function SellerPage({
   params,
 }: {
-  params: { sellerSlug: string };
+  params: Promise<{ sellerSlug: string }>;
 }) {
-  const seller = await getSellerAnon(params.sellerSlug);
+  const { sellerSlug } = await params;
+  const seller = await getSellerAnon(sellerSlug);
   if (!seller) return notFound();
 
   // Obține produsele vânzătorului (mock - în realitate ar trebui un endpoint specific)
@@ -116,7 +118,7 @@ export default async function SellerPage({
     for (const category of allCategories) {
       try {
         const response = await apiGetCategoryProducts(category);
-        const sellerProducts = response.items.filter(p => p.sellerSlug === params.sellerSlug);
+        const sellerProducts = response.items.filter(p => p.sellerSlug === sellerSlug);
         allProducts.push(...sellerProducts);
       } catch (error) {
         // Ignore category errors

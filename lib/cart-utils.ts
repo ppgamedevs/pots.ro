@@ -3,8 +3,8 @@ import { randomUUID } from "crypto";
 
 export const CART_COOKIE_NAME = "cartId";
 
-export function getCartId(): string {
-  const cookieStore = cookies();
+export async function getCartId(): Promise<string> {
+  const cookieStore = await cookies();
   let cartId = cookieStore.get(CART_COOKIE_NAME)?.value;
   
   if (!cartId) {
@@ -14,8 +14,8 @@ export function getCartId(): string {
   return cartId;
 }
 
-export function setCartIdCookie(cartId: string) {
-  const cookieStore = cookies();
+export async function setCartIdCookie(cartId: string) {
+  const cookieStore = await cookies();
   cookieStore.set(CART_COOKIE_NAME, cartId, {
     httpOnly: true,
     secure: process.env.NODE_ENV === "production",

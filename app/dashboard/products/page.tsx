@@ -4,7 +4,7 @@ import { useState, useEffect, useMemo } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
 import Image from "next/image";
-import { Plus, Search, Filter, ArrowUpDown, MoreHorizontal, Edit, Eye, EyeOff, Trash2 } from "lucide-react";
+import { Plus, Search, Filter, ArrowUpDown, MoreHorizontal, Edit, Eye, EyeOff, Trash2, Package } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Select } from "@/components/ui/select";
@@ -180,20 +180,13 @@ export default function ProductsPage() {
       // Simulate API call
       await new Promise(resolve => setTimeout(resolve, 500));
       
-      toast({
-        title: "Succes",
-        description: "Produsul a fost publicat cu succes.",
-      });
+      toast("Produsul a fost publicat cu succes.", "success");
     } catch (error) {
       // Revert on error
       setProducts(prev => prev.map(p => 
         p.id === id ? { ...p, status: "draft" as const } : p
       ));
-      toast({
-        title: "Eroare",
-        description: "Nu s-a putut publica produsul.",
-        variant: "destructive",
-      });
+      toast("Nu s-a putut publica produsul.", "error");
     } finally {
       setLoading(false);
     }
@@ -210,20 +203,13 @@ export default function ProductsPage() {
       // Simulate API call
       await new Promise(resolve => setTimeout(resolve, 500));
       
-      toast({
-        title: "Succes",
-        description: "Produsul a fost nepublicat cu succes.",
-      });
+      toast("Produsul a fost nepublicat cu succes.", "success");
     } catch (error) {
       // Revert on error
       setProducts(prev => prev.map(p => 
         p.id === id ? { ...p, status: "active" as const } : p
       ));
-      toast({
-        title: "Eroare",
-        description: "Nu s-a putut nepublica produsul.",
-        variant: "destructive",
-      });
+      toast("Nu s-a putut nepublica produsul.", "error");
     } finally {
       setLoading(false);
     }
@@ -238,18 +224,11 @@ export default function ProductsPage() {
       // Simulate API call
       await new Promise(resolve => setTimeout(resolve, 500));
       
-      toast({
-        title: "Succes",
-        description: "Produsul a fost șters cu succes.",
-      });
+      toast("Produsul a fost șters cu succes.", "success");
     } catch (error) {
       // Revert on error
       setProducts(prev => [...prev, mockProducts.find(p => p.id === id)!]);
-      toast({
-        title: "Eroare",
-        description: "Nu s-a putut șterge produsul.",
-        variant: "destructive",
-      });
+      toast("Nu s-a putut șterge produsul.", "error");
     } finally {
       setLoading(false);
       setDeleteConfirm(null);
@@ -258,7 +237,7 @@ export default function ProductsPage() {
 
   const getStatusBadge = (status: string) => {
     const variants = {
-      active: "default",
+      active: "success",
       draft: "secondary",
       unpublished: "destructive"
     } as const;
@@ -568,8 +547,8 @@ export default function ProductsPage() {
         description="Ești sigur că vrei să ștergi acest produs? Această acțiune nu poate fi anulată."
         confirmText="Șterge"
         cancelText="Anulează"
-        onConfirm={() => deleteConfirm && handleDelete(deleteConfirm)}
-        variant="destructive"
+        onConfirm={() => deleteConfirm ? handleDelete(deleteConfirm) : undefined}
+        variant="danger"
       />
     </div>
   );

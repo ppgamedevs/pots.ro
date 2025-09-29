@@ -143,9 +143,9 @@ export default function CheckoutPage() {
       <Navbar />
       <main className="mx-auto max-w-6xl px-4 py-8">
         <Breadcrumbs items={[
-          { label: "Acasă", href: "/" },
-          { label: "Coș", href: "/cart" },
-          { label: "Checkout" }
+          { name: "Acasă", href: "/" },
+          { name: "Coș", href: "/cart" },
+          { name: "Checkout", href: "/checkout" }
         ]} />
 
         <motion.div

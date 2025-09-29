@@ -64,11 +64,7 @@ export default function AboutPage() {
         }
         setInitialLoading(false);
       } catch (error) {
-        toast({
-          title: "Eroare",
-          description: "Nu s-a putut încărca datele paginii About.",
-          variant: "destructive",
-        });
+        toast("Nu s-a putut încărca datele paginii About.", "error");
         setInitialLoading(false);
       }
     };
@@ -95,20 +91,13 @@ export default function AboutPage() {
       const savedData = await response.json();
       setAboutData(savedData);
       
-      toast({
-        title: "Succes",
-        description: "Pagina About a fost salvată cu succes.",
-      });
+      toast("Pagina About a fost salvată cu succes.", "success");
 
       // Trigger ISR revalidation for the seller page
       await fetch('/api/revalidate?path=/s/partner-a1b2', { method: 'POST' });
       
     } catch (error) {
-      toast({
-        title: "Eroare",
-        description: "Nu s-a putut salva pagina About.",
-        variant: "destructive",
-      });
+      toast("Nu s-a putut salva pagina About.", "error");
     } finally {
       setLoading(false);
     }

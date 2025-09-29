@@ -70,7 +70,7 @@ export default function ProductForm({
       ...prev,
       images: newImages.map(img => ({
         url: img.url,
-        alt: img.alt
+        alt: img.alt || `Product image`
       }))
     }));
   };
@@ -106,11 +106,7 @@ export default function ProductForm({
   // Handle form submission
   const handleSubmit = (action: "draft" | "publish") => {
     if (!validateForm()) {
-      toast({
-        title: "Eroare de validare",
-        description: "Completează toate câmpurile obligatorii.",
-        variant: "destructive",
-      });
+      toast("Completează toate câmpurile obligatorii.", "error");
       return;
     }
 
@@ -125,7 +121,7 @@ export default function ProductForm({
       descriptionHtml: formData.descriptionHtml || "",
       images: images.map(img => ({
         url: img.url,
-        alt: img.alt
+        alt: img.alt || `Product image`
       })),
       status: action === "publish" ? "active" : "draft",
       createdAt: formData.createdAt,

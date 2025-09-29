@@ -15,11 +15,12 @@ import { Footer } from "@/components/footer";
 import { Breadcrumbs } from "@/components/ui/breadcrumbs";
 import AddToCartButton from "@/components/cart/AddToCartButton";
 
-type Params = { id: string; slug: string };
+type Params = Promise<{ id: string; slug: string }>;
 
 export async function generateMetadata({ params }: { params: Params }): Promise<Metadata> {
   try {
-    const product = await apiGetProductById(Number(params.id));
+    const { id } = await params;
+    const product = await apiGetProductById(Number(id));
     
     const url = absoluteUrl(`/p/${product.id}-${product.slug}`);
     const title = `${product.title} | Pots.ro`;
@@ -50,18 +51,27 @@ export async function generateMetadata({ params }: { params: Params }): Promise<
 }
 
 export default async function ProductPage({ params }: { params: Params }) {
-  const id = Number(params.id);
-  if (!Number.isFinite(id)) return notFound();
+  const { id, slug } = await params;
+  const idNum = Number(id);
+  if (!Number.isFinite(idNum)) return notFound();
 
   let product;
   try {
-    product = await apiGetProductById(id);
-    if (product.slug !== params.slug) return notFound();
+    product = await apiGetProductById(idNum);
+    if (product.slug !== slug) return notFound();
   } catch (error) {
     return notFound();
   }
 
-  const ld = buildProductLdJson(product);
+  const ld = buildProductLdJson({
+    ...product,
+    price_cents: product.price * 100,
+    stock_qty: product.stockQty,
+    seo_description: product.seoDescription,
+    short_description: product.shortDescription,
+    sku: String(product.id),
+    brand: undefined
+  });
   
   // Get stock status for badge
   const stockQty = product.stockQty || 0;
@@ -142,7 +152,16 @@ export default async function ProductPage({ params }: { params: Params }) {
               )}
 
               {/* Specificații / atribute */}
-              <ProductSpecs product={product} />
+              <ProductSpecs product={{
+                ...product,
+                price_cents: product.price * 100,
+                stock_qty: product.stockQty,
+                seo_description: product.seoDescription,
+                short_description: product.shortDescription,
+                sku: String(product.id),
+                brand: undefined,
+                ...product.attributes
+              }} />
             </div>
           </div>
         </div>

@@ -19,7 +19,7 @@ export async function POST(request: Request) {
       );
     }
 
-    const cartId = getCartId();
+    const cartId = await getCartId();
     
     // Get or create cart
     let cart = cartStorage[cartId];

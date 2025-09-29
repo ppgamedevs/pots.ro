@@ -13,12 +13,13 @@ function findProductById(id: number) {
 
 export async function GET(
   _req: Request,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
-  const id = Number(params.id);
-  if (!Number.isFinite(id)) return new NextResponse("Bad Request", { status: 400 });
+  const { id } = await params;
+  const idNum = Number(id);
+  if (!Number.isFinite(idNum)) return new NextResponse("Bad Request", { status: 400 });
 
-  const product = findProductById(id);
+  const product = findProductById(idNum);
   if (!product) return new NextResponse("Not Found", { status: 404 });
 
   // Extinde cu detalii (descriere, imagini, atribute) când legi DB-ul

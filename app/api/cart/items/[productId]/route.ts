@@ -8,21 +8,22 @@ const cartStorage: Record<string, Cart> = {};
 
 export async function PATCH(
   request: Request,
-  { params }: { params: { productId: string } }
+  { params }: { params: Promise<{ productId: string }> }
 ) {
   try {
-    const productId = Number(params.productId);
+    const { productId } = await params;
+    const productIdNum = Number(productId);
     const body = await request.json();
     const { qty } = body;
 
-    if (!Number.isInteger(productId) || !Number.isInteger(qty) || qty < 1 || qty > 99) {
+    if (!Number.isInteger(productIdNum) || !Number.isInteger(qty) || qty < 1 || qty > 99) {
       return NextResponse.json(
         { error: "Invalid productId or qty" },
         { status: 400 }
       );
     }
 
-    const cartId = getCartId();
+    const cartId = await getCartId();
     const cart = cartStorage[cartId];
     
     if (!cart) {
@@ -33,7 +34,7 @@ export async function PATCH(
     }
 
     // Find item in cart
-    const itemIndex = cart.items.findIndex(item => item.productId === productId);
+    const itemIndex = cart.items.findIndex(item => item.productId === productIdNum);
     
     if (itemIndex === -1) {
       return NextResponse.json(
@@ -65,19 +66,20 @@ export async function PATCH(
 
 export async function DELETE(
   request: Request,
-  { params }: { params: { productId: string } }
+  { params }: { params: Promise<{ productId: string }> }
 ) {
   try {
-    const productId = Number(params.productId);
+    const { productId } = await params;
+    const productIdNum = Number(productId);
 
-    if (!Number.isInteger(productId)) {
+    if (!Number.isInteger(productIdNum)) {
       return NextResponse.json(
         { error: "Invalid productId" },
         { status: 400 }
       );
     }
 
-    const cartId = getCartId();
+    const cartId = await getCartId();
     const cart = cartStorage[cartId];
     
     if (!cart) {
@@ -88,7 +90,7 @@ export async function DELETE(
     }
 
     // Remove item from cart
-    cart.items = cart.items.filter(item => item.productId !== productId);
+    cart.items = cart.items.filter(item => item.productId !== productIdNum);
 
     // Calculate subtotal
     cart.subtotal = cart.items.reduce((sum, item) => sum + (item.price * item.qty), 0);

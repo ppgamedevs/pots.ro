@@ -229,11 +229,7 @@ export default function ProductImagesUploader({
   // Handle file drop/selection
   const onDrop = useCallback(async (acceptedFiles: File[]) => {
     if (images.length + acceptedFiles.length > maxImages) {
-      toast({
-        title: "Prea multe imagini",
-        description: `Poți adăuga maximum ${maxImages} imagini.`,
-        variant: "destructive",
-      });
+      toast(`Poți adăuga maximum ${maxImages} imagini.`, "error");
       return;
     }
 
@@ -263,16 +259,9 @@ export default function ProductImagesUploader({
       // Update product images via API
       await updateProductImages(updatedImages);
       
-      toast({
-        title: "Succes",
-        description: `${acceptedFiles.length} imagine${acceptedFiles.length > 1 ? 'i' : ''} încărcată${acceptedFiles.length > 1 ? 'e' : ''} cu succes.`,
-      });
+      toast(`${acceptedFiles.length} imagine${acceptedFiles.length > 1 ? 'i' : ''} încărcată${acceptedFiles.length > 1 ? 'e' : ''} cu succes.`, "success");
     } catch (error) {
-      toast({
-        title: "Eroare la încărcare",
-        description: "Nu s-au putut încărca imaginile.",
-        variant: "destructive",
-      });
+      toast("Nu s-au putut încărca imaginile.", "error");
     } finally {
       setIsUploading(false);
     }
@@ -319,16 +308,9 @@ export default function ProductImagesUploader({
     try {
       await updateProductImages(newImages);
       
-      toast({
-        title: "Succes",
-        description: "Imaginea a fost ștearsă.",
-      });
+      toast("Imaginea a fost ștearsă.", "success");
     } catch (error) {
-      toast({
-        title: "Eroare",
-        description: "Nu s-a putut șterge imaginea.",
-        variant: "destructive",
-      });
+      toast("Nu s-a putut șterge imaginea.", "error");
     }
   };
 
@@ -342,16 +324,9 @@ export default function ProductImagesUploader({
     try {
       await updateProductImages(newImages);
       
-      toast({
-        title: "Succes",
-        description: "Imaginea principală a fost setată.",
-      });
+      toast("Imaginea principală a fost setată.", "success");
     } catch (error) {
-      toast({
-        title: "Eroare",
-        description: "Nu s-a putut seta imaginea principală.",
-        variant: "destructive",
-      });
+      toast("Nu s-a putut seta imaginea principală.", "error");
     }
   };
 
@@ -371,11 +346,7 @@ export default function ProductImagesUploader({
       try {
         await updateProductImages(newImages);
       } catch (error) {
-        toast({
-          title: "Eroare",
-          description: "Nu s-a putut reordona imaginile.",
-          variant: "destructive",
-        });
+        toast("Nu s-a putut reordona imaginile.", "error");
       }
     }
   };

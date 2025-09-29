@@ -6,9 +6,9 @@ import AdminDemoClient from "./client";
 
 export default function AdminDemoPage() {
   const breadcrumbItems = [
-    { label: "Acasă", href: "/" },
-    { label: "Demo", href: "/demo" },
-    { label: "Admin Interface" },
+    { name: "Acasă", href: "/" },
+    { name: "Demo", href: "/demo" },
+    { name: "Admin Interface", href: "/admin-demo" },
   ];
 
   return (

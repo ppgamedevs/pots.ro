@@ -13,9 +13,9 @@ export default function UIDemoPage() {
   const totalPages = 8;
 
   const breadcrumbItems = [
-    { label: "Acasă", href: "/" },
-    { label: "Ghivece", href: "/c/ghivece" },
-    { label: "Ceramică albă" }, // current
+    { name: "Acasă", href: "/" },
+    { name: "Ghivece", href: "/c/ghivece" },
+    { name: "Ceramică albă", href: "/ui-demo" },
   ];
 
   const tabs = [

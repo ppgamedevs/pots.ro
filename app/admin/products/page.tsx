@@ -8,12 +8,13 @@ import AdminProductsClient from "./client";
 export default async function AdminProductsPage({ 
   searchParams 
 }: { 
-  searchParams: Record<string, string> 
+  searchParams: Promise<Record<string, string>> 
 }) {
-  const page = searchParams?.page ?? 1;
-  const pageSize = searchParams?.pageSize ?? 20;
-  const q = searchParams?.q ?? "";
-  const status = searchParams?.status ?? "active";
+  const params = await searchParams;
+  const page = params?.page ?? 1;
+  const pageSize = params?.pageSize ?? 20;
+  const q = params?.q ?? "";
+  const status = params?.status ?? "active";
 
   // Build API URL with search params
   const apiUrl = new URL("/api/admin/products", process.env.NEXT_PUBLIC_SITE_URL || "http://localhost:3000");
@@ -40,9 +41,9 @@ export default async function AdminProductsPage({
   }
 
   const breadcrumbItems = [
-    { label: "Acasă", href: "/" },
-    { label: "Admin", href: "/admin" },
-    { label: "Produse" },
+    { name: "Acasă", href: "/" },
+    { name: "Admin", href: "/admin" },
+    { name: "Produse", href: "/admin/products" },
   ];
 
   return (

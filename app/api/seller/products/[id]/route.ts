@@ -5,18 +5,19 @@ import type { SellerProduct } from "@/lib/types";
 
 export async function GET(
   request: Request,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
-  const id = parseInt(params.id);
+  const { id } = await params;
+  const idNum = parseInt(id);
   
-  if (!Number.isFinite(id)) {
+  if (!Number.isFinite(idNum)) {
     return NextResponse.json(
       { error: "Invalid product ID" },
       { status: 400 }
     );
   }
 
-  const product = mockSellerProducts[id];
+  const product = mockSellerProducts[idNum];
   
   if (!product) {
     return NextResponse.json(
@@ -30,18 +31,19 @@ export async function GET(
 
 export async function PUT(
   request: Request,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
-  const id = parseInt(params.id);
+  const { id } = await params;
+  const idNum = parseInt(id);
   
-  if (!Number.isFinite(id)) {
+  if (!Number.isFinite(idNum)) {
     return NextResponse.json(
       { error: "Invalid product ID" },
       { status: 400 }
     );
   }
 
-  const product = mockSellerProducts[id];
+  const product = mockSellerProducts[idNum];
   
   if (!product) {
     return NextResponse.json(
@@ -56,12 +58,12 @@ export async function PUT(
     const updatedProduct = {
       ...product,
       ...body,
-      id,
+      id: idNum,
       updatedAt: new Date().toISOString()
     };
 
     // In a real app, this would update the database
-    mockSellerProducts[id] = updatedProduct;
+    mockSellerProducts[idNum] = updatedProduct;
 
     return NextResponse.json(updatedProduct, { headers: { ...cacheHeaders } });
   } catch (error) {
@@ -74,18 +76,19 @@ export async function PUT(
 
 export async function DELETE(
   request: Request,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
-  const id = parseInt(params.id);
+  const { id } = await params;
+  const idNum = parseInt(id);
   
-  if (!Number.isFinite(id)) {
+  if (!Number.isFinite(idNum)) {
     return NextResponse.json(
       { error: "Invalid product ID" },
       { status: 400 }
     );
   }
 
-  const product = mockSellerProducts[id];
+  const product = mockSellerProducts[idNum];
   
   if (!product) {
     return NextResponse.json(
@@ -95,7 +98,7 @@ export async function DELETE(
   }
 
   // In a real app, this would delete from database
-  delete mockSellerProducts[id];
+  delete mockSellerProducts[idNum];
 
   return NextResponse.json(
     { message: "Product deleted successfully" },

@@ -32,18 +32,11 @@ export default function NewProductPage() {
       
       const status = action === "publish" ? "active" : "draft";
       
-      toast({
-        title: "Succes",
-        description: `Produsul a fost ${action === "publish" ? "publicat" : "salvat ca draft"} cu succes.`,
-      });
+      toast(`Produsul a fost ${action === "publish" ? "publicat" : "salvat ca draft"} cu succes.`, "success");
 
       router.push("/dashboard/products");
     } catch (error) {
-      toast({
-        title: "Eroare",
-        description: "Nu s-a putut salva produsul.",
-        variant: "destructive",
-      });
+      toast("Nu s-a putut salva produsul.", "error");
     } finally {
       setLoading(false);
     }

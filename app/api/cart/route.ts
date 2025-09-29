@@ -8,7 +8,7 @@ const cartStorage: Record<string, Cart> = {};
 
 export async function GET() {
   try {
-    const cartId = getCartId();
+    const cartId = await getCartId();
     
     // Get or create cart
     let cart = cartStorage[cartId];
@@ -27,7 +27,7 @@ export async function GET() {
     cart.subtotal = cart.items.reduce((sum, item) => sum + (item.price * item.qty), 0);
     
     // Set cookie if it doesn't exist
-    setCartIdCookie(cartId);
+    await setCartIdCookie(cartId);
     
     return NextResponse.json(cart, { headers: { ...cacheHeaders } });
     

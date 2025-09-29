@@ -25,14 +25,15 @@ async function getCategory(slug: string) {
 export default async function CategoryPage({
   params,
 }: {
-  params: { slug: string };
+  params: Promise<{ slug: string }>;
 }) {
-  const category = await getCategory(params.slug);
+  const { slug } = await params;
+  const category = await getCategory(slug);
   if (!category) return notFound();
 
   let products: any[] = [];
   try {
-    const response = await apiGetCategoryProducts(params.slug);
+    const response = await apiGetCategoryProducts(slug);
     products = response.items;
   } catch (error) {
     // Category not found or error - products will be empty array
@@ -75,7 +76,7 @@ export default async function CategoryPage({
 
   const breadcrumbItems = [
     { name: "Categorii", href: "/c" },
-    { name: category.name, href: `/c/${params.slug}` },
+    { name: category.name, href: `/c/${slug}` },
   ];
 
   return (
@@ -99,7 +100,7 @@ export default async function CategoryPage({
           {/* Filters and Products */}
           <CategoryFiltersClient 
             products={gridProducts} 
-            categorySlug={params.slug} 
+            categorySlug={slug} 
           />
         </div>
       </div>

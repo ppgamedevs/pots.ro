@@ -18,7 +18,7 @@ export default function CartPage() {
   const { toast } = useToast();
   const [loading, setLoading] = useState<Record<number, boolean>>({});
 
-  const { data: cart, error, isLoading } = useSWR<Cart>('/api/cart', (url) =>
+  const { data: cart, error, isLoading } = useSWR<Cart>('/api/cart', (url: string) =>
     fetch(url).then(res => res.json())
   );
 
@@ -43,16 +43,9 @@ export default function CartPage() {
       // Refresh cart data
       mutate('/api/cart');
 
-      toast({
-        title: "Cantitate actualizată",
-        description: "Cantitatea produsului a fost actualizată.",
-      });
+      toast("Cantitate actualizată", "success");
     } catch (error) {
-      toast({
-        title: "Eroare",
-        description: "Nu s-a putut actualiza cantitatea.",
-        variant: "destructive",
-      });
+      toast("Nu s-a putut actualiza cantitatea.", "error");
     } finally {
       setLoading(prev => ({ ...prev, [productId]: false }));
     }
@@ -73,16 +66,9 @@ export default function CartPage() {
       // Refresh cart data
       mutate('/api/cart');
 
-      toast({
-        title: "Produs eliminat",
-        description: "Produsul a fost eliminat din coș.",
-      });
+      toast("Produs eliminat din coș", "success");
     } catch (error) {
-      toast({
-        title: "Eroare",
-        description: "Nu s-a putut elimina produsul.",
-        variant: "destructive",
-      });
+      toast("Nu s-a putut elimina produsul.", "error");
     } finally {
       setLoading(prev => ({ ...prev, [productId]: false }));
     }
@@ -96,8 +82,8 @@ export default function CartPage() {
   };
 
   const breadcrumbItems = [
-    { label: "Acasă", href: "/" },
-    { label: "Coș de cumpărături" },
+    { name: "Acasă", href: "/" },
+    { name: "Coș de cumpărături", href: "/cart" },
   ];
 
   if (error) {

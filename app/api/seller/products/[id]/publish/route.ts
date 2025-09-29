@@ -5,18 +5,19 @@ import { cacheHeaders } from "@/lib/http";
 
 export async function POST(
   request: Request,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
-  const id = parseInt(params.id);
+  const { id } = await params;
+  const idNum = parseInt(id);
   
-  if (!Number.isFinite(id)) {
+  if (!Number.isFinite(idNum)) {
     return NextResponse.json(
       { error: "Invalid product ID" },
       { status: 400 }
     );
   }
 
-  const product = mockSellerProducts[id];
+  const product = mockSellerProducts[idNum];
   
   if (!product) {
     return NextResponse.json(
@@ -33,10 +34,10 @@ export async function POST(
   };
 
   // In a real app, this would update the database
-  mockSellerProducts[id] = updatedProduct;
+  mockSellerProducts[idNum] = updatedProduct;
 
   // ISR revalidation for product
-  revalidateTag(`product:${id}`);
+  revalidateTag(`product:${idNum}`);
 
   return NextResponse.json(
     { 

@@ -54,11 +54,7 @@ export default function AddToCartButton({
       if (!response.ok) {
         const error = await response.json();
         if (error.error === "Insufficient stock") {
-          toast({
-            title: "Stoc insuficient",
-            description: `Doar ${error.availableStock} produse disponibile în stoc.`,
-            variant: "destructive",
-          });
+          toast(`Doar ${error.availableStock} produse disponibile în stoc.`, "error");
           return;
         }
         throw new Error(error.error || 'Failed to add to cart');
@@ -67,18 +63,11 @@ export default function AddToCartButton({
       // Refresh cart data
       mutate('/api/cart');
 
-      toast({
-        title: "Adăugat în coș",
-        description: `Produsul a fost adăugat în coș (${qty} bucăți).`,
-      });
+      toast(`Produsul a fost adăugat în coș (${qty} bucăți).`, "success");
 
       onAdd?.();
     } catch (error) {
-      toast({
-        title: "Eroare",
-        description: "Nu s-a putut adăuga produsul în coș.",
-        variant: "destructive",
-      });
+      toast("Nu s-a putut adăuga produsul în coș.", "error");
     } finally {
       setLoading(false);
     }
@@ -137,8 +126,8 @@ export default function AddToCartButton({
         <Button
           onClick={handleAddToCart}
           disabled={isDisabled}
-          variant={variant}
-          size={size}
+          variant={variant === "default" || variant === "link" ? "primary" : variant}
+          size={size === "default" ? "md" : size === "icon" ? "md" : size}
           className="flex-1"
         >
           <ShoppingCart className="h-4 w-4 mr-2" />
@@ -152,8 +141,8 @@ export default function AddToCartButton({
     <Button
       onClick={handleAddToCart}
       disabled={isDisabled}
-      variant={variant}
-      size={size}
+      variant={variant === "default" || variant === "link" ? "primary" : variant}
+      size={size === "default" ? "md" : size === "icon" ? "md" : size}
       className={className}
       aria-label={isOutOfStock ? "Produsul nu este în stoc" : "Adaugă în coș"}
     >

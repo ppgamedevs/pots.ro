@@ -8,11 +8,12 @@ const productImages: Record<string, ImageItem[]> = {};
 
 export async function GET(
   request: Request,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
-  const id = parseInt(params.id);
+  const { id } = await params;
+  const idNum = parseInt(id);
   
-  if (!Number.isFinite(id)) {
+  if (!Number.isFinite(idNum)) {
     return NextResponse.json(
       { error: "Invalid product ID" },
       { status: 400 }
@@ -20,7 +21,7 @@ export async function GET(
   }
 
   // Check if product exists
-  const product = mockSellerProducts[id];
+  const product = mockSellerProducts[idNum];
   if (!product) {
     return NextResponse.json(
       { error: "Product not found" },
@@ -29,8 +30,8 @@ export async function GET(
   }
 
   // Get images for this product (or initialize with existing images)
-  const images = productImages[id] || product.images?.map((img, index) => ({
-    id: `img-${id}-${index}`,
+  const images = productImages[idNum] || product.images?.map((img, index) => ({
+    id: `img-${idNum}-${index}`,
     url: img.url,
     alt: img.alt,
     isPrimary: index === 0,
@@ -42,11 +43,12 @@ export async function GET(
 
 export async function PATCH(
   request: Request,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
-  const id = parseInt(params.id);
+  const { id } = await params;
+  const idNum = parseInt(id);
   
-  if (!Number.isFinite(id)) {
+  if (!Number.isFinite(idNum)) {
     return NextResponse.json(
       { error: "Invalid product ID" },
       { status: 400 }
@@ -54,7 +56,7 @@ export async function PATCH(
   }
 
   // Check if product exists
-  const product = mockSellerProducts[id];
+  const product = mockSellerProducts[idNum];
   if (!product) {
     return NextResponse.json(
       { error: "Product not found" },
@@ -67,8 +69,8 @@ export async function PATCH(
     const { add = [], delete: deleteIds = [], setPrimary, reorder = [] } = body;
 
     // Get current images
-    let currentImages = productImages[id] || product.images?.map((img, index) => ({
-      id: `img-${id}-${index}`,
+    let currentImages = productImages[idNum] || product.images?.map((img, index) => ({
+      id: `img-${idNum}-${index}`,
       url: img.url,
       alt: img.alt,
       isPrimary: index === 0,
@@ -78,7 +80,7 @@ export async function PATCH(
     // Add new images
     if (add.length > 0) {
       const newImages: ImageItem[] = add.map((img: any, index: number) => ({
-        id: `img-${id}-${Date.now()}-${index}`,
+        id: `img-${idNum}-${Date.now()}-${index}`,
         url: img.url,
         alt: img.alt || `Product image ${currentImages.length + index + 1}`,
         isPrimary: false,
@@ -104,10 +106,13 @@ export async function PATCH(
     // Reorder images
     if (reorder.length > 0) {
       const reorderMap = new Map(reorder.map((item: any) => [item.id, item.order]));
-      currentImages = currentImages.map(img => ({
-        ...img,
-        order: reorderMap.get(img.id) ?? img.order
-      }));
+      currentImages = currentImages.map(img => {
+        const newOrder = reorderMap.get(img.id);
+        return {
+          ...img,
+          order: typeof newOrder === 'number' ? newOrder : img.order
+        };
+      });
 
       // Sort by order
       currentImages.sort((a, b) => a.order - b.order);
@@ -126,14 +131,14 @@ export async function PATCH(
     }));
 
     // Store in memory
-    productImages[id] = currentImages;
+    productImages[idNum] = currentImages;
 
     // Update product in mock data
-    mockSellerProducts[id] = {
+    mockSellerProducts[idNum] = {
       ...product,
       images: currentImages.map(img => ({
         url: img.url,
-        alt: img.alt
+        alt: img.alt || `Product image`
       }))
     };
 
@@ -150,11 +155,12 @@ export async function PATCH(
 
 export async function DELETE(
   request: Request,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
-  const id = parseInt(params.id);
+  const { id } = await params;
+  const idNum = parseInt(id);
   
-  if (!Number.isFinite(id)) {
+  if (!Number.isFinite(idNum)) {
     return NextResponse.json(
       { error: "Invalid product ID" },
       { status: 400 }
@@ -162,7 +168,7 @@ export async function DELETE(
   }
 
   // Check if product exists
-  const product = mockSellerProducts[id];
+  const product = mockSellerProducts[idNum];
   if (!product) {
     return NextResponse.json(
       { error: "Product not found" },
@@ -171,10 +177,10 @@ export async function DELETE(
   }
 
   // Clear all images for this product
-  delete productImages[id];
+  delete productImages[idNum];
 
   // Update product in mock data
-  mockSellerProducts[id] = {
+  mockSellerProducts[idNum] = {
     ...product,
     images: []
   };

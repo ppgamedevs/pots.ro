@@ -74,11 +74,7 @@ export default function MarkdownEditor({
 
   const handleSave = async () => {
     if (!content.trim()) {
-      toast({
-        title: "Eroare",
-        description: "Conținutul nu poate fi gol.",
-        variant: "destructive",
-      });
+      toast("Conținutul nu poate fi gol.", "error");
       return;
     }
 
@@ -89,11 +85,7 @@ export default function MarkdownEditor({
         seoDescription: seoDescription.trim()
       });
     } catch (error) {
-      toast({
-        title: "Eroare",
-        description: "Nu s-a putut salva conținutul.",
-        variant: "destructive",
-      });
+      toast("Nu s-a putut salva conținutul.", "error");
     }
   };
 
@@ -180,7 +172,7 @@ export default function MarkdownEditor({
         
         <div className="flex items-center gap-2">
           <Button
-            variant={viewMode === "edit" ? "default" : "outline"}
+            variant={viewMode === "edit" ? "primary" : "outline"}
             size="sm"
             onClick={() => setViewMode("edit")}
           >
@@ -188,7 +180,7 @@ export default function MarkdownEditor({
             Editează
           </Button>
           <Button
-            variant={viewMode === "preview" ? "default" : "outline"}
+            variant={viewMode === "preview" ? "primary" : "outline"}
             size="sm"
             onClick={() => setViewMode("preview")}
           >

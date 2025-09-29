@@ -7,11 +7,12 @@ import SellerProductsClient from "./client";
 export default async function SellerProductsPage({ 
   searchParams 
 }: { 
-  searchParams: Record<string, string> 
+  searchParams: Promise<Record<string, string>> 
 }) {
-  const page = searchParams?.page ?? 1;
-  const pageSize = searchParams?.pageSize ?? 20;
-  const status = searchParams?.status ?? "active";
+  const params = await searchParams;
+  const page = params?.page ?? 1;
+  const pageSize = params?.pageSize ?? 20;
+  const status = params?.status ?? "active";
 
   // Mock data for seller products
   const mockData = {
@@ -61,9 +62,9 @@ export default async function SellerProductsPage({
   };
 
   const breadcrumbItems = [
-    { label: "Acasă", href: "/" },
-    { label: "Vânzător", href: "/s/atelier-ceramic" },
-    { label: "Produsele mele" },
+    { name: "Acasă", href: "/" },
+    { name: "Vânzător", href: "/s/atelier-ceramic" },
+    { name: "Produsele mele", href: "/seller/products" },
   ];
 
   return (
