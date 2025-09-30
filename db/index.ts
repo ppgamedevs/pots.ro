@@ -1,5 +1,6 @@
 import { drizzle } from "drizzle-orm/vercel-postgres";
 import { sql } from "@vercel/postgres";
+import "../lib/env";
 import * as schema from "./schema/core";
 
 // Create the database instance using Vercel Postgres

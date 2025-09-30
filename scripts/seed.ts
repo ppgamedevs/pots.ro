@@ -1,6 +1,14 @@
-import { db } from "../db";
+import { config } from "dotenv";
+import { db } from "../db/index";
 import { categories } from "../db/schema/core";
 import { eq } from "drizzle-orm";
+
+// Load environment variables
+config({ path: ".env.local" });
+config();
+
+// Import env normalization after loading .env
+import "../lib/env";
 
 const seedCategories = [
   'Ghivece',

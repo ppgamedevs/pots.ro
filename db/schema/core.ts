@@ -55,7 +55,7 @@ export const products = pgTable("products", {
   stock: integer("stock").notNull().default(0),
   status: productStatusEnum("status").notNull().default("draft"),
   attributes: jsonb("attributes").notNull().default({}),
-  searchTsv: text("search_tsv"), // tsvector column
+  searchTsv: text("search_tsv"), // tsvector column (converted in migration)
   imageUrl: text("image_url"),
   createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
   updatedAt: timestamp("updated_at", { withTimezone: true }).defaultNow().notNull(),
@@ -63,7 +63,6 @@ export const products = pgTable("products", {
   idxProductsSlug: index("idx_products_slug").on(table.slug),
   idxProductsStatus: index("idx_products_status").on(table.status),
   idxProductsSeller: index("idx_products_seller").on(table.sellerId),
-  idxProductsSearchTsv: index("idx_products_search_tsv").using("gin", table.searchTsv),
 }));
 
 // Product images table
