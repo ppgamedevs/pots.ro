@@ -39,7 +39,7 @@ export const createProductSchema = z.object({
   currency: z.string().length(3).default('RON'),
   stock: z.number().int().min(0).default(0),
   categoryId: z.string().uuid().optional(),
-  attributes: z.record(z.any()).default({}),
+  attributes: z.record(z.string(), z.any()).default({}),
 });
 
 export const updateProductSchema = z.object({
@@ -50,7 +50,7 @@ export const updateProductSchema = z.object({
   stock: z.number().int().min(0).optional(),
   status: z.enum(['draft', 'active', 'archived']).optional(),
   categoryId: z.string().uuid().optional(),
-  attributes: z.record(z.any()).optional(),
+  attributes: z.record(z.string(), z.any()).optional(),
   imageUrl: z.string().url().optional(),
 });
 

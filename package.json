@@ -48,15 +48,15 @@
     "@types/react": "^18.3.0",
     "@types/react-dom": "^18.3.0",
     "@vercel/analytics": "^1.5.0",
-    "@vercel/blob": "^0.20.0",
-    "@vercel/postgres": "^0.9.0",
+    "@vercel/blob": "^2.0.0",
+    "@vercel/postgres": "^0.10.0",
     "@vercel/speed-insights": "^1.2.0",
     "bcrypt": "^5.1.1",
     "class-variance-authority": "^0.7.0",
     "clsx": "^2.0.0",
     "cmdk": "^1.1.1",
-    "dotenv": "^16.4.0",
-    "drizzle-orm": "^0.33.0",
+    "dotenv": "^17.2.3",
+    "drizzle-orm": "^0.44.5",
     "eslint-config-next": "^14.2.0",
     "framer-motion": "^12.23.12",
     "lucia": "^3.2.2",
@@ -77,17 +77,17 @@
     "swr": "^2.3.6",
     "tailwind-merge": "^3.3.1",
     "tsx": "^4.16.0",
-    "typescript": "^5.5.0",
-    "zod": "^3.23.0"
+    "typescript": "^5.9.3",
+    "zod": "^4.1.11"
   },
   "devDependencies": {
     "autoprefixer": "^10.4.0",
-    "drizzle-kit": "^0.24.0",
+    "drizzle-kit": "^0.31.5",
     "eslint": "^8.57.0",
     "postcss": "^8.4.0",
     "tailwindcss": "^3.4.0"
   },
   "engines": {
-    "node": ">=18.0.0"
+    "node": ">=20.0.0"
   }
 }

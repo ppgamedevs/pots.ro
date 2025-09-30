@@ -20,11 +20,13 @@ export async function slugifyUnique(
   let counter = 1;
 
   while (true) {
-    let condition = eq(table.slug, slug);
+    let condition;
     
     if (excludeId) {
       // Find records with same slug but exclude the current record
       condition = and(eq(table.slug, slug), ne(table.id, excludeId));
+    } else {
+      condition = eq(table.slug, slug);
     }
     
     const existing = await db.select().from(table).where(condition).limit(1);
