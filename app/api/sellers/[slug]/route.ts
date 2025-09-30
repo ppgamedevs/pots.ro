@@ -28,15 +28,13 @@ export async function GET(
     // Get product counts
     const productCounts = await db
       .select({
-        total: count(),
-        active: sql<number>`count(*) filter (where ${products.status} = 'active')`,
+        total: count(products.id),
+        active: count(sql`CASE WHEN ${products.status} = 'active' THEN 1 END`),
       })
       .from(products)
       .where(eq(products.sellerId, seller.id));
 
-    const counts = productCounts[0];
-
-    // Get top 6 active products
+    // Get top active products
     const topProducts = await db
       .select({
         id: products.id,
@@ -55,18 +53,15 @@ export async function GET(
       .limit(6);
 
     return NextResponse.json({
-      id: seller.id,
-      slug: seller.slug,
       brandName: seller.brandName,
+      slug: seller.slug,
       about: seller.about,
-      page: page ? {
-        aboutMd: page.aboutMd,
-        seoTitle: page.seoTitle,
-        seoDesc: page.seoDesc,
-      } : null,
+      aboutMd: page?.aboutMd,
+      seoTitle: page?.seoTitle,
+      seoDesc: page?.seoDesc,
       counts: {
-        totalProducts: counts.total,
-        activeProducts: counts.active,
+        totalProducts: productCounts[0]?.total || 0,
+        activeProducts: productCounts[0]?.active || 0,
       },
       topProducts,
     });
