@@ -5,7 +5,6 @@ import { Navbar } from "@/components/navbar";
 import { Footer } from "@/components/footer";
 import { ProductCard } from "@/components/product-card";
 import { stagger, fadeInUp } from "@/components/motion";
-import { WebsiteStructuredData } from "@/components/seo/structured-data";
 
 const demo = [
   { 
@@ -97,11 +96,6 @@ const demo = [
 export default function Home() {
   return (
     <>
-      <WebsiteStructuredData 
-        name="Pots.ro" 
-        description="Cutii, ghivece, accesorii — tot ce ai nevoie, într-un singur loc." 
-        url="https://pots.ro" 
-      />
       <Navbar />
       <main className="mx-auto max-w-6xl px-4 py-10">
         <motion.section
