@@ -1,12 +1,3 @@
-<<<<<<< HEAD
-const nextConfig = {
-  experimental: {
-    serverComponentsExternalPackages: ["postgres"],
-  },
-};
-
-module.exports = nextConfig;
-=======
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   // Image optimization
@@ -35,6 +26,7 @@ const nextConfig = {
   
   // Performance optimizations
   experimental: {
+    serverComponentsExternalPackages: ["postgres"],
     optimizePackageImports: ['lucide-react', '@radix-ui/react-icons'],
   },
   
@@ -93,4 +85,3 @@ const nextConfig = {
 }
 
 module.exports = nextConfig
->>>>>>> main
