@@ -1,3 +1,12 @@
+<<<<<<< HEAD
+const nextConfig = {
+  experimental: {
+    serverComponentsExternalPackages: ["postgres"],
+  },
+};
+
+module.exports = nextConfig;
+=======
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   // Image optimization
@@ -84,3 +93,4 @@ const nextConfig = {
 }
 
 module.exports = nextConfig
+>>>>>>> main

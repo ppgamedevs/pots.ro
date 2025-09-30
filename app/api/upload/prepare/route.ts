@@ -1,10 +1,9 @@
 import { NextRequest, NextResponse } from "next/server";
-import { db } from "@/db";
-import { products } from "@/db/schema/core";
 import { getCurrentUser } from "@/lib/auth-helpers";
 import { getSellerByUser } from "@/lib/ownership";
-import { createProductSchema } from "@/lib/validations";
-import { slugifyUnique, generateShortId } from "@/lib/slug";
+import { constructSellerPath, validateMimeType } from "@/lib/blob";
+import { uploadPrepareSchema } from "@/lib/validations";
+import { put } from "@vercel/blob";
 
 export async function POST(request: NextRequest) {
   try {
@@ -23,33 +22,28 @@ export async function POST(request: NextRequest) {
     }
 
     const body = await request.json();
-    const productData = createProductSchema.parse(body);
+    const { filename, contentType } = uploadPrepareSchema.parse(body);
 
-    // Generate unique slug from title
-    const baseSlug = productData.title
-      .toLowerCase()
-      .trim()
-      .replace(/[^\w\s-]/g, '')
-      .replace(/[\s_-]+/g, '-')
-      .replace(/^-+|-+$/g, '');
+    if (contentType && !validateMimeType(contentType)) {
+      return NextResponse.json({ 
+        error: "Invalid file type. Only images are allowed." 
+      }, { status: 400 });
+    }
+
+    const pathname = constructSellerPath(seller.id, filename);
     
-    const shortId = generateShortId();
-    const slug = `${baseSlug}-${shortId}`;
+    // Generate signed upload URL
+    const blob = await put(pathname, new File([], filename, { type: contentType || 'image/jpeg' }), {
+      access: 'public',
+    });
 
-    const newProduct = await db
-      .insert(products)
-      .values({
-        sellerId: seller.id,
-        slug,
-        status: 'draft',
-        ...productData,
-      })
-      .returning();
-
-    return NextResponse.json(newProduct[0], { status: 201 });
+    return NextResponse.json({
+      url: blob.url,
+      pathname: pathname,
+    });
 
   } catch (error) {
-    console.error("Create product error:", error);
+    console.error("Upload prepare error:", error);
     
     if (error instanceof Error && error.name === 'ZodError') {
       return NextResponse.json({ error: "Invalid request data" }, { status: 400 });
@@ -58,3 +52,4 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: "Internal server error" }, { status: 500 });
   }
 }
+

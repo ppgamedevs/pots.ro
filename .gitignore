@@ -16,6 +16,14 @@ build/
 .env.test.local
 .env.production.local
 
+# Next.js
+.next/
+out/
+build/
+
+# Drizzle
+drizzle/
+
 # IDE
 .vscode/
 .idea/
@@ -27,11 +35,11 @@ build/
 Thumbs.db
 
 # Logs
-logs
 *.log
+logs/
 
 # Runtime data
-pids
+pids/
 *.pid
 *.seed
 *.pid.lock
@@ -39,6 +47,5 @@ pids
 # Coverage directory used by tools like istanbul
 coverage/
 
-# Temporary folders
-tmp/
-temp/
+# TypeScript
+*.tsbuildinfo
