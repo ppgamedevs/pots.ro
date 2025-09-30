@@ -35,8 +35,8 @@ export function filterSellerProducts(sellerId: string) {
 }
 
 export function filterOwnProducts(userId: string) {
-  // This would need to be used with a join to sellers table
-  // Implementation depends on the specific query context
-  return eq(products.sellerId, sellerId);
+  // This function requires a join with sellers table to work properly
+  // Use filterSellerProducts with the actual sellerId instead
+  throw new Error("filterOwnProducts requires seller lookup - use filterSellerProducts with sellerId");
 }
 
