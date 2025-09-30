@@ -1,0 +1,205 @@
+import type { Category, ProductCard, SellerPublic, SellerProduct } from "./types";
+
+export const mockCategories: Category[] = [
+  { id: 1, slug: "vaze", name: "Vaze", parentId: null },
+  { id: 2, slug: "ghivece", name: "Ghivece", parentId: null },
+  { id: 3, slug: "cutii", name: "Cutii", parentId: null },
+  { id: 4, slug: "accesorii", name: "Accesorii", parentId: null },
+  { id: 5, slug: "ceramica", name: "Ceramică", parentId: null },
+];
+
+export const mockProductsByCategory: Record<string, ProductCard[]> = {
+  vaze: [
+    {
+      id: 1,
+      slug: "vaza-ceramica-natur",
+      title: "Vază ceramică — Natur",
+      price: 129.0,
+      currency: "RON",
+      image: "https://images.unsplash.com/photo-1578662996442-48f60103fc96?w=400&h=400&fit=crop&crop=center",
+      sellerSlug: "partner-a1b2",
+    },
+    {
+      id: 2,
+      slug: "vaza-alba-moderna",
+      title: "Vază albă modernă",
+      price: 89.0,
+      currency: "RON",
+      image: "https://images.unsplash.com/photo-1586023492125-27b2c045efd7?w=400&h=400&fit=crop&crop=center",
+      sellerSlug: "partner-c3d4",
+    },
+    {
+      id: 3,
+      slug: "vaza-inalta-porcelain",
+      title: "Vază înaltă din porțelan",
+      price: 199.0,
+      currency: "RON",
+      image: "https://images.unsplash.com/photo-1578662996442-48f60103fc96?w=400&h=400&fit=crop&crop=center",
+      sellerSlug: "partner-a1b2",
+    },
+  ],
+  ghivece: [
+    {
+      id: 4,
+      slug: "ghiveci-ceramic-alb",
+      title: "Ghiveci ceramic alb",
+      price: 49.0,
+      currency: "RON",
+      image: "https://images.unsplash.com/photo-1578662996442-48f60103fc96?w=400&h=400&fit=crop&crop=center",
+      sellerSlug: "partner-a1b2",
+    },
+    {
+      id: 5,
+      slug: "ghiveci-rotund-natur",
+      title: "Ghiveci rotund natur",
+      price: 79.0,
+      currency: "RON",
+      image: "https://images.unsplash.com/photo-1586023492125-27b2c045efd7?w=400&h=400&fit=crop&crop=center",
+      sellerSlug: "partner-e5f6",
+    },
+  ],
+  cutii: [
+    {
+      id: 6,
+      slug: "cutie-inalta-nevopsita",
+      title: "Cutie înaltă natur",
+      price: 79.0,
+      currency: "RON",
+      image: "https://images.unsplash.com/photo-1586023492125-27b2c045efd7?w=400&h=400&fit=crop&crop=center",
+      sellerSlug: "partner-c3d4",
+    },
+    {
+      id: 7,
+      slug: "cutie-patrata-decorativa",
+      title: "Cutie pătrată decorativă",
+      price: 59.0,
+      currency: "RON",
+      image: "https://images.unsplash.com/photo-1578662996442-48f60103fc96?w=400&h=400&fit=crop&crop=center",
+      sellerSlug: "partner-g7h8",
+    },
+  ],
+  accesorii: [
+    {
+      id: 8,
+      slug: "panglica-satina-roz",
+      title: "Panglică satină roz",
+      price: 12.0,
+      currency: "RON",
+      image: "https://images.unsplash.com/photo-1578662996442-48f60103fc96?w=400&h=400&fit=crop&crop=center",
+      sellerSlug: "partner-i9j0",
+    },
+  ],
+  ceramica: [
+    {
+      id: 9,
+      slug: "set-3-vaze-ceramica",
+      title: "Set 3 vaze ceramică",
+      price: 299.0,
+      currency: "RON",
+      image: "https://images.unsplash.com/photo-1578662996442-48f60103fc96?w=400&h=400&fit=crop&crop=center",
+      sellerSlug: "partner-a1b2",
+    },
+  ],
+};
+
+export const mockSellers: Record<string, SellerPublic> = {
+  "partner-a1b2": {
+    slug: "partner-a1b2",
+    brandName: "Partener Marketplace #A1B2",
+    logoUrl: "https://images.unsplash.com/photo-1560472354-b33ff0c44a43?w=200&h=200&fit=crop&crop=center",
+    bannerUrl: "https://images.unsplash.com/photo-1441986300917-64674bd600d8?w=1200&h=400&fit=crop&crop=center",
+  },
+  "partner-c3d4": {
+    slug: "partner-c3d4",
+    brandName: "Partener Marketplace #C3D4",
+    logoUrl: "https://images.unsplash.com/photo-1560472354-b33ff0c44a43?w=200&h=200&fit=crop&crop=center",
+    bannerUrl: "https://images.unsplash.com/photo-1441986300917-64674bd600d8?w=1200&h=400&fit=crop&crop=center",
+  },
+  "partner-e5f6": {
+    slug: "partner-e5f6",
+    brandName: "Partener Marketplace #E5F6",
+    logoUrl: "https://images.unsplash.com/photo-1560472354-b33ff0c44a43?w=200&h=200&fit=crop&crop=center",
+    bannerUrl: "https://images.unsplash.com/photo-1441986300917-64674bd600d8?w=1200&h=400&fit=crop&crop=center",
+  },
+  "partner-g7h8": {
+    slug: "partner-g7h8",
+    brandName: "Partener Marketplace #G7H8",
+    logoUrl: "https://images.unsplash.com/photo-1560472354-b33ff0c44a43?w=200&h=200&fit=crop&crop=center",
+    bannerUrl: "https://images.unsplash.com/photo-1441986300917-64674bd600d8?w=1200&h=400&fit=crop&crop=center",
+  },
+  "partner-i9j0": {
+    slug: "partner-i9j0",
+    brandName: "Partener Marketplace #I9J0",
+    logoUrl: "https://images.unsplash.com/photo-1560472354-b33ff0c44a43?w=200&h=200&fit=crop&crop=center",
+    bannerUrl: "https://images.unsplash.com/photo-1441986300917-64674bd600d8?w=1200&h=400&fit=crop&crop=center",
+  },
+};
+
+// Mock seller products data
+export const mockSellerProducts: Record<number, SellerProduct> = {
+  1: {
+    id: 1,
+    title: "Vază ceramică — Natur",
+    price: 129.0,
+    currency: "RON",
+    stockQty: 12,
+    categorySlug: "vaze",
+    attributes: { material: "ceramică", finish: "mat", color: "bej" },
+    descriptionHtml: "<p>Vază ceramică elegantă, perfectă pentru aranjamente florale moderne.</p>",
+    images: [
+      { url: "https://images.unsplash.com/photo-1578662996442-48f60103fc96?w=400&h=400&fit=crop&crop=center", alt: "Vază ceramică Natur" },
+      { url: "https://images.unsplash.com/photo-1586023492125-27b2c045efd7?w=400&h=400&fit=crop&crop=center", alt: "Detalii vază ceramică" }
+    ],
+    status: "active",
+    createdAt: "2024-12-01T10:00:00Z",
+    updatedAt: "2024-12-15T14:30:00Z"
+  },
+  2: {
+    id: 2,
+    title: "Ghiveci ceramică alb",
+    price: 89.0,
+    currency: "RON",
+    stockQty: 8,
+    categorySlug: "ghivece",
+    attributes: { material: "ceramică", finish: "glazurat", color: "alb", size: "M" },
+    descriptionHtml: "<p>Ghiveci ceramică alb, ideal pentru plante de interior.</p>",
+    images: [
+      { url: "https://images.unsplash.com/photo-1578662996442-48f60103fc96?w=400&h=400&fit=crop&crop=center", alt: "Ghiveci ceramică alb" }
+    ],
+    status: "draft",
+    createdAt: "2024-12-10T09:00:00Z",
+    updatedAt: "2024-12-14T16:45:00Z"
+  },
+  3: {
+    id: 3,
+    title: "Set 3 ghivece mici",
+    price: 45.0,
+    currency: "RON",
+    stockQty: 0,
+    categorySlug: "ghivece",
+    attributes: { material: "ceramică", finish: "mat", color: "gri", size: "S" },
+    descriptionHtml: "<p>Set de 3 ghivece mici, perfecte pentru suculente.</p>",
+    images: [
+      { url: "https://images.unsplash.com/photo-1586023492125-27b2c045efd7?w=400&h=400&fit=crop&crop=center", alt: "Set 3 ghivece mici" }
+    ],
+    status: "unpublished",
+    createdAt: "2024-12-05T11:00:00Z",
+    updatedAt: "2024-12-12T13:20:00Z"
+  },
+  4: {
+    id: 4,
+    title: "Vază sticlă transparentă",
+    price: 75.0,
+    currency: "EUR",
+    stockQty: 5,
+    categorySlug: "vaze",
+    attributes: { material: "sticlă", finish: "transparent", color: "transparent" },
+    descriptionHtml: "<p>Vază din sticlă transparentă, elegantă și modernă.</p>",
+    images: [
+      { url: "https://images.unsplash.com/photo-1578662996442-48f60103fc96?w=400&h=400&fit=crop&crop=center", alt: "Vază sticlă transparentă" }
+    ],
+    status: "active",
+    createdAt: "2024-12-08T14:00:00Z",
+    updatedAt: "2024-12-15T10:15:00Z"
+  }
+};
