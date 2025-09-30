@@ -1,5 +1,5 @@
 import { db } from "@/db";
-import { eq, and } from "drizzle-orm";
+import { eq, and, ne } from "drizzle-orm";
 
 export function slugify(text: string): string {
   return text
@@ -20,13 +20,14 @@ export async function slugifyUnique(
   let counter = 1;
 
   while (true) {
-    let query = db.select().from(table).where(eq(table.slug, slug));
+    let condition = eq(table.slug, slug);
     
     if (excludeId) {
-      query = query.where(and(eq(table.slug, slug), eq(table.id, excludeId)));
+      // Find records with same slug but exclude the current record
+      condition = and(eq(table.slug, slug), ne(table.id, excludeId));
     }
     
-    const existing = await query.limit(1);
+    const existing = await db.select().from(table).where(condition).limit(1);
     
     if (existing.length === 0) {
       return slug;
