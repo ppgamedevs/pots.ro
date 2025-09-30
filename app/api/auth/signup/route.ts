@@ -4,18 +4,16 @@ import bcrypt from "bcrypt";
 import { eq } from "drizzle-orm";
 import { db, users } from "@/db";
 import { createSession } from "@/auth/session";
-import { generateId } from "@/lib/utils";
 
 const signUpSchema = z.object({
   email: z.string().email(),
   password: z.string().min(6),
-  name: z.string().min(1),
 });
 
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
-    const { email, password, name } = signUpSchema.parse(body);
+    const { email, password } = signUpSchema.parse(body);
 
     // Check if user already exists
     const existingUser = await db
@@ -35,14 +33,12 @@ export async function POST(request: NextRequest) {
     const hashedPassword = await bcrypt.hash(password, 10);
 
     // Create user
-    const userId = generateId();
     const newUser = await db
       .insert(users)
       .values({
-        id: userId,
         email,
-        password: hashedPassword,
-        name,
+        passwordHash: hashedPassword,
+        role: "buyer",
       })
       .returning();
 
