@@ -31,7 +31,7 @@ export const sellers = pgTable("sellers", {
 // Categories table
 export const categories = pgTable("categories", {
   id: uuid("id").primaryKey().defaultRandom(),
-  parentId: uuid("parent_id").references(() => categories.id, { onDelete: "set null" }),
+  parentId: uuid("parent_id"),
   name: text("name").notNull(),
   slug: text("slug").notNull().unique(),
   position: integer("position").default(0),
@@ -98,6 +98,10 @@ export const sessions = pgTable("sessions", {
 
 // SQL for triggers and additional indexes
 export const createTriggersAndIndexes = sql`
+  -- Add foreign key constraint for categories self-reference
+  ALTER TABLE categories ADD CONSTRAINT fk_categories_parent 
+    FOREIGN KEY (parent_id) REFERENCES categories(id) ON DELETE SET NULL;
+
   -- Function to update updated_at timestamp
   CREATE OR REPLACE FUNCTION update_updated_at_column()
   RETURNS TRIGGER AS $$
