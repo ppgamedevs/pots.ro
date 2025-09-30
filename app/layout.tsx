@@ -1,77 +1,44 @@
-<<<<<<< HEAD
 import type { Metadata } from "next";
 import { Inter } from "next/font/google";
 import "./globals.css";
+import { ThemeProvider } from "@/components/theme-provider";
+import { Toaster } from "@/components/ui/toast";
+import { CookieConsent } from "@/components/cookie-consent";
+import { PerformanceMonitor } from "@/components/ui/performance-monitor";
 
 const inter = Inter({ subsets: ["latin"] });
 
 export const metadata: Metadata = {
-  title: "Pots.ro",
-  description: "A modern web application for pot management and tracking.",
-};
-
-export default function RootLayout({
-  children,
-}: {
-  children: React.ReactNode;
-}) {
-  return (
-    <html lang="en">
-      <body className={inter.className}>{children}</body>
-=======
-import "./globals.css";
-import { Inter } from "next/font/google";
-import { ThemeProvider } from "@/components/theme-provider";
-import { ConfirmProvider } from "@/components/ui/use-confirm";
-import { Toaster } from "@/components/ui/toast";
-import { PerformanceMonitor } from "@/components/ui/performance-monitor";
-import { Toaster as SonnerToaster } from "sonner";
-import { CommandPalette } from "@/components/search/command-palette";
-import { CookieConsent } from "@/components/cookie-consent";
-// import { PerformanceOptimizer, criticalCSS, criticalResources } from "@/components/ui/performance-optimizer";
-
-const inter = Inter({ subsets: ["latin"], display: "swap", variable: "--font-inter" });
-
-export const metadata = {
-  metadataBase: new URL('https://pots.ro'),
   title: {
-    default: "Pots.ro - Marketplace românesc pentru floristică",
+    default: "Pots.ro - E-commerce Platform",
     template: "%s | Pots.ro"
   },
-  description: "Descoperă o gamă largă de ghivece, cutii și accesorii pentru floristică. Calitate superioară, prețuri competitive, livrare rapidă în toată România.",
-  keywords: [
-    "ghivece",
-    "cutii", 
-    "accesorii florale",
-    "floristică",
-    "pots.ro",
-    "plante de interior",
-    "aranjamente florale",
-    "ceramic",
-    "carton",
-    "panglici"
-  ],
+  description: "A modern e-commerce platform built with Next.js 14, Vercel Postgres, Drizzle ORM, Lucia Auth, and Vercel Blob.",
+  keywords: ["e-commerce", "pots", "marketplace", "nextjs", "vercel"],
+  authors: [{ name: "Pots.ro Team" }],
+  creator: "Pots.ro",
+  publisher: "Pots.ro",
+  formatDetection: {
+    email: false,
+    address: false,
+    telephone: false,
+  },
+  metadataBase: new URL(process.env.SITE_URL || "http://localhost:3000"),
+  alternates: {
+    canonical: "/",
+  },
   openGraph: {
     type: "website",
-    locale: "ro_RO",
-    url: "https://pots.ro",
+    locale: "en_US",
+    url: "/",
+    title: "Pots.ro - E-commerce Platform",
+    description: "A modern e-commerce platform built with Next.js 14, Vercel Postgres, Drizzle ORM, Lucia Auth, and Vercel Blob.",
     siteName: "Pots.ro",
-    title: "Pots.ro - Marketplace românesc pentru floristică",
-    description: "Descoperă o gamă largă de ghivece, cutii și accesorii pentru floristică. Calitate superioară, prețuri competitive, livrare rapidă în toată România.",
-    images: [
-      {
-        url: "https://images.unsplash.com/photo-1416879595882-3373a0480b5b?w=1200&h=630&fit=crop&crop=center",
-        width: 1200,
-        height: 630,
-        alt: "Pots.ro - Marketplace românesc pentru floristică",
-      },
-    ],
   },
   twitter: {
     card: "summary_large_image",
-    title: "Pots.ro - Marketplace românesc pentru floristică",
-    description: "Descoperă o gamă largă de ghivece, cutii și accesorii pentru floristică. Calitate superioară, prețuri competitive, livrare rapidă în toată România.",
-    images: ["https://images.unsplash.com/photo-1416879595882-3373a0480b5b?w=1200&h=630&fit=crop&crop=center"],
+    title: "Pots.ro - E-commerce Platform",
+    description: "A modern e-commerce platform built with Next.js 14, Vercel Postgres, Drizzle ORM, Lucia Auth, and Vercel Blob.",
   },
   robots: {
     index: true,
@@ -84,27 +51,33 @@ export const metadata = {
       "max-snippet": -1,
     },
   },
-  verification: {
-    google: "your-google-verification-code",
-  },
 };
 
-export default function RootLayout({ children }: { children: React.ReactNode }) {
+export default function RootLayout({
+  children,
+}: {
+  children: React.ReactNode;
+}) {
   return (
-    <html lang="ro" className={inter.variable} suppressHydrationWarning>
-      <body className="min-h-screen antialiased">
-        <ThemeProvider>
-          <ConfirmProvider>
-            {children}
-            <Toaster />
-            <SonnerToaster richColors position="top-center" closeButton />
-            <PerformanceMonitor />
-            <CommandPalette />
-            <CookieConsent />
-          </ConfirmProvider>
+    <html lang="en" suppressHydrationWarning>
+      <head>
+        <link rel="icon" href="/favicon.ico" sizes="any" />
+        <meta name="theme-color" content="#0EA5E9" />
+        <meta name="color-scheme" content="light dark" />
+      </head>
+      <body className={inter.className}>
+        <ThemeProvider
+          attribute="class"
+          defaultTheme="system"
+          enableSystem
+          disableTransitionOnChange
+        >
+          {children}
+          <Toaster />
+          <CookieConsent />
+          <PerformanceMonitor />
         </ThemeProvider>
       </body>
->>>>>>> main
     </html>
   );
 }
