@@ -1,0 +1,82 @@
+### Pack Order (Seller)
+POST http://localhost:3000/api/orders/{{orderId}}/pack
+Content-Type: application/json
+Cookie: {{sessionCookie}}
+
+### Ship Order (Seller/Admin)
+POST http://localhost:3000/api/orders/{{orderId}}/ship
+Content-Type: application/json
+Cookie: {{sessionCookie}}
+
+{
+  "awbNumber": "AWB123456789"
+}
+
+### Deliver Order (Admin)
+POST http://localhost:3000/api/orders/{{orderId}}/deliver
+Content-Type: application/json
+Cookie: {{sessionCookie}}
+
+### Cancel Order (Admin)
+POST http://localhost:3000/api/orders/{{orderId}}/cancel
+Content-Type: application/json
+Cookie: {{sessionCookie}}
+
+{
+  "reason": "Customer requested cancellation"
+}
+
+### Create AWB (Seller)
+POST http://localhost:3000/api/shipping/awb
+Content-Type: application/json
+Cookie: {{sessionCookie}}
+
+{
+  "orderId": "{{orderId}}",
+  "weightKg": 2.5
+}
+
+### Download AWB Label
+GET http://localhost:3000/api/shipping/awb/{{orderId}}/label
+Cookie: {{sessionCookie}}
+
+### Shipping Webhook (Idempotent)
+POST http://localhost:3000/api/shipping/webhook
+Content-Type: application/json
+
+{
+  "provider": "mock",
+  "eventId": "event_123",
+  "orderId": "{{orderId}}",
+  "status": "delivered",
+  "meta": {
+    "timestamp": "2024-01-15T10:30:00.000Z",
+    "location": "Bucharest, Romania"
+  }
+}
+
+### Get/Create Conversation
+GET http://localhost:3000/api/conversations/{{orderId}}
+Cookie: {{sessionCookie}}
+
+### Send Message
+POST http://localhost:3000/api/messages/{{conversationId}}
+Content-Type: application/json
+Cookie: {{sessionCookie}}
+
+{
+  "body": "Hello, when will my order be shipped?"
+}
+
+### Send Message with Contact Info (Test Filtering)
+POST http://localhost:3000/api/messages/{{conversationId}}
+Content-Type: application/json
+Cookie: {{sessionCookie}}
+
+{
+  "body": "Please contact me at john@example.com or call 0712345678"
+}
+
+### Get Messages
+GET http://localhost:3000/api/messages/{{conversationId}}
+Cookie: {{sessionCookie}}

@@ -97,20 +97,39 @@ export async function POST(request: NextRequest) {
 
     const totalCents = subtotalCents + shippingFeeCents;
 
+    // Mock shipping address for MVP
+    const shippingAddress = {
+      name: "John Doe",
+      address: "Strada Exemplu 123",
+      city: "Bucharest",
+      county: "Bucharest",
+      postalCode: "010001",
+      country: "Romania",
+      phone: "0712345678",
+      email: "john@example.com"
+    };
+
     // Create order and order items in a transaction
     const newOrder = await db.transaction(async (tx) => {
+      // Get unique seller IDs from cart items
+      const uniqueSellerIds = [...new Set(cartItemsResult.map(item => item.seller.id))];
+      
+      // For MVP, create one order per seller (simplified approach)
+      // In a real system, you might want to group by seller and create multiple orders
+      const primarySellerId = uniqueSellerIds[0];
+      
       // Insert order
       const orderResult = await tx
         .insert(orders)
         .values({
           buyerId: userId,
+          sellerId: primarySellerId,
           status: 'pending',
           currency: 'RON',
           subtotalCents,
           shippingFeeCents,
           totalCents,
-          deliveryCarrier: shippingChoice?.carrier || 'DPD',
-          deliveryService: shippingChoice?.service || 'Classic',
+          shippingAddress: shippingAddress,
         })
         .returning();
 
@@ -153,8 +172,7 @@ export async function POST(request: NextRequest) {
         currency: newOrder.currency,
       },
       shipping: {
-        carrier: newOrder.deliveryCarrier,
-        service: newOrder.deliveryService,
+        address: newOrder.shippingAddress,
       },
       status: newOrder.status,
     }, { status: 201 });

@@ -15,6 +15,13 @@
       "when": 1759268120413,
       "tag": "0001_burly_starbolt",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1759329969614,
+      "tag": "0002_slimy_scorpion",
+      "breakpoints": true
     }
   ]
 }

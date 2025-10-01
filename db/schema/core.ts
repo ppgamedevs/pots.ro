@@ -3,7 +3,7 @@ import { sql } from "drizzle-orm";
 
 // Enums
 export const productStatusEnum = pgEnum('product_status', ['draft', 'active', 'archived']);
-export const orderStatusEnum = pgEnum('order_status', ['pending', 'paid', 'shipped', 'delivered', 'canceled']);
+export const orderStatusEnum = pgEnum('order_status', ['pending', 'paid', 'packed', 'shipped', 'delivered', 'canceled', 'refunded']);
 
 // Users table
 export const users = pgTable("users", {
@@ -133,20 +133,25 @@ export const sessions = pgTable("sessions", {
 export const orders = pgTable("orders", {
   id: uuid("id").primaryKey().defaultRandom(),
   buyerId: uuid("buyer_id").notNull().references(() => users.id, { onDelete: "restrict" }),
+  sellerId: uuid("seller_id").notNull().references(() => sellers.id, { onDelete: "restrict" }),
   status: orderStatusEnum("status").notNull().default("pending"),
   currency: text("currency").notNull().default("RON"),
   subtotalCents: integer("subtotal_cents").notNull().default(0),
   shippingFeeCents: integer("shipping_fee_cents").notNull().default(0),
   totalCents: integer("total_cents").notNull().default(0),
   paymentRef: text("payment_ref"),
-  deliveryCarrier: text("delivery_carrier"),
-  deliveryService: text("delivery_service"),
-  deliveryTracking: text("delivery_tracking"),
+  shippingAddress: jsonb("shipping_address").notNull(),
+  awbNumber: text("awb_number"),
+  awbLabelUrl: text("awb_label_url"),
+  carrierMeta: jsonb("carrier_meta"),
+  deliveredAt: timestamp("delivered_at", { withTimezone: true }),
+  canceledReason: text("canceled_reason"),
   deliveryStatus: text("delivery_status"),
   createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
   updatedAt: timestamp("updated_at", { withTimezone: true }).defaultNow().notNull(),
 }, (table) => ({
   ordersBuyerIdx: index("orders_buyer_idx").on(table.buyerId),
+  ordersSellerIdx: index("orders_seller_idx").on(table.sellerId),
 }));
 
 // Order items table
@@ -166,6 +171,53 @@ export const orderItems = pgTable("order_items", {
 }, (table) => ({
   orderItemsOrderIdx: index("oi_order_idx").on(table.orderId),
   orderItemsQtyCheck: check("order_items_qty_positive", sql`qty > 0`),
+}));
+
+// Audit log table
+export const auditLogs = pgTable("audit_logs", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  orderId: uuid("order_id").notNull().references(() => orders.id, { onDelete: "cascade" }),
+  actorId: uuid("actor_id").references(() => users.id, { onDelete: "set null" }),
+  actorRole: text("actor_role"),
+  action: text("action").notNull(),
+  meta: jsonb("meta"),
+  createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
+}, (table) => ({
+  auditLogsOrderIdx: index("audit_logs_order_idx").on(table.orderId),
+  auditLogsOrderCreatedIdx: index("audit_logs_order_created_idx").on(table.orderId, table.createdAt),
+}));
+
+// Webhook events table
+export const webhookEvents = pgTable("webhook_events", {
+  id: text("id").primaryKey(), // provider event id for idempotency
+  orderId: uuid("order_id").notNull().references(() => orders.id, { onDelete: "cascade" }),
+  payload: jsonb("payload").notNull(),
+  createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
+}, (table) => ({
+  webhookEventsOrderIdx: index("webhook_events_order_idx").on(table.orderId),
+}));
+
+// Conversations table
+export const conversations = pgTable("conversations", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  orderId: uuid("order_id").notNull().references(() => orders.id, { onDelete: "cascade" }),
+  buyerId: uuid("buyer_id").notNull().references(() => users.id, { onDelete: "cascade" }),
+  sellerId: uuid("seller_id").notNull().references(() => sellers.id, { onDelete: "cascade" }),
+  createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
+}, (table) => ({
+  conversationsOrderBuyerSellerUnique: uniqueIndex("conversations_order_buyer_seller_unique").on(table.orderId, table.buyerId, table.sellerId),
+}));
+
+// Messages table
+export const messages = pgTable("messages", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  conversationId: uuid("conversation_id").notNull().references(() => conversations.id, { onDelete: "cascade" }),
+  senderId: uuid("sender_id").notNull().references(() => users.id, { onDelete: "cascade" }),
+  body: text("body").notNull(),
+  createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
+}, (table) => ({
+  messagesConversationIdx: index("messages_conversation_idx").on(table.conversationId),
+  messagesConversationCreatedIdx: index("messages_conversation_created_idx").on(table.conversationId, table.createdAt),
 }));
 
 // SQL for triggers and additional indexes
@@ -216,6 +268,18 @@ export const createTriggersAndIndexes = sql`
     FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
 
   CREATE TRIGGER update_order_items_updated_at BEFORE UPDATE ON order_items
+    FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
+
+  CREATE TRIGGER update_audit_logs_updated_at BEFORE UPDATE ON audit_logs
+    FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
+
+  CREATE TRIGGER update_webhook_events_updated_at BEFORE UPDATE ON webhook_events
+    FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
+
+  CREATE TRIGGER update_conversations_updated_at BEFORE UPDATE ON conversations
+    FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
+
+  CREATE TRIGGER update_messages_updated_at BEFORE UPDATE ON messages
     FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
 
   -- Function to decrement stock when order is paid
