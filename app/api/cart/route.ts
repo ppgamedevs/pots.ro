@@ -20,6 +20,16 @@ export async function GET(request: NextRequest) {
         .limit(1);
       cart = result[0];
     } else {
+      if (!sessionId) {
+        return NextResponse.json({
+          items: [],
+          totals: {
+            subtotal_cents: 0,
+            currency: 'RON',
+          }
+        });
+      }
+      
       const result = await db
         .select()
         .from(carts)

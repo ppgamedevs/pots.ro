@@ -29,6 +29,10 @@ export async function PATCH(request: NextRequest) {
         .limit(1);
       cart = result[0];
     } else {
+      if (!sessionId) {
+        return NextResponse.json({ error: "Session ID required for anonymous cart" }, { status: 400 });
+      }
+      
       const result = await db
         .select()
         .from(carts)
@@ -93,6 +97,10 @@ export async function DELETE(request: NextRequest) {
         .limit(1);
       cart = result[0];
     } else {
+      if (!sessionId) {
+        return NextResponse.json({ error: "Session ID required for anonymous cart" }, { status: 400 });
+      }
+      
       const result = await db
         .select()
         .from(carts)

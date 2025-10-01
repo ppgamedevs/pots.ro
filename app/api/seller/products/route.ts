@@ -43,7 +43,12 @@ export async function POST(request: NextRequest) {
         sellerId: seller.id,
         slug,
         status: 'draft',
-        ...productData,
+        title: productData.title,
+        description: productData.description,
+        priceCents: productData.price_cents,
+        stock: productData.stock,
+        categoryId: productData.category_id,
+        attributes: productData.attributes || {},
       })
       .returning();
 

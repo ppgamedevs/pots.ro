@@ -37,7 +37,7 @@ export async function supaPaginate<T = any>(
   const { data, error, count } = await query;
   if (error) throw error;
 
-  const meta = buildPaginationMeta(count ?? 0, calc);
+  const meta = buildPaginationMeta(calc.meta.page, calc.meta.pageSize, count ?? 0);
   return { items: (data as T[]) ?? [], meta };
 }
 
@@ -65,6 +65,6 @@ export async function supaPaginateRpc<T = any>(
 
   if (error) throw error;
 
-  const meta = buildPaginationMeta(count ?? 0, calc);
+  const meta = buildPaginationMeta(calc.meta.page, calc.meta.pageSize, count ?? 0);
   return { items: (data as T[]) ?? [], meta };
 }

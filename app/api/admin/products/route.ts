@@ -18,7 +18,7 @@ export async function GET(req: Request) {
     const { items, meta } = await supaPaginate(
       supabase,
       "products",
-      { page, pageSize, maxPageSize: 100, defaultPageSize: 20 },
+      { page: page || undefined, pageSize: pageSize || undefined, maxPageSize: 100, defaultPageSize: 20 },
       (s) => {
         let query = s.eq("status", status || "active");
         

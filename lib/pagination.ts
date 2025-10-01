@@ -5,6 +5,8 @@ export interface PaginationParams {
   defaultPageSize?: number;
 }
 
+export type PageParams = PaginationParams;
+
 export interface PaginationMeta {
   page: number;
   pageSize: number;

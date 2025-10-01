@@ -61,6 +61,10 @@ export async function POST(request: NextRequest) {
       }
     } else {
       // Session cart
+      if (!sessionId) {
+        return NextResponse.json({ error: "Session ID required for anonymous cart" }, { status: 400 });
+      }
+      
       const existingCart = await db
         .select()
         .from(carts)

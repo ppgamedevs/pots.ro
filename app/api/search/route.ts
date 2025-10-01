@@ -17,13 +17,14 @@ export async function GET(request: NextRequest) {
     }
 
     const { q } = searchSchema.parse({ q: query });
-    const { offset, limit, meta } = getPagination({ page, pageSize: 24 });
+    const { offset, limit, meta } = getPagination({ page: page || undefined, pageSize: 24 });
 
     // Build base condition
-    let baseCondition = eq(products.status, 'active');
-    
+    let baseCondition;
     if (category) {
-      baseCondition = and(baseCondition, eq(products.categoryId, category));
+      baseCondition = and(eq(products.status, 'active'), eq(products.categoryId, category));
+    } else {
+      baseCondition = eq(products.status, 'active');
     }
 
     // Try FTS first
@@ -37,7 +38,7 @@ export async function GET(request: NextRequest) {
         currency: products.currency,
         imageUrl: products.imageUrl,
         sellerId: products.sellerId,
-        rank: sql<number>`ts_rank(${products.searchTsv}, websearch_to_tsquery('simple', ${q}))`,
+        score: sql<number>`ts_rank(${products.searchTsv}, websearch_to_tsquery('simple', ${q}))`,
       })
       .from(products)
       .where(and(
@@ -60,7 +61,7 @@ export async function GET(request: NextRequest) {
           currency: products.currency,
           imageUrl: products.imageUrl,
           sellerId: products.sellerId,
-          similarity: sql<number>`similarity(${products.title}, ${q})`,
+          score: sql<number>`similarity(${products.title}, ${q})`,
         })
         .from(products)
         .where(and(

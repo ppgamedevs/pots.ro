@@ -17,7 +17,7 @@ export async function GET(req: Request) {
     const { items, meta } = await supaPaginateRpc(
       supabase,
       "rpc_products_active",               // numele funcției SQL
-      { page, pageSize, defaultPageSize: 24, maxPageSize: 60 },
+      { page: page || undefined, pageSize: pageSize || undefined, defaultPageSize: 24, maxPageSize: 60 },
       { search: q },                       // args către funcție
       { column: "created_at", ascending: false }
     );

@@ -11,6 +11,7 @@ export async function assertOwnProduct(productId: string, userId: string) {
   const result = await db
     .select({ 
       productId: products.id,
+      sellerId: sellers.id,
       sellerUserId: sellers.userId 
     })
     .from(products)
