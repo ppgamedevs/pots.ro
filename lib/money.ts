@@ -26,3 +26,25 @@ export function normalizeCurrency(currency?: string): string {
 export function isValidCurrency(currency: string): boolean {
   return ['RON', 'EUR', 'USD'].includes(currency);
 }
+
+// Additional money utilities for Week 4
+export function toCents(amount: number): number {
+  return Math.round(amount * 100);
+}
+
+export function fromCents(cents: number): number {
+  return cents / 100;
+}
+
+export function roundCents(cents: number): number {
+  return Math.round(cents);
+}
+
+export function calculateCommission(subtotalCents: number, commissionPct: number): number {
+  // commissionPct is in basis points (e.g., 1000 = 10%)
+  return Math.round((subtotalCents * commissionPct) / 10000);
+}
+
+export function calculateSellerDue(subtotalCents: number, commissionAmountCents: number): number {
+  return subtotalCents - commissionAmountCents;
+}

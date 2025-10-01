@@ -3,6 +3,7 @@ import { sql } from "drizzle-orm";
 
 // Enums
 export const productStatusEnum = pgEnum('product_status', ['draft', 'active', 'archived']);
+export const orderStatusEnum = pgEnum('order_status', ['pending', 'paid', 'shipped', 'delivered', 'canceled']);
 
 // Users table
 export const users = pgTable("users", {
@@ -128,6 +129,45 @@ export const sessions = pgTable("sessions", {
   createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
 });
 
+// Orders table
+export const orders = pgTable("orders", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  buyerId: uuid("buyer_id").notNull().references(() => users.id, { onDelete: "restrict" }),
+  status: orderStatusEnum("status").notNull().default("pending"),
+  currency: text("currency").notNull().default("RON"),
+  subtotalCents: integer("subtotal_cents").notNull().default(0),
+  shippingFeeCents: integer("shipping_fee_cents").notNull().default(0),
+  totalCents: integer("total_cents").notNull().default(0),
+  paymentRef: text("payment_ref"),
+  deliveryCarrier: text("delivery_carrier"),
+  deliveryService: text("delivery_service"),
+  deliveryTracking: text("delivery_tracking"),
+  deliveryStatus: text("delivery_status"),
+  createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
+  updatedAt: timestamp("updated_at", { withTimezone: true }).defaultNow().notNull(),
+}, (table) => ({
+  ordersBuyerIdx: index("orders_buyer_idx").on(table.buyerId),
+}));
+
+// Order items table
+export const orderItems = pgTable("order_items", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  orderId: uuid("order_id").notNull().references(() => orders.id, { onDelete: "cascade" }),
+  productId: uuid("product_id").notNull().references(() => products.id, { onDelete: "restrict" }),
+  sellerId: uuid("seller_id").notNull().references(() => sellers.id, { onDelete: "restrict" }),
+  qty: integer("qty").notNull(),
+  unitPriceCents: integer("unit_price_cents").notNull(),
+  subtotalCents: integer("subtotal_cents").notNull(),
+  commissionPct: integer("commission_pct").notNull(), // stored as basis points (e.g., 1000 = 10%)
+  commissionAmountCents: integer("commission_amount_cents").notNull(),
+  sellerDueCents: integer("seller_due_cents").notNull(),
+  createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
+  updatedAt: timestamp("updated_at", { withTimezone: true }).defaultNow().notNull(),
+}, (table) => ({
+  orderItemsOrderIdx: index("oi_order_idx").on(table.orderId),
+  orderItemsQtyCheck: check("order_items_qty_positive", sql`qty > 0`),
+}));
+
 // SQL for triggers and additional indexes
 export const createTriggersAndIndexes = sql`
   -- Add foreign key constraint for categories self-reference
@@ -171,6 +211,57 @@ export const createTriggersAndIndexes = sql`
 
   CREATE TRIGGER update_cart_items_updated_at BEFORE UPDATE ON cart_items
     FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
+
+  CREATE TRIGGER update_orders_updated_at BEFORE UPDATE ON orders
+    FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
+
+  CREATE TRIGGER update_order_items_updated_at BEFORE UPDATE ON order_items
+    FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
+
+  -- Function to decrement stock when order is paid
+  CREATE OR REPLACE FUNCTION decrement_stock_on_paid()
+  RETURNS TRIGGER AS $$
+  DECLARE
+    item RECORD;
+    current_stock INTEGER;
+  BEGIN
+    -- Only process when status changes to 'paid'
+    IF NEW.status = 'paid' AND (OLD.status IS NULL OR OLD.status != 'paid') THEN
+      -- Check stock for all items in this order
+      FOR item IN 
+        SELECT product_id, qty 
+        FROM order_items 
+        WHERE order_id = NEW.id
+      LOOP
+        -- Get current stock
+        SELECT stock INTO current_stock 
+        FROM products 
+        WHERE id = item.product_id;
+        
+        -- Check if sufficient stock
+        IF current_stock < item.qty THEN
+          RAISE EXCEPTION 'Insufficient stock for product %: requested %, available %', 
+            item.product_id, item.qty, current_stock;
+        END IF;
+      END LOOP;
+      
+      -- Decrement stock for all items
+      UPDATE products 
+      SET stock = stock - order_items.qty,
+          updated_at = NOW()
+      FROM order_items 
+      WHERE products.id = order_items.product_id 
+        AND order_items.order_id = NEW.id;
+    END IF;
+    
+    RETURN NEW;
+  END;
+  $$ language 'plpgsql';
+
+  -- Trigger for stock decrement
+  CREATE TRIGGER decrement_stock_on_paid_trigger
+    AFTER UPDATE ON orders
+    FOR EACH ROW EXECUTE FUNCTION decrement_stock_on_paid();
 
   -- Function to update search_tsv
   CREATE OR REPLACE FUNCTION update_products_search_tsv()

@@ -18,6 +18,19 @@ if (!process.env.DATABASE_URL) {
     process.env.POSTGRES_POSTGRES_URL_NON_POOLING || process.env.POSTGRES_POSTGRES_URL || process.env.POSTGRES_URL_NON_POOLING || process.env.POSTGRES_URL || process.env.DATABASE_URL || "";
 }
 
-// No exports; side-effect module
+// Week 4 MVP: Commission and Payment Configuration
+export const COMMISSION_PCT = parseInt(process.env.COMMISSION_PCT || '1000', 10); // Default 10% (1000 basis points)
+export const NETOPIA_MERCHANT_ID = process.env.NETOPIA_MERCHANT_ID || '';
+export const NETOPIA_PRIVATE_KEY = process.env.NETOPIA_PRIVATE_KEY || '';
+export const SITE_URL = process.env.SITE_URL || process.env.NEXT_PUBLIC_BASE_URL || 'http://localhost:3000';
+
+// Validate required environment variables
+if (!NETOPIA_MERCHANT_ID && process.env.NODE_ENV === 'production') {
+  console.warn('NETOPIA_MERCHANT_ID is not set');
+}
+
+if (!NETOPIA_PRIVATE_KEY && process.env.NODE_ENV === 'production') {
+  console.warn('NETOPIA_PRIVATE_KEY is not set');
+}
 
 

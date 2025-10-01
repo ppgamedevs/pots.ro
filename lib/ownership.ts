@@ -7,6 +7,13 @@ export async function getSellerByUser(userId: string) {
   return result[0] || null;
 }
 
+export async function sellerIdsForUser(userId: string): Promise<string[]> {
+  // For MVP: return seller ID if user is a seller, empty array for buyers
+  // In production, admins would see all seller IDs
+  const seller = await getSellerByUser(userId);
+  return seller ? [seller.id] : [];
+}
+
 export async function assertOwnProduct(productId: string, userId: string) {
   const result = await db
     .select({ 
