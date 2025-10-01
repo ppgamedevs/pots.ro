@@ -65,7 +65,7 @@ export default function MiniCart({ className = "" }: MiniCartProps) {
     };
   }, [isOpen]);
 
-  const itemCount = cart?.items.reduce((sum, item) => sum + item.qty, 0) || 0;
+  const itemCount = cart?.items?.reduce((sum, item) => sum + item.qty, 0) || 0;
 
   const updateQuantity = async (productId: number, newQty: number) => {
     if (newQty < 1 || newQty > 99) return;
@@ -196,7 +196,7 @@ export default function MiniCart({ className = "" }: MiniCartProps) {
               <div className="p-4 text-center text-slate-500 dark:text-slate-400">
                 Se încarcă...
               </div>
-            ) : !cart || cart.items.length === 0 ? (
+            ) : !cart || !cart.items || cart.items.length === 0 ? (
               <div className="p-6 text-center">
                 <ShoppingCart className="h-12 w-12 mx-auto text-slate-300 dark:text-slate-600 mb-3" />
                 <p className="text-slate-500 dark:text-slate-400 mb-4">
@@ -212,7 +212,7 @@ export default function MiniCart({ className = "" }: MiniCartProps) {
               </div>
             ) : (
               <div className="p-4 space-y-4">
-                {cart.items.map((item) => (
+                {cart.items?.map((item) => (
                   <div
                     key={item.productId}
                     className="flex items-center gap-3 p-3 bg-slate-50 dark:bg-slate-700 rounded-lg"
@@ -284,7 +284,7 @@ export default function MiniCart({ className = "" }: MiniCartProps) {
           </div>
 
           {/* Footer */}
-          {cart && cart.items.length > 0 && (
+          {cart && cart.items && cart.items.length > 0 && (
             <div className="p-4 border-t border-slate-200 dark:border-slate-700">
               <div className="flex items-center justify-between mb-3">
                 <span className="font-semibold text-slate-900 dark:text-slate-100">
