@@ -5,6 +5,8 @@ import { sql, ilike, or, and, eq, desc } from "drizzle-orm";
 import { searchSchema } from "@/lib/validations";
 import { getPagination, buildPaginationMeta } from "@/lib/pagination";
 
+export const dynamic = 'force-dynamic';
+
 export async function GET(request: NextRequest) {
   try {
     const { searchParams } = new URL(request.url);

@@ -5,6 +5,8 @@ import { eq, and, sql } from "drizzle-orm";
 import { getCurrentUser, getUserId } from "@/lib/auth-helpers";
 import { getOrSetSessionId } from "@/lib/cookies";
 
+export const dynamic = 'force-dynamic';
+
 export async function GET(request: NextRequest) {
   try {
     const userId = await getUserId();

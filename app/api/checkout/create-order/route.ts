@@ -8,6 +8,8 @@ import { COMMISSION_PCT } from "@/lib/env";
 import { calculateCommission, calculateSellerDue } from "@/lib/money";
 import { z } from "zod";
 
+export const dynamic = 'force-dynamic';
+
 const createOrderSchema = z.object({
   shippingChoice: z.object({
     carrier: z.string(),

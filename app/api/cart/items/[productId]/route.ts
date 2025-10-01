@@ -3,6 +3,8 @@ import { getCartId, setCartIdCookie } from "@/lib/cart-utils";
 import { cacheHeaders } from "@/lib/http";
 import type { Cart } from "@/lib/types";
 
+export const dynamic = 'force-dynamic';
+
 // Mock in-memory storage for cart data
 const cartStorage: Record<string, Cart> = {};
 

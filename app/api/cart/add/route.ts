@@ -7,6 +7,8 @@ import { getOrSetSessionId } from "@/lib/cookies";
 import { normalizeCurrency } from "@/lib/money";
 import { z } from "zod";
 
+export const dynamic = 'force-dynamic';
+
 const addToCartSchema = z.object({
   product_id: z.string().uuid(),
   qty: z.number().int().min(1).max(99),

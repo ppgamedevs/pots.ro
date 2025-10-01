@@ -6,6 +6,8 @@ import { getSellerByUser } from "@/lib/ownership";
 import { slugifyUnique } from "@/lib/slug";
 import { z } from "zod";
 
+export const dynamic = 'force-dynamic';
+
 const createProductSchema = z.object({
   title: z.string().min(3).max(200),
   description: z.string().max(2000).optional(),

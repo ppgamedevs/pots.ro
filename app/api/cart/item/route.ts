@@ -6,6 +6,8 @@ import { getCurrentUser, getUserId } from "@/lib/auth-helpers";
 import { getOrSetSessionId } from "@/lib/cookies";
 import { z } from "zod";
 
+export const dynamic = 'force-dynamic';
+
 const updateItemSchema = z.object({
   product_id: z.string().uuid(),
   qty: z.number().int().min(0).max(99),

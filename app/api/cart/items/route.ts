@@ -4,6 +4,8 @@ import { cacheHeaders } from "@/lib/http";
 import type { Cart, CartItem } from "@/lib/types";
 import { apiGetProductById } from "@/lib/api-client";
 
+export const dynamic = 'force-dynamic';
+
 // Mock in-memory storage for cart data
 const cartStorage: Record<string, Cart> = {};
 
