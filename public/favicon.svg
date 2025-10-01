@@ -1,0 +1,6 @@
+<!-- Simple SVG favicon for pots.ro -->
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32" width="32" height="32">
+  <rect width="32" height="32" fill="#0EA5E9"/>
+  <path d="M8 12h16c2 0 4 2 4 4v8c0 2-2 4-4 4H8c-2 0-4-2-4-4v-8c0-2 2-4 4-4z" fill="white"/>
+  <path d="M12 8h8c1 0 2 1 2 2v2H10v-2c0-1 1-2 2-2z" fill="white"/>
+</svg>

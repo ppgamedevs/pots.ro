@@ -20,6 +20,9 @@ export const metadata = {
     default: "Pots.ro - Marketplace românesc pentru floristică",
     template: "%s | Pots.ro"
   },
+  icons: {
+    icon: '/favicon.svg',
+  },
   description: "Descoperă o gamă largă de ghivece, cutii și accesorii pentru floristică. Calitate superioară, prețuri competitive, livrare rapidă în toată România.",
   keywords: [
     "ghivece",

@@ -22,9 +22,14 @@ export default function MiniCart({ className = "" }: MiniCartProps) {
   const popoverRef = useRef<HTMLDivElement>(null);
   const triggerRef = useRef<HTMLButtonElement>(null);
 
-  const { data: cart, error, isLoading } = useSWR<Cart>('/api/cart', (url: string) =>
-    fetch(url).then(res => res.json())
-  );
+  const { data: cart, error, isLoading } = useSWR<Cart>('/api/cart', async (url: string) => {
+    const res = await fetch(url);
+    if (!res.ok) {
+      const errorData = await res.json();
+      throw new Error(errorData.error || `HTTP ${res.status}`);
+    }
+    return res.json();
+  });
 
   // Close popover when clicking outside
   useEffect(() => {
@@ -195,6 +200,20 @@ export default function MiniCart({ className = "" }: MiniCartProps) {
             {isLoading ? (
               <div className="p-4 text-center text-slate-500 dark:text-slate-400">
                 Se încarcă...
+              </div>
+            ) : error ? (
+              <div className="p-6 text-center">
+                <ShoppingCart className="h-12 w-12 mx-auto text-red-300 dark:text-red-600 mb-3" />
+                <p className="text-red-500 dark:text-red-400 mb-4">
+                  Eroare la încărcarea coșului
+                </p>
+                <Button
+                  variant="outline"
+                  onClick={() => window.location.reload()}
+                  className="w-full"
+                >
+                  Încearcă din nou
+                </Button>
               </div>
             ) : !cart || !cart.items || cart.items.length === 0 ? (
               <div className="p-6 text-center">
