@@ -39,6 +39,11 @@ export function isSeller(user: { role: string } | null): boolean {
   return user?.role === 'seller' || user?.role === 'admin';
 }
 
+export async function getUserId(): Promise<string | null> {
+  const user = await getCurrentUser();
+  return user?.id || null;
+}
+
 export async function getUserById(userId: string) {
   const result = await db.select().from(users).where(eq(users.id, userId)).limit(1);
   return result[0] || null;

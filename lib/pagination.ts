@@ -1,66 +1,63 @@
-export type PageParams = {
-  page?: number | string | null;
-  pageSize?: number | string | null;
-  maxPageSize?: number; // hard cap
+export interface PaginationParams {
+  page?: number | string;
+  pageSize?: number | string;
+  maxPageSize?: number;
   defaultPageSize?: number;
-};
-
-export type PageCalc = {
-  page: number;        // 1-based
-  pageSize: number;    // requested (clamped)
-  limit: number;       // for SQL
-  offset: number;      // for SQL
-};
-
-/** Safe pagination from search params or inputs. */
-export function getPagination({
-  page,
-  pageSize,
-  maxPageSize = 60,
-  defaultPageSize = 24,
-}: PageParams): PageCalc {
-  const p = clampInt(toInt(page, 1), 1, 1_000_000);
-  const ps = clampInt(toInt(pageSize, defaultPageSize), 1, maxPageSize);
-  return { page: p, pageSize: ps, limit: ps, offset: (p - 1) * ps };
 }
 
-function toInt(v: number | string | null | undefined, fallback: number): number {
-  if (v == null) return fallback;
-  const n = typeof v === "string" ? parseInt(v, 10) : Math.trunc(v);
-  return Number.isFinite(n) ? n : fallback;
-}
-
-function clampInt(n: number, min: number, max: number): number {
-  return Math.max(min, Math.min(max, n));
-}
-
-export type PaginationMeta = {
+export interface PaginationMeta {
   page: number;
   pageSize: number;
   totalItems: number;
   totalPages: number;
-  hasPrev: boolean;
   hasNext: boolean;
-};
+  hasPrev: boolean;
+}
 
-/** Build meta for API responses & UI. */
-export function buildPaginationMeta(totalItems: number, calc: PageCalc): PaginationMeta {
-  const totalPages = Math.max(1, Math.ceil(totalItems / calc.pageSize));
-  const page = Math.min(calc.page, totalPages);
+export function getPagination({
+  page = 1,
+  pageSize = 24,
+  maxPageSize = 60,
+  defaultPageSize = 24,
+}: PaginationParams = {}): { offset: number; limit: number; meta: PaginationMeta } {
+  const pageNum = typeof page === 'string' ? parseInt(page, 10) : page;
+  const pageSizeNum = typeof pageSize === 'string' ? parseInt(pageSize, 10) : pageSize;
+  
+  const normalizedPage = Math.max(1, pageNum);
+  const normalizedPageSize = Math.min(
+    Math.max(1, pageSizeNum),
+    maxPageSize
+  );
+  
+  const offset = (normalizedPage - 1) * normalizedPageSize;
+  
   return {
-    page,
-    pageSize: calc.pageSize,
-    totalItems,
-    totalPages,
-    hasPrev: page > 1,
-    hasNext: page < totalPages,
+    offset,
+    limit: normalizedPageSize,
+    meta: {
+      page: normalizedPage,
+      pageSize: normalizedPageSize,
+      totalItems: 0, // Will be set by caller
+      totalPages: 0, // Will be set by caller
+      hasNext: false, // Will be set by caller
+      hasPrev: normalizedPage > 1,
+    },
   };
 }
 
-// Legacy compatibility exports
-export type PaginationInput = PageParams;
-export type PaginationCalc = PageCalc;
-
-export function getTotalPages(total: number, pageSize: number) {
-  return Math.max(1, Math.ceil(total / pageSize));
+export function buildPaginationMeta(
+  page: number,
+  pageSize: number,
+  totalItems: number
+): PaginationMeta {
+  const totalPages = Math.ceil(totalItems / pageSize);
+  
+  return {
+    page,
+    pageSize,
+    totalItems,
+    totalPages,
+    hasNext: page < totalPages,
+    hasPrev: page > 1,
+  };
 }

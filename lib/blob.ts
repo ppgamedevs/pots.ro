@@ -14,8 +14,18 @@ export function constructSellerPath(sellerId: string, filename: string): string 
   return `seller-${sellerId}/${safeFilename}`;
 }
 
+export function buildProductPath(sellerId: string, productId: string, filename: string): string {
+  const safeFilename = filename.replace(/[^a-zA-Z0-9.-]/g, '_');
+  return `product-images/seller-${sellerId}/${productId}/${safeFilename}`;
+}
+
 export function validateSellerPath(pathname: string, sellerId: string): boolean {
   const expectedPrefix = `seller-${sellerId}/`;
+  return pathname.startsWith(expectedPrefix);
+}
+
+export function validateProductPath(pathname: string, sellerId: string, productId: string): boolean {
+  const expectedPrefix = `product-images/seller-${sellerId}/${productId}/`;
   return pathname.startsWith(expectedPrefix);
 }
 

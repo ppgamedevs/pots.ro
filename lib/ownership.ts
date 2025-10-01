@@ -44,3 +44,25 @@ export async function getProductWithSeller(productId: string) {
   return result[0] || null;
 }
 
+export async function assertOwnSeller(sellerId: string, userId: string) {
+  const result = await db
+    .select({ 
+      sellerId: sellers.id,
+      userId: sellers.userId 
+    })
+    .from(sellers)
+    .where(eq(sellers.id, sellerId))
+    .limit(1);
+
+  const seller = result[0];
+  if (!seller) {
+    throw new Error("Seller not found");
+  }
+
+  if (seller.userId !== userId) {
+    throw new Error("Access denied: You don't own this seller profile");
+  }
+
+  return seller;
+}
+

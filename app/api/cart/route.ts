@@ -1,41 +1,89 @@
-import { NextResponse } from "next/server";
-import { getCartId, setCartIdCookie } from "@/lib/cart-utils";
-import { cacheHeaders } from "@/lib/http";
-import type { Cart } from "@/lib/types";
+import { NextRequest, NextResponse } from "next/server";
+import { db } from "@/db";
+import { carts, cartItems, products } from "@/db/schema/core";
+import { eq, and, sql } from "drizzle-orm";
+import { getCurrentUser, getUserId } from "@/lib/auth-helpers";
+import { getOrSetSessionId } from "@/lib/cookies";
 
-// Mock in-memory storage for cart data
-const cartStorage: Record<string, Cart> = {};
-
-export async function GET() {
+export async function GET(request: NextRequest) {
   try {
-    const cartId = await getCartId();
-    
-    // Get or create cart
-    let cart = cartStorage[cartId];
-    
-    if (!cart) {
-      cart = {
-        id: cartId,
-        items: [],
-        subtotal: 0,
-        currency: "RON"
-      };
-      cartStorage[cartId] = cart;
+    const userId = await getUserId();
+    const sessionId = userId ? null : await getOrSetSessionId();
+
+    // Get cart
+    let cart;
+    if (userId) {
+      const result = await db
+        .select()
+        .from(carts)
+        .where(eq(carts.userId, userId))
+        .limit(1);
+      cart = result[0];
+    } else {
+      const result = await db
+        .select()
+        .from(carts)
+        .where(eq(carts.sessionId, sessionId))
+        .limit(1);
+      cart = result[0];
     }
-    
-    // Calculate subtotal
-    cart.subtotal = cart.items.reduce((sum, item) => sum + (item.price * item.qty), 0);
-    
-    // Set cookie if it doesn't exist
-    await setCartIdCookie(cartId);
-    
-    return NextResponse.json(cart, { headers: { ...cacheHeaders } });
-    
+
+    if (!cart) {
+      return NextResponse.json({
+        items: [],
+        totals: {
+          subtotal_cents: 0,
+          currency: 'RON',
+        }
+      });
+    }
+
+    // Get cart items with product details
+    const items = await db
+      .select({
+        product_id: cartItems.productId,
+        title: products.title,
+        price_cents: cartItems.priceCents,
+        qty: cartItems.qty,
+        image_url: products.imageUrl,
+        product_status: products.status,
+      })
+      .from(cartItems)
+      .innerJoin(products, eq(cartItems.productId, products.id))
+      .where(eq(cartItems.cartId, cart.id));
+
+    // Filter out inactive products and calculate totals
+    const activeItems = items.filter(item => item.product_status === 'active');
+    const subtotalCents = activeItems.reduce((sum, item) => sum + (item.price_cents * item.qty), 0);
+
+    // Remove inactive items from cart
+    const inactiveItems = items.filter(item => item.product_status !== 'active');
+    if (inactiveItems.length > 0) {
+      const inactiveProductIds = inactiveItems.map(item => item.product_id);
+      await db
+        .delete(cartItems)
+        .where(and(
+          eq(cartItems.cartId, cart.id),
+          sql`${cartItems.productId} = ANY(${inactiveProductIds})`
+        ));
+    }
+
+    return NextResponse.json({
+      items: activeItems.map(item => ({
+        product_id: item.product_id,
+        title: item.title,
+        price_cents: item.price_cents,
+        qty: item.qty,
+        image_url: item.image_url,
+      })),
+      totals: {
+        subtotal_cents: subtotalCents,
+        currency: cart.currency,
+      }
+    });
+
   } catch (error) {
-    console.error('Cart GET error:', error);
-    return NextResponse.json(
-      { error: "Failed to fetch cart" },
-      { status: 500 }
-    );
+    console.error("Get cart error:", error);
+    return NextResponse.json({ error: "Internal server error" }, { status: 500 });
   }
 }
