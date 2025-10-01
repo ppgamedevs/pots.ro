@@ -54,7 +54,7 @@
     @apply border-slate-200 dark:border-slate-700;
   }
   body {
-    @apply bg-background text-foreground;
+    @apply bg-white dark:bg-slate-900 text-slate-900 dark:text-slate-100;
   }
 }
 
