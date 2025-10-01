@@ -1,42 +1,83 @@
-import type { Category, ProductCard, SellerPublic, Product, CategoryProductsResponse } from "./types";
+// API client helpers for Week 4 MVP frontend
+import { CheckoutAddress, ShippingRate, OrderCreatePayload, OrderPublic, NetopiaInitResponse } from '@/types/checkout';
 
-const base = "";
+// Generic fetch wrappers
+async function postJSON<T>(url: string, body: any): Promise<T> {
+  const response = await fetch(url, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify(body),
+  });
 
-export async function apiGetCategories(): Promise<Category[]> {
-  const r = await fetch(`${base}/api/categories`, { next: { revalidate: 1800 } });
-  if (!r.ok) throw new Error("Failed categories");
-  return r.json();
+  if (!response.ok) {
+    const errorData = await response.json().catch(() => ({}));
+    throw new Error(errorData.error || `HTTP ${response.status}`);
+  }
+
+  return response.json();
 }
 
-export async function apiGetCategoryProducts(
-  slug: string, 
-  limit = 24, 
-  cursor?: string
-): Promise<CategoryProductsResponse> {
-  const q = new URLSearchParams({ limit: String(limit) });
-  if (cursor) q.set("cursor", cursor);
-  const r = await fetch(`${base}/api/categories/${slug}/products?${q.toString()}`, { 
-    next: { revalidate: 1800 } 
+async function getJSON<T>(url: string): Promise<T> {
+  const response = await fetch(url, {
+    method: 'GET',
+    headers: {
+      'Content-Type': 'application/json',
+    },
   });
-  if (r.status === 404) throw new Error("Category not found");
-  if (!r.ok) throw new Error("Failed products");
-  return r.json();
+
+  if (!response.ok) {
+    const errorData = await response.json().catch(() => ({}));
+    throw new Error(errorData.error || `HTTP ${response.status}`);
+  }
+
+  return response.json();
 }
 
-export async function apiGetProductById(id: number): Promise<Product> {
-  const r = await fetch(`${base}/api/products/${id}`, { 
-    next: { revalidate: 1800 } 
+// Specific API functions
+export async function getShippingRates(address: CheckoutAddress): Promise<ShippingRate[]> {
+  const response = await postJSON<{ rates: ShippingRate[] }>('/api/shipping/rates', {
+    city: address.city,
+    postal_code: address.zip,
+    weight_kg: 1, // Default weight for MVP
   });
-  if (r.status === 404) throw new Error("Product not found");
-  if (!r.ok) throw new Error("Failed product");
-  return r.json();
+  return response.rates;
 }
 
-export async function apiGetSeller(slug: string): Promise<SellerPublic> {
-  const r = await fetch(`${base}/api/sellers/${slug}`, { 
-    next: { revalidate: 1800 } 
-  });
-  if (r.status === 404) throw new Error("Seller not found");
-  if (!r.ok) throw new Error("Failed seller");
-  return r.json();
+export async function createOrder(payload: OrderCreatePayload): Promise<{
+  order_id: string;
+  totals: {
+    subtotal_cents: number;
+    shipping_fee_cents: number;
+    total_cents: number;
+    currency: string;
+  };
+}> {
+  return postJSON('/api/checkout/create-order', payload);
+}
+
+export async function getOrderPublic(id: string): Promise<OrderPublic> {
+  return getJSON(`/api/orders/${id}`);
+}
+
+export async function initNetopia(orderId: string): Promise<NetopiaInitResponse> {
+  return postJSON('/api/payments/netopia/init', { order_id: orderId });
+}
+
+// Legacy API functions for existing pages
+export async function apiGetProductById(id: number | string): Promise<any> {
+  return getJSON(`/api/products/${id}`);
+}
+
+export async function apiGetCategories(): Promise<any[]> {
+  return getJSON('/api/categories');
+}
+
+export async function apiGetCategoryProducts(categorySlug: string): Promise<{ items: any[] }> {
+  return getJSON(`/api/categories/${categorySlug}/products`);
+}
+
+export async function apiGetSeller(slug: string): Promise<any> {
+  return getJSON(`/api/sellers/${slug}`);
 }
