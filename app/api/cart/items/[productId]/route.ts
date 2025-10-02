@@ -36,7 +36,7 @@ export async function PATCH(
     }
 
     // Find item in cart
-    const itemIndex = cart.items.findIndex(item => item.productId === productIdNum);
+    const itemIndex = cart.items.findIndex(item => item.productId === productId);
     
     if (itemIndex === -1) {
       return NextResponse.json(
@@ -48,8 +48,11 @@ export async function PATCH(
     // Update quantity
     cart.items[itemIndex].qty = qty;
 
-    // Calculate subtotal
-    cart.subtotal = cart.items.reduce((sum, item) => sum + (item.price * item.qty), 0);
+    // Calculate totals
+    cart.totals.subtotal = cart.items.reduce((sum, item) => sum + (item.unitPrice * item.qty), 0);
+    cart.totals.shipping = 0; // Free shipping for MVP
+    cart.totals.tax = Math.round(cart.totals.subtotal * 0.19); // 19% VAT
+    cart.totals.total = cart.totals.subtotal + cart.totals.shipping + cart.totals.tax;
     
     // Save cart
     cartStorage[cartId] = cart;
@@ -92,10 +95,13 @@ export async function DELETE(
     }
 
     // Remove item from cart
-    cart.items = cart.items.filter(item => item.productId !== productIdNum);
+    cart.items = cart.items.filter(item => item.productId !== productId);
 
-    // Calculate subtotal
-    cart.subtotal = cart.items.reduce((sum, item) => sum + (item.price * item.qty), 0);
+    // Calculate totals
+    cart.totals.subtotal = cart.items.reduce((sum, item) => sum + (item.unitPrice * item.qty), 0);
+    cart.totals.shipping = 0; // Free shipping for MVP
+    cart.totals.tax = Math.round(cart.totals.subtotal * 0.19); // 19% VAT
+    cart.totals.total = cart.totals.subtotal + cart.totals.shipping + cart.totals.tax;
     
     // Save cart
     cartStorage[cartId] = cart;

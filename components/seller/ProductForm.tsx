@@ -54,8 +54,8 @@ export default function ProductForm({
     if (formData.images && formData.images.length > 0) {
       const initialImages: ImageItem[] = formData.images.map((img, index) => ({
         id: `img-${Date.now()}-${index}`,
-        url: img.url,
-        alt: img.alt,
+        url: img,
+        alt: `Imagine ${index + 1}`,
         isPrimary: index === 0,
         order: index
       }));
@@ -68,10 +68,7 @@ export default function ProductForm({
     setImages(newImages);
     setFormData(prev => ({
       ...prev,
-      images: newImages.map(img => ({
-        url: img.url,
-        alt: img.alt || `Product image`
-      }))
+      images: newImages.map(img => img.url)
     }));
   };
 
@@ -87,12 +84,12 @@ export default function ProductForm({
       newErrors.price = "Prețul trebuie să fie mai mare decât 0";
     }
 
-    if (formData.stockQty === undefined || formData.stockQty < 0) {
-      newErrors.stockQty = "Stocul trebuie să fie 0 sau mai mare";
+    if (formData.stock === undefined || formData.stock < 0) {
+      newErrors.stock = "Stocul trebuie să fie 0 sau mai mare";
     }
 
-    if (!formData.categorySlug) {
-      newErrors.categorySlug = "Selectează o categorie";
+    if (!formData.categoryId) {
+      newErrors.categoryId = "Selectează o categorie";
     }
 
     if (images.length === 0) {
@@ -111,20 +108,19 @@ export default function ProductForm({
     }
 
     const productData: SellerProduct = {
-      id: formData.id,
+      id: formData.id || "",
       title: formData.title!,
       price: formData.price!,
       currency: formData.currency || "RON",
-      stockQty: formData.stockQty!,
-      categorySlug: formData.categorySlug!,
-      attributes: formData.attributes || {},
-      descriptionHtml: formData.descriptionHtml || "",
-      images: images.map(img => ({
-        url: img.url,
-        alt: img.alt || `Product image`
-      })),
+      stock: formData.stock!,
+      categoryId: formData.categoryId!,
+      description: formData.description || "",
+      images: images.map(img => img.url),
       status: action === "publish" ? "active" : "draft",
-      createdAt: formData.createdAt,
+      sku: formData.sku || "",
+      weight: formData.weight || 0,
+      dimensions: formData.dimensions || { length: 0, width: 0, height: 0 },
+      createdAt: formData.createdAt || new Date().toISOString(),
       updatedAt: new Date().toISOString()
     };
 
@@ -137,10 +133,7 @@ export default function ProductForm({
 
     setFormData(prev => ({
       ...prev,
-      attributes: {
-        ...prev.attributes,
-        [attributeKey]: attributeValue
-      }
+      [attributeKey]: attributeValue
     }));
 
     setAttributeKey("");
@@ -149,14 +142,8 @@ export default function ProductForm({
 
   // Remove attribute
   const removeAttribute = (key: string) => {
-    setFormData(prev => {
-      const newAttributes = { ...prev.attributes };
-      delete newAttributes[key];
-      return {
-        ...prev,
-        attributes: newAttributes
-      };
-    });
+    // Attributes are not supported in SellerProduct type
+    console.warn('Attributes are not supported');
   };
 
 
@@ -228,13 +215,13 @@ export default function ProductForm({
                     <Input
                       type="number"
                       min="0"
-                      value={formData.stockQty || ""}
-                      onChange={(e) => setFormData(prev => ({ ...prev, stockQty: parseInt(e.target.value) || 0 }))}
+                      value={formData.stock || ""}
+                      onChange={(e) => setFormData(prev => ({ ...prev, stock: parseInt(e.target.value) || 0 }))}
                       placeholder="0"
-                      className={errors.stockQty ? "border-red-500" : ""}
+                      className={errors.stock ? "border-red-500" : ""}
                     />
-                    {errors.stockQty && (
-                      <p className="mt-1 text-sm text-red-600">{errors.stockQty}</p>
+                    {errors.stock && (
+                      <p className="mt-1 text-sm text-red-600">{errors.stock}</p>
                     )}
                   </div>
 
@@ -243,8 +230,8 @@ export default function ProductForm({
                       Categorie * <span className="text-red-500">*</span>
                     </label>
                     <Select
-                      value={formData.categorySlug || ""}
-                      onValueChange={(value) => setFormData(prev => ({ ...prev, categorySlug: value }))}
+                      value={formData.categoryId || ""}
+                      onValueChange={(value) => setFormData(prev => ({ ...prev, categoryId: value }))}
                     >
                       <option value="">Selectează categoria</option>
                       {categories.map(category => (
@@ -253,8 +240,8 @@ export default function ProductForm({
                         </option>
                       ))}
                     </Select>
-                    {errors.categorySlug && (
-                      <p className="mt-1 text-sm text-red-600">{errors.categorySlug}</p>
+                    {errors.categoryId && (
+                      <p className="mt-1 text-sm text-red-600">{errors.categoryId}</p>
                     )}
                   </div>
                 </div>
@@ -267,69 +254,9 @@ export default function ProductForm({
                 Atribute
               </h3>
               <div className="space-y-4">
-                {/* Existing attributes */}
-                {formData.attributes && Object.keys(formData.attributes).length > 0 && (
-                  <div className="space-y-2">
-                    {Object.entries(formData.attributes).map(([key, value]) => (
-                      <div key={key} className="flex items-center gap-2">
-                        <Badge variant="secondary" className="flex items-center gap-1">
-                          {key}: {value}
-                          <button
-                            type="button"
-                            onClick={() => removeAttribute(key)}
-                            className="ml-1 hover:text-red-600"
-                          >
-                            <X className="h-3 w-3" />
-                          </button>
-                        </Badge>
-                      </div>
-                    ))}
-                  </div>
-                )}
-
-                {/* Add new attribute */}
-                <div className="flex gap-2">
-                  <Input
-                    value={attributeKey}
-                    onChange={(e) => setAttributeKey(e.target.value)}
-                    placeholder="Nume atribut (ex: material)"
-                    className="flex-1"
-                  />
-                  <Input
-                    value={attributeValue}
-                    onChange={(e) => setAttributeValue(e.target.value)}
-                    placeholder="Valoare (ex: ceramică)"
-                    className="flex-1"
-                  />
-                  <Button type="button" onClick={addAttribute} variant="outline">
-                    <Plus className="h-4 w-4" />
-                  </Button>
-                </div>
-
-                {/* Presets */}
-                <div>
-                  <p className="text-sm text-slate-600 dark:text-slate-300 mb-2">
-                    Preseturi comune:
-                  </p>
-                  <div className="flex flex-wrap gap-2">
-                    {Object.entries(attributePresets).map(([key, values]) => (
-                      <div key={key} className="flex flex-wrap gap-1">
-                        {values.map(value => (
-                          <button
-                            key={value}
-                            type="button"
-                            onClick={() => {
-                              setAttributeKey(key);
-                              setAttributeValue(value);
-                            }}
-                            className="px-2 py-1 text-xs bg-slate-100 dark:bg-slate-700 text-slate-700 dark:text-slate-300 rounded hover:bg-slate-200 dark:hover:bg-slate-600"
-                          >
-                            {key}: {value}
-                          </button>
-                        ))}
-                      </div>
-                    ))}
-                  </div>
+                {/* Attributes are not supported in SellerProduct type - feature disabled */}
+                <div className="text-sm text-gray-500 italic">
+                  Atributele custom nu sunt disponibile momentan în tipul de produs.
                 </div>
               </div>
             </div>
@@ -357,8 +284,8 @@ export default function ProductForm({
                 Descriere
               </h3>
               <Textarea
-                value={formData.descriptionHtml || ""}
-                onChange={(e) => setFormData(prev => ({ ...prev, descriptionHtml: e.target.value }))}
+                value={formData.description || ""}
+                onChange={(e) => setFormData(prev => ({ ...prev, description: e.target.value }))}
                 placeholder="Descrie produsul tău..."
                 rows={8}
                 className="resize-none"

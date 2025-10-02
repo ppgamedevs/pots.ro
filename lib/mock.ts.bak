@@ -1,4 +1,12 @@
-import type { Category, ProductCard, SellerPublic, SellerProduct } from "./types";
+import type { ProductCard, SellerPublic, SellerProduct } from "./types";
+
+// Simple Category type for mock data
+type Category = {
+  id: number;
+  slug: string;
+  name: string;
+  parentId: number | null;
+};
 
 export const mockCategories: Category[] = [
   { id: 1, slug: "vaze", name: "Vaze", parentId: null },
@@ -11,13 +19,16 @@ export const mockCategories: Category[] = [
 export const mockProductsByCategory: Record<string, ProductCard[]> = {
   vaze: [
     {
-      id: 1,
-      slug: "vaza-ceramica-natur",
+      id: "1",
       title: "Vază ceramică — Natur",
       price: 129.0,
       currency: "RON",
-      image: "https://images.unsplash.com/photo-1578662996442-48f60103fc96?w=400&h=400&fit=crop&crop=center",
-      sellerSlug: "partner-a1b2",
+      images: ["https://images.unsplash.com/photo-1578662996442-48f60103fc96?w=400&h=400&fit=crop&crop=center"],
+      seller: { id: "seller1", name: "Atelier Ceramic", slug: "atelier-ceramic" },
+      category: { id: "cat1", name: "Vaze", slug: "vaze" },
+      status: "active",
+      createdAt: "2024-01-01T10:00:00Z",
+      updatedAt: "2024-01-15T12:00:00Z",
     },
     {
       id: 2,

@@ -1,10 +1,12 @@
 import { NextRequest, NextResponse } from "next/server";
 import { db } from "@/db";
-import { orders } from "@/db/schema/core";
+import { orders, users } from "@/db/schema/core";
 import { eq } from "drizzle-orm";
 import { requireRole } from "@/lib/authz";
 import { validateTransition } from "@/lib/orderTransitions";
 import { logStatusChange } from "@/lib/audit";
+import { sendOrderDeliveredEmail } from "@/lib/hooks/orderHooks";
+import { logWebhook } from "@/lib/webhook-logging";
 
 export async function POST(request: NextRequest, { params }: { params: { id: string } }) {
   try {
@@ -55,6 +57,37 @@ export async function POST(request: NextRequest, { params }: { params: { id: str
       user.role,
       { deliveredAt: now.toISOString() }
     );
+    
+    // Send email notification
+    try {
+      // Get buyer info for email
+      const buyerResult = await db
+        .select({ email: users.email })
+        .from(users)
+        .where(eq(users.id, order.buyerId))
+        .limit(1);
+      
+      const buyer = buyerResult[0];
+      if (buyer) {
+        const shippingAddress = order.shippingAddress as any;
+        await sendOrderDeliveredEmail(
+          orderId,
+          buyer.email,
+          shippingAddress?.name || 'Customer',
+          `https://pots.ro/orders/${orderId}/review` // Review URL
+        );
+      }
+    } catch (emailError) {
+      console.error('Failed to send delivered email:', emailError);
+      // Don't fail the request if email fails
+    }
+    
+    // Log webhook event
+    await logWebhook({
+      source: 'shipping',
+      ref: orderId,
+      payload: { status: 'delivered', deliveredAt: now.toISOString() },
+    });
     
     return NextResponse.json({ 
       ok: true, 

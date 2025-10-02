@@ -8,19 +8,25 @@ import type { SellerProduct } from "@/lib/types";
 
 // Mock data for demonstration
 const mockProduct: SellerProduct = {
-  id: 1,
+  id: "1",
   title: "Vază ceramică — Natur",
+  description: "Vază ceramică elegantă, perfectă pentru aranjamente florale moderne.",
   price: 129.0,
   currency: "RON",
-  stockQty: 12,
-  categorySlug: "vaze",
-  attributes: { material: "ceramică", finish: "mat", color: "bej" },
-  descriptionHtml: "<p>Vază ceramică elegantă, perfectă pentru aranjamente florale moderne.</p>",
-  images: [
-    { url: "https://images.unsplash.com/photo-1578662996442-48f60103fc96?w=400&h=400&fit=crop&crop=center", alt: "Vază ceramică Natur" },
-    { url: "https://images.unsplash.com/photo-1586023492125-27b2c045efd7?w=400&h=400&fit=crop&crop=center", alt: "Detalii vază ceramică" }
-  ],
+  categoryId: "ceramics",
   status: "active",
+  images: [
+    "https://images.unsplash.com/photo-1578662996442-48f60103fc96?w=400&h=400&fit=crop&crop=center",
+    "https://images.unsplash.com/photo-1586023492125-27b2c045efd7?w=400&h=400&fit=crop&crop=center"
+  ],
+  stock: 12,
+  sku: "VAZA-001",
+  weight: 0.5,
+  dimensions: {
+    length: 15,
+    width: 15,
+    height: 25,
+  },
   createdAt: "2024-12-01T10:00:00Z",
   updatedAt: "2024-12-15T14:30:00Z"
 };

@@ -242,7 +242,7 @@ export default function AdminOrderDetailPage() {
                       <div className="flex-1">
                         <p className="font-medium">{event.action}</p>
                         <p className="text-sm text-gray-600">
-                          {formatDate(event.timestamp)} by {event.actor}
+                          {event.timestamp ? formatDate(event.timestamp) : 'Unknown date'} by {event.actor || 'System'}
                         </p>
                       </div>
                     </div>

@@ -239,8 +239,8 @@ export default function MiniCart({ className = "" }: MiniCartProps) {
                     {/* Product Image */}
                     <div className="relative w-12 h-12 flex-shrink-0">
                       <Image
-                        src={item.image}
-                        alt={item.title}
+                        src="/placeholder.png"
+                        alt={item.productName}
                         fill
                         className="object-cover rounded"
                       />
@@ -249,10 +249,10 @@ export default function MiniCart({ className = "" }: MiniCartProps) {
                     {/* Product Info */}
                     <div className="flex-1 min-w-0">
                       <h4 className="font-medium text-sm text-slate-900 dark:text-slate-100 truncate">
-                        {item.title}
+                        {item.productName}
                       </h4>
                       <p className="text-sm text-slate-600 dark:text-slate-400">
-                        {formatPrice(item.price, item.currency)}
+                        {formatPrice(item.unitPrice, 'RON')} × {item.qty}
                       </p>
                     </div>
 
@@ -261,8 +261,8 @@ export default function MiniCart({ className = "" }: MiniCartProps) {
                       <Button
                         variant="ghost"
                         size="sm"
-                        onClick={() => updateQuantity(item.productId, item.qty - 1)}
-                        disabled={loading[item.productId] || item.qty <= 1}
+                        onClick={() => updateQuantity(parseInt(item.productId), item.qty - 1)}
+                        disabled={loading[parseInt(item.productId)] || item.qty <= 1}
                         className="h-6 w-6 p-0"
                         aria-label="Scade cantitatea"
                       >
@@ -276,8 +276,8 @@ export default function MiniCart({ className = "" }: MiniCartProps) {
                       <Button
                         variant="ghost"
                         size="sm"
-                        onClick={() => updateQuantity(item.productId, item.qty + 1)}
-                        disabled={loading[item.productId] || item.qty >= 99}
+                        onClick={() => updateQuantity(parseInt(item.productId), item.qty + 1)}
+                        disabled={loading[parseInt(item.productId)] || item.qty >= 99}
                         className="h-6 w-6 p-0"
                         aria-label="Crește cantitatea"
                       >
@@ -289,8 +289,8 @@ export default function MiniCart({ className = "" }: MiniCartProps) {
                     <Button
                       variant="ghost"
                       size="sm"
-                      onClick={() => removeItem(item.productId)}
-                      disabled={loading[item.productId]}
+                      onClick={() => removeItem(parseInt(item.productId))}
+                      disabled={loading[parseInt(item.productId)]}
                       className="h-6 w-6 p-0 text-red-500 hover:text-red-700"
                       aria-label="Elimină produsul"
                     >
@@ -310,7 +310,7 @@ export default function MiniCart({ className = "" }: MiniCartProps) {
                   Subtotal:
                 </span>
                 <span className="font-bold text-lg text-slate-900 dark:text-slate-100">
-                  {formatPrice(cart.subtotal, cart.currency)}
+                  {formatPrice(cart.totals.subtotal, 'RON')}
                 </span>
               </div>
               

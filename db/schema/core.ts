@@ -1,4 +1,4 @@
-import { pgTable, uuid, text, timestamp, integer, jsonb, pgEnum, index, uniqueIndex, boolean, check } from "drizzle-orm/pg-core";
+import { pgTable, uuid, text, timestamp, integer, jsonb, pgEnum, index, uniqueIndex, boolean, check, decimal } from "drizzle-orm/pg-core";
 import { sql } from "drizzle-orm";
 
 // Enums
@@ -218,6 +218,48 @@ export const messages = pgTable("messages", {
 }, (table) => ({
   messagesConversationIdx: index("messages_conversation_idx").on(table.conversationId),
   messagesConversationCreatedIdx: index("messages_conversation_created_idx").on(table.conversationId, table.createdAt),
+}));
+
+// Invoice table
+export const invoices = pgTable("invoices", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  orderId: uuid("order_id").notNull().references(() => orders.id, { onDelete: "cascade" }),
+  series: text("series").notNull(),
+  number: text("number").notNull(),
+  pdfUrl: text("pdf_url").notNull(),
+  total: decimal("total", { precision: 14, scale: 2 }).notNull(),
+  currency: text("currency").notNull().default("RON"),
+  issuer: text("issuer").notNull().$type<'smartbill' | 'facturis' | 'mock'>(),
+  status: text("status").notNull().$type<'issued' | 'voided' | 'error'>(),
+  createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
+}, (table) => ({
+  invoicesOrderUnique: uniqueIndex("invoices_order_unique").on(table.orderId),
+  invoicesCreatedIdx: index("invoices_created_idx").on(table.createdAt),
+}));
+
+// Email events table
+export const emailEvents = pgTable("email_events", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  type: text("type").notNull().$type<'order_paid' | 'order_shipped' | 'order_delivered' | 'message_created'>(),
+  toEmail: text("to_email").notNull(),
+  meta: jsonb("meta"),
+  status: text("status").notNull().$type<'sent' | 'retry' | 'failed'>(),
+  error: text("error"),
+  createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
+}, (table) => ({
+  emailEventsTypeCreatedIdx: index("email_events_type_created_idx").on(table.type, table.createdAt),
+}));
+
+// Webhook logs table
+export const webhookLogs = pgTable("webhook_logs", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  source: text("source").notNull().$type<'payments' | 'shipping' | 'invoices'>(),
+  ref: text("ref"),
+  payload: jsonb("payload").notNull(),
+  result: text("result").$type<'ok' | 'duplicate' | 'error'>(),
+  createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
+}, (table) => ({
+  webhookLogsSourceCreatedIdx: index("webhook_logs_source_created_idx").on(table.source, table.createdAt),
 }));
 
 // SQL for triggers and additional indexes

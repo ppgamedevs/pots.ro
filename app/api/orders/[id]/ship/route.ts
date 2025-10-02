@@ -1,10 +1,12 @@
 import { NextRequest, NextResponse } from "next/server";
 import { db } from "@/db";
-import { orders } from "@/db/schema/core";
+import { orders, users } from "@/db/schema/core";
 import { eq } from "drizzle-orm";
 import { requireRole } from "@/lib/authz";
 import { validateTransition } from "@/lib/orderTransitions";
 import { logStatusChange } from "@/lib/audit";
+import { sendOrderShippedEmail } from "@/lib/hooks/orderHooks";
+import { logWebhook } from "@/lib/webhook-logging";
 import { z } from "zod";
 
 const shipRequestSchema = z.object({
@@ -68,6 +70,40 @@ export async function POST(request: NextRequest, { params }: { params: { id: str
       user.role,
       { awbNumber }
     );
+    
+    // Send email notification
+    try {
+      // Get buyer info for email
+      const buyerResult = await db
+        .select({ email: users.email })
+        .from(users)
+        .where(eq(users.id, order.buyerId))
+        .limit(1);
+      
+      const buyer = buyerResult[0];
+      if (buyer) {
+        const shippingAddress = order.shippingAddress as any;
+        const carrierMeta = order.carrierMeta as any;
+        await sendOrderShippedEmail(
+          orderId,
+          buyer.email,
+          shippingAddress?.name || 'Customer',
+          awbNumber,
+          carrierMeta?.carrier || 'Unknown',
+          carrierMeta?.trackingUrl
+        );
+      }
+    } catch (emailError) {
+      console.error('Failed to send shipped email:', emailError);
+      // Don't fail the request if email fails
+    }
+    
+    // Log webhook event
+    await logWebhook({
+      source: 'shipping',
+      ref: orderId,
+      payload: { awbNumber, status: 'shipped' },
+    });
     
     return NextResponse.json({ 
       ok: true, 

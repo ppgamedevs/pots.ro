@@ -29,8 +29,14 @@ export async function POST(request: Request) {
       cart = {
         id: cartId,
         items: [],
-        subtotal: 0,
-        currency: "RON"
+        totals: {
+          subtotal: 0,
+          shipping: 0,
+          tax: 0,
+          total: 0
+        },
+        createdAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString()
       };
     }
 
@@ -61,18 +67,23 @@ export async function POST(request: Request) {
     } else {
       // Add new item
       const cartItem: CartItem = {
+        id: `${product.id}-${Date.now()}`, // Unique item ID
         productId: product.id,
-        title: product.title,
-        price: product.price,
-        currency: product.currency,
-        image: product.image,
-        qty: qty
+        productName: product.title,
+        qty: qty,
+        unitPrice: product.price,
+        subtotal: product.price * qty,
+        sellerId: product.sellerId
       };
       cart.items.push(cartItem);
     }
 
-    // Calculate subtotal
-    cart.subtotal = cart.items.reduce((sum, item) => sum + (item.price * item.qty), 0);
+    // Calculate totals
+    cart.totals.subtotal = cart.items.reduce((sum, item) => sum + (item.unitPrice * item.qty), 0);
+    cart.totals.shipping = 0; // Free shipping for MVP
+    cart.totals.tax = Math.round(cart.totals.subtotal * 0.19); // 19% VAT
+    cart.totals.total = cart.totals.subtotal + cart.totals.shipping + cart.totals.tax;
+    cart.updatedAt = new Date().toISOString();
     
     // Save cart
     cartStorage[cartId] = cart;

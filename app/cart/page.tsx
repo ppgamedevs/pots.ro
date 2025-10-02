@@ -164,8 +164,8 @@ export default function CartPage() {
                           {/* Product Image */}
                           <div className="relative w-20 h-20 flex-shrink-0">
                             <Image
-                              src={item.image}
-                              alt={item.title}
+                              src="/placeholder.png"
+                              alt={item.productName}
                               fill
                               className="object-cover rounded-lg"
                             />
@@ -174,13 +174,13 @@ export default function CartPage() {
                           {/* Product Info */}
                           <div className="flex-1 min-w-0">
                             <h3 className="font-medium text-slate-900 dark:text-slate-100 mb-1">
-                              {item.title}
+                              {item.productName}
                             </h3>
                             <p className="text-slate-600 dark:text-slate-400 text-sm">
-                              Preț unitar: {formatPrice(item.price, item.currency)}
+                              Preț unitar: {formatPrice(item.unitPrice, 'RON')}
                             </p>
                             <p className="text-slate-600 dark:text-slate-400 text-sm">
-                              Total: {formatPrice(item.price * item.qty, item.currency)}
+                              Total: {formatPrice(item.subtotal, 'RON')}
                             </p>
                           </div>
 
@@ -189,8 +189,8 @@ export default function CartPage() {
                             <Button
                               variant="outline"
                               size="sm"
-                              onClick={() => updateQuantity(item.productId, item.qty - 1)}
-                              disabled={loading[item.productId] || item.qty <= 1}
+                              onClick={() => updateQuantity(parseInt(item.productId), item.qty - 1)}
+                              disabled={loading[parseInt(item.productId)] || item.qty <= 1}
                               className="h-8 w-8 p-0"
                               aria-label="Scade cantitatea"
                             >
@@ -204,8 +204,8 @@ export default function CartPage() {
                             <Button
                               variant="outline"
                               size="sm"
-                              onClick={() => updateQuantity(item.productId, item.qty + 1)}
-                              disabled={loading[item.productId] || item.qty >= 99}
+                              onClick={() => updateQuantity(parseInt(item.productId), item.qty + 1)}
+                              disabled={loading[parseInt(item.productId)] || item.qty >= 99}
                               className="h-8 w-8 p-0"
                               aria-label="Crește cantitatea"
                             >
@@ -217,8 +217,8 @@ export default function CartPage() {
                           <Button
                             variant="ghost"
                             size="sm"
-                            onClick={() => removeItem(item.productId)}
-                            disabled={loading[item.productId]}
+                            onClick={() => removeItem(parseInt(item.productId))}
+                            disabled={loading[parseInt(item.productId)]}
                             className="text-red-500 hover:text-red-700"
                             aria-label="Elimină produsul"
                           >
@@ -243,7 +243,7 @@ export default function CartPage() {
                           Produse ({cart.items.reduce((sum, item) => sum + item.qty, 0)})
                         </span>
                         <span className="text-slate-900 dark:text-slate-100">
-                          {formatPrice(cart.subtotal, cart.currency)}
+                          {formatPrice(cart.totals.subtotal, 'RON')}
                         </span>
                       </div>
                       
@@ -262,7 +262,7 @@ export default function CartPage() {
                             Total
                           </span>
                           <span className="text-slate-900 dark:text-slate-100">
-                            {formatPrice(cart.subtotal, cart.currency)}
+                            {formatPrice(cart.totals.total, 'RON')}
                           </span>
                         </div>
                       </div>

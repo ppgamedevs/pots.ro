@@ -16,47 +16,47 @@ import type { SellerProductListItem, SellerProductsResponse } from "@/lib/types"
 // Mock data for demonstration
 const mockProducts: SellerProductListItem[] = [
   {
-    id: 1,
+    id: "1",
     title: "Vază ceramică — Natur",
     price: 129.0,
     currency: "RON",
-    image: "https://images.unsplash.com/photo-1578662996442-48f60103fc96?w=400&h=400&fit=crop&crop=center",
     status: "active",
-    stockQty: 12,
-    categorySlug: "vaze",
+    stock: 12,
+    images: ["https://images.unsplash.com/photo-1578662996442-48f60103fc96?w=400&h=400&fit=crop&crop=center"],
+    createdAt: "2024-12-01T10:00:00Z",
     updatedAt: "2024-12-15T14:30:00Z"
   },
   {
-    id: 2,
+    id: "2",
     title: "Ghiveci ceramică alb",
     price: 89.0,
     currency: "RON",
-    image: "https://images.unsplash.com/photo-1586023492125-27b2c045efd7?w=400&h=400&fit=crop&crop=center",
     status: "draft",
-    stockQty: 8,
-    categorySlug: "ghivece",
+    stock: 8,
+    images: ["https://images.unsplash.com/photo-1586023492125-27b2c045efd7?w=400&h=400&fit=crop&crop=center"],
+    createdAt: "2024-12-02T10:00:00Z",
     updatedAt: "2024-12-14T16:45:00Z"
   },
   {
-    id: 3,
+    id: "3",
     title: "Set 3 ghivece mici",
     price: 45.0,
     currency: "RON",
-    image: "https://images.unsplash.com/photo-1578662996442-48f60103fc96?w=400&h=400&fit=crop&crop=center",
-    status: "unpublished",
-    stockQty: 0,
-    categorySlug: "ghivece",
+    status: "draft",
+    stock: 0,
+    images: ["https://images.unsplash.com/photo-1578662996442-48f60103fc96?w=400&h=400&fit=crop&crop=center"],
+    createdAt: "2024-12-03T10:00:00Z",
     updatedAt: "2024-12-12T13:20:00Z"
   },
   {
-    id: 4,
+    id: "4",
     title: "Vază sticlă transparentă",
     price: 75.0,
     currency: "EUR",
-    image: "https://images.unsplash.com/photo-1586023492125-27b2c045efd7?w=400&h=400&fit=crop&crop=center",
     status: "active",
-    stockQty: 5,
-    categorySlug: "vaze",
+    stock: 5,
+    images: ["https://images.unsplash.com/photo-1586023492125-27b2c045efd7?w=400&h=400&fit=crop&crop=center"],
+    createdAt: "2024-12-04T10:00:00Z",
     updatedAt: "2024-12-15T10:15:00Z"
   }
 ];
@@ -116,9 +116,9 @@ export default function ProductsPage() {
 
     // Stock filter
     if (inStock === "yes") {
-      filtered = filtered.filter(p => p.stockQty > 0);
+      filtered = filtered.filter(p => p.stock > 0);
     } else if (inStock === "no") {
-      filtered = filtered.filter(p => p.stockQty === 0);
+      filtered = filtered.filter(p => p.stock === 0);
     }
 
     // Search filter
@@ -173,8 +173,8 @@ export default function ProductsPage() {
     setLoading(true);
     try {
       // Optimistic update
-      setProducts(prev => prev.map(p => 
-        p.id === id ? { ...p, status: "active" as const } : p
+      setProducts(prev => prev.map(p =>
+        p.id === id.toString() ? { ...p, status: "active" as const } : p
       ));
       
       // Simulate API call
@@ -183,8 +183,8 @@ export default function ProductsPage() {
       toast("Produsul a fost publicat cu succes.", "success");
     } catch (error) {
       // Revert on error
-      setProducts(prev => prev.map(p => 
-        p.id === id ? { ...p, status: "draft" as const } : p
+      setProducts(prev => prev.map(p =>
+        p.id === id.toString() ? { ...p, status: "draft" as const } : p
       ));
       toast("Nu s-a putut publica produsul.", "error");
     } finally {
@@ -197,7 +197,7 @@ export default function ProductsPage() {
     try {
       // Optimistic update
       setProducts(prev => prev.map(p => 
-        p.id === id ? { ...p, status: "unpublished" as const } : p
+        p.id === id.toString() ? { ...p, status: "draft" as const } : p
       ));
       
       // Simulate API call
@@ -206,8 +206,8 @@ export default function ProductsPage() {
       toast("Produsul a fost nepublicat cu succes.", "success");
     } catch (error) {
       // Revert on error
-      setProducts(prev => prev.map(p => 
-        p.id === id ? { ...p, status: "active" as const } : p
+      setProducts(prev => prev.map(p =>
+        p.id === id.toString() ? { ...p, status: "active" as const } : p
       ));
       toast("Nu s-a putut nepublica produsul.", "error");
     } finally {
@@ -219,7 +219,7 @@ export default function ProductsPage() {
     setLoading(true);
     try {
       // Optimistic update
-      setProducts(prev => prev.filter(p => p.id !== id));
+      setProducts(prev => prev.filter(p => p.id !== id.toString()));
       
       // Simulate API call
       await new Promise(resolve => setTimeout(resolve, 500));
@@ -227,7 +227,7 @@ export default function ProductsPage() {
       toast("Produsul a fost șters cu succes.", "success");
     } catch (error) {
       // Revert on error
-      setProducts(prev => [...prev, mockProducts.find(p => p.id === id)!]);
+      setProducts(prev => [...prev, mockProducts.find(p => p.id === id.toString())!]);
       toast("Nu s-a putut șterge produsul.", "error");
     } finally {
       setLoading(false);
@@ -427,7 +427,7 @@ export default function ProductsPage() {
                       <div className="flex items-center">
                         <div className="flex-shrink-0 h-12 w-12">
                           <Image
-                            src={product.image}
+                            src={product.images[0] || "/placeholder.png"}
                             alt={product.title}
                             width={48}
                             height={48}
@@ -451,10 +451,10 @@ export default function ProductsPage() {
                       {product.price} {product.currency}
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-slate-900 dark:text-slate-100">
-                      {product.stockQty}
+                      {product.stock}
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-slate-500 dark:text-slate-300">
-                      {product.categorySlug}
+                      Ceramics
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-slate-500 dark:text-slate-300">
                       {formatDate(product.updatedAt)}
@@ -471,7 +471,7 @@ export default function ProductsPage() {
                           <Button
                             variant="ghost"
                             size="sm"
-                            onClick={() => handlePublish(product.id)}
+                            onClick={() => handlePublish(parseInt(product.id))}
                             disabled={loading}
                           >
                             <Eye className="h-4 w-4" />
@@ -482,7 +482,7 @@ export default function ProductsPage() {
                           <Button
                             variant="ghost"
                             size="sm"
-                            onClick={() => handleUnpublish(product.id)}
+                            onClick={() => handleUnpublish(parseInt(product.id))}
                             disabled={loading}
                           >
                             <EyeOff className="h-4 w-4" />
@@ -492,7 +492,7 @@ export default function ProductsPage() {
                         <Button
                           variant="ghost"
                           size="sm"
-                          onClick={() => setDeleteConfirm(product.id)}
+                            onClick={() => setDeleteConfirm(parseInt(product.id))}
                           disabled={loading}
                         >
                           <Trash2 className="h-4 w-4" />

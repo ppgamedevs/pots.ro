@@ -14,14 +14,20 @@ export default function NewProductPage() {
 
   const initialData: Partial<SellerProduct> = {
     title: "",
+    description: "",
     price: 0,
     currency: "RON",
-    stockQty: 0,
-    categorySlug: "",
-    attributes: {},
-    descriptionHtml: "",
+    categoryId: "",
+    status: "draft",
     images: [],
-    status: "draft"
+    stock: 0,
+    sku: "",
+    weight: 0,
+    dimensions: {
+      length: 0,
+      width: 0,
+      height: 0,
+    },
   };
 
   const handleSave = async (data: SellerProduct, action: "draft" | "publish") => {
