@@ -4,7 +4,7 @@
  */
 
 import { FinanceSummary, LedgerEntry, LedgerFilters } from '@/lib/types.finante';
-import { ApiResponse, PaginatedResponse } from '@/lib/drizzle/types';
+import { ApiResponse, Paged } from '@/lib/types';
 
 const API_BASE = '/api';
 
@@ -82,7 +82,7 @@ export async function getMonthlyFinanceSummary(): Promise<ApiResponse<FinanceSum
 }
 
 // Lista intrări ledger cu filtre
-export async function listLedgerEntries(filters: LedgerFilters = {}): Promise<ApiResponse<PaginatedResponse<LedgerEntry>>> {
+export async function listLedgerEntries(filters: LedgerFilters = {}): Promise<ApiResponse<Paged<LedgerEntry>>> {
   const params = new URLSearchParams();
   
   if (filters.type) params.append('type', filters.type);
@@ -92,7 +92,7 @@ export async function listLedgerEntries(filters: LedgerFilters = {}): Promise<Ap
   if (filters.page) params.append('page', filters.page.toString());
   if (filters.pageSize) params.append('pageSize', filters.pageSize.toString());
 
-  return apiFetch<PaginatedResponse<LedgerEntry>>(`${API_BASE}/admin/ledger?${params}`);
+  return apiFetch<Paged<LedgerEntry>>(`${API_BASE}/admin/ledger?${params}`);
 }
 
 // Obține soldul curent al platformei

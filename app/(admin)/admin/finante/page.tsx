@@ -37,7 +37,7 @@ export default function AdminFinancePage() {
       const response = await listPayouts(filters);
       
       if (response.ok && response.data) {
-        setPayouts(response.data.items);
+        setPayouts(response.data.data);
       } else {
         toast.error(response.error || 'Eroare la încărcarea payout-urilor');
       }
@@ -56,7 +56,7 @@ export default function AdminFinancePage() {
       const response = await listRefunds(filters);
       
       if (response.ok && response.data) {
-        setRefunds(response.data.items);
+        setRefunds(response.data.data);
       } else {
         toast.error(response.error || 'Eroare la încărcarea refund-urilor');
       }

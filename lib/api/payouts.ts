@@ -4,7 +4,7 @@
  */
 
 import { Payout, PayoutFilters, PayoutRunRequest, PayoutRunBatchRequest } from '@/lib/types.finante';
-import { ApiResponse, PaginatedResponse } from '@/lib/drizzle/types';
+import { ApiResponse, Paged } from '@/lib/types';
 
 const API_BASE = '/api';
 
@@ -41,7 +41,7 @@ async function apiFetch<T>(url: string, options?: RequestInit): Promise<ApiRespo
 }
 
 // Seller API - Lista payout-uri pentru vânzător
-export async function listSellerPayouts(filters: PayoutFilters = {}): Promise<PaginatedResponse<Payout>> {
+export async function listSellerPayouts(filters: PayoutFilters = {}): Promise<ApiResponse<Paged<Payout>>> {
   const params = new URLSearchParams();
   
   if (filters.status) params.append('status', filters.status);
@@ -49,7 +49,7 @@ export async function listSellerPayouts(filters: PayoutFilters = {}): Promise<Pa
   if (filters.to) params.append('to', filters.to);
   if (filters.page) params.append('page', filters.page.toString());
 
-  return apiFetch<{ items: Payout[]; total: number; page: number; pageSize: number; totalPages: number }>(`${API_BASE}/seller/payouts?${params}`);
+  return apiFetch<Paged<Payout>>(`${API_BASE}/seller/payouts?${params}`);
 }
 
 // Seller API - Detalii payout
@@ -58,7 +58,7 @@ export async function getPayout(id: string): Promise<ApiResponse<Payout>> {
 }
 
 // Admin API - Lista toate payout-urile
-export async function listPayouts(filters: PayoutFilters = {}): Promise<PaginatedResponse<Payout>> {
+export async function listPayouts(filters: PayoutFilters = {}): Promise<ApiResponse<Paged<Payout>>> {
   const params = new URLSearchParams();
   
   if (filters.status) params.append('status', filters.status);
@@ -67,7 +67,7 @@ export async function listPayouts(filters: PayoutFilters = {}): Promise<Paginate
   if (filters.to) params.append('to', filters.to);
   if (filters.page) params.append('page', filters.page.toString());
 
-  return apiFetch<{ items: Payout[]; total: number; page: number; pageSize: number; totalPages: number }>(`${API_BASE}/admin/payouts?${params}`);
+  return apiFetch<Paged<Payout>>(`${API_BASE}/admin/payouts?${params}`);
 }
 
 // Admin API - Procesează payout individual

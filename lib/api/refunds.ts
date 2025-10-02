@@ -4,7 +4,7 @@
  */
 
 import { Refund, RefundFilters, RefundCreateRequest } from '@/lib/types.finante';
-import { ApiResponse, PaginatedResponse } from '@/lib/drizzle/types';
+import { ApiResponse, Paged } from '@/lib/types';
 
 const API_BASE = '/api';
 
@@ -41,7 +41,7 @@ async function apiFetch<T>(url: string, options?: RequestInit): Promise<ApiRespo
 }
 
 // Lista refund-uri cu filtre
-export async function listRefunds(filters: RefundFilters = {}): Promise<PaginatedResponse<Refund>> {
+export async function listRefunds(filters: RefundFilters = {}): Promise<ApiResponse<Paged<Refund>>> {
   const params = new URLSearchParams();
   
   if (filters.status) params.append('status', filters.status);
@@ -50,7 +50,7 @@ export async function listRefunds(filters: RefundFilters = {}): Promise<Paginate
   if (filters.to) params.append('to', filters.to);
   if (filters.page) params.append('page', filters.page.toString());
 
-  return apiFetch<{ items: Refund[]; total: number; page: number; pageSize: number; totalPages: number }>(`${API_BASE}/admin/refunds?${params}`);
+  return apiFetch<Paged<Refund>>(`${API_BASE}/admin/refunds?${params}`);
 }
 
 // Creează refund pentru o comandă

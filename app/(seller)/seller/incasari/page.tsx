@@ -25,7 +25,7 @@ export default function SellerPayoutsPage() {
       const response = await listSellerPayouts(newFilters);
       
       if (response.ok && response.data) {
-        setPayouts(response.data.items);
+        setPayouts(response.data.data);
       } else {
         toast.error(response.error || 'Eroare la încărcarea payout-urilor');
       }
