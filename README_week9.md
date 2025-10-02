@@ -158,9 +158,10 @@ type ImportResult = {
 ## Cron Jobs
 
 ### Regenerare Sitemaps
-- **Schedule**: `0 2 * * *` (zilnic la 2:00 AM)
 - **Endpoint**: `/api/cron/regenerate-sitemaps`
 - **Funcționalitate**: Regenerează toate sitemap-urile
+- **Notă**: Cron job-ul a fost eliminat din cauza limitării Vercel (max 2 cron jobs). 
+  Sitemap-urile se regenerează automat la accesare (cache 15 min) sau pot fi regenerare manual prin endpoint.
 
 ## Dependencies
 
