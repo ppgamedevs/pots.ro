@@ -1,34 +1,46 @@
-import clsx from "clsx";
+import * as React from "react"
+import { cva, type VariantProps } from "class-variance-authority"
 
-export function Badge({
-  children,
-  className,
-  variant = "neutral",
-}: {
-  children: React.ReactNode;
-  className?: string;
-  variant?: "neutral" | "success" | "warning" | "danger" | "brand" | "secondary" | "destructive" | "outline";
-}) {
-  const palette: Record<string, string> = {
-    neutral: "bg-slate-100 text-slate-700 dark:bg-white/10 dark:text-slate-200",
-    success: "bg-emerald-100 text-emerald-700 dark:bg-emerald-400/10 dark:text-emerald-300",
-    warning: "bg-amber-100 text-amber-800 dark:bg-amber-400/10 dark:text-amber-300",
-    danger:  "bg-rose-100 text-rose-700 dark:bg-rose-400/10 dark:text-rose-300",
-    brand:   "bg-brand/15 text-brand dark:bg-brand/20 dark:text-brand",
-    secondary: "bg-slate-100 text-slate-700 dark:bg-white/10 dark:text-slate-200",
-    destructive: "bg-rose-100 text-rose-700 dark:bg-rose-400/10 dark:text-rose-300",
-    outline: "border border-slate-200 dark:border-white/10 bg-transparent text-slate-700 dark:text-slate-300",
-  };
+import { cn } from "@/lib/utils"
 
+const badgeVariants = cva(
+  "inline-flex items-center rounded-full border px-2.5 py-0.5 text-xs font-semibold transition-colors focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2",
+  {
+    variants: {
+      variant: {
+        default:
+          "border-transparent bg-primary text-primary-foreground hover:bg-primary/80",
+        secondary:
+          "border-transparent bg-secondary text-secondary-foreground hover:bg-secondary/80",
+        destructive:
+          "border-transparent bg-destructive text-destructive-foreground hover:bg-destructive/80",
+        outline: "text-foreground",
+        success:
+          "border-transparent bg-green-500 text-white hover:bg-green-600",
+        neutral:
+          "border-transparent bg-gray-500 text-white hover:bg-gray-600",
+        brand:
+          "border-transparent bg-blue-500 text-white hover:bg-blue-600",
+        warning:
+          "border-transparent bg-yellow-500 text-white hover:bg-yellow-600",
+        danger:
+          "border-transparent bg-red-500 text-white hover:bg-red-600",
+      },
+    },
+    defaultVariants: {
+      variant: "default",
+    },
+  }
+)
+
+export interface BadgeProps
+  extends React.HTMLAttributes<HTMLDivElement>,
+    VariantProps<typeof badgeVariants> {}
+
+function Badge({ className, variant, ...props }: BadgeProps) {
   return (
-    <span
-      className={clsx(
-        "inline-flex items-center rounded-full px-2.5 h-6 text-xs font-medium",
-        palette[variant],
-        className
-      )}
-    >
-      {children}
-    </span>
-  );
+    <div className={cn(badgeVariants({ variant }), className)} {...props} />
+  )
 }
+
+export { Badge, badgeVariants }

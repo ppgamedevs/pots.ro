@@ -9,6 +9,7 @@ import { RowActions } from "@/components/ui/row-actions";
 import { useConfirm } from "@/components/ui/use-confirm";
 import { toast } from "sonner";
 import { Search, Plus, Edit, Eye, Trash2, MoreHorizontal } from "lucide-react";
+import { CsvImportDialog } from "@/components/seller/CsvImportDialog";
 
 type Row = {
   id: number;
@@ -207,10 +208,19 @@ export default function SellerProductsClient({
             </SelectContent>
           </Select>
         </div>
-        <Button className="w-full sm:w-auto">
-          <Plus className="h-4 w-4 mr-2" />
-          Adaugă produs
-        </Button>
+        <div className="flex gap-2 w-full sm:w-auto">
+          <CsvImportDialog 
+            onImportComplete={(result) => {
+              toast.success(`Import completat: ${result.successCount} produse importate`);
+              // Refresh the page or refetch data
+              window.location.reload();
+            }}
+          />
+          <Button className="flex-1 sm:flex-none">
+            <Plus className="h-4 w-4 mr-2" />
+            Adaugă produs
+          </Button>
+        </div>
       </div>
 
       {/* Selection Actions */}

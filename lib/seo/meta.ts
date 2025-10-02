@@ -1,192 +1,270 @@
+/**
+ * Utilitare pentru meta tags dinamice și SEO
+ */
+
 import { Metadata } from 'next';
 
-// SEO Meta Helpers pentru Pots.ro (română)
-
-export function titleFromProduct(product: { title: string; price?: number; currency?: string }): string {
-  const baseTitle = `${product.title} | Pots.ro`;
-  
-  if (product.price && product.currency) {
-    const formattedPrice = new Intl.NumberFormat('ro-RO', {
-      style: 'currency',
-      currency: product.currency,
-    }).format(product.price / 100);
-    return `${product.title} - ${formattedPrice} | Pots.ro`;
-  }
-  
-  return baseTitle;
-}
-
-export function descFromProduct(product: { 
-  title: string; 
-  description?: string; 
-  price?: number; 
-  currency?: string;
-  attributes?: Record<string, any>;
-}): string {
-  let description = product.description || '';
-  
-  // Dacă nu avem descriere, construim una din atribute
-  if (!description && product.attributes) {
-    const attrParts = Object.entries(product.attributes)
-      .filter(([_, value]) => value && typeof value === 'string')
-      .map(([key, value]) => `${key}: ${value}`)
-      .slice(0, 3); // Maxim 3 atribute
-    
-    if (attrParts.length > 0) {
-      description = `Produs de calitate cu ${attrParts.join(', ')}.`;
-    }
-  }
-  
-  // Dacă încă nu avem descriere, folosim titlul
-  if (!description) {
-    description = `Cumpără ${product.title} online de la Pots.ro. Produse de calitate pentru casă și grădină.`;
-  }
-  
-  // Adăugăm prețul dacă este disponibil
-  if (product.price && product.currency) {
-    const formattedPrice = new Intl.NumberFormat('ro-RO', {
-      style: 'currency',
-      currency: product.currency,
-    }).format(product.price / 100);
-    description = `${description} Preț: ${formattedPrice}.`;
-  }
-  
-  // Limităm la ~160 caractere pentru SEO
-  if (description.length > 160) {
-    description = description.substring(0, 157) + '...';
-  }
-  
-  return description;
-}
-
-export function canonical(url: string): string {
-  const baseUrl = process.env.APP_BASE_URL || 'https://pots.ro';
-  return `${baseUrl}${url}`;
-}
-
-export function metaSocial({
-  title,
-  description,
-  url,
-  image,
-}: {
+export interface ProductMetaData {
   title: string;
   description: string;
-  url: string;
-  image?: string;
-}): Partial<Metadata> {
-  const canonicalUrl = canonical(url);
-  const imageUrl = image ? (image.startsWith('http') ? image : canonical(image)) : undefined;
-  
+  price: number;
+  currency: string;
+  images: string[];
+  seller: {
+    brandName: string;
+    slug: string;
+  };
+  category: {
+    name: string;
+    slug: string;
+  };
+  slug: string;
+}
+
+export interface CategoryMetaData {
+  name: string;
+  slug: string;
+  description?: string;
+  productCount?: number;
+}
+
+export interface SellerMetaData {
+  brandName: string;
+  slug: string;
+  description?: string;
+  productCount?: number;
+}
+
+// Generează meta tags pentru produse
+export function generateProductMetadata(product: ProductMetaData): Metadata {
+  const title = `${product.title} | ${product.seller.brandName} | Pots.ro`;
+  const description = `${product.description.substring(0, 155)}... Preț: ${product.price} ${product.currency}. Livrare rapidă în toată România.`;
+  const canonical = `https://pots.ro/p/${product.slug}`;
+  const ogImage = product.images[0] || '/og-product-default.jpg';
+
   return {
     title,
     description,
     alternates: {
-      canonical: canonicalUrl,
+      canonical
     },
     openGraph: {
       title,
       description,
-      url: canonicalUrl,
       type: 'website',
       siteName: 'Pots.ro',
-      images: imageUrl ? [{ url: imageUrl }] : undefined,
+      url: canonical,
+      images: [
+        {
+          url: ogImage,
+          width: 1200,
+          height: 630,
+          alt: product.title
+        }
+      ],
+      locale: 'ro_RO'
     },
     twitter: {
       card: 'summary_large_image',
       title,
       description,
-      images: imageUrl ? [imageUrl] : undefined,
+      images: [ogImage],
+      creator: '@potsro'
     },
+    other: {
+      'product:price:amount': product.price.toString(),
+      'product:price:currency': product.currency,
+      'product:brand': product.seller.brandName,
+      'product:category': product.category.name
+    }
   };
 }
 
-export function noindex(enabled: boolean = true): Partial<Metadata> {
-  return {
-    robots: {
-      index: !enabled,
-      follow: !enabled,
-      googleBot: {
-        index: !enabled,
-        follow: !enabled,
-      },
-    },
-  };
-}
-
-// Helper pentru paginile de produs
-export function generateProductMetadata(product: {
-  id: string;
-  title: string;
-  description?: string;
-  price?: number;
-  currency?: string;
-  images?: string[];
-  attributes?: Record<string, any>;
-  slug?: string;
-}): Metadata {
-  const title = titleFromProduct(product);
-  const description = descFromProduct(product);
-  const url = `/p/${product.slug || product.id}`;
-  const image = product.images?.[0];
-  
-  return metaSocial({ title, description, url, image });
-}
-
-// Helper pentru paginile de categorie
-export function generateCategoryMetadata(category: {
-  name: string;
-  description?: string;
-  slug: string;
-}): Metadata {
-  const title = `${category.name} — Cumpără online | Pots.ro`;
+// Generează meta tags pentru categorii
+export function generateCategoryMetadata(category: CategoryMetaData): Metadata {
+  const title = `${category.name} la prețuri românești – Pots.ro`;
   const description = category.description || 
-    `Explorează ${category.name.toLowerCase()} de la Pots.ro. Produse de calitate pentru casă și grădină. Livrare rapidă în toată România.`;
-  const url = `/c/${category.slug}`;
-  
-  return metaSocial({ title, description, url });
+    `Descoperă ${category.name.toLowerCase()} de calitate la prețuri accesibile. ${category.productCount ? `${category.productCount} produse disponibile. ` : ''}Livrare rapidă în toată România.`;
+  const canonical = `https://pots.ro/c/${category.slug}`;
+
+  return {
+    title,
+    description,
+    alternates: {
+      canonical
+    },
+    openGraph: {
+      title,
+      description,
+      type: 'website',
+      siteName: 'Pots.ro',
+      url: canonical,
+      images: [
+        {
+          url: '/og-category-default.jpg',
+          width: 1200,
+          height: 630,
+          alt: title
+        }
+      ],
+      locale: 'ro_RO'
+    },
+    twitter: {
+      card: 'summary_large_image',
+      title,
+      description,
+      images: ['/og-category-default.jpg'],
+      creator: '@potsro'
+    }
+  };
 }
 
-// Helper pentru paginile de seller
-export function generateSellerMetadata(seller: {
-  name: string;
-  description?: string;
-  slug: string;
-}): Metadata {
-  const title = `${seller.name} — Magazin pe Pots.ro`;
+// Generează meta tags pentru vânzători
+export function generateSellerMetadata(seller: SellerMetaData): Metadata {
+  const title = `${seller.brandName} – Vânzător verificat | Pots.ro`;
   const description = seller.description || 
-    `Descoperă produsele de la ${seller.name} pe Pots.ro. Magazin verificat cu produse de calitate.`;
-  const url = `/s/${seller.slug}`;
-  
-  return metaSocial({ title, description, url });
+    `Descoperă produse de calitate de la ${seller.brandName}. ${seller.productCount ? `${seller.productCount} produse disponibile. ` : ''}Vânzător verificat cu livrare rapidă.`;
+  const canonical = `https://pots.ro/s/${seller.slug}`;
+
+  return {
+    title,
+    description,
+    alternates: {
+      canonical
+    },
+    openGraph: {
+      title,
+      description,
+      type: 'profile',
+      siteName: 'Pots.ro',
+      url: canonical,
+      images: [
+        {
+          url: '/og-seller-default.jpg',
+          width: 1200,
+          height: 630,
+          alt: title
+        }
+      ],
+      locale: 'ro_RO'
+    },
+    twitter: {
+      card: 'summary_large_image',
+      title,
+      description,
+      images: ['/og-seller-default.jpg'],
+      creator: '@potsro'
+    }
+  };
 }
 
-// Helper pentru paginile de blog
+// Generează meta tags pentru pagini de blog
 export function generateBlogMetadata(post: {
   title: string;
-  excerpt?: string;
   slug: string;
-  publishedAt?: string;
+  excerpt: string;
+  publishedAt: string;
+  author?: string;
   image?: string;
 }): Metadata {
   const title = `${post.title} | Blog Pots.ro`;
-  const description = post.excerpt || 
-    `Citește ${post.title.toLowerCase()} pe blogul Pots.ro. Sfaturi și inspirații pentru casă și grădină.`;
-  const url = `/blog/${post.slug}`;
-  
-  return metaSocial({ 
-    title, 
-    description, 
-    url, 
-    image: post.image 
-  });
+  const description = post.excerpt.substring(0, 155) + '...';
+  const canonical = `https://pots.ro/blog/${post.slug}`;
+  const ogImage = post.image || '/og-blog-default.jpg';
+
+  return {
+    title,
+    description,
+    alternates: {
+      canonical
+    },
+    openGraph: {
+      title,
+      description,
+      type: 'article',
+      siteName: 'Pots.ro',
+      url: canonical,
+      images: [
+        {
+          url: ogImage,
+          width: 1200,
+          height: 630,
+          alt: post.title
+        }
+      ],
+      locale: 'ro_RO',
+      publishedTime: post.publishedAt,
+      authors: post.author ? [post.author] : undefined
+    },
+    twitter: {
+      card: 'summary_large_image',
+      title,
+      description,
+      images: [ogImage],
+      creator: '@potsro'
+    }
+  };
 }
 
-// Helper pentru homepage
-export function generateHomepageMetadata(): Metadata {
-  const title = 'Pots.ro - Produse pentru casă și grădină';
-  const description = 'Descoperă produse de calitate pentru casă și grădină pe Pots.ro. Ghivece, vaze, decor și multe altele. Livrare rapidă în toată România.';
-  const url = '/';
-  
-  return metaSocial({ title, description, url });
+// Generează meta tags pentru pagini statice
+export function generateStaticPageMetadata(page: {
+  title: string;
+  description: string;
+  slug: string;
+  image?: string;
+}): Metadata {
+  const title = `${page.title} | Pots.ro`;
+  const canonical = `https://pots.ro/${page.slug}`;
+  const ogImage = page.image || '/og-default.jpg';
+
+  return {
+    title,
+    description: page.description,
+    alternates: {
+      canonical
+    },
+    openGraph: {
+      title,
+      description: page.description,
+      type: 'website',
+      siteName: 'Pots.ro',
+      url: canonical,
+      images: [
+        {
+          url: ogImage,
+          width: 1200,
+          height: 630,
+          alt: page.title
+        }
+      ],
+      locale: 'ro_RO'
+    },
+    twitter: {
+      card: 'summary_large_image',
+      title,
+      description: page.description,
+      images: [ogImage],
+      creator: '@potsro'
+    }
+  };
+}
+
+// Helper pentru generarea slug-urilor SEO-friendly
+export function generateSlug(text: string): string {
+  return text
+    .toLowerCase()
+    .replace(/[^a-z0-9\s-]/g, '')
+    .replace(/\s+/g, '-')
+    .replace(/-+/g, '-')
+    .trim();
+}
+
+// Helper pentru validarea URL-urilor canonice
+export function isValidCanonicalUrl(url: string): boolean {
+  try {
+    const parsed = new URL(url);
+    return parsed.hostname === 'pots.ro' || parsed.hostname === 'www.pots.ro';
+  } catch {
+    return false;
+  }
 }

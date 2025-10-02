@@ -21,6 +21,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { RefreshCw, Play, Download, TrendingUp, CreditCard, Users } from 'lucide-react';
 import { formatCurrency } from '@/lib/money';
+import { SeoToolsTab } from '@/components/admin/SeoToolsTab';
 
 export default function AdminFinancePage() {
   const [activeTab, setActiveTab] = useState('payouts');
@@ -208,10 +209,11 @@ export default function AdminFinancePage() {
 
       {/* Tabs pentru Payouts, Refunds și Rapoarte */}
       <Tabs value={activeTab} onValueChange={setActiveTab}>
-        <TabsList className="grid w-full grid-cols-3">
+        <TabsList className="grid w-full grid-cols-4">
           <TabsTrigger value="payouts">Payout-uri</TabsTrigger>
           <TabsTrigger value="refunds">Refunds</TabsTrigger>
           <TabsTrigger value="reports">Rapoarte</TabsTrigger>
+          <TabsTrigger value="seo">SEO Tools</TabsTrigger>
         </TabsList>
 
         <TabsContent value="payouts" className="space-y-4">
@@ -340,6 +342,10 @@ export default function AdminFinancePage() {
               </div>
             </CardContent>
           </Card>
+        </TabsContent>
+
+        <TabsContent value="seo" className="space-y-4">
+          <SeoToolsTab />
         </TabsContent>
       </Tabs>
     </div>
