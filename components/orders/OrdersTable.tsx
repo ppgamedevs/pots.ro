@@ -27,6 +27,9 @@ const STATUS_COLORS: Record<OrderStatus, string> = {
   delivered: 'bg-green-100 text-green-800',
   canceled: 'bg-red-100 text-red-800',
   refunded: 'bg-gray-100 text-gray-800',
+  return_requested: 'bg-orange-100 text-orange-800',
+  return_approved: 'bg-cyan-100 text-cyan-800',
+  returned: 'bg-slate-100 text-slate-800',
 };
 
 const STATUS_LABELS: Record<OrderStatus, string> = {
@@ -37,6 +40,9 @@ const STATUS_LABELS: Record<OrderStatus, string> = {
   delivered: 'Delivered',
   canceled: 'Canceled',
   refunded: 'Refunded',
+  return_requested: 'Return Requested',
+  return_approved: 'Return Approved',
+  returned: 'Returned',
 };
 
 export function OrdersTable({ 

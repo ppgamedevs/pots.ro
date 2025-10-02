@@ -1,7 +1,7 @@
 import { db } from '@/db';
 import { webhookLogs } from '@/db/schema/core';
 
-export type WebhookSource = 'payments' | 'shipping' | 'invoices';
+export type WebhookSource = 'payments' | 'shipping' | 'invoices' | 'orders' | 'refunds' | 'payouts';
 export type WebhookResult = 'ok' | 'duplicate' | 'error';
 
 export interface WebhookLogData {

@@ -2,12 +2,11 @@ import { NextRequest, NextResponse } from 'next/server';
 import { db } from '@/db';
 import { orders, auditLogs } from '@/db/schema/core';
 import { eq } from 'drizzle-orm';
-import { validateCancellationRequest } from '@/lib/returns/policy';
 import { logWebhook } from '@/lib/webhook-logging';
 
 /**
- * POST /api/orders/[id]/cancel
- * Anulare comandă de la admin (doar pentru PENDING|PAID neexpediate)
+ * POST /api/orders/[id]/approve-return
+ * Aprobare cerere de retur de la admin/seller
  */
 export async function POST(
   request: NextRequest,
@@ -17,22 +16,22 @@ export async function POST(
     const { id: orderId } = await params;
     const body = await request.json();
     
-    const { reason } = body;
+    const { method, notes } = body; // method: 'exchange' | 'refund'
 
-    if (!reason) {
+    if (!method || !['exchange', 'refund'].includes(method)) {
       return NextResponse.json({
         success: false,
-        error: 'Motivul anulării este obligatoriu'
+        error: 'Metoda trebuie să fie "exchange" sau "refund"'
       }, { status: 400 });
     }
 
-    // TODO: Verifică autentificarea admin
+    // TODO: Verifică autentificarea admin/seller
     // const user = await getCurrentUser(request);
-    // if (!user || user.role !== 'admin') {
+    // if (!user || (user.role !== 'admin' && user.role !== 'seller')) {
     //   return NextResponse.json({ error: 'Acces interzis' }, { status: 403 });
     // }
 
-    console.log(`❌ Anulez comanda ${orderId} (motiv: ${reason})`);
+    console.log(`✅ Aprob cererea de retur pentru comanda ${orderId} (metoda: ${method})`);
 
     // Găsește comanda
     const order = await db.query.orders.findFirst({
@@ -46,22 +45,17 @@ export async function POST(
       }, { status: 404 });
     }
 
-    // Validează cererea de anulare
-    const validation = validateCancellationRequest(order);
-    
-    if (!validation.valid) {
+    if (order.status !== 'return_requested') {
       return NextResponse.json({
         success: false,
-        error: validation.reason,
-        policyViolations: validation.policyViolations
+        error: 'Comanda nu are cerere de retur în așteptare'
       }, { status: 400 });
     }
 
     // Actualizează status-ul comenzii
     await db.update(orders)
       .set({ 
-        status: 'canceled',
-        canceledReason: reason,
+        status: 'return_approved',
         updatedAt: new Date()
       })
       .where(eq(orders.id, orderId));
@@ -70,12 +64,12 @@ export async function POST(
     await db.insert(auditLogs).values({
       orderId: orderId,
       actorId: 'admin', // TODO: user.id
-      actorRole: 'admin',
-      action: 'cancel_order',
+      actorRole: 'admin', // TODO: user.role
+      action: 'approve_return',
       meta: {
-        reason,
-        canceledAt: new Date().toISOString(),
-        originalStatus: order.status
+        method,
+        notes,
+        approvedAt: new Date().toISOString()
       }
     });
 
@@ -83,21 +77,21 @@ export async function POST(
     await logWebhook({
       source: 'orders',
       ref: orderId,
-      payload: { action: 'cancel_order', reason },
+      payload: { action: 'approve_return', method, notes },
       result: 'ok'
     });
 
-    console.log(`✅ Comanda ${orderId} a fost anulată`);
+    console.log(`✅ Cererea de retur pentru comanda ${orderId} a fost aprobată`);
 
     return NextResponse.json({
       success: true,
       orderId,
-      status: 'canceled',
-      reason,
-      message: 'Comanda a fost anulată cu succes'
+      status: 'return_approved',
+      method,
+      message: `Cererea de retur a fost aprobată (${method === 'exchange' ? 'schimb' : 'rambursare'})`
     });
   } catch (error) {
-    console.error('Eroare la anularea comenzii:', error);
+    console.error('Eroare la aprobarea cererii de retur:', error);
     
     const errorMessage = error instanceof Error ? error.message : 'Eroare necunoscută';
     

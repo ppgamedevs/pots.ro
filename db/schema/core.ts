@@ -3,7 +3,10 @@ import { sql } from "drizzle-orm";
 
 // Enums
 export const productStatusEnum = pgEnum('product_status', ['draft', 'active', 'archived']);
-export const orderStatusEnum = pgEnum('order_status', ['pending', 'paid', 'packed', 'shipped', 'delivered', 'canceled', 'refunded']);
+export const orderStatusEnum = pgEnum('order_status', ['pending', 'paid', 'packed', 'shipped', 'delivered', 'canceled', 'refunded', 'return_requested', 'return_approved', 'returned']);
+export const payoutStatusEnum = pgEnum('payout_status', ['pending', 'processing', 'paid', 'failed']);
+export const refundStatusEnum = pgEnum('refund_status', ['pending', 'processing', 'refunded', 'failed']);
+export const ledgerTypeEnum = pgEnum('ledger_type', ['charge', 'commission', 'payout', 'refund', 'recovery']);
 
 // Users table
 export const users = pgTable("users", {
@@ -253,13 +256,67 @@ export const emailEvents = pgTable("email_events", {
 // Webhook logs table
 export const webhookLogs = pgTable("webhook_logs", {
   id: uuid("id").primaryKey().defaultRandom(),
-  source: text("source").notNull().$type<'payments' | 'shipping' | 'invoices'>(),
+  source: text("source").notNull().$type<'payments' | 'shipping' | 'invoices' | 'orders' | 'refunds' | 'payouts'>(),
   ref: text("ref"),
   payload: jsonb("payload").notNull(),
   result: text("result").$type<'ok' | 'duplicate' | 'error'>(),
   createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
 }, (table) => ({
   webhookLogsSourceCreatedIdx: index("webhook_logs_source_created_idx").on(table.source, table.createdAt),
+}));
+
+// Week 7: Payouts table
+export const payouts = pgTable("payouts", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  orderId: uuid("order_id").notNull().references(() => orders.id, { onDelete: "cascade" }),
+  sellerId: uuid("seller_id").notNull().references(() => sellers.id, { onDelete: "cascade" }),
+  amount: decimal("amount", { precision: 14, scale: 2 }).notNull(),
+  commissionAmount: decimal("commission_amount", { precision: 14, scale: 2 }).notNull(),
+  currency: text("currency").notNull().default("RON"),
+  status: payoutStatusEnum("status").notNull().default("pending"),
+  providerRef: text("provider_ref"),
+  paidAt: timestamp("paid_at", { withTimezone: true }),
+  failureReason: text("failure_reason"),
+  createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
+}, (table) => ({
+  payoutsOrderSellerIdx: index("payouts_order_seller_idx").on(table.orderId, table.sellerId, table.status),
+}));
+
+// Week 7: Refunds table
+export const refunds = pgTable("refunds", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  orderId: uuid("order_id").notNull().references(() => orders.id, { onDelete: "cascade" }),
+  amount: decimal("amount", { precision: 14, scale: 2 }).notNull(),
+  reason: text("reason").notNull(),
+  status: refundStatusEnum("status").notNull().default("pending"),
+  providerRef: text("provider_ref"),
+  failureReason: text("failure_reason"),
+  createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
+}, (table) => ({
+  refundsOrderIdx: index("refunds_order_idx").on(table.orderId, table.status),
+}));
+
+// Week 7: Conversation flags table
+export const conversationFlags = pgTable("conversation_flags", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  conversationId: uuid("conversation_id").notNull().references(() => conversations.id, { onDelete: "cascade" }).unique(),
+  bypassSuspected: boolean("bypass_suspected").notNull().default(false),
+  attempts24h: integer("attempts_24h").notNull().default(0),
+  updatedAt: timestamp("updated_at", { withTimezone: true }).defaultNow().notNull(),
+});
+
+// Week 7: Ledger table
+export const ledger = pgTable("ledger", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  type: ledgerTypeEnum("type").notNull(),
+  entityId: text("entity_id").notNull(),
+  entityType: text("entity_type").notNull().$type<'order' | 'payout' | 'refund' | 'seller' | 'platform'>(),
+  amount: decimal("amount", { precision: 14, scale: 2 }).notNull(), // pozitiv = intrare pt. platformă, negativ = ieșire
+  currency: text("currency").notNull().default("RON"),
+  meta: jsonb("meta"),
+  createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
+}, (table) => ({
+  ledgerTypeCreatedIdx: index("ledger_type_created_idx").on(table.type, table.createdAt),
 }));
 
 // SQL for triggers and additional indexes

@@ -8,6 +8,15 @@ export function formatCents(cents: number, currency: string = 'RON'): string {
   }).format(amount);
 }
 
+export function formatCurrency(amount: number, currency: string = 'RON'): string {
+  return new Intl.NumberFormat('ro-RO', {
+    style: 'currency',
+    currency: currency,
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 2,
+  }).format(amount);
+}
+
 export function parseCents(amount: string): number {
   const parsed = parseFloat(amount.replace(/[^\d.-]/g, ''));
   return Math.round(parsed * 100);

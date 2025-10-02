@@ -1,4 +1,4 @@
-export type OrderStatus = 'pending' | 'paid' | 'packed' | 'shipped' | 'delivered' | 'canceled' | 'refunded';
+export type OrderStatus = 'pending' | 'paid' | 'packed' | 'shipped' | 'delivered' | 'canceled' | 'refunded' | 'return_requested' | 'return_approved' | 'returned';
 export type DeliveryStatus = 'in_transit' | 'out_for_delivery' | 'delivered' | 'return' | null;
 
 export type OrderItem = {

@@ -1,4 +1,4 @@
-export type OrderStatus = 'pending' | 'paid' | 'packed' | 'shipped' | 'delivered' | 'canceled' | 'refunded';
+export type OrderStatus = 'pending' | 'paid' | 'packed' | 'shipped' | 'delivered' | 'canceled' | 'refunded' | 'return_requested' | 'return_approved' | 'returned';
 
 /**
  * Valid order status transitions
@@ -9,9 +9,12 @@ const VALID_TRANSITIONS: Record<OrderStatus, OrderStatus[]> = {
   paid: ['packed', 'canceled'],
   packed: ['shipped', 'canceled'],
   shipped: ['delivered'],
-  delivered: ['refunded'], // Only refunds allowed after delivery
+  delivered: ['refunded', 'return_requested'], // Allow refunds and return requests after delivery
   canceled: [], // No transitions from canceled
   refunded: [], // No transitions from refunded
+  return_requested: ['return_approved', 'returned'], // Can approve or mark as returned
+  return_approved: ['returned'], // Can mark as returned after approval
+  returned: [], // No transitions from returned
 };
 
 /**

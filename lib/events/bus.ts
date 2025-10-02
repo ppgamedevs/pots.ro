@@ -9,6 +9,16 @@ export type EventMap = {
   cart_updated: { itemCount: number };
   user_logged_in: { userId: string; role: string };
   user_logged_out: {};
+  // Week 7: Evenimente financiare
+  payout_ready: { orderId: string; payoutId: string; sellerId: string };
+  payout_paid: { payoutId: string; providerRef: string };
+  payout_failed: { payoutId: string; reason: string };
+  return_requested: { orderId: string; reason: string };
+  return_approved: { orderId: string; method: string };
+  returned: { orderId: string };
+  refund_created: { refundId: string; orderId: string; amount: number };
+  refund_refunded: { refundId: string; providerRef: string };
+  refund_failed: { refundId: string; reason: string };
 };
 
 export type Handler<T> = (payload: T) => void;
@@ -113,6 +123,34 @@ export const AuthEvents = {
   loggedIn: (userId: string, role: string) => 
     emit('user_logged_in', { userId, role }),
   loggedOut: () => emit('user_logged_out', {}),
+};
+
+// Week 7: Evenimente financiare
+export const PayoutEvents = {
+  ready: (orderId: string, payoutId: string, sellerId: string) => 
+    emit('payout_ready', { orderId, payoutId, sellerId }),
+  paid: (payoutId: string, providerRef: string) => 
+    emit('payout_paid', { payoutId, providerRef }),
+  failed: (payoutId: string, reason: string) => 
+    emit('payout_failed', { payoutId, reason }),
+};
+
+export const ReturnEvents = {
+  requested: (orderId: string, reason: string) => 
+    emit('return_requested', { orderId, reason }),
+  approved: (orderId: string, method: string) => 
+    emit('return_approved', { orderId, method }),
+  returned: (orderId: string) => 
+    emit('returned', { orderId }),
+};
+
+export const RefundEvents = {
+  created: (refundId: string, orderId: string, amount: number) => 
+    emit('refund_created', { refundId, orderId, amount }),
+  refunded: (refundId: string, providerRef: string) => 
+    emit('refund_refunded', { refundId, providerRef }),
+  failed: (refundId: string, reason: string) => 
+    emit('refund_failed', { refundId, reason }),
 };
 
 /**
