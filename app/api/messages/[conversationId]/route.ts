@@ -6,6 +6,7 @@ import { getUser } from "@/lib/authz";
 import { validateMessageContent } from "@/lib/antiContact";
 import { logMessageSent } from "@/lib/audit";
 import { ensureConversation } from "@/lib/conversation-helpers";
+import { checkRateLimit } from "@/lib/middleware/rate-limit";
 import { z } from "zod";
 
 const sendMessageSchema = z.object({
@@ -17,6 +18,12 @@ export async function POST(request: NextRequest, { params }: { params: { convers
     const user = await getUser(request);
     if (!user) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
+
+    // Verifică rate limiting pentru mesaje
+    const rateLimitResult = await checkRateLimit(request, 'messages');
+    if (!rateLimitResult.allowed) {
+      return rateLimitResult.response!;
     }
     
     const conversationId = params.conversationId;

@@ -49,21 +49,21 @@ export function AntiBypassHint({
   const maskContacts = (text: string) => {
     let masked = text;
     
-    // Mascarează email-urile
+    // Mascarează email-urile cu format e***@***.com
     masked = masked.replace(emailRegex, (email) => {
       const [local, domain] = email.split('@');
-      const maskedLocal = local.length > 2 
-        ? local[0] + '*'.repeat(local.length - 2) + local[local.length - 1]
+      const maskedLocal = local.length > 1 
+        ? local[0] + '*'.repeat(Math.min(local.length - 1, 3)) + (local.length > 4 ? local[local.length - 1] : '')
         : local[0] + '*';
       const maskedDomain = domain.split('.').map(part => 
         part.length > 2 
-          ? part[0] + '*'.repeat(part.length - 2) + part[part.length - 1]
+          ? part[0] + '*'.repeat(Math.min(part.length - 1, 3)) + (part.length > 4 ? part[part.length - 1] : '')
           : part[0] + '*'
       ).join('.');
       return `${maskedLocal}@${maskedDomain}`;
     });
 
-    // Mascarează numerele de telefon
+    // Mascarează numerele de telefon cu format 07********
     masked = masked.replace(phoneRegex, (phone) => {
       const digits = phone.replace(/\D/g, '');
       if (digits.length >= 7) {

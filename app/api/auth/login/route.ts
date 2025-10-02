@@ -4,6 +4,7 @@ import bcrypt from "bcrypt";
 import { eq } from "drizzle-orm";
 import { db, users } from "@/db";
 import { createSession } from "@/auth/session";
+import { checkRateLimit } from "@/lib/middleware/rate-limit";
 
 const loginSchema = z.object({
   email: z.string().email(),
@@ -12,6 +13,12 @@ const loginSchema = z.object({
 
 export async function POST(request: NextRequest) {
   try {
+    // Verifică rate limiting
+    const rateLimitResult = await checkRateLimit(request, 'login');
+    if (!rateLimitResult.allowed) {
+      return rateLimitResult.response!;
+    }
+
     const body = await request.json();
     const { email, password } = loginSchema.parse(body);
 
