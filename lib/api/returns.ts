@@ -4,7 +4,7 @@
  */
 
 import { ReturnRequest, ReturnApproval, ReturnFilters } from '@/lib/types.finante';
-import { ApiResponse } from '@/lib/drizzle/types';
+import { ApiResponse } from '@/lib/types';
 
 const API_BASE = '/api';
 

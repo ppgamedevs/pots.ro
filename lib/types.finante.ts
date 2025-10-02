@@ -3,7 +3,8 @@
  * Mapări simple la nume de câmpuri și normalizări pentru frontend
  */
 
-import { PayoutRow, RefundRow, LedgerRow } from '@/lib/drizzle/types';
+import { payouts, refunds, ledger } from '@/db/schema/core';
+import { InferSelectModel } from 'drizzle-orm';
 
 // Statusuri normalizate pentru UI
 export type PayoutStatus = 'PENDING' | 'PROCESSING' | 'PAID' | 'FAILED';
@@ -174,7 +175,7 @@ export type RefundCSVRow = {
 };
 
 // Helper functions pentru mapare
-export function mapPayoutRowToUI(row: PayoutRow): Payout {
+export function mapPayoutRowToUI(row: InferSelectModel<typeof payouts>): Payout {
   return {
     id: row.id,
     sellerId: row.sellerId,
@@ -190,7 +191,7 @@ export function mapPayoutRowToUI(row: PayoutRow): Payout {
   };
 }
 
-export function mapRefundRowToUI(row: RefundRow): Refund {
+export function mapRefundRowToUI(row: InferSelectModel<typeof refunds>): Refund {
   return {
     id: row.id,
     orderId: row.orderId,
@@ -203,7 +204,7 @@ export function mapRefundRowToUI(row: RefundRow): Refund {
   };
 }
 
-export function mapLedgerRowToUI(row: LedgerRow): LedgerEntry {
+export function mapLedgerRowToUI(row: InferSelectModel<typeof ledger>): LedgerEntry {
   return {
     id: row.id,
     type: row.type.toUpperCase() as LedgerEntry['type'],
