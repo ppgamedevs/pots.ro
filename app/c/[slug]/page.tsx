@@ -4,6 +4,7 @@ import { Navbar } from "@/components/navbar";
 import { Footer } from "@/components/footer";
 import { Breadcrumbs } from "@/components/ui/breadcrumbs";
 import { H1, P } from "@/components/ui/typography";
+import { PromotionalBanner } from "@/components/promotions/PromotionalBanner";
 import CategoryFiltersClient from "./filters-trigger";
 
 async function getCategory(slug: string) {
@@ -96,6 +97,9 @@ export default async function CategoryPage({
               {category.description}
             </P>
           </div>
+
+          {/* Promotional Banner */}
+          <PromotionalBanner categorySlug={slug} />
 
           {/* Filters and Products */}
           <CategoryFiltersClient 

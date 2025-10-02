@@ -4,6 +4,7 @@ import Image from "next/image";
 import { Navbar } from "@/components/navbar";
 import { Footer } from "@/components/footer";
 import { ProductCard } from "@/components/product-card";
+import { PromotionalBanner } from "@/components/promotions/PromotionalBanner";
 import { stagger, fadeInUp } from "@/components/motion";
 
 const demo = [
@@ -120,6 +121,9 @@ export default function Home() {
           <h1 className="text-2xl md:text-3xl font-semibold">Pots.ro - Marketplace românesc pentru floristică</h1>
           <p className="mt-2 text-slate-600 dark:text-slate-300">Cutii, ghivece, accesorii — tot ce ai nevoie, într-un singur loc.</p>
         </motion.section>
+
+        {/* Promotional Banner */}
+        <PromotionalBanner />
 
         <motion.section
           initial="hidden"

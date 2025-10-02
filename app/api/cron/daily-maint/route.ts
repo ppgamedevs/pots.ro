@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { db } from "@/db";
-import { webhookLogs, emailEvents } from "@/db/schema/core";
-import { lt } from "drizzle-orm";
+import { webhookLogs, emailEvents, eventsRaw, sellerStatsDaily, productStatsDaily } from "@/db/schema/core";
+import { lt, eq, gte, sql, and } from "drizzle-orm";
 import { emailService } from "@/lib/email";
 import React from "react";
 
@@ -12,6 +12,7 @@ export async function GET(request: NextRequest) {
       healthCheck: false,
       cleanup: false,
       reportSent: false,
+      analyticsAggregation: false,
     };
 
     // 1. Warm up sitemap routes to refresh cache
@@ -60,7 +61,94 @@ export async function GET(request: NextRequest) {
       results.reportSent = true;
     }
 
-    // 3. Cleanup old logs (>90 days)
+    // 3. Analytics aggregation (aggregate yesterday's events)
+    try {
+      // Check if analytics tables exist before trying to aggregate
+      const tableCheck = await db.execute(sql`
+        SELECT EXISTS (
+          SELECT FROM information_schema.tables 
+          WHERE table_schema = 'public' 
+          AND table_name = 'seller_stats_daily'
+        ) as seller_stats_exists,
+        EXISTS (
+          SELECT FROM information_schema.tables 
+          WHERE table_schema = 'public' 
+          AND table_name = 'events_raw'
+        ) as events_raw_exists
+      `);
+
+      const tablesExist = tableCheck.rows[0] as any;
+      
+      if (tablesExist.seller_stats_exists && tablesExist.events_raw_exists) {
+        const yesterday = new Date();
+        yesterday.setDate(yesterday.getDate() - 1);
+        yesterday.setHours(0, 0, 0, 0);
+        
+        const today = new Date();
+        today.setDate(today.getDate());
+        today.setHours(0, 0, 0, 0);
+
+        // Aggregate seller stats for yesterday
+        const sellerStats = await db.execute(sql`
+          INSERT INTO seller_stats_daily (seller_id, date, views, add_to_cart, orders, revenue, created_at, updated_at)
+          SELECT 
+            seller_id,
+            ${yesterday},
+            COUNT(CASE WHEN event_type = 'product-view' THEN 1 END) as views,
+            COUNT(CASE WHEN event_type = 'cart-add' THEN 1 END) as add_to_cart,
+            COUNT(CASE WHEN event_type = 'order-placed' THEN 1 END) as orders,
+            COALESCE(SUM(CASE WHEN event_type = 'order-placed' THEN (metadata->>'revenue')::integer END), 0) as revenue,
+            NOW(),
+            NOW()
+          FROM events_raw
+          WHERE created_at >= ${yesterday} AND created_at < ${today}
+            AND seller_id IS NOT NULL
+          GROUP BY seller_id
+          ON CONFLICT (seller_id, date) 
+          DO UPDATE SET
+            views = EXCLUDED.views,
+            add_to_cart = EXCLUDED.add_to_cart,
+            orders = EXCLUDED.orders,
+            revenue = EXCLUDED.revenue,
+            updated_at = NOW()
+        `);
+
+        // Aggregate product stats for yesterday
+        const productStats = await db.execute(sql`
+          INSERT INTO product_stats_daily (product_id, date, views, add_to_cart, orders, revenue, created_at, updated_at)
+          SELECT 
+            product_id,
+            ${yesterday},
+            COUNT(CASE WHEN event_type = 'product-view' THEN 1 END) as views,
+            COUNT(CASE WHEN event_type = 'cart-add' THEN 1 END) as add_to_cart,
+            COUNT(CASE WHEN event_type = 'order-placed' THEN 1 END) as orders,
+            COALESCE(SUM(CASE WHEN event_type = 'order-placed' THEN (metadata->>'revenue')::integer END), 0) as revenue,
+            NOW(),
+            NOW()
+          FROM events_raw
+          WHERE created_at >= ${yesterday} AND created_at < ${today}
+            AND product_id IS NOT NULL
+          GROUP BY product_id
+          ON CONFLICT (product_id, date) 
+          DO UPDATE SET
+            views = EXCLUDED.views,
+            add_to_cart = EXCLUDED.add_to_cart,
+            orders = EXCLUDED.orders,
+            revenue = EXCLUDED.revenue,
+            updated_at = NOW()
+        `);
+
+        results.analyticsAggregation = true;
+      } else {
+        console.log('Analytics tables not found, skipping aggregation');
+        results.analyticsAggregation = false;
+      }
+    } catch (error) {
+      console.error('Analytics aggregation error:', error);
+      results.analyticsAggregation = false;
+    }
+
+    // 4. Cleanup old logs (>90 days)
     try {
       const ninetyDaysAgo = new Date();
       ninetyDaysAgo.setDate(ninetyDaysAgo.getDate() - 90);
@@ -74,6 +162,18 @@ export async function GET(request: NextRequest) {
       await db
         .delete(emailEvents)
         .where(lt(emailEvents.createdAt, ninetyDaysAgo));
+
+      // Clean up old raw events (>30 days) - only if table exists
+      try {
+        const thirtyDaysAgo = new Date();
+        thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
+        
+        await db
+          .delete(eventsRaw)
+          .where(lt(eventsRaw.createdAt, thirtyDaysAgo));
+      } catch (error) {
+        console.log('Events table not found, skipping cleanup');
+      }
 
       results.cleanup = true;
     } catch (error) {

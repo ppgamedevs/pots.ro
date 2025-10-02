@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { db } from "@/db";
-import { carts, cartItems, products, sellers, orders, orderItems } from "@/db/schema/core";
-import { eq, and } from "drizzle-orm";
+import { carts, cartItems, products, sellers, orders, orderItems, promotions, categories } from "@/db/schema/core";
+import { eq, and, or, isNull, isNotNull, lte, gte } from "drizzle-orm";
 import { getUserId } from "@/lib/auth-helpers";
 import { getOrSetSessionId } from "@/lib/cookies";
 import { COMMISSION_PCT } from "@/lib/env";
@@ -52,10 +52,12 @@ export async function POST(request: NextRequest) {
         priceCents: cartItems.priceCents,
         product: products,
         seller: sellers,
+        category: categories,
       })
       .from(cartItems)
       .innerJoin(products, eq(cartItems.productId, products.id))
       .innerJoin(sellers, eq(products.sellerId, sellers.id))
+      .leftJoin(categories, eq(products.categoryId, categories.id))
       .where(eq(cartItems.cartId, cart.id));
 
     if (cartItemsResult.length === 0) {
@@ -86,6 +88,57 @@ export async function POST(request: NextRequest) {
     // Calculate subtotal
     const subtotalCents = cartItemsResult.reduce((sum, item) => sum + (item.priceCents * item.qty), 0);
 
+    // Apply promotions/discounts
+    let totalDiscountCents = 0;
+    const now = new Date();
+    
+    // Get applicable promotions for each item
+    for (const item of cartItemsResult) {
+      const applicablePromotions = await db
+        .select()
+        .from(promotions)
+        .where(
+          and(
+            eq(promotions.active, true),
+            eq(promotions.type, 'discount'),
+            lte(promotions.startAt, now),
+            gte(promotions.endAt, now),
+            or(
+              isNull(promotions.sellerId), // Global promotion
+              eq(promotions.sellerId, item.seller.id), // Seller-specific
+              isNull(promotions.targetCategorySlug), // Global
+              and(
+                isNotNull(promotions.targetCategorySlug),
+                eq(promotions.targetCategorySlug, item.category?.slug || '')
+              ), // Category-specific
+              isNull(promotions.targetProductId), // Global
+              eq(promotions.targetProductId, item.productId) // Product-specific
+            )
+          )
+        )
+        .orderBy(promotions.createdAt)
+        .limit(1);
+
+      if (applicablePromotions.length > 0) {
+        const promotion = applicablePromotions[0];
+        const itemSubtotalCents = item.priceCents * item.qty;
+        
+        if (promotion.percent) {
+          // Percentage discount
+          const discountCents = Math.round(itemSubtotalCents * promotion.percent / 100);
+          totalDiscountCents += discountCents;
+        } else if (promotion.value) {
+          // Fixed value discount (applied once per order for global/category promotions)
+          if (!promotion.targetProductId) {
+            totalDiscountCents += promotion.value;
+          } else {
+            // Product-specific discount
+            totalDiscountCents += Math.min(promotion.value, itemSubtotalCents);
+          }
+        }
+      }
+    }
+
     // Get shipping fee (use provided choice or default to cheapest)
     let shippingFeeCents = 0;
     if (shippingChoice) {
@@ -95,7 +148,7 @@ export async function POST(request: NextRequest) {
       shippingFeeCents = 1849; // 18.49 RON
     }
 
-    const totalCents = subtotalCents + shippingFeeCents;
+    const totalCents = subtotalCents + shippingFeeCents - totalDiscountCents;
 
     // Mock shipping address for MVP
     const shippingAddress = {
@@ -128,6 +181,7 @@ export async function POST(request: NextRequest) {
           currency: 'RON',
           subtotalCents,
           shippingFeeCents,
+          totalDiscountCents,
           totalCents,
           shippingAddress: shippingAddress,
         })
@@ -135,11 +189,18 @@ export async function POST(request: NextRequest) {
 
       const order = orderResult[0];
 
-      // Insert order items
+      // Insert order items with individual discounts
       const orderItemsData = cartItemsResult.map(item => {
         const itemSubtotalCents = item.priceCents * item.qty;
-        const commissionAmountCents = calculateCommission(itemSubtotalCents, COMMISSION_PCT);
-        const sellerDueCents = calculateSellerDue(itemSubtotalCents, commissionAmountCents);
+        
+        // Calculate item-specific discount (proportional to total discount)
+        const itemDiscountCents = totalDiscountCents > 0 
+          ? Math.round((itemSubtotalCents / subtotalCents) * totalDiscountCents)
+          : 0;
+        
+        const finalItemSubtotalCents = itemSubtotalCents - itemDiscountCents;
+        const commissionAmountCents = calculateCommission(finalItemSubtotalCents, COMMISSION_PCT);
+        const sellerDueCents = calculateSellerDue(finalItemSubtotalCents, commissionAmountCents);
 
         return {
           orderId: order.id,
@@ -147,7 +208,8 @@ export async function POST(request: NextRequest) {
           sellerId: item.seller.id,
           qty: item.qty,
           unitPriceCents: item.priceCents,
-          subtotalCents: itemSubtotalCents,
+          discountCents: itemDiscountCents,
+          subtotalCents: finalItemSubtotalCents,
           commissionPct: COMMISSION_PCT,
           commissionAmountCents,
           sellerDueCents,
@@ -168,8 +230,13 @@ export async function POST(request: NextRequest) {
       totals: {
         subtotal_cents: newOrder.subtotalCents,
         shipping_fee_cents: newOrder.shippingFeeCents,
+        total_discount_cents: newOrder.totalDiscountCents,
         total_cents: newOrder.totalCents,
         currency: newOrder.currency,
+      },
+      discount: {
+        applied: totalDiscountCents > 0,
+        total_ron: totalDiscountCents / 100,
       },
       shipping: {
         address: newOrder.shippingAddress,

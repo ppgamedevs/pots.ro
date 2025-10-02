@@ -7,6 +7,7 @@ export const orderStatusEnum = pgEnum('order_status', ['pending', 'paid', 'packe
 export const payoutStatusEnum = pgEnum('payout_status', ['pending', 'processing', 'paid', 'failed']);
 export const refundStatusEnum = pgEnum('refund_status', ['pending', 'processing', 'refunded', 'failed']);
 export const ledgerTypeEnum = pgEnum('ledger_type', ['charge', 'commission', 'payout', 'refund', 'recovery']);
+export const promotionTypeEnum = pgEnum('promotion_type', ['banner', 'discount']);
 
 // Users table
 export const users = pgTable("users", {
@@ -94,6 +95,28 @@ export const sellerPages = pgTable("seller_pages", {
   updatedAt: timestamp("updated_at", { withTimezone: true }).defaultNow().notNull(),
 });
 
+// Promotions table
+export const promotions = pgTable("promotions", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  title: text("title").notNull(),
+  type: promotionTypeEnum("type").notNull(),
+  percent: integer("percent"), // 0-100 for percentage discount
+  value: integer("value"), // RON for fixed discount (in cents)
+  startAt: timestamp("start_at", { withTimezone: true }).notNull(),
+  endAt: timestamp("end_at", { withTimezone: true }).notNull(),
+  active: boolean("active").notNull().default(true),
+  sellerId: uuid("seller_id").references(() => sellers.id, { onDelete: "cascade" }),
+  targetCategorySlug: text("target_category_slug"),
+  targetProductId: uuid("target_product_id").references(() => products.id, { onDelete: "cascade" }),
+  createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
+  updatedAt: timestamp("updated_at", { withTimezone: true }).defaultNow().notNull(),
+}, (table) => ({
+  promotionsSellerIdx: index("promotions_seller_idx").on(table.sellerId),
+  promotionsActiveIdx: index("promotions_active_idx").on(table.active),
+  promotionsTypeIdx: index("promotions_type_idx").on(table.type),
+  promotionsTargetIdx: index("promotions_target_idx").on(table.targetCategorySlug, table.targetProductId),
+}));
+
 // Cart tables
 export const carts = pgTable("carts", {
   id: uuid("id").primaryKey().defaultRandom(),
@@ -141,6 +164,7 @@ export const orders = pgTable("orders", {
   currency: text("currency").notNull().default("RON"),
   subtotalCents: integer("subtotal_cents").notNull().default(0),
   shippingFeeCents: integer("shipping_fee_cents").notNull().default(0),
+  totalDiscountCents: integer("total_discount_cents").notNull().default(0), // Week 10: total discount applied
   totalCents: integer("total_cents").notNull().default(0),
   paymentRef: text("payment_ref"),
   shippingAddress: jsonb("shipping_address").notNull(),
@@ -165,6 +189,7 @@ export const orderItems = pgTable("order_items", {
   sellerId: uuid("seller_id").notNull().references(() => sellers.id, { onDelete: "restrict" }),
   qty: integer("qty").notNull(),
   unitPriceCents: integer("unit_price_cents").notNull(),
+  discountCents: integer("discount_cents").notNull().default(0), // Week 10: discount applied per item
   subtotalCents: integer("subtotal_cents").notNull(),
   commissionPct: integer("commission_pct").notNull(), // stored as basis points (e.g., 1000 = 10%)
   commissionAmountCents: integer("commission_amount_cents").notNull(),
@@ -317,6 +342,53 @@ export const ledger = pgTable("ledger", {
   createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
 }, (table) => ({
   ledgerTypeCreatedIdx: index("ledger_type_created_idx").on(table.type, table.createdAt),
+}));
+
+// Week 10: Analytics tables
+export const sellerStatsDaily = pgTable("seller_stats_daily", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  sellerId: uuid("seller_id").notNull().references(() => sellers.id, { onDelete: "cascade" }),
+  date: timestamp("date", { withTimezone: true }).notNull(),
+  views: integer("views").notNull().default(0),
+  addToCart: integer("add_to_cart").notNull().default(0),
+  orders: integer("orders").notNull().default(0),
+  revenue: integer("revenue").notNull().default(0), // in cents
+  createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
+  updatedAt: timestamp("updated_at", { withTimezone: true }).defaultNow().notNull(),
+}, (table) => ({
+  sellerStatsSellerDateIdx: uniqueIndex("seller_stats_seller_date_idx").on(table.sellerId, table.date),
+  sellerStatsDateIdx: index("seller_stats_date_idx").on(table.date),
+}));
+
+export const productStatsDaily = pgTable("product_stats_daily", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  productId: uuid("product_id").notNull().references(() => products.id, { onDelete: "cascade" }),
+  date: timestamp("date", { withTimezone: true }).notNull(),
+  views: integer("views").notNull().default(0),
+  addToCart: integer("add_to_cart").notNull().default(0),
+  orders: integer("orders").notNull().default(0),
+  revenue: integer("revenue").notNull().default(0), // in cents
+  createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
+  updatedAt: timestamp("updated_at", { withTimezone: true }).defaultNow().notNull(),
+}, (table) => ({
+  productStatsProductDateIdx: uniqueIndex("product_stats_product_date_idx").on(table.productId, table.date),
+  productStatsDateIdx: index("product_stats_date_idx").on(table.date),
+}));
+
+// Raw events table (optional for audit)
+export const eventsRaw = pgTable("events_raw", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  eventType: text("event_type").notNull(),
+  productId: uuid("product_id").references(() => products.id, { onDelete: "cascade" }),
+  sellerId: uuid("seller_id").references(() => sellers.id, { onDelete: "cascade" }),
+  orderId: uuid("order_id").references(() => orders.id, { onDelete: "cascade" }),
+  metadata: jsonb("metadata").default({}),
+  createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
+}, (table) => ({
+  eventsTypeIdx: index("events_type_idx").on(table.eventType),
+  eventsProductIdx: index("events_product_idx").on(table.productId),
+  eventsSellerIdx: index("events_seller_idx").on(table.sellerId),
+  eventsDateIdx: index("events_date_idx").on(table.createdAt),
 }));
 
 // SQL for triggers and additional indexes

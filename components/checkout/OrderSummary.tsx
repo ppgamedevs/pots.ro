@@ -8,7 +8,8 @@ export function OrderSummary({
   shipping_fee_cents,
   total_cents,
   currency,
-}: OrderSummaryProps) {
+  discount_cents = 0,
+}: OrderSummaryProps & { discount_cents?: number }) {
   return (
     <div className="bg-white dark:bg-slate-800 rounded-lg border border-slate-200 dark:border-slate-700 p-6">
       <h3 className="text-lg font-semibold text-slate-900 dark:text-slate-100 mb-4">
@@ -53,6 +54,14 @@ export function OrderSummary({
             {formatCents(subtotal_cents, currency)}
           </span>
         </div>
+        {discount_cents > 0 && (
+          <div className="flex justify-between text-sm">
+            <span className="text-green-600 dark:text-green-400">Reducere</span>
+            <span className="text-green-600 dark:text-green-400 font-medium">
+              -{formatCents(discount_cents, currency)}
+            </span>
+          </div>
+        )}
         <div className="flex justify-between text-sm">
           <span className="text-slate-600 dark:text-slate-400">Transport</span>
           <span className="text-slate-900 dark:text-slate-100">
