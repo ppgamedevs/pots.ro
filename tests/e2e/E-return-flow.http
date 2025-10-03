@@ -1,0 +1,125 @@
+### E2E Test E: Return Flow (Buyer → Seller → Admin → Refund)
+### Testează flow-ul complet de retur cu aprobare în cascadă
+
+@host = http://localhost:3000
+@api = {{host}}/api
+@buyerToken = eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...
+@sellerToken = eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...
+
+### 1. Verifică comandă DELIVERED
+GET {{api}}/orders/{{orderId}}
+Authorization: Bearer {{buyerToken}}
+
+### 2. Buyer inițiază cerere de retur
+POST {{api}}/returns
+Authorization: Bearer {{buyerToken}}
+Content-Type: application/json
+
+{
+  "orderId": "{{orderId}}",
+  "reason": "Produs defect",
+  "description": "Produsul nu corespunde descrierii, vreau să îl returnez",
+  "returnItems": [
+    {
+      "orderItemId": "item_1",
+      "quantity": 1,
+      "condition": "DEFECT"
+    }
+  ]
+}
+
+### 3. Verifică return request PENDING
+GET {{api}}/returns/{{returnId}}
+Authorization: Bearer {{buyerToken}}
+
+### 4. Seller verifică cererea
+GET {{api}}/returns/{{returnId}}
+Authorization: Bearer {{sellerToken}}
+
+### 5. Seller aprobă returul
+POST {{api}}/returns/{{returnId}}/approve
+Authorization: Bearer {{sellerToken}}
+Content-Type: application/json
+
+{
+  "approved": true,
+  "sellerNotes": "Retur aprobat, produsul va fi verificat la primire"
+}
+
+### 6. Verifică return APPROVED
+GET {{api}}/returns/{{returnId}}
+Authorization: Bearer {{buyerToken}}
+
+### 7. Buyer trimite produsul înapoi
+POST {{api}}/returns/{{returnId}}/ship
+Authorization: Bearer {{buyerToken}}
+Content-Type: application/json
+
+{
+  "trackingNumber": "RETURN123456789",
+  "provider": "cargus",
+  "shippedAt": "2025-01-10T14:00:00Z"
+}
+
+### 8. Verifică return SHIPPED
+GET {{api}}/returns/{{returnId}}
+Authorization: Bearer {{buyerToken}}
+
+### 9. Seller confirmă primirea
+POST {{api}}/returns/{{returnId}}/received
+Authorization: Bearer {{sellerToken}}
+Content-Type: application/json
+
+{
+  "receivedAt": "2025-01-12T10:00:00Z",
+  "condition": "DEFECT",
+  "sellerNotes": "Produs primit, confirm defect"
+}
+
+### 10. Verifică return RECEIVED
+GET {{api}}/returns/{{returnId}}
+Authorization: Bearer {{sellerToken}}
+
+### 11. Admin verifică și aprobă refund final
+POST {{api}}/returns/{{returnId}}/finalize
+Authorization: Bearer {{adminToken}}
+Content-Type: application/json
+
+{
+  "approved": true,
+  "refundAmount": 15000,
+  "adminNotes": "Retur finalizat, refund complet aprobat"
+}
+
+### 12. Verifică return COMPLETED
+GET {{api}}/returns/{{returnId}}
+Authorization: Bearer {{buyerToken}}
+
+### 13. Verifică refund automat creat
+GET {{api}}/refunds?returnId={{returnId}}
+Authorization: Bearer {{buyerToken}}
+
+### 14. Verifică status comandă RETURNED
+GET {{api}}/orders/{{orderId}}
+Authorization: Bearer {{buyerToken}}
+
+### 15. Verifică stoc restaurat
+GET {{api}}/products/prod_seller1_1
+Authorization: Bearer {{sellerToken}}
+
+### 16. Verifică ledger entries
+GET {{api}}/ledger?orderId={{orderId}}
+Authorization: Bearer {{sellerToken}}
+
+### TODO: Testează
+### - [ ] Cerere retur creată de buyer
+### - [ ] Seller aprobă returul
+### - [ ] Buyer trimite produsul
+### - [ ] Seller confirmă primirea
+### - [ ] Admin finalizează returul
+### - [ ] Refund automat creat
+### - [ ] Status RETURNED pe comandă
+### - [ ] Stoc restaurat
+### - [ ] Emailuri trimise la fiecare etapă
+### - [ ] Ledger entries corecte
+### - [ ] Tracking number pentru retur

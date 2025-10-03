@@ -1,0 +1,153 @@
+### E2E Test: RLS Smoke Test
+### Testează Row-Level Security cu 3 tokenuri diferite
+
+@host = http://localhost:3000
+@api = {{host}}/api
+@buyerToken = eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...
+@sellerToken1 = eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...
+@sellerToken2 = eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...
+@adminToken = eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...
+
+### ===== TESTE ORDERS =====
+
+### 1. Buyer A vede doar comenzile proprii
+GET {{api}}/orders
+Authorization: Bearer {{buyerToken}}
+
+### 2. Seller A vede doar comenzile unde apare
+GET {{api}}/orders
+Authorization: Bearer {{sellerToken1}}
+
+### 3. Seller B nu vede comenzile buyer A (403)
+GET {{api}}/orders/{{orderIdBuyerA}}
+Authorization: Bearer {{sellerToken2}}
+
+### 4. Admin vede toate comenzile
+GET {{api}}/orders
+Authorization: Bearer {{adminToken}}
+
+### ===== TESTE PRODUCTS =====
+
+### 5. Public vede doar produsele active
+GET {{api}}/products
+### No auth header
+
+### 6. Seller A vede doar produsele proprii
+GET {{api}}/products
+Authorization: Bearer {{sellerToken1}}
+
+### 7. Seller B nu vede produsele seller A (403)
+GET {{api}}/products/{{productIdSellerA}}
+Authorization: Bearer {{sellerToken2}}
+
+### 8. Admin vede toate produsele
+GET {{api}}/products
+Authorization: Bearer {{adminToken}}
+
+### ===== TESTE PAYOUTS =====
+
+### 9. Seller A vede doar payouts proprii
+GET {{api}}/payouts
+Authorization: Bearer {{sellerToken1}}
+
+### 10. Seller B nu vede payouts seller A (403)
+GET {{api}}/payouts/{{payoutIdSellerA}}
+Authorization: Bearer {{sellerToken2}}
+
+### 11. Admin vede toate payouts
+GET {{api}}/payouts
+Authorization: Bearer {{adminToken}}
+
+### ===== TESTE REFUNDS =====
+
+### 12. Buyer A vede doar refunds proprii
+GET {{api}}/refunds
+Authorization: Bearer {{buyerToken}}
+
+### 13. Seller A vede doar refunds pentru comenzile sale
+GET {{api}}/refunds
+Authorization: Bearer {{sellerToken1}}
+
+### 14. Seller B nu vede refunds buyer A (403)
+GET {{api}}/refunds/{{refundIdBuyerA}}
+Authorization: Bearer {{sellerToken2}}
+
+### ===== TESTE RETURNS =====
+
+### 15. Buyer A vede doar returns proprii
+GET {{api}}/returns
+Authorization: Bearer {{buyerToken}}
+
+### 16. Seller A vede doar returns pentru comenzile sale
+GET {{api}}/returns
+Authorization: Bearer {{sellerToken1}}
+
+### 17. Seller B nu vede returns buyer A (403)
+GET {{api}}/returns/{{returnIdBuyerA}}
+Authorization: Bearer {{sellerToken2}}
+
+### ===== TESTE MESSAGES =====
+
+### 18. Buyer A vede doar mesajele proprii
+GET {{api}}/messages/inbox
+Authorization: Bearer {{buyerToken}}
+
+### 19. Seller A vede doar mesajele primite
+GET {{api}}/messages/inbox
+Authorization: Bearer {{sellerToken1}}
+
+### 20. Seller B nu vede mesajele buyer A (403)
+GET {{api}}/messages/{{messageIdBuyerA}}
+Authorization: Bearer {{sellerToken2}}
+
+### ===== TESTE ANALYTICS =====
+
+### 21. Seller A vede doar analytics proprii
+GET {{api}}/analytics/seller/{{sellerId1}}
+Authorization: Bearer {{sellerToken1}}
+
+### 22. Seller B nu vede analytics seller A (403)
+GET {{api}}/analytics/seller/{{sellerId1}}
+Authorization: Bearer {{sellerToken2}}
+
+### 23. Admin vede analytics generale
+GET {{api}}/analytics/admin
+Authorization: Bearer {{adminToken}}
+
+### ===== TESTE PROMOTIONS =====
+
+### 24. Seller A vede doar promotions proprii
+GET {{api}}/promotions
+Authorization: Bearer {{sellerToken1}}
+
+### 25. Seller B nu vede promotions seller A (403)
+GET {{api}}/promotions/{{promotionIdSellerA}}
+Authorization: Bearer {{sellerToken2}}
+
+### ===== TESTE LEDGER =====
+
+### 26. Seller A vede doar ledger entries proprii
+GET {{api}}/ledger
+Authorization: Bearer {{sellerToken1}}
+
+### 27. Seller B nu vede ledger seller A (403)
+GET {{api}}/ledger?sellerId={{sellerId1}}
+Authorization: Bearer {{sellerToken2}}
+
+### 28. Admin vede toate ledger entries
+GET {{api}}/ledger
+Authorization: Bearer {{adminToken}}
+
+### TODO: Testează
+### - [ ] Orders: buyer vede doar propriile, seller doar unde apare, admin tot
+### - [ ] Products: public doar active, seller doar propriile, admin tot
+### - [ ] Payouts: seller doar propriile, admin tot
+### - [ ] Refunds: buyer doar propriile, seller doar pentru comenzile sale, admin tot
+### - [ ] Returns: buyer doar propriile, seller doar pentru comenzile sale, admin tot
+### - [ ] Messages: fiecare vede doar mesajele proprii
+### - [ ] Analytics: seller doar propriile, admin generale
+### - [ ] Promotions: seller doar propriile, admin tot
+### - [ ] Ledger: seller doar propriile, admin tot
+### - [ ] Toate accesurile neautorizate → 403
+### - [ ] RLS policies active pe DB
+### - [ ] Middleware auth funcționează

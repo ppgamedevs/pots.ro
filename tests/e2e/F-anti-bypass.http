@@ -1,0 +1,122 @@
+### E2E Test F: Anti-bypass Messaging
+### Testează blocarea contactelor directe în mesagerie
+
+@host = http://localhost:3000
+@api = {{host}}/api
+@buyerToken = eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...
+@sellerToken = eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...
+
+### 1. Verifică produs disponibil
+GET {{api}}/products/prod_seller1_1
+Authorization: Bearer {{buyerToken}}
+
+### 2. Încearcă să trimiți mesaj cu email complet
+POST {{api}}/messages
+Authorization: Bearer {{buyerToken}}
+Content-Type: application/json
+
+{
+  "sellerId": "{{sellerId}}",
+  "productId": "prod_seller1_1",
+  "subject": "Întrebare despre produs",
+  "message": "Bună! Pot să vă contactez direct la email@example.com pentru detalii?"
+}
+
+### 3. Verifică că mesajul este blocat (400/422)
+### Expected: Error - contact direct detectat
+
+### 4. Încearcă să trimiți mesaj cu telefon complet
+POST {{api}}/messages
+Authorization: Bearer {{buyerToken}}
+Content-Type: application/json
+
+{
+  "sellerId": "{{sellerId}}",
+  "productId": "prod_seller1_1",
+  "subject": "Întrebare despre produs",
+  "message": "Pot să vă sun la 0712345678?"
+}
+
+### 5. Verifică că mesajul este blocat (400/422)
+### Expected: Error - contact direct detectat
+
+### 6. Încearcă să trimiți mesaj cu email mascat
+POST {{api}}/messages
+Authorization: Bearer {{buyerToken}}
+Content-Type: application/json
+
+{
+  "sellerId": "{{sellerId}}",
+  "productId": "prod_seller1_1",
+  "subject": "Întrebare despre produs",
+  "message": "Pot să vă contactez la e***@***.com?"
+}
+
+### 7. Verifică că mesajul este blocat (400/422)
+### Expected: Error - pattern email detectat
+
+### 8. Încearcă să trimiți mesaj cu telefon mascat
+POST {{api}}/messages
+Authorization: Bearer {{buyerToken}}
+Content-Type: application/json
+
+{
+  "sellerId": "{{sellerId}}",
+  "productId": "prod_seller1_1",
+  "subject": "Întrebare despre produs",
+  "message": "Pot să vă sun la 07********?"
+}
+
+### 9. Verifică că mesajul este blocat (400/422)
+### Expected: Error - pattern telefon detectat
+
+### 10. Trimiți mesaj valid (fără contacte)
+POST {{api}}/messages
+Authorization: Bearer {{buyerToken}}
+Content-Type: application/json
+
+{
+  "sellerId": "{{sellerId}}",
+  "productId": "prod_seller1_1",
+  "subject": "Întrebare despre produs",
+  "message": "Bună! Cât timp durează livrarea acestui produs?"
+}
+
+### 11. Verifică că mesajul este trimis (200)
+### Expected: Success - mesaj valid
+
+### 12. Verifică mesajul în inbox seller
+GET {{api}}/messages/inbox
+Authorization: Bearer {{sellerToken}}
+
+### 13. Seller răspunde (fără contacte)
+POST {{api}}/messages/{{messageId}}/reply
+Authorization: Bearer {{sellerToken}}
+Content-Type: application/json
+
+{
+  "message": "Livrarea durează 2-3 zile lucrătoare prin Cargus."
+}
+
+### 14. Verifică răspunsul în inbox buyer
+GET {{api}}/messages/inbox
+Authorization: Bearer {{buyerToken}}
+
+### 15. Testează mascarea în UI (frontend)
+### TODO: Testează în browser
+### - [ ] Email complet → mascat ca e***@***.com
+### - [ ] Telefon complet → mascat ca 07********
+### - [ ] Tooltip: "Contactele directe sunt blocate conform Termenilor"
+### - [ ] Buton "Trimite" dezactivat dacă detectează pattern
+### - [ ] Warning message vizibil
+
+### TODO: Testează
+### - [ ] Email complet blocat
+### - [ ] Telefon complet blocat
+### - [ ] Email mascat blocat
+### - [ ] Telefon mascat blocat
+### - [ ] Mesaj valid trimis
+### - [ ] Răspuns seller trimis
+### - [ ] Mascarea în UI funcționează
+### - [ ] Tooltip și warning vizibile
+### - [ ] Buton dezactivat când detectează pattern

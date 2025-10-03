@@ -1,0 +1,89 @@
+### E2E Test C: Refund Total înainte de Payout
+### Testează refund complet înainte ca seller-ul să primească payout
+
+@host = http://localhost:3000
+@api = {{host}}/api
+@buyerToken = eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...
+@sellerToken = eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...
+
+### 1. Verifică comandă PAID
+GET {{api}}/orders/{{orderId}}
+Authorization: Bearer {{buyerToken}}
+
+### 2. Verifică că nu există payout încă
+GET {{api}}/payouts?sellerId={{sellerId}}
+Authorization: Bearer {{sellerToken}}
+
+### 3. Creează refund total
+POST {{api}}/refunds
+Authorization: Bearer {{buyerToken}}
+Content-Type: application/json
+
+{
+  "orderId": "{{orderId}}",
+  "type": "TOTAL",
+  "reason": "Produs defect",
+  "description": "Produsul s-a livrat defect, nu corespunde descrierii"
+}
+
+### 4. Verifică refund PENDING
+GET {{api}}/refunds/{{refundId}}
+Authorization: Bearer {{buyerToken}}
+
+### 5. Admin aprobă refund
+POST {{api}}/refunds/{{refundId}}/approve
+Authorization: Bearer {{adminToken}}
+Content-Type: application/json
+
+{
+  "approved": true,
+  "adminNotes": "Refund aprobat - produs defect confirmat"
+}
+
+### 6. Verifică refund PROCESSING
+GET {{api}}/refunds/{{refundId}}
+Authorization: Bearer {{buyerToken}}
+
+### 7. Simulează refund Netopia
+POST {{api}}/webhooks/netopia/refund
+Content-Type: application/json
+
+{
+  "refundId": "{{refundId}}",
+  "status": "COMPLETED",
+  "transactionId": "refund_txn_123",
+  "amount": 15000,
+  "currency": "RON"
+}
+
+### 8. Verifică refund COMPLETED
+GET {{api}}/refunds/{{refundId}}
+Authorization: Bearer {{buyerToken}}
+
+### 9. Verifică status comandă REFUNDED
+GET {{api}}/orders/{{orderId}}
+Authorization: Bearer {{buyerToken}}
+
+### 10. Verifică stoc restaurat
+GET {{api}}/products/prod_seller1_1
+Authorization: Bearer {{sellerToken}}
+
+### 11. Verifică ledger entries
+GET {{api}}/ledger?orderId={{orderId}}
+Authorization: Bearer {{sellerToken}}
+
+### 12. Verifică că nu s-a creat payout
+GET {{api}}/payouts?sellerId={{sellerId}}
+Authorization: Bearer {{sellerToken}}
+
+### TODO: Testează
+### - [ ] Refund total creat corect
+### - [ ] Admin aprobă refund
+### - [ ] Callback Netopia refund success
+### - [ ] Status REFUNDED pe comandă
+### - [ ] Stoc restaurat
+### - [ ] Banii returnați buyer-ului
+### - [ ] Fără payout creat
+### - [ ] Ledger: REFUND entry
+### - [ ] Email notificare refund
+### - [ ] Fără RECOVERY în ledger (înainte de payout)

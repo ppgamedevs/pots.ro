@@ -1,0 +1,93 @@
+### E2E Test D: Refund Parțial după Payout
+### Testează refund parțial când seller-ul a primit deja payout
+
+@host = http://localhost:3000
+@api = {{host}}/api
+@buyerToken = eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...
+@sellerToken = eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...
+
+### 1. Verifică comandă DELIVERED
+GET {{api}}/orders/{{orderId}}
+Authorization: Bearer {{buyerToken}}
+
+### 2. Verifică payout PAID
+GET {{api}}/payouts/{{payoutId}}
+Authorization: Bearer {{sellerToken}}
+
+### 3. Verifică ledger payout
+GET {{api}}/ledger?orderId={{orderId}}
+Authorization: Bearer {{sellerToken}}
+
+### 4. Creează refund parțial (50% din comandă)
+POST {{api}}/refunds
+Authorization: Bearer {{buyerToken}}
+Content-Type: application/json
+
+{
+  "orderId": "{{orderId}}",
+  "type": "PARTIAL",
+  "amount": 7500,
+  "reason": "Produs parțial defect",
+  "description": "Unul din produse nu corespunde descrierii"
+}
+
+### 5. Verifică refund PENDING
+GET {{api}}/refunds/{{refundId}}
+Authorization: Bearer {{buyerToken}}
+
+### 6. Admin aprobă refund parțial
+POST {{api}}/refunds/{{refundId}}/approve
+Authorization: Bearer {{adminToken}}
+Content-Type: application/json
+
+{
+  "approved": true,
+  "adminNotes": "Refund parțial aprobat - produs parțial defect"
+}
+
+### 7. Verifică refund PROCESSING
+GET {{api}}/refunds/{{refundId}}
+Authorization: Bearer {{buyerToken}}
+
+### 8. Simulează refund Netopia
+POST {{api}}/webhooks/netopia/refund
+Content-Type: application/json
+
+{
+  "refundId": "{{refundId}}",
+  "status": "COMPLETED",
+  "transactionId": "refund_partial_txn_123",
+  "amount": 7500,
+  "currency": "RON"
+}
+
+### 9. Verifică refund COMPLETED
+GET {{api}}/refunds/{{refundId}}
+Authorization: Bearer {{buyerToken}}
+
+### 10. Verifică status comandă PARTIALLY_REFUNDED
+GET {{api}}/orders/{{orderId}}
+Authorization: Bearer {{buyerToken}}
+
+### 11. Verifică ledger entries (cu RECOVERY)
+GET {{api}}/ledger?orderId={{orderId}}
+Authorization: Bearer {{sellerToken}}
+
+### 12. Verifică RECOVERY entry
+GET {{api}}/ledger?type=RECOVERY&orderId={{orderId}}
+Authorization: Bearer {{sellerToken}}
+
+### 13. Verifică stoc parțial restaurat
+GET {{api}}/products/prod_seller1_1
+Authorization: Bearer {{sellerToken}}
+
+### TODO: Testează
+### - [ ] Refund parțial creat corect
+### - [ ] Admin aprobă refund parțial
+### - [ ] Callback Netopia refund success
+### - [ ] Status PARTIALLY_REFUNDED pe comandă
+### - [ ] Stoc parțial restaurat
+### - [ ] Banii returnați buyer-ului
+### - [ ] RECOVERY în ledger (negativ seller, pozitiv platformă)
+### - [ ] Email notificare refund parțial
+### - [ ] Calcul corect comision pe partea nerambursată

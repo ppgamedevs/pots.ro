@@ -1,0 +1,83 @@
+config:
+  target: 'http://localhost:3000'
+  phases:
+    - duration: 60
+      arrivalRate: 25
+      name: "Search load test"
+  plugins:
+    metrics-by-endpoint: {}
+  variables:
+    search_terms:
+      - "ghiveci"
+      - "cutie"
+      - "plantă"
+      - "floare"
+      - "grădină"
+      - "balcon"
+      - "interior"
+      - "exterior"
+      - "ceramică"
+      - "plastic"
+
+scenarios:
+  - name: "Search API load test"
+    weight: 100
+    flow:
+      - loop:
+          - get:
+              url: "/api/search"
+              qs:
+                q: "{{ $pick(search_terms) }}"
+                limit: "{{ $randomInt(10, 50) }}"
+                page: "{{ $randomInt(1, 5) }}"
+              capture:
+                - json: "$.total"
+                  as: "searchTotal"
+              expect:
+                - statusCode: 200
+                - hasHeader: "content-type"
+                - contentType: "application/json"
+          - think: 1
+        count: 10
+
+  - name: "Category browsing"
+    weight: 30
+    flow:
+      - get:
+          url: "/api/categories"
+          expect:
+            - statusCode: 200
+      - get:
+          url: "/api/products"
+          qs:
+            category: "{{ $pick(['ghiveci', 'cutii', 'accesorii']) }}"
+            limit: "20"
+          expect:
+            - statusCode: 200
+      - think: 2
+
+  - name: "Product details"
+    weight: 20
+    flow:
+      - get:
+          url: "/api/products"
+          qs:
+            limit: 10
+          capture:
+            - json: "$.data[0].id"
+              as: "productId"
+      - get:
+          url: "/api/products/{{ productId }}"
+          expect:
+            - statusCode: 200
+      - think: 3
+
+  - name: "Homepage"
+    weight: 10
+    flow:
+      - get:
+          url: "/"
+          expect:
+            - statusCode: 200
+            - contentType: "text/html"
+      - think: 1

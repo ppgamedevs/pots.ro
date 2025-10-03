@@ -1,0 +1,101 @@
+### E2E Test B: Payment Fail → Retry → Success
+### Testează flow-ul de eșec plată și retry cu Netopia sandbox
+
+@host = http://localhost:3000
+@api = {{host}}/api
+@buyerToken = eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...
+
+### 1. Creează comandă
+POST {{api}}/checkout/create-order
+Authorization: Bearer {{buyerToken}}
+Content-Type: application/json
+
+{
+  "shippingAddress": {
+    "name": "Test Buyer",
+    "phone": "0712345678",
+    "address": "Strada Test 123",
+    "city": "București",
+    "county": "București",
+    "postalCode": "010001"
+  }
+}
+
+### 2. Simulează callback Netopia FAIL
+POST {{api}}/webhooks/netopia
+Content-Type: application/json
+
+{
+  "orderId": "{{orderId}}",
+  "status": "FAILED",
+  "transactionId": "sandbox_txn_fail_123",
+  "errorCode": "INSUFFICIENT_FUNDS",
+  "errorMessage": "Fonduri insuficiente"
+}
+
+### 3. Verifică status PENDING (nu PAID)
+GET {{api}}/orders/{{orderId}}
+Authorization: Bearer {{buyerToken}}
+
+### 4. Verifică coș restaurat
+GET {{api}}/cart
+Authorization: Bearer {{buyerToken}}
+
+### 5. Verifică stoc neschimbat
+GET {{api}}/products/prod_seller1_1
+Authorization: Bearer {{sellerToken1}}
+
+### 6. Retry plată - simulează callback SUCCESS
+POST {{api}}/webhooks/netopia
+Content-Type: application/json
+
+{
+  "orderId": "{{orderId}}",
+  "status": "PAID",
+  "transactionId": "sandbox_txn_retry_456",
+  "amount": 15000,
+  "currency": "RON"
+}
+
+### 7. Verifică status PAID după retry
+GET {{api}}/orders/{{orderId}}
+Authorization: Bearer {{buyerToken}}
+
+### 8. Verifică stoc scăzut după retry
+GET {{api}}/products/prod_seller1_1
+Authorization: Bearer {{sellerToken1}}
+
+### 9. Verifică coș gol după retry
+GET {{api}}/cart
+Authorization: Bearer {{buyerToken}}
+
+### 10. Testează idempotent callback (duplicat)
+POST {{api}}/webhooks/netopia
+Content-Type: application/json
+
+{
+  "orderId": "{{orderId}}",
+  "status": "PAID",
+  "transactionId": "sandbox_txn_retry_456",
+  "amount": 15000,
+  "currency": "RON"
+}
+
+### 11. Verifică că nu s-a dublat stocul
+GET {{api}}/products/prod_seller1_1
+Authorization: Bearer {{sellerToken1}}
+
+### 12. Verifică că nu s-a dublat ledger-ul
+GET {{api}}/ledger?orderId={{orderId}}
+Authorization: Bearer {{sellerToken1}}
+
+### TODO: Testează
+### - [ ] Callback FAIL → status PENDING
+### - [ ] Coș restaurat după fail
+### - [ ] Stoc neschimbat după fail
+### - [ ] Retry SUCCESS → status PAID
+### - [ ] Stoc scăzut după retry
+### - [ ] Coș gol după retry
+### - [ ] Callback idempotent (nu dublează)
+### - [ ] Email notificare fail + retry success
+### - [ ] Webhook logging corect

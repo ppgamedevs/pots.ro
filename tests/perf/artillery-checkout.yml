@@ -1,0 +1,199 @@
+config:
+  target: 'http://localhost:3000'
+  phases:
+    - duration: 30
+      arrivalRate: 5
+      name: "Checkout load test"
+  plugins:
+    metrics-by-endpoint: {}
+  variables:
+    test_users:
+      - "buyer1@test.com"
+      - "buyer2@test.com"
+      - "buyer3@test.com"
+      - "buyer4@test.com"
+      - "buyer5@test.com"
+
+scenarios:
+  - name: "Simultaneous checkout flow"
+    weight: 100
+    flow:
+      # 1. Login (mock)
+      - post:
+          url: "/api/auth/login"
+          json:
+            email: "{{ $pick(test_users) }}"
+            password: "testpass123"
+          capture:
+            - json: "$.token"
+              as: "authToken"
+          expect:
+            - statusCode: 200
+
+      # 2. Add products to cart
+      - get:
+          url: "/api/products"
+          qs:
+            limit: 5
+          capture:
+            - json: "$.data[0].id"
+              as: "productId1"
+            - json: "$.data[1].id"
+              as: "productId2"
+          expect:
+            - statusCode: 200
+
+      - post:
+          url: "/api/cart/add"
+          headers:
+            Authorization: "Bearer {{ authToken }}"
+          json:
+            productId: "{{ productId1 }}"
+            quantity: 2
+          expect:
+            - statusCode: 200
+
+      - post:
+          url: "/api/cart/add"
+          headers:
+            Authorization: "Bearer {{ authToken }}"
+          json:
+            productId: "{{ productId2 }}"
+            quantity: 1
+          expect:
+            - statusCode: 200
+
+      # 3. View cart
+      - get:
+          url: "/api/cart"
+          headers:
+            Authorization: "Bearer {{ authToken }}"
+          expect:
+            - statusCode: 200
+
+      # 4. Create order
+      - post:
+          url: "/api/checkout/create-order"
+          headers:
+            Authorization: "Bearer {{ authToken }}"
+          json:
+            shippingAddress:
+              name: "Test Buyer"
+              phone: "0712345678"
+              address: "Strada Test 123"
+              city: "București"
+              county: "București"
+              postalCode: "010001"
+          capture:
+            - json: "$.orderId"
+              as: "orderId"
+          expect:
+            - statusCode: 200
+
+      # 5. Mock payment (simulate Netopia callback)
+      - post:
+          url: "/api/webhooks/netopia"
+          json:
+            orderId: "{{ orderId }}"
+            status: "PAID"
+            transactionId: "mock_txn_{{ $randomString() }}"
+            amount: 15000
+            currency: "RON"
+          expect:
+            - statusCode: 200
+
+      # 6. Verify order status
+      - get:
+          url: "/api/orders/{{ orderId }}"
+          headers:
+            Authorization: "Bearer {{ authToken }}"
+          expect:
+            - statusCode: 200
+            - json: "$.status"
+              is: "PAID"
+
+      # 7. Generate invoice
+      - get:
+          url: "/api/orders/{{ orderId }}/invoice"
+          headers:
+            Authorization: "Bearer {{ authToken }}"
+          expect:
+            - statusCode: 200
+
+      - think: 2
+
+  - name: "Cart operations"
+    weight: 50
+    flow:
+      - post:
+          url: "/api/auth/login"
+          json:
+            email: "{{ $pick(test_users) }}"
+            password: "testpass123"
+          capture:
+            - json: "$.token"
+              as: "authToken"
+
+      - get:
+          url: "/api/products"
+          qs:
+            limit: 3
+          capture:
+            - json: "$.data[0].id"
+              as: "productId"
+
+      - post:
+          url: "/api/cart/add"
+          headers:
+            Authorization: "Bearer {{ authToken }}"
+          json:
+            productId: "{{ productId }}"
+            quantity: 1
+
+      - get:
+          url: "/api/cart"
+          headers:
+            Authorization: "Bearer {{ authToken }}"
+
+      - post:
+          url: "/api/cart/update"
+          headers:
+            Authorization: "Bearer {{ authToken }}"
+          json:
+            productId: "{{ productId }}"
+            quantity: 3
+
+      - post:
+          url: "/api/cart/remove"
+          headers:
+            Authorization: "Bearer {{ authToken }}"
+          json:
+            productId: "{{ productId }}"
+
+      - get:
+          url: "/api/cart"
+          headers:
+            Authorization: "Bearer {{ authToken }}"
+
+      - think: 1
+
+  - name: "Product browsing"
+    weight: 30
+    flow:
+      - get:
+          url: "/api/categories"
+      - get:
+          url: "/api/products"
+          qs:
+            limit: 20
+      - get:
+          url: "/api/products"
+          qs:
+            category: "ghiveci"
+            limit: 10
+      - get:
+          url: "/api/search"
+          qs:
+            q: "ghiveci"
+            limit: 15
+      - think: 1

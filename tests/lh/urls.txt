@@ -1,0 +1,56 @@
+# Lighthouse CI URLs pentru testare
+# Target: Perf ≥ 90, LCP ≤ 2.5s, A11y ≥ 95
+
+# Homepage
+http://localhost:3000/
+
+# Categorii principale
+http://localhost:3000/c/ghiveci
+http://localhost:3000/c/cutii
+http://localhost:3000/c/accesorii
+
+# Produse populare
+http://localhost:3000/p/ghiveci-ceramic-inalt
+http://localhost:3000/p/cutie-plastic-balbona
+http://localhost:3000/p/ghiveci-teracota-mare
+
+# Checkout flow
+http://localhost:3000/checkout
+
+# Seller dashboard
+http://localhost:3000/seller/dashboard
+http://localhost:3000/seller/products
+http://localhost:3000/seller/analytics
+http://localhost:3000/seller/promotions
+
+# Admin dashboard
+http://localhost:3000/admin/dashboard
+http://localhost:3000/admin/analytics
+http://localhost:3000/admin/finante
+http://localhost:3000/admin/users
+
+# Pagini legale
+http://localhost:3000/legal/termeni
+http://localhost:3000/legal/privacy
+http://localhost:3000/legal/livrare
+http://localhost:3000/legal/retur
+http://localhost:3000/legal/contact
+
+# Blog (dacă există)
+http://localhost:3000/blog
+http://localhost:3000/blog/cutii-inalte-vs-joase-ghid-2025
+http://localhost:3000/blog/cum-alegi-ghiveciul-potrivit-pe-dimensiuni
+
+# Search results
+http://localhost:3000/search?q=ghiveci
+http://localhost:3000/search?q=cutie
+http://localhost:3000/search?q=plantă
+
+# User account pages
+http://localhost:3000/account
+http://localhost:3000/account/orders
+http://localhost:3000/account/profile
+
+# Error pages
+http://localhost:3000/404
+http://localhost:3000/500
