@@ -8,7 +8,7 @@ export const metadata: Metadata = {
     "cutii",
     "accesorii florale",
     "floristică",
-    "pots.ro",
+    "floristmarket.ro",
     "plante de interior",
     "aranjamente florale",
     "ceramic",
@@ -19,7 +19,7 @@ export const metadata: Metadata = {
     title: "Pots.ro - Marketplace românesc pentru floristică",
     description: "Descoperă o gamă largă de ghivece, cutii și accesorii pentru floristică. Calitate superioară, prețuri competitive, livrare rapidă în toată România.",
     type: "website",
-    url: "https://pots.ro",
+    url: "https://floristmarket.ro",
     siteName: "Pots.ro",
     images: [
       {
@@ -37,6 +37,6 @@ export const metadata: Metadata = {
     images: ["/placeholder.svg"],
   },
   alternates: {
-    canonical: "https://pots.ro",
+    canonical: "https://floristmarket.ro",
   },
 };

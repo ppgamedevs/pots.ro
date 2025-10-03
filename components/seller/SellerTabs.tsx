@@ -49,7 +49,7 @@ export function SellerTabs({ products, aboutMd }: SellerTabsProps) {
               components={{
                 a: ({ href, children, ...props }) => {
                   // Check if it's an external link
-                  const isExternal = href?.startsWith('http') && !href?.includes('pots.ro');
+                  const isExternal = href?.startsWith('http') && !href?.includes('floristmarket.ro');
                   
                   return (
                     <a

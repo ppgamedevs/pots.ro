@@ -353,7 +353,7 @@ export default function TermsPage() {
                 Pentru întrebări despre acești termeni și condiții, contactează-ne:
               </p>
               <p className="text-slate-600 dark:text-slate-300">
-                <strong>Email:</strong> legal@pots.ro<br />
+                <strong>Email:</strong> legal@floristmarket.ro<br />
                 <strong>Telefon:</strong> +40 721 123 456<br />
                 <strong>Adresă:</strong> Str. Exemplu 123, București, România
               </p>

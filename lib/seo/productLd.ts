@@ -1,8 +1,8 @@
 import { Product } from "@/lib/data/products";
 
 export function buildProductLdJson(product: Product) {
-  const url = `https://www.pots.ro/p/${product.id}-${product.slug}`;
-  const image = product.images?.[0]?.url || "https://www.pots.ro/og/default-product.jpg";
+  const url = `https://www.floristmarket.ro/p/${product.id}-${product.slug}`;
+  const image = product.images?.[0]?.url || "https://www.floristmarket.ro/og/default-product.jpg";
   const inStock = product.stock_qty > 0;
 
   return {
@@ -25,7 +25,7 @@ export function buildProductLdJson(product: Product) {
       seller: {
         "@type": "Organization",
         name: "Pots Marketplace", // 👈 generic; nu expune vendorul
-        url: "https://www.pots.ro",
+        url: "https://www.floristmarket.ro",
       },
     },
     // Adăugăm și alte proprietăți utile pentru SEO

@@ -31,18 +31,18 @@ export function organizationSchema() {
     "@context": "https://schema.org",
     "@type": "Organization",
     "name": "Pots.ro",
-    "url": "https://pots.ro",
-    "logo": "https://pots.ro/logo.png",
+    "url": "https://floristmarket.ro",
+    "logo": "https://floristmarket.ro/logo.png",
     "description": "Romania's premier marketplace for pottery and ceramics",
     "contactPoint": {
       "@type": "ContactPoint",
       "telephone": "+40-XXX-XXX-XXX",
       "contactType": "customer service",
-      "email": "contact@pots.ro"
+      "email": "contact@floristmarket.ro"
     },
     "sameAs": [
-      "https://facebook.com/pots.ro",
-      "https://instagram.com/pots.ro"
+      "https://facebook.com/floristmarket.ro",
+      "https://instagram.com/floristmarket.ro"
     ]
   };
 }
@@ -52,12 +52,12 @@ export function websiteSchema() {
     "@context": "https://schema.org",
     "@type": "WebSite",
     "name": "Pots.ro",
-    "url": "https://pots.ro",
+    "url": "https://floristmarket.ro",
     "potentialAction": {
       "@type": "SearchAction",
       "target": {
         "@type": "EntryPoint",
-        "urlTemplate": "https://pots.ro/search?q={search_term_string}"
+        "urlTemplate": "https://floristmarket.ro/search?q={search_term_string}"
       },
       "query-input": "required name=search_term_string"
     }
@@ -91,7 +91,7 @@ export function productSchema(product: ProductData) {
     },
     "offers": {
       "@type": "Offer",
-      "url": `https://pots.ro/p/${product.id}`,
+      "url": `https://floristmarket.ro/p/${product.id}`,
       "priceCurrency": product.currency,
       "price": product.price / 100,
       "availability": `https://schema.org/${product.availability}`,
@@ -135,7 +135,7 @@ export function aggregateOfferSchema(products: ProductData[]) {
     "offerCount": products.length,
     "offers": products.map(product => ({
       "@type": "Offer",
-      "url": `https://pots.ro/p/${product.id}`,
+      "url": `https://floristmarket.ro/p/${product.id}`,
       "priceCurrency": product.currency,
       "price": product.price / 100,
       "availability": `https://schema.org/${product.availability}`,

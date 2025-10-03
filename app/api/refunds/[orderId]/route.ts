@@ -260,7 +260,7 @@ async function processRefund(
  */
 async function sendRefundFailureAlert(refundId: string, reason: string): Promise<void> {
   try {
-    const adminEmails = process.env.ADMIN_EMAILS?.split(',') || ['admin@pots.ro'];
+    const adminEmails = process.env.ADMIN_EMAILS?.split(',') || ['admin@floristmarket.ro'];
     
     for (const email of adminEmails) {
       await emailService.sendEmail({

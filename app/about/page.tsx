@@ -95,7 +95,7 @@ export default function AboutPage() {
             </h2>
             <div className="bg-slate-50 dark:bg-slate-800 p-6 rounded-lg">
               <p className="text-slate-600 dark:text-slate-300 mb-2">
-                <strong>Email:</strong> hello@pots.ro
+                <strong>Email:</strong> hello@floristmarket.ro
               </p>
               <p className="text-slate-600 dark:text-slate-300 mb-2">
                 <strong>Telefon:</strong> +40 721 123 456

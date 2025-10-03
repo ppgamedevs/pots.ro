@@ -115,8 +115,8 @@ export default function ReturnsPage() {
                   </h3>
                   <p className="text-slate-600 dark:text-slate-300">
                     Trimite un mesaj vânzătorului prin platformă sau contactează-ne la{" "}
-                    <a href="mailto:returns@pots.ro" className="text-brand hover:underline">
-                      returns@pots.ro
+                    <a href="mailto:returns@floristmarket.ro" className="text-brand hover:underline">
+                      returns@floristmarket.ro
                     </a>{" "}
                     pentru a iniția procesul de retur.
                   </p>
@@ -315,7 +315,7 @@ export default function ReturnsPage() {
             </p>
             
             <div className="flex flex-col sm:flex-row gap-4 justify-center">
-              <a href="mailto:returns@pots.ro" className="btn btn-primary">
+              <a href="mailto:returns@floristmarket.ro" className="btn btn-primary">
                 Email retururi
               </a>
               <a href="/contact" className="btn btn-ghost">

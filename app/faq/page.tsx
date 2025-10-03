@@ -88,7 +88,7 @@ export default function FAQPage() {
         },
         {
           question: "Cum șterg contul?",
-          answer: "Contactează-ne la support@pots.ro pentru a solicita ștergerea contului. Procesul se finalizează în termen de 30 de zile."
+          answer: "Contactează-ne la support@floristmarket.ro pentru a solicita ștergerea contului. Procesul se finalizează în termen de 30 de zile."
         }
       ]
     },
@@ -118,7 +118,7 @@ export default function FAQPage() {
       questions: [
         {
           question: "Site-ul nu se încarcă. Ce fac?",
-          answer: "Încearcă să reîmprospătezi pagina (F5) sau să ștergi cache-ul browserului. Dacă problema persistă, contactează-ne la support@pots.ro."
+          answer: "Încearcă să reîmprospătezi pagina (F5) sau să ștergi cache-ul browserului. Dacă problema persistă, contactează-ne la support@floristmarket.ro."
         },
         {
           question: "Nu primesc email-urile de confirmare",
@@ -148,8 +148,8 @@ export default function FAQPage() {
             <p className="text-slate-600 dark:text-slate-300 leading-relaxed">
               Găsește răspunsuri rapide la cele mai frecvente întrebări despre platforma Pots.ro. 
               Dacă nu găsești răspunsul căutat, contactează-ne la{" "}
-              <a href="mailto:support@pots.ro" className="text-brand hover:underline">
-                support@pots.ro
+              <a href="mailto:support@floristmarket.ro" className="text-brand hover:underline">
+                support@floristmarket.ro
               </a>.
             </p>
           </section>
@@ -191,7 +191,7 @@ export default function FAQPage() {
             </p>
             
             <div className="flex flex-col sm:flex-row gap-4 justify-center">
-              <a href="mailto:support@pots.ro" className="btn btn-primary">
+              <a href="mailto:support@floristmarket.ro" className="btn btn-primary">
                 Trimite email
               </a>
               <a href="/contact" className="btn btn-ghost">

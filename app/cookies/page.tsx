@@ -314,7 +314,7 @@ export default function CookiesPage() {
                 folosim cookie-urile, contactează-ne:
               </p>
               <p className="text-slate-600 dark:text-slate-300">
-                <strong>Email:</strong> privacy@pots.ro<br />
+                <strong>Email:</strong> privacy@floristmarket.ro<br />
                 <strong>Telefon:</strong> +40 721 123 456<br />
                 <strong>Adresă:</strong> Str. Exemplu 123, București, România
               </p>

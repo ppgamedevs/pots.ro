@@ -26,7 +26,7 @@ export async function GET(request: NextRequest) {
 
     for (const url of sitemapUrls) {
       try {
-        const response = await fetch(`${process.env.NEXT_PUBLIC_APP_URL || 'https://pots.ro'}${url}`, {
+        const response = await fetch(`${process.env.NEXT_PUBLIC_APP_URL || 'https://floristmarket.ro'}${url}`, {
           method: 'GET',
           headers: {
             'Cache-Control': 'no-cache'

@@ -18,7 +18,7 @@ export async function GET(request: NextRequest) {
       });
     }
 
-    const baseUrl = process.env.APP_BASE_URL || 'https://pots.ro';
+    const baseUrl = process.env.APP_BASE_URL || 'https://floristmarket.ro';
     
     // For MVP, we'll include static blog pages
     // In a real implementation, you'd fetch blog posts from a CMS or database

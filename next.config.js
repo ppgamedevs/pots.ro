@@ -1,5 +1,7 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
+  // Site configuration
+  siteUrl: "https://floristmarket.ro",
   // Image optimization
   images: {
     remotePatterns: [

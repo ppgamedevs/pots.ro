@@ -29,8 +29,8 @@ export default function PressPage() {
                   </h3>
                   <p className="text-slate-600 dark:text-slate-300 mb-1">
                     <strong>Email:</strong>{" "}
-                    <a href="mailto:press@pots.ro" className="text-brand hover:underline">
-                      press@pots.ro
+                    <a href="mailto:press@floristmarket.ro" className="text-brand hover:underline">
+                      press@floristmarket.ro
                     </a>
                   </p>
                   <p className="text-slate-600 dark:text-slate-300 mb-1">
@@ -46,8 +46,8 @@ export default function PressPage() {
                   </h3>
                   <p className="text-slate-600 dark:text-slate-300 mb-1">
                     <strong>Email:</strong>{" "}
-                    <a href="mailto:urgent@pots.ro" className="text-brand hover:underline">
-                      urgent@pots.ro
+                    <a href="mailto:urgent@floristmarket.ro" className="text-brand hover:underline">
+                      urgent@floristmarket.ro
                     </a>
                   </p>
                   <p className="text-slate-600 dark:text-slate-300">
@@ -270,7 +270,7 @@ export default function PressPage() {
               Contactează-ne pentru informații suplimentare, interviuri sau materiale media.
             </p>
             <div className="flex flex-col sm:flex-row gap-4 justify-center">
-              <a href="mailto:press@pots.ro" className="btn btn-primary">
+              <a href="mailto:press@floristmarket.ro" className="btn btn-primary">
                 <Mail className="h-4 w-4 mr-2" />
                 Contactează presa
               </a>

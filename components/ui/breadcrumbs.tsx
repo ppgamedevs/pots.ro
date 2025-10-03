@@ -21,7 +21,7 @@ export function Breadcrumbs({ items, className }: BreadcrumbsProps) {
       "@type": "ListItem",
       "position": index + 1,
       "name": item.name,
-      "item": `https://pots.ro${item.href}`
+      "item": `https://floristmarket.ro${item.href}`
     }))
   };
 

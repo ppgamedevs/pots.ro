@@ -137,10 +137,10 @@ export function Footer() {
                 <div className="flex items-center gap-3">
                   <Mail className="h-5 w-5 text-slate-400" />
                   <a 
-                    href="mailto:hello@pots.ro" 
+                    href="mailto:hello@floristmarket.ro" 
                     className="hover:text-brand transition-colors"
                   >
-                    hello@pots.ro
+                    hello@floristmarket.ro
                   </a>
                 </div>
                 <div className="flex items-center gap-3">

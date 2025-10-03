@@ -73,7 +73,7 @@ export async function generateMetadata({ params }: CategoryAttributePageProps): 
       images: ['/og-category-attribute.jpg']
     },
     alternates: {
-      canonical: `https://pots.ro/category/${category}/attr/${attribute}`
+      canonical: `https://floristmarket.ro/category/${category}/attr/${attribute}`
     }
   };
 }

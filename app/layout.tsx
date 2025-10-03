@@ -10,53 +10,44 @@ import { CookieConsent } from "@/components/cookie-consent";
 import { SpeedInsights } from "@vercel/speed-insights/next";
 import { Analytics } from "@vercel/analytics/next";
 import { ErrorBoundary } from "@/components/error-boundary";
+import { SITE_NAME, SITE_URL, SITE_DESCRIPTION, SITE_KEYWORDS, TWITTER_HANDLE, OG_IMAGE_DEFAULT } from "@/lib/constants";
 // import { PerformanceOptimizer, criticalCSS, criticalResources } from "@/components/ui/performance-optimizer";
 
 const inter = Inter({ subsets: ["latin"], display: "swap", variable: "--font-inter" });
 
 export const metadata = {
-  metadataBase: new URL('https://pots.ro'),
+  metadataBase: new URL(SITE_URL),
   title: {
-    default: "Pots.ro - Marketplace românesc pentru floristică",
-    template: "%s | Pots.ro"
+    default: `${SITE_NAME} – Marketplace de Floristică`,
+    template: `%s | ${SITE_NAME}`
   },
   icons: {
     icon: '/favicon.svg',
   },
-  description: "Descoperă o gamă largă de ghivece, cutii și accesorii pentru floristică. Calitate superioară, prețuri competitive, livrare rapidă în toată România.",
-  keywords: [
-    "ghivece",
-    "cutii", 
-    "accesorii florale",
-    "floristică",
-    "pots.ro",
-    "plante de interior",
-    "aranjamente florale",
-    "ceramic",
-    "carton",
-    "panglici"
-  ],
+  description: SITE_DESCRIPTION,
+  keywords: SITE_KEYWORDS,
   openGraph: {
     type: "website",
     locale: "ro_RO",
-    url: "https://pots.ro",
-    siteName: "Pots.ro",
-    title: "Pots.ro - Marketplace românesc pentru floristică",
-    description: "Descoperă o gamă largă de ghivece, cutii și accesorii pentru floristică. Calitate superioară, prețuri competitive, livrare rapidă în toată România.",
+    url: SITE_URL,
+    siteName: SITE_NAME,
+    title: `${SITE_NAME} – Marketplace de Floristică`,
+    description: SITE_DESCRIPTION,
     images: [
       {
-        url: "https://images.unsplash.com/photo-1416879595882-3373a0480b5b?w=1200&h=630&fit=crop&crop=center",
+        url: OG_IMAGE_DEFAULT,
         width: 1200,
         height: 630,
-        alt: "Pots.ro - Marketplace românesc pentru floristică",
+        alt: `${SITE_NAME} – Marketplace de Floristică`,
       },
     ],
   },
   twitter: {
     card: "summary_large_image",
-    title: "Pots.ro - Marketplace românesc pentru floristică",
-    description: "Descoperă o gamă largă de ghivece, cutii și accesorii pentru floristică. Calitate superioară, prețuri competitive, livrare rapidă în toată România.",
-    images: ["https://images.unsplash.com/photo-1416879595882-3373a0480b5b?w=1200&h=630&fit=crop&crop=center"],
+    title: `${SITE_NAME} – Marketplace de Floristică`,
+    description: SITE_DESCRIPTION,
+    images: [OG_IMAGE_DEFAULT],
+    creator: TWITTER_HANDLE,
   },
   robots: {
     index: true,

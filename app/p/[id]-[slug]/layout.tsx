@@ -98,7 +98,7 @@ export async function generateMetadata({ params }: { params: Promise<{ id: strin
       "ghiveci ceramic",
       "plante de interior",
       "floristică",
-      "pots.ro",
+      "floristmarket.ro",
       product.seller.name,
       "ceramic alb",
       "ghiveci plante"
@@ -107,7 +107,7 @@ export async function generateMetadata({ params }: { params: Promise<{ id: strin
       title,
       description,
       type: "website",
-      url: `https://pots.ro/p/${id}-${slug}`,
+      url: `https://floristmarket.ro/p/${id}-${slug}`,
       images: [
         {
           url: product.images[0],
@@ -125,7 +125,7 @@ export async function generateMetadata({ params }: { params: Promise<{ id: strin
       images: [product.images[0]],
     },
     alternates: {
-      canonical: `https://pots.ro/p/${id}-${slug}`,
+      canonical: `https://floristmarket.ro/p/${id}-${slug}`,
     },
   };
 }

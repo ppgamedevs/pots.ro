@@ -60,7 +60,7 @@ export async function POST(request: NextRequest) {
       
       // Create invoice
       try {
-        const baseUrl = process.env.APP_BASE_URL || 'https://pots.ro';
+        const baseUrl = process.env.APP_BASE_URL || 'https://floristmarket.ro';
         const invoiceResponse = await fetch(`${baseUrl}/api/internal/invoice-create`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
@@ -96,7 +96,7 @@ export async function POST(request: NextRequest) {
             shippingAddress?.name || 'Customer',
             order.totalCents,
             order.currency,
-            `https://pots.ro/api/invoices/${callbackData.orderId}/pdf` // Invoice URL
+            `https://floristmarket.ro/api/invoices/${callbackData.orderId}/pdf` // Invoice URL
           );
         }
       } catch (emailError) {

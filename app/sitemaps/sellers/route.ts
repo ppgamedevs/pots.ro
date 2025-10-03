@@ -29,7 +29,7 @@ export async function GET(request: NextRequest) {
     const lastmod = new Date(seller.updatedAt).toISOString().split('T')[0];
     
     return `  <url>
-    <loc>https://pots.ro/s/${seller.slug}</loc>
+    <loc>https://floristmarket.ro/s/${seller.slug}</loc>
     <lastmod>${lastmod}</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.7</priority>

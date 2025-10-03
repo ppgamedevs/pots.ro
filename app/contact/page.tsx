@@ -27,8 +27,8 @@ export default function ContactPage() {
                 <div>
                   <h3 className="font-semibold text-slate-900 dark:text-slate-100">Email</h3>
                   <p className="text-slate-600 dark:text-slate-300">
-                    <a href="mailto:hello@pots.ro" className="hover:text-brand transition-colors">
-                      hello@pots.ro
+                    <a href="mailto:hello@floristmarket.ro" className="hover:text-brand transition-colors">
+                      hello@floristmarket.ro
                     </a>
                   </p>
                   <p className="text-sm text-slate-500 dark:text-slate-400 mt-1">

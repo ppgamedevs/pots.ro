@@ -21,7 +21,7 @@ export async function GET(request: NextRequest) {
       });
     }
 
-    const baseUrl = process.env.APP_BASE_URL || 'https://pots.ro';
+    const baseUrl = process.env.APP_BASE_URL || 'https://floristmarket.ro';
     
     // Get all active products
     const productsResult = await db

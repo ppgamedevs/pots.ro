@@ -20,6 +20,6 @@ export default function robots(): MetadataRoute.Robots {
         '/components-demo/',
       ],
     },
-    sitemap: 'https://pots.ro/sitemap.xml',
+    sitemap: 'https://floristmarket.ro/sitemap.xml',
   }
 }

@@ -74,7 +74,7 @@ export async function POST(request: NextRequest, { params }: { params: { id: str
           orderId,
           buyer.email,
           shippingAddress?.name || 'Customer',
-          `https://pots.ro/orders/${orderId}/review` // Review URL
+          `https://floristmarket.ro/orders/${orderId}/review` // Review URL
         );
       }
     } catch (emailError) {

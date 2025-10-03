@@ -48,7 +48,7 @@ async function testSEO() {
   console.log('\n✅ Robots.txt:');
   console.log('  - Allow: / (all public pages)');
   console.log('  - Disallow: /admin/, /api/, /_next/, /checkout, /cart');
-  console.log('  - Sitemap reference: https://pots.ro/sitemap.xml');
+  console.log('  - Sitemap reference: https://floristmarket.ro/sitemap.xml');
   
   console.log('\n✅ Canonical URLs:');
   console.log('  - Product pages: Clean URLs without parameters');
@@ -62,7 +62,7 @@ async function testSEO() {
   console.log('  - Proper microdata for search engines');
   
   console.log('\n✅ Technical SEO:');
-  console.log('  - metadataBase set to https://pots.ro');
+  console.log('  - metadataBase set to https://floristmarket.ro');
   console.log('  - Proper OpenGraph and Twitter cards');
   console.log('  - Keywords and descriptions optimized');
   console.log('  - Mobile-friendly metadata');

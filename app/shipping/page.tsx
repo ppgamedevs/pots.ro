@@ -390,7 +390,7 @@ export default function ShippingPage() {
             </p>
             
             <div className="flex flex-col sm:flex-row gap-4 justify-center">
-              <a href="mailto:shipping@pots.ro" className="btn btn-primary">
+              <a href="mailto:shipping@floristmarket.ro" className="btn btn-primary">
                 Email livrare
               </a>
               <a href="/contact" className="btn btn-ghost">

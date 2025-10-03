@@ -33,7 +33,7 @@ export function ProductStructuredData({ product }: ProductStructuredDataProps) {
     },
     "offers": {
       "@type": "Offer",
-      "url": `https://pots.ro/p/${product.id}`,
+      "url": `https://floristmarket.ro/p/${product.id}`,
       "priceCurrency": product.currency,
       "price": product.price,
       "availability": product.inStock ? "https://schema.org/InStock" : "https://schema.org/OutOfStock",
@@ -80,7 +80,7 @@ export function CategoryStructuredData({ category, products }: CategoryStructure
     "@type": "CollectionPage",
     "name": category.name,
     "description": category.description,
-    "url": `https://pots.ro/c/${category.slug}`,
+    "url": `https://floristmarket.ro/c/${category.slug}`,
     "mainEntity": {
       "@type": "ItemList",
       "itemListElement": products.map((product, index) => ({

@@ -50,7 +50,7 @@ export const OrderDeliveredEmail = ({
         <Container style={container}>
           <Section style={logoContainer}>
             <Img
-              src="https://pots.ro/logo.png"
+              src="https://floristmarket.ro/logo.png"
               width="120"
               height="40"
               alt="Pots.ro"

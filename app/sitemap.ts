@@ -1,7 +1,7 @@
 import { MetadataRoute } from 'next'
 
 export default function sitemap(): MetadataRoute.Sitemap {
-  const baseUrl = 'https://pots.ro'
+  const baseUrl = 'https://floristmarket.ro'
   
   // Static pages
   const staticPages = [

@@ -18,7 +18,7 @@ export async function GET(request: NextRequest) {
       });
     }
 
-    const baseUrl = process.env.APP_BASE_URL || 'https://pots.ro';
+    const baseUrl = process.env.APP_BASE_URL || 'https://floristmarket.ro';
     const sitemaps = [
       {
         loc: `${baseUrl}/sitemaps/products.xml`,

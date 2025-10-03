@@ -17,7 +17,7 @@ export async function GET(request: NextRequest) {
 
     // 1. Warm up sitemap routes to refresh cache
     try {
-      const baseUrl = process.env.APP_BASE_URL || 'https://pots.ro';
+      const baseUrl = process.env.APP_BASE_URL || 'https://floristmarket.ro';
       const sitemapRoutes = [
         '/sitemap.xml',
         '/sitemaps/products.xml',
@@ -42,7 +42,7 @@ export async function GET(request: NextRequest) {
 
     // 2. Call health check
     try {
-      const baseUrl = process.env.APP_BASE_URL || 'https://pots.ro';
+      const baseUrl = process.env.APP_BASE_URL || 'https://floristmarket.ro';
       const healthResponse = await fetch(`${baseUrl}/api/health`, {
         headers: { 'User-Agent': 'Vercel-Cron/1.0' },
       });
@@ -198,7 +198,7 @@ export async function GET(request: NextRequest) {
 
 async function sendHealthReportEmail(healthData: any) {
   try {
-    const adminEmails = process.env.ADMIN_EMAILS?.split(',') || ['ops@pots.ro'];
+    const adminEmails = process.env.ADMIN_EMAILS?.split(',') || ['ops@floristmarket.ro'];
     
     for (const email of adminEmails) {
       await emailService.sendEmail({

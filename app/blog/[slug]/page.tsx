@@ -186,7 +186,7 @@ export async function generateMetadata({ params }: BlogPostPageProps): Promise<M
       images: [post.image]
     },
     alternates: {
-      canonical: `https://pots.ro/blog/${post.slug}`
+      canonical: `https://floristmarket.ro/blog/${post.slug}`
     }
   };
 }

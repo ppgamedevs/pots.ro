@@ -239,7 +239,7 @@ Pentru mai multe opțiuni, folosește butoanele din toolbar."
                   rehypePlugins={[rehypeSanitize]}
                   components={{
                     a: ({ href, children, ...props }) => {
-                      const isExternal = href?.startsWith('http') && !href?.includes('pots.ro');
+                      const isExternal = href?.startsWith('http') && !href?.includes('floristmarket.ro');
                       
                       return (
                         <a

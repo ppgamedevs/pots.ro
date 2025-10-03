@@ -37,7 +37,7 @@ export default function PrivacyPage() {
                 <strong>Adresa:</strong> Str. Exemplu 123, București, România
               </p>
               <p className="text-slate-600 dark:text-slate-300 mb-2">
-                <strong>Email:</strong> privacy@pots.ro
+                <strong>Email:</strong> privacy@floristmarket.ro
               </p>
               <p className="text-slate-600 dark:text-slate-300">
                 <strong>Telefon:</strong> +40 721 123 456
@@ -270,7 +270,7 @@ export default function PrivacyPage() {
                 Pentru a îți exercita drepturile, contactează-ne la:
               </p>
               <p className="text-slate-600 dark:text-slate-300">
-                <strong>Email:</strong> privacy@pots.ro<br />
+                <strong>Email:</strong> privacy@floristmarket.ro<br />
                 <strong>Telefon:</strong> +40 721 123 456
               </p>
             </div>
@@ -363,7 +363,7 @@ export default function PrivacyPage() {
                 exercita drepturile, contactează-ne:
               </p>
               <p className="text-slate-600 dark:text-slate-300">
-                <strong>Email:</strong> privacy@pots.ro<br />
+                <strong>Email:</strong> privacy@floristmarket.ro<br />
                 <strong>Telefon:</strong> +40 721 123 456<br />
                 <strong>Adresă:</strong> Str. Exemplu 123, București, România
               </p>

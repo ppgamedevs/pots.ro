@@ -54,7 +54,7 @@ Toate produsele noastre sunt:
 
 ## Contact
 
-Pentru întrebări despre produse, vă rugăm să folosiți [mesageria platformei](https://pots.ro/contact) sau să ne contactați prin [email](mailto:contact@pots.ro).
+Pentru întrebări despre produse, vă rugăm să folosiți [mesageria platformei](https://floristmarket.ro/contact) sau să ne contactați prin [email](mailto:contact@floristmarket.ro).
 
 ## Links externe
 

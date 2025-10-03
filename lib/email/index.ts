@@ -55,7 +55,7 @@ export class EmailService {
       
       if (this.provider === 'resend' && this.resend) {
         result = await this.resend.emails.send({
-          from: process.env.EMAIL_FROM || 'Pots.ro <no-reply@pots.ro>',
+          from: process.env.EMAIL_FROM || 'FloristMarket <no-reply@floristmarket.ro>',
           to,
           subject,
           html,
@@ -67,7 +67,7 @@ export class EmailService {
         });
       } else if (this.provider === 'smtp' && this.transporter) {
         result = await this.transporter.sendMail({
-          from: process.env.EMAIL_FROM || 'Pots.ro <no-reply@pots.ro>',
+          from: process.env.EMAIL_FROM || 'FloristMarket <no-reply@floristmarket.ro>',
           to,
           subject,
           html,

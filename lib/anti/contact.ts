@@ -199,7 +199,7 @@ async function updateConversationFlag(conversationId: string, incrementAttempts:
  */
 async function sendBypassAlert(conversationId: string, attempts: number): Promise<void> {
   try {
-    const adminEmails = process.env.ADMIN_EMAILS?.split(',') || ['admin@pots.ro'];
+    const adminEmails = process.env.ADMIN_EMAILS?.split(',') || ['admin@floristmarket.ro'];
     
     for (const email of adminEmails) {
       await emailService.sendEmail({

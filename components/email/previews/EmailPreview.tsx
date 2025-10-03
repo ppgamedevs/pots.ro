@@ -235,7 +235,7 @@ export function AllEmailPreviews() {
       buyerName: 'Maria Popescu',
       total: 12900, // 129.00 RON în cenți
       currency: 'RON',
-      invoiceUrl: 'https://pots.ro/api/invoices/inv-123/pdf'
+      invoiceUrl: 'https://floristmarket.ro/api/invoices/inv-123/pdf'
     },
     OrderShipped: {
       orderId: 'ORD-12345678',
@@ -247,14 +247,14 @@ export function AllEmailPreviews() {
     OrderDelivered: {
       orderId: 'ORD-12345678',
       buyerName: 'Maria Popescu',
-      reviewUrl: 'https://pots.ro/orders/ORD-12345678/review'
+      reviewUrl: 'https://floristmarket.ro/orders/ORD-12345678/review'
     },
     MessageCreated: {
       orderId: 'ORD-12345678',
       buyerName: 'Maria Popescu',
       sellerName: 'Atelier Ceramic',
       messagePreview: 'Mulțumesc pentru comandă! Produsul va fi pregătit în 2-3 zile.',
-      conversationUrl: 'https://pots.ro/orders/ORD-12345678/messages'
+      conversationUrl: 'https://floristmarket.ro/orders/ORD-12345678/messages'
     }
   };
   

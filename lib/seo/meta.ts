@@ -3,6 +3,7 @@
  */
 
 import { Metadata } from 'next';
+import { SITE_NAME, SITE_URL, TWITTER_HANDLE } from '@/lib/constants';
 
 export interface ProductMetaData {
   title: string;
@@ -37,9 +38,9 @@ export interface SellerMetaData {
 
 // Generează meta tags pentru produse
 export function generateProductMetadata(product: ProductMetaData): Metadata {
-  const title = `${product.title} | ${product.seller.brandName} | Pots.ro`;
+  const title = `${product.title} | ${product.seller.brandName} | ${SITE_NAME}`;
   const description = `${product.description.substring(0, 155)}... Preț: ${product.price} ${product.currency}. Livrare rapidă în toată România.`;
-  const canonical = `https://pots.ro/p/${product.slug}`;
+  const canonical = `${SITE_URL}/p/${product.slug}`;
   const ogImage = product.images[0] || '/og-product-default.jpg';
 
   return {
@@ -52,7 +53,7 @@ export function generateProductMetadata(product: ProductMetaData): Metadata {
       title,
       description,
       type: 'website',
-      siteName: 'Pots.ro',
+      siteName: SITE_NAME,
       url: canonical,
       images: [
         {
@@ -69,7 +70,7 @@ export function generateProductMetadata(product: ProductMetaData): Metadata {
       title,
       description,
       images: [ogImage],
-      creator: '@potsro'
+      creator: TWITTER_HANDLE
     },
     other: {
       'product:price:amount': product.price.toString(),
@@ -82,10 +83,10 @@ export function generateProductMetadata(product: ProductMetaData): Metadata {
 
 // Generează meta tags pentru categorii
 export function generateCategoryMetadata(category: CategoryMetaData): Metadata {
-  const title = `${category.name} la prețuri românești – Pots.ro`;
+  const title = `${category.name} la prețuri românești – ${SITE_NAME}`;
   const description = category.description || 
     `Descoperă ${category.name.toLowerCase()} de calitate la prețuri accesibile. ${category.productCount ? `${category.productCount} produse disponibile. ` : ''}Livrare rapidă în toată România.`;
-  const canonical = `https://pots.ro/c/${category.slug}`;
+  const canonical = `${SITE_URL}/c/${category.slug}`;
 
   return {
     title,
@@ -97,7 +98,7 @@ export function generateCategoryMetadata(category: CategoryMetaData): Metadata {
       title,
       description,
       type: 'website',
-      siteName: 'Pots.ro',
+      siteName: SITE_NAME,
       url: canonical,
       images: [
         {
@@ -114,17 +115,17 @@ export function generateCategoryMetadata(category: CategoryMetaData): Metadata {
       title,
       description,
       images: ['/og-category-default.jpg'],
-      creator: '@potsro'
+      creator: TWITTER_HANDLE
     }
   };
 }
 
 // Generează meta tags pentru vânzători
 export function generateSellerMetadata(seller: SellerMetaData): Metadata {
-  const title = `${seller.brandName} – Vânzător verificat | Pots.ro`;
+  const title = `${seller.brandName} – Vânzător verificat | ${SITE_NAME}`;
   const description = seller.description || 
     `Descoperă produse de calitate de la ${seller.brandName}. ${seller.productCount ? `${seller.productCount} produse disponibile. ` : ''}Vânzător verificat cu livrare rapidă.`;
-  const canonical = `https://pots.ro/s/${seller.slug}`;
+  const canonical = `${SITE_URL}/s/${seller.slug}`;
 
   return {
     title,
@@ -136,7 +137,7 @@ export function generateSellerMetadata(seller: SellerMetaData): Metadata {
       title,
       description,
       type: 'profile',
-      siteName: 'Pots.ro',
+      siteName: SITE_NAME,
       url: canonical,
       images: [
         {
@@ -153,7 +154,7 @@ export function generateSellerMetadata(seller: SellerMetaData): Metadata {
       title,
       description,
       images: ['/og-seller-default.jpg'],
-      creator: '@potsro'
+      creator: TWITTER_HANDLE
     }
   };
 }
@@ -167,9 +168,9 @@ export function generateBlogMetadata(post: {
   author?: string;
   image?: string;
 }): Metadata {
-  const title = `${post.title} | Blog Pots.ro`;
+  const title = `${post.title} | Blog ${SITE_NAME}`;
   const description = post.excerpt.substring(0, 155) + '...';
-  const canonical = `https://pots.ro/blog/${post.slug}`;
+  const canonical = `${SITE_URL}/blog/${post.slug}`;
   const ogImage = post.image || '/og-blog-default.jpg';
 
   return {
@@ -182,7 +183,7 @@ export function generateBlogMetadata(post: {
       title,
       description,
       type: 'article',
-      siteName: 'Pots.ro',
+      siteName: SITE_NAME,
       url: canonical,
       images: [
         {
@@ -201,7 +202,7 @@ export function generateBlogMetadata(post: {
       title,
       description,
       images: [ogImage],
-      creator: '@potsro'
+      creator: TWITTER_HANDLE
     }
   };
 }
@@ -213,8 +214,8 @@ export function generateStaticPageMetadata(page: {
   slug: string;
   image?: string;
 }): Metadata {
-  const title = `${page.title} | Pots.ro`;
-  const canonical = `https://pots.ro/${page.slug}`;
+  const title = `${page.title} | ${SITE_NAME}`;
+  const canonical = `${SITE_URL}/${page.slug}`;
   const ogImage = page.image || '/og-default.jpg';
 
   return {
@@ -227,7 +228,7 @@ export function generateStaticPageMetadata(page: {
       title,
       description: page.description,
       type: 'website',
-      siteName: 'Pots.ro',
+      siteName: SITE_NAME,
       url: canonical,
       images: [
         {
@@ -244,7 +245,7 @@ export function generateStaticPageMetadata(page: {
       title,
       description: page.description,
       images: [ogImage],
-      creator: '@potsro'
+      creator: TWITTER_HANDLE
     }
   };
 }
@@ -263,7 +264,7 @@ export function generateSlug(text: string): string {
 export function isValidCanonicalUrl(url: string): boolean {
   try {
     const parsed = new URL(url);
-    return parsed.hostname === 'pots.ro' || parsed.hostname === 'www.pots.ro';
+    return parsed.hostname === 'floristmarket.ro' || parsed.hostname === 'www.floristmarket.ro';
   } catch {
     return false;
   }
