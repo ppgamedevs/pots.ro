@@ -4,57 +4,91 @@
 
 @layer base {
   :root {
-    --background: 0 0% 100%;
-    --foreground: 222.2 84% 4.9%;
-    --card: 0 0% 100%;
-    --card-foreground: 222.2 84% 4.9%;
-    --popover: 0 0% 100%;
-    --popover-foreground: 222.2 84% 4.9%;
-    --primary: 222.2 47.4% 11.2%;
-    --primary-foreground: 210 40% 98%;
-    --secondary: 210 40% 96%;
-    --secondary-foreground: 222.2 47.4% 11.2%;
-    --muted: 210 40% 96%;
-    --muted-foreground: 215.4 16.3% 46.9%;
-    --accent: 210 40% 96%;
-    --accent-foreground: 222.2 47.4% 11.2%;
+    /* FloristMarket.ro Design System 2026 */
+    --background: 0 0% 100%;        /* bg: #FFFFFF */
+    --foreground: 210 8% 12%;       /* ink: #1F2421 */
+    --card: 0 0% 100%;              /* bg: #FFFFFF */
+    --card-foreground: 210 8% 12%; /* ink: #1F2421 */
+    --popover: 0 0% 100%;           /* bg: #FFFFFF */
+    --popover-foreground: 210 8% 12%; /* ink: #1F2421 */
+    --primary: 164 40% 25%;         /* primary: #1C6B5A */
+    --primary-foreground: 0 0% 100%; /* white */
+    --secondary: 30 20% 95%;        /* bg-soft: #F7F4F1 */
+    --secondary-foreground: 210 8% 12%; /* ink: #1F2421 */
+    --muted: 0 0% 42%;              /* muted: #6B6B6B */
+    --muted-foreground: 0 0% 42%;   /* muted: #6B6B6B */
+    --accent: 30 20% 95%;           /* bg-soft: #F7F4F1 */
+    --accent-foreground: 210 8% 12%; /* ink: #1F2421 */
     --destructive: 0 84.2% 60.2%;
     --destructive-foreground: 210 40% 98%;
-    --border: 214.3 31.8% 91.4%;
-    --input: 214.3 31.8% 91.4%;
-    --ring: 222.2 84% 4.9%;
+    --border: 0 0% 93%;             /* line: #ECECEC */
+    --input: 0 0% 93%;              /* line: #ECECEC */
+    --ring: 164 40% 25%;            /* primary: #1C6B5A */
     --radius: 0.5rem;
   }
 
   .dark {
-    --background: 222.2 84% 4.9%;
-    --foreground: 210 40% 98%;
-    --card: 222.2 84% 4.9%;
-    --card-foreground: 210 40% 98%;
-    --popover: 222.2 84% 4.9%;
-    --popover-foreground: 210 40% 98%;
-    --primary: 210 40% 98%;
-    --primary-foreground: 222.2 47.4% 11.2%;
+    --background: 210 8% 12%;      /* ink: #1F2421 */
+    --foreground: 0 0% 100%;        /* white */
+    --card: 210 8% 12%;             /* ink: #1F2421 */
+    --card-foreground: 0 0% 100%;  /* white */
+    --popover: 210 8% 12%;          /* ink: #1F2421 */
+    --popover-foreground: 0 0% 100%; /* white */
+    --primary: 164 40% 25%;         /* primary: #1C6B5A */
+    --primary-foreground: 0 0% 100%; /* white */
     --secondary: 217.2 32.6% 17.5%;
     --secondary-foreground: 210 40% 98%;
-    --muted: 217.2 32.6% 17.5%;
-    --muted-foreground: 215 20.2% 65.1%;
+    --muted: 0 0% 42%;              /* muted: #6B6B6B */
+    --muted-foreground: 0 0% 42%;   /* muted: #6B6B6B */
     --accent: 217.2 32.6% 17.5%;
     --accent-foreground: 210 40% 98%;
     --destructive: 0 62.8% 30.6%;
     --destructive-foreground: 210 40% 98%;
     --border: 217.2 32.6% 17.5%;
     --input: 217.2 32.6% 17.5%;
-    --ring: 212.7 26.8% 83.9%;
+    --ring: 164 40% 25%;            /* primary: #1C6B5A */
   }
 }
 
 @layer base {
   * {
-    @apply border-slate-200 dark:border-slate-700;
+    @apply border-line;
   }
   body {
-    @apply bg-white dark:bg-slate-900 text-slate-900 dark:text-slate-100;
+    @apply bg-bg text-ink font-sans antialiased;
+  }
+  
+  /* Typography scale pentru Inter */
+  h1, h2, h3, h4, h5, h6 {
+    @apply font-semibold text-ink;
+  }
+  
+  h1 { @apply text-4xl lg:text-5xl; }
+  h2 { @apply text-3xl lg:text-4xl; }
+  h3 { @apply text-2xl lg:text-3xl; }
+  h4 { @apply text-xl lg:text-2xl; }
+  h5 { @apply text-lg lg:text-xl; }
+  h6 { @apply text-base lg:text-lg; }
+}
+
+@layer components {
+  /* Micro-interacțiuni pentru performanță */
+  .transition-micro {
+    transition: all 120ms ease-in-out;
+  }
+  
+  .transition-micro-slow {
+    transition: all 180ms ease-in-out;
+  }
+  
+  /* Gradient overlay pentru text pe imagini */
+  .gradient-overlay {
+    background: linear-gradient(to bottom, transparent 0%, rgba(0,0,0,0.4) 100%);
+  }
+  
+  /* Focus states accesibile */
+  .focus-ring {
+    @apply focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2;
   }
 }
 

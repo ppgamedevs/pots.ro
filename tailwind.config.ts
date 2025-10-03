@@ -9,22 +9,20 @@ const config: Config = {
   theme: {
     extend: {
       colors: {
-        brand: {
-          DEFAULT: "#0EA5E9", // albastru brand
-          dark: "#0369A1",
-          light: "#7DD3FC",
-        },
-        ink: "#0f172a",      // text principal
-        mist: "#f8fafc",     // background deschis
+        // FloristMarket.ro Design System 2026
+        primary: "#1C6B5A", // verde smarald
+        ink: "#1F2421",      // text principal
+        muted: "#6B6B6B",    // text secundar
+        line: "#ECECEC",     // borders
+        bg: "#FFFFFF",       // background principal
+        "bg-soft": "#F7F4F1", // background secundar
+        
+        // Compatibilitate cu shadcn/ui
         border: "hsl(var(--border))",
         input: "hsl(var(--input))",
         ring: "hsl(var(--ring))",
         background: "hsl(var(--background))",
         foreground: "hsl(var(--foreground))",
-        primary: {
-          DEFAULT: "hsl(var(--primary))",
-          foreground: "hsl(var(--primary-foreground))",
-        },
         secondary: {
           DEFAULT: "hsl(var(--secondary))",
           foreground: "hsl(var(--secondary-foreground))",
@@ -32,10 +30,6 @@ const config: Config = {
         destructive: {
           DEFAULT: "hsl(var(--destructive))",
           foreground: "hsl(var(--destructive-foreground))",
-        },
-        muted: {
-          DEFAULT: "hsl(var(--muted))",
-          foreground: "hsl(var(--muted-foreground))",
         },
         accent: {
           DEFAULT: "hsl(var(--accent))",
@@ -50,15 +44,46 @@ const config: Config = {
           foreground: "hsl(var(--card-foreground))",
         },
       },
+      spacing: {
+        // Scale consistentă: 4, 8, 12, 16, 24, 32, 48, 64
+        "1": "4px",
+        "2": "8px", 
+        "3": "12px",
+        "4": "16px",
+        "6": "24px",
+        "8": "32px",
+        "12": "48px",
+        "16": "64px",
+      },
       borderRadius: {
-        xl: "1rem",
-        "2xl": "1.25rem",
+        sm: "8px",   // raze mici
+        lg: "16px",  // raze mari
+        full: "9999px",
       },
       boxShadow: {
-        soft: "0 8px 30px rgba(0,0,0,0.06)",
+        card: "0 4px 14px rgba(0,0,0,0.06)",  // umbră card
+        elev: "0 8px 24px rgba(0,0,0,0.08)",  // umbră elevată
       },
       fontFamily: {
-        sans: ["var(--font-inter)", "system-ui", "sans-serif"],
+        sans: ["var(--font-inter)", "Inter", "system-ui", "sans-serif"],
+      },
+      fontSize: {
+        // Scale tipografică optimizată pentru Inter
+        "xs": ["12px", { lineHeight: "16px" }],
+        "sm": ["14px", { lineHeight: "20px" }],
+        "base": ["16px", { lineHeight: "24px" }],
+        "lg": ["18px", { lineHeight: "28px" }],
+        "xl": ["20px", { lineHeight: "28px" }],
+        "2xl": ["24px", { lineHeight: "32px" }],
+        "3xl": ["30px", { lineHeight: "36px" }],
+        "4xl": ["36px", { lineHeight: "40px" }],
+        "5xl": ["48px", { lineHeight: "1" }],
+      },
+      fontWeight: {
+        normal: "400",
+        medium: "500", 
+        semibold: "600",
+        bold: "700",
       },
       ringOffsetWidth: {
         DEFAULT: "2px",
