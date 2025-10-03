@@ -1,153 +1,269 @@
 "use client";
-import { motion } from "framer-motion";
-import Image from "next/image";
-import { Navbar } from "@/components/navbar";
-import { Footer } from "@/components/footer";
-import { ProductCard } from "@/components/product-card";
-import { PromotionalBanner } from "@/components/promotions/PromotionalBanner";
-import { stagger, fadeInUp } from "@/components/motion";
 
-const demo = [
-  { 
-    id: 1, 
-    slug: "ghiveci-ceramic-alb", 
-    title: "Ghiveci ceramic alb", 
-    price: 4990, // price in cents
-    imageUrl: "https://images.unsplash.com/photo-1578662996442-48f60103fc96?w=400&h=400&fit=crop&crop=center", 
-    sellerSlug: "atelier-ceramic",
-    attributes: {
-      price_cents: 4990,
-      stock_qty: 15,
-      is_in_stock: true,
-      vendor_id: 1,
-      material: "ceramic" as const,
-      color: "white" as const,
-      shape: "round" as const,
-      style: "modern" as const,
-      finish: "matte" as const,
-      diameter_mm: 200,
-      height_mm: 150,
-      drainage_hole: true,
-      saucer_included: false,
-      indoor_outdoor: "indoor",
-      personalizable: false,
-      painted: false,
-      tags: ["ceramic", "white", "modern"],
-      ribbon_included: false,
-      created_at: new Date().toISOString(),
-      popularity_score: 850,
-    }
-  },
-  { 
-    id: 2, 
-    slug: "cutie-inalta-nevopsita", 
-    title: "Cutie înaltă natur", 
-    price: 7900, 
-    imageUrl: "https://images.unsplash.com/photo-1586023492125-27b2c045efd7?w=400&h=400&fit=crop&crop=center", 
-    sellerSlug: "cardboard-street",
-    attributes: {
-      price_cents: 7900,
-      stock_qty: 8,
-      is_in_stock: true,
-      vendor_id: 2,
-      material: "cardboard" as const,
-      color: "natural" as const,
-      shape: "rectangle" as const,
-      style: "rustic" as const,
-      finish: "matte" as const,
-      length_mm: 300,
-      height_mm: 400,
-      tall_or_normal: "tall",
-      painted: false,
-      personalizable: true,
-      tags: ["cardboard", "natural", "rustic"],
-      ribbon_included: false,
-      created_at: new Date(Date.now() - 86400000).toISOString(),
-      popularity_score: 720,
-    }
-  },
-  { 
-    id: 3, 
-    slug: "panglica-satin", 
-    title: "Panglică satin 25mm", 
-    price: 1450, 
-    imageUrl: "https://images.unsplash.com/photo-1513475382585-d06e58bcb0e0?w=400&h=400&fit=crop&crop=center", 
-    sellerSlug: "accesorii-florale",
-    attributes: {
-      price_cents: 1450,
-      stock_qty: 25,
-      is_in_stock: true,
-      vendor_id: 3,
-      material: "textile" as const,
-      color: "natural" as const,
-      style: "classic" as const,
-      finish: "satin" as const,
-      pack_units: 10,
-      compatibility: ["bouquet", "box"],
-      personalizable: false,
-      painted: false,
-      tags: ["textile", "natural", "classic"],
-      ribbon_included: true,
-      created_at: new Date(Date.now() - 172800000).toISOString(),
-      popularity_score: 650,
-    }
-  },
-];
+import { useEffect, useState } from "react";
+import { SiteHeader } from "@/components/site/SiteHeader";
+import { SiteFooter } from "@/components/site/SiteFooter";
+import { PromoHero } from "@/components/promo/PromoHero";
+import { PromoCard } from "@/components/promo/PromoCard";
+import { UspRow } from "@/components/promo/UspRow";
+import { CategoryTiles } from "@/components/promo/CategoryTiles";
+import { ProductCard } from "@/components/product/ProductCard";
+import { EditorialTeasers } from "@/components/promo/EditorialTeasers";
+import { StructuredData } from "@/components/seo/StructuredData";
+import { Shield, Truck, CheckCircle, Headphones } from "lucide-react";
+
+// Types
+interface HomePromotions {
+  hero: any;
+  grid: any[];
+  partner?: any;
+}
+
+interface Category {
+  id: string;
+  name: string;
+  href: string;
+  subcategories: any[];
+}
+
+interface FeaturedProduct {
+  id: string;
+  image: { src: string; alt: string };
+  title: string;
+  seller: string;
+  price: number;
+  oldPrice?: number;
+  badge?: 'nou' | 'reducere' | 'stoc redus';
+  href: string;
+}
+
+interface BlogPost {
+  id: string;
+  title: string;
+  image: { src: string; alt: string };
+  href: string;
+  readTime: string;
+}
 
 export default function Home() {
+  const [promotions, setPromotions] = useState<HomePromotions | null>(null);
+  const [categories, setCategories] = useState<Category[]>([]);
+  const [featuredProducts, setFeaturedProducts] = useState<FeaturedProduct[]>([]);
+  const [blogPosts, setBlogPosts] = useState<BlogPost[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  // Fetch data
+  useEffect(() => {
+    const fetchData = async () => {
+      try {
+        const [promotionsRes, categoriesRes, productsRes, blogRes] = await Promise.all([
+          fetch('/api/promotions/home'),
+          fetch('/api/categories/top'),
+          fetch('/api/products/featured'),
+          fetch('/api/blog/teasers')
+        ]);
+
+        const [promotionsData, categoriesData, productsData, blogData] = await Promise.all([
+          promotionsRes.json(),
+          categoriesRes.json(),
+          productsRes.json(),
+          blogRes.json()
+        ]);
+
+        setPromotions(promotionsData);
+        setCategories(categoriesData);
+        setFeaturedProducts(productsData);
+        setBlogPosts(blogData);
+      } catch (error) {
+        console.error('Error fetching data:', error);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchData();
+  }, []);
+
+  // USP Items
+  const uspItems = [
+    { icon: <Shield className="w-5 h-5" />, text: "Plăți securizate" },
+    { icon: <Truck className="w-5 h-5" />, text: "Retur 14 zile" },
+    { icon: <CheckCircle className="w-5 h-5" />, text: "Selleri verificați" },
+    { icon: <Headphones className="w-5 h-5" />, text: "Suport rapid" }
+  ];
+
+  // Footer data
+  const footerColumns = [
+    {
+      title: "Companie",
+      links: [
+        { label: "Despre noi", href: "/about" },
+        { label: "Cariere", href: "/careers" },
+        { label: "Contact", href: "/contact" },
+        { label: "Presă", href: "/press" }
+      ]
+    },
+    {
+      title: "Ajutor",
+      links: [
+        { label: "Întrebări frecvente", href: "/faq" },
+        { label: "Livrare", href: "/shipping" },
+        { label: "Retururi", href: "/returns" },
+        { label: "Suport", href: "/help" }
+      ]
+    },
+    {
+      title: "Legal",
+      links: [
+        { label: "Termeni și condiții", href: "/terms" },
+        { label: "Politica de confidențialitate", href: "/privacy" },
+        { label: "Cookie-uri", href: "/cookies" },
+        { label: "GDPR", href: "/gdpr" }
+      ]
+    },
+    {
+      title: "Utile",
+      links: [
+        { label: "Devino vânzător", href: "/seller" },
+        { label: "Blog", href: "/blog" },
+        { label: "Ghiduri", href: "/guides" },
+        { label: "Parteneri", href: "/partners" }
+      ]
+    }
+  ];
+
+  const payments = ["Visa", "Mastercard", "PayPal", "Revolut"];
+  const carriers = ["Fan Courier", "DPD", "Cargus", "Sameday"];
+
+  if (loading) {
+    return (
+      <>
+        <SiteHeader categories={[]} suggestions={[]} />
+        <main className="min-h-screen bg-bg">
+          <div className="max-w-7xl mx-auto px-4 py-8">
+            <div className="animate-pulse">
+              <div className="h-96 bg-bg-soft rounded-lg mb-8"></div>
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+                <div className="h-32 bg-bg-soft rounded-lg"></div>
+                <div className="h-32 bg-bg-soft rounded-lg"></div>
+                <div className="h-32 bg-bg-soft rounded-lg"></div>
+              </div>
+            </div>
+          </div>
+        </main>
+        <SiteFooter columns={footerColumns} payments={payments} carriers={carriers} />
+      </>
+    );
+  }
+
   return (
     <>
-      <Navbar />
-      <main className="mx-auto max-w-6xl px-4 py-10">
-        <motion.section
-          initial={{ opacity: 0, y: 8 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.35, ease: "easeOut" }}
-          className="mb-8 rounded-2xl bg-white dark:bg-slate-900/60 border border-slate-200 dark:border-white/10 p-8 text-center shadow-soft hover:shadow-soft transition-all duration-200 hover:-translate-y-[1px]"
-        >
-          <div className="relative mb-6 h-48 w-full overflow-hidden rounded-xl">
-            <Image
-              src="https://images.unsplash.com/photo-1416879595882-3373a0480b5b?w=1200&h=600&fit=crop&crop=center"
-              alt="Pots.ro - Marketplace românesc pentru floristică"
-              fill
-              priority
-              sizes="(max-width: 768px) 100vw, (max-width: 1200px) 80vw, 70vw"
-              className="object-cover"
-              quality={90}
-              placeholder="blur"
-              blurDataURL="data:image/jpeg;base64,/9j/4AAQSkZJRgABAQAAAQABAAD/2wBDAAYEBQYFBAYGBQYHBwYIChAKCgkJChQODwwQFxQYGBcUFhYaHSUfGhsjHBYWICwgIyYnKSopGR8tMC0oMCUoKSj/2wBDAQcHBwoIChMKChMoGhYaKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCj/wAARCAABAAEDASIAAhEBAxEB/8QAFQABAQAAAAAAAAAAAAAAAAAAAAv/xAAhEAACAQMDBQAAAAAAAAAAAAABAgMABAUGIWGRkqGx0f/EABUBAQEAAAAAAAAAAAAAAAAAAAMF/8QAGhEAAgIDAAAAAAAAAAAAAAAAAAECEgMRkf/aAAwDAQACEQMRAD8AltJagyeH0AthI5xdrLcNM91BF5pX2HaH9bcfaSXWGaRmknyJckliyjqTzSlT54b6bk+h0R//2Q=="
+      <StructuredData />
+      <SiteHeader 
+        categories={categories} 
+        suggestions={["ghivece ceramica", "cutii rotunde", "ambalaje hârtie", "accesorii decorative"]} 
+      />
+      
+      <main className="min-h-screen bg-bg">
+        <div className="max-w-7xl mx-auto px-4 py-8 space-y-12">
+          {/* Slot A: Hero */}
+          {promotions?.hero && (
+            <PromoHero
+              title={promotions.hero.title}
+              subtitle={promotions.hero.subtitle}
+              image={promotions.hero.image}
+              ctaPrimary={promotions.hero.ctaPrimary}
+              ctaSecondary={promotions.hero.ctaSecondary}
             />
+          )}
+
+          {/* USPs Row */}
+          <UspRow items={uspItems} />
+
+          {/* Slot B, C, D: Grid Promo */}
+          {promotions?.grid && promotions.grid.length > 0 && (
+            <section className="space-y-6">
+              <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                {/* Card mare */}
+                <div className="lg:col-span-2">
+                  <PromoCard
+                    title={promotions.grid[0]?.title || "Colecția de toamnă"}
+                    image={promotions.grid[0]?.image || { src: "/placeholder.png", alt: "Colecția de toamnă" }}
+                    href={promotions.grid[0]?.href || "/c/toamna"}
+                    tone="dark"
+                  />
+                </div>
+                
+                {/* Carduri mici */}
+                <div className="space-y-6">
+                  {promotions.grid.slice(1, 3).map((item, index) => (
+                    <PromoCard
+                      key={index}
+                      title={item.title}
+                      image={item.image}
+                      href={item.href}
+                      tone="light"
+                    />
+                  ))}
+                </div>
           </div>
-          <h1 className="text-2xl md:text-3xl font-semibold">Pots.ro - Marketplace românesc pentru floristică</h1>
-          <p className="mt-2 text-slate-600 dark:text-slate-300">Cutii, ghivece, accesorii — tot ce ai nevoie, într-un singur loc.</p>
-        </motion.section>
+            </section>
+          )}
 
-        {/* Promotional Banner */}
-        <PromotionalBanner />
+          {/* Categorii principale */}
+          <CategoryTiles 
+            items={categories.slice(0, 3).map(cat => ({
+              name: cat.name,
+              image: { src: "/placeholder.png", alt: cat.name },
+              href: cat.href
+            }))}
+          />
 
-        <motion.section
-          initial="hidden"
-          animate="visible"
-          variants={stagger}
-          className="grid gap-4 sm:grid-cols-2 md:grid-cols-3"
-        >
-          {demo.map((p) => (
-            <motion.div key={p.id} variants={fadeInUp}>
+          {/* Produse recomandate */}
+          <section className="space-y-6">
+            <div className="text-center">
+              <h2 className="text-3xl font-semibold text-ink mb-2">Produse recomandate</h2>
+              <p className="text-muted">Descoperă cele mai populare produse din marketplace</p>
+            </div>
+            
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+              {featuredProducts.slice(0, 8).map((product) => (
               <ProductCard 
-                id={p.id}
-                slug={p.slug}
-                title={p.title}
-                price={p.price}
-                currency="RON"
-                imageUrl={p.imageUrl}
-                sellerSlug={p.sellerSlug}
-                attributes={p.attributes}
+                  key={product.id}
+                  image={product.image}
+                  title={product.title}
+                  seller={product.seller}
+                  price={product.price}
+                  oldPrice={product.oldPrice}
+                  badge={product.badge}
+                  href={product.href}
+                />
+              ))}
+            </div>
+          </section>
+
+          {/* Editorial/Blog */}
+          <EditorialTeasers posts={blogPosts} />
+
+          {/* Slot E: Banner partener */}
+          {promotions?.partner && (
+            <section className="py-8">
+              <PromoCard
+                title={promotions.partner.title}
+                image={promotions.partner.image}
+                href={promotions.partner.href}
+                tone="light"
               />
-            </motion.div>
-          ))}
-        </motion.section>
+            </section>
+          )}
+        </div>
       </main>
-      <Footer />
+      
+      <SiteFooter 
+        columns={footerColumns} 
+        payments={payments} 
+        carriers={carriers} 
+      />
     </>
   );
 }
