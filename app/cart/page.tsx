@@ -14,13 +14,13 @@ import type { Cart, CartItem } from "@/lib/types";
 
 export default function CartPage() {
   const { toast } = useToast();
-  const [loading, setLoading] = useState<Record<number, boolean>>({});
+  const [loading, setLoading] = useState<Record<string, boolean>>({});
 
   const { data: cart, error, isLoading } = useSWR<Cart>('/api/cart', (url: string) =>
     fetch(url).then(res => res.json())
   );
 
-  const updateQuantity = async (productId: number, newQty: number) => {
+  const updateQuantity = async (productId: string, newQty: number) => {
     if (newQty < 1 || newQty > 99) return;
 
     setLoading(prev => ({ ...prev, [productId]: true }));
@@ -49,7 +49,7 @@ export default function CartPage() {
     }
   };
 
-  const removeItem = async (productId: number) => {
+  const removeItem = async (productId: string) => {
     setLoading(prev => ({ ...prev, [productId]: true }));
     
     try {
@@ -72,7 +72,7 @@ export default function CartPage() {
     }
   };
 
-  const formatPrice = (price: number, currency: string) => {
+  const formatPrice = (price: number, currency: string = 'RON') => {
     return new Intl.NumberFormat('ro-RO', {
       style: 'currency',
       currency: currency,
@@ -140,151 +140,127 @@ export default function CartPage() {
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
               {/* Cart Items */}
               <div className="lg:col-span-2">
-              <div className="bg-white dark:bg-slate-800 rounded-lg border border-slate-200 dark:border-slate-700 overflow-hidden">
-                <div className="p-6 border-b border-slate-200 dark:border-slate-700">
-                  <h2 className="text-lg font-semibold text-slate-900 dark:text-slate-100">
-                    Produse în coș ({cart.items.length})
-                  </h2>
-                </div>
-                
-                <div className="divide-y divide-slate-200 dark:divide-slate-700">
-                  {cart.items.map((item) => (
-                    <div
-                      key={item.productId}
-                      className="p-6 flex items-center gap-4"
-                    >
-                      {/* Product Image */}
-                      <div className="relative w-20 h-20 flex-shrink-0">
-                        <Image
-                          src="/placeholder.png"
-                          alt={item.productName}
-                          fill
-                          className="object-cover rounded-lg"
-                        />
-                      </div>
+                <div className="bg-white dark:bg-slate-800 rounded-lg border border-slate-200 dark:border-slate-700 overflow-hidden">
+                  <div className="p-6 border-b border-slate-200 dark:border-slate-700">
+                    <h2 className="text-lg font-semibold text-slate-900 dark:text-slate-100">
+                      Produse în coș ({cart.items.length})
+                    </h2>
+                  </div>
+                  
+                  <div className="divide-y divide-slate-200 dark:divide-slate-700">
+                    {cart.items.map((item) => (
+                      <div
+                        key={item.productId}
+                        className="p-6 flex items-center gap-4"
+                      >
+                        {/* Product Image */}
+                        <div className="relative w-20 h-20 flex-shrink-0">
+                          <Image
+                            src="/placeholder.png"
+                            alt={item.productName}
+                            fill
+                            className="object-cover rounded-lg"
+                          />
+                        </div>
 
-                      {/* Product Info */}
-                      <div className="flex-1 min-w-0">
-                        <h3 className="font-medium text-slate-900 dark:text-slate-100 mb-1">
-                          {item.productName}
-                            </h3>
-                            <p className="text-slate-600 dark:text-slate-400 text-sm">
-                              Preț unitar: {formatPrice(item.unitPrice, 'RON')}
-                            </p>
-                            <p className="text-slate-600 dark:text-slate-400 text-sm">
-                              Total: {formatPrice(item.subtotal, 'RON')}
-                            </p>
-                          </div>
+                        {/* Product Info */}
+                        <div className="flex-1 min-w-0">
+                          <h3 className="font-medium text-slate-900 dark:text-slate-100 mb-1">
+                            {item.productName}
+                          </h3>
+                          <p className="text-slate-600 dark:text-slate-400 text-sm">
+                            Preț unitar: {formatPrice(item.unitPrice, 'RON')}
+                          </p>
+                          <p className="text-slate-600 dark:text-slate-400 text-sm">
+                            Total: {formatPrice(item.unitPrice * item.qty, 'RON')}
+                          </p>
+                        </div>
 
-                          {/* Quantity Controls */}
-                          <div className="flex items-center gap-2">
-                            <Button
-                              variant="outline"
-                              size="sm"
-                              onClick={() => updateQuantity(parseInt(item.productId), item.qty - 1)}
-                              disabled={loading[parseInt(item.productId)] || item.qty <= 1}
-                              className="h-8 w-8 p-0"
-                              aria-label="Scade cantitatea"
-                            >
-                              <Minus className="h-4 w-4" />
-                            </Button>
-                            
-                            <span className="text-sm font-medium w-8 text-center">
-                              {item.qty}
-                            </span>
-                            
-                            <Button
-                              variant="outline"
-                              size="sm"
-                              onClick={() => updateQuantity(parseInt(item.productId), item.qty + 1)}
-                              disabled={loading[parseInt(item.productId)] || item.qty >= 99}
-                              className="h-8 w-8 p-0"
-                              aria-label="Crește cantitatea"
-                            >
-                              <Plus className="h-4 w-4" />
-                            </Button>
-                          </div>
-
-                          {/* Remove Button */}
+                        {/* Quantity Controls */}
+                        <div className="flex items-center gap-2">
                           <Button
-                            variant="ghost"
+                            variant="outline"
                             size="sm"
-                            onClick={() => removeItem(parseInt(item.productId))}
-                            disabled={loading[parseInt(item.productId)]}
-                            className="text-red-500 hover:text-red-700"
-                            aria-label="Elimină produsul"
+                            onClick={() => updateQuantity(item.productId, item.qty - 1)}
+                            disabled={loading[item.productId] || item.qty <= 1}
                           >
-                            <Trash2 className="h-4 w-4" />
+                            <Minus className="h-4 w-4" />
+                          </Button>
+                          <span className="w-12 text-center font-medium">
+                            {item.qty}
+                          </span>
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => updateQuantity(item.productId, item.qty + 1)}
+                            disabled={loading[item.productId] || item.qty >= 99}
+                          >
+                            <Plus className="h-4 w-4" />
                           </Button>
                         </div>
-                      ))}
-                    </div>
-                  </div>
-                </div>
 
-                {/* Order Summary */}
-                <div className="lg:col-span-1">
-                  <div className="bg-white dark:bg-slate-800 rounded-lg border border-slate-200 dark:border-slate-700 p-6 sticky top-4">
-                    <h3 className="text-lg font-semibold text-slate-900 dark:text-slate-100 mb-4">
-                      Rezumat comandă
-                    </h3>
-                    
-                    <div className="space-y-3 mb-6">
-                      <div className="flex justify-between text-sm">
-                        <span className="text-slate-600 dark:text-slate-400">
-                          Produse ({cart.items.reduce((sum, item) => sum + item.qty, 0)})
-                        </span>
-                        <span className="text-slate-900 dark:text-slate-100">
-                          {formatPrice(cart.totals.subtotal, 'RON')}
-                        </span>
-                      </div>
-                      
-                      <div className="flex justify-between text-sm">
-                        <span className="text-slate-600 dark:text-slate-400">
-                          Livrare
-                        </span>
-                        <span className="text-slate-900 dark:text-slate-100">
-                          Gratuită
-                        </span>
-                      </div>
-                      
-                      <div className="border-t border-slate-200 dark:border-slate-700 pt-3">
-                        <div className="flex justify-between text-lg font-semibold">
-                          <span className="text-slate-900 dark:text-slate-100">
-                            Total
-                          </span>
-                          <span className="text-slate-900 dark:text-slate-100">
-                            {formatPrice(cart.totals.total, 'RON')}
-                          </span>
-                        </div>
-                      </div>
-                    </div>
-
-                    <div className="space-y-3">
-                      <Button className="w-full" size="lg">
-                        Continuă către plată
-                        <ArrowRight className="h-5 w-5 ml-2" />
-                      </Button>
-                      
-                      <Link href="/" className="block">
-                        <Button variant="outline" className="w-full">
-                          <ArrowLeft className="h-4 w-4 mr-2" />
-                          Continuă cumpărăturile
+                        {/* Remove Button */}
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => removeItem(item.productId)}
+                          disabled={loading[item.productId]}
+                          className="text-red-600 hover:text-red-700 hover:bg-red-50"
+                        >
+                          <Trash2 className="h-4 w-4" />
                         </Button>
-                      </Link>
-                    </div>
-
-                    <div className="mt-6 p-4 bg-slate-50 dark:bg-slate-700 rounded-lg">
-                      <p className="text-xs text-slate-600 dark:text-slate-400">
-                        <strong>Notă:</strong> Această pagină este în versiunea de dezvoltare. 
-                        Funcționalitatea de plată va fi implementată în versiunea finală.
-                      </p>
-                    </div>
+                      </div>
+                    ))}
                   </div>
                 </div>
               </div>
-            )}
-          </div>
+
+              {/* Order Summary */}
+              <div className="lg:col-span-1">
+                <div className="bg-white dark:bg-slate-800 rounded-lg border border-slate-200 dark:border-slate-700 p-6 sticky top-4">
+                  <h3 className="text-lg font-semibold text-slate-900 dark:text-slate-100 mb-4">
+                    Rezumat comandă
+                  </h3>
+                  
+                  <div className="space-y-3 mb-6">
+                    <div className="flex justify-between text-sm">
+                      <span className="text-slate-600 dark:text-slate-400">
+                        Subtotal ({cart.items.length} produse)
+                      </span>
+                      <span className="font-medium">
+                        {formatPrice(cart.items.reduce((sum, item) => sum + (item.unitPrice * item.qty), 0), 'RON')}
+                      </span>
+                    </div>
+                    <div className="flex justify-between text-sm">
+                      <span className="text-slate-600 dark:text-slate-400">Livrare</span>
+                      <span className="font-medium text-green-600">Gratuită</span>
+                    </div>
+                    <div className="border-t border-slate-200 dark:border-slate-700 pt-3">
+                      <div className="flex justify-between text-lg font-semibold">
+                        <span>Total</span>
+                        <span className="text-brand">
+                          {formatPrice(cart.items.reduce((sum, item) => sum + (item.unitPrice * item.qty), 0), 'RON')}
+                        </span>
+                      </div>
+                    </div>
+                  </div>
+
+                  <Link href="/checkout" className="w-full">
+                    <Button size="lg" className="w-full mb-4">
+                      <ArrowRight className="h-5 w-5 mr-2" />
+                      Continuă la checkout
+                    </Button>
+                  </Link>
+
+                  <div className="text-center">
+                    <p className="text-xs text-slate-500 dark:text-slate-400">
+                      Funcționalitatea de plată va fi implementată în versiunea finală.
+                    </p>
+                  </div>
+                </div>
+              </div>
+            </div>
+          )}
         </div>
       </div>
     </div>
