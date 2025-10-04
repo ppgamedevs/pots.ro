@@ -147,7 +147,6 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
             <SonnerToaster richColors position="top-center" closeButton />
             <PerformanceMonitor />
             <CommandPalette />
-            <CookieConsent />
             <CookieBanner />
             <SpeedInsights />
             <Analytics />

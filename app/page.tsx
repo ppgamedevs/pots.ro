@@ -1,8 +1,6 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { SiteHeader } from "@/components/site/SiteHeader";
-import { SiteFooter } from "@/components/site/SiteFooter";
 import { PromoHero } from "@/components/promo/PromoHero";
 import { PromoCard } from "@/components/promo/PromoCard";
 import { UspRow } from "@/components/promo/UspRow";
@@ -10,7 +8,6 @@ import { CategoryTiles } from "@/components/promo/CategoryTiles";
 import { ProductCard } from "@/components/product/ProductCard";
 import { EditorialTeasers } from "@/components/promo/EditorialTeasers";
 import { StructuredData } from "@/components/seo/StructuredData";
-import CookieBanner from "@/components/common/CookieBanner";
 import { Shield, Truck, CheckCircle, Headphones } from "lucide-react";
 
 // Types
@@ -93,77 +90,27 @@ export default function Home() {
     { icon: <Headphones className="w-5 h-5" />, text: "Suport rapid" }
   ];
 
-  // Footer data
-  const footerColumns = [
-    {
-      title: "Companie",
-      links: [
-        { label: "Despre noi", href: "/(legal)/about" },
-        { label: "Cariere", href: "/(legal)/careers" },
-        { label: "Contact", href: "/(legal)/contact" },
-        { label: "Presă", href: "/(legal)/press" }
-      ]
-    },
-    {
-      title: "Help Center",
-      links: [
-        { label: "Caută ajutor", href: "/help" },
-        { label: "Comenzi", href: "/help/comenzi" },
-        { label: "Livrare", href: "/help/livrare" },
-        { label: "Retururi", href: "/help/retururi" }
-      ]
-    },
-    {
-      title: "Legal",
-      links: [
-        { label: "Termeni și condiții", href: "/(legal)/terms" },
-        { label: "Politica de confidențialitate", href: "/(legal)/privacy" },
-        { label: "Cookie-uri", href: "/(legal)/cookies" },
-        { label: "GDPR", href: "/gdpr" }
-      ]
-    },
-    {
-      title: "Utile",
-      links: [
-        { label: "Devino vânzător", href: "/seller" },
-        { label: "Blog", href: "/blog" },
-        { label: "Ghiduri", href: "/guides" },
-        { label: "Parteneri", href: "/partners" }
-      ]
-    }
-  ];
-
-  const payments = ["Visa", "Mastercard", "PayPal", "Revolut"];
-  const carriers = ["Fan Courier", "DPD", "Cargus", "Sameday"];
 
   if (loading) {
     return (
-      <>
-        <SiteHeader categories={[]} suggestions={[]} />
-        <main className="min-h-screen bg-bg">
-          <div className="max-w-7xl mx-auto px-4 py-8">
-            <div className="animate-pulse">
-              <div className="h-96 bg-bg-soft rounded-lg mb-8"></div>
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
-                <div className="h-32 bg-bg-soft rounded-lg"></div>
-                <div className="h-32 bg-bg-soft rounded-lg"></div>
-                <div className="h-32 bg-bg-soft rounded-lg"></div>
-              </div>
+      <main className="min-h-screen bg-bg">
+        <div className="max-w-7xl mx-auto px-4 py-8">
+          <div className="animate-pulse">
+            <div className="h-96 bg-bg-soft rounded-lg mb-8"></div>
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+              <div className="h-32 bg-bg-soft rounded-lg"></div>
+              <div className="h-32 bg-bg-soft rounded-lg"></div>
+              <div className="h-32 bg-bg-soft rounded-lg"></div>
             </div>
           </div>
-        </main>
-        <SiteFooter columns={footerColumns} payments={payments} carriers={carriers} />
-      </>
+        </div>
+      </main>
     );
   }
 
   return (
     <>
       <StructuredData />
-      <SiteHeader 
-        categories={categories} 
-        suggestions={["ghivece ceramica", "cutii rotunde", "ambalaje hârtie", "accesorii decorative"]} 
-      />
       
       <main className="min-h-screen bg-bg">
         <div className="max-w-7xl mx-auto px-4 py-8 space-y-12">
@@ -259,14 +206,6 @@ export default function Home() {
           )}
         </div>
       </main>
-      
-      <SiteFooter 
-        columns={footerColumns} 
-        payments={payments} 
-        carriers={carriers} 
-      />
-      
-      <CookieBanner />
     </>
   );
 }
