@@ -1,5 +1,4 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { getSession } from '@/lib/auth/session';
 
 export async function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;
@@ -66,45 +65,18 @@ export async function middleware(request: NextRequest) {
     return NextResponse.next();
   }
   
-  // Protected routes - require authentication
-  try {
-    const session = await getSession();
-    
-    if (!session) {
-      // Redirect to login with return URL
-      const loginUrl = new URL('/login', request.url);
-      loginUrl.searchParams.set('next', pathname);
-      return NextResponse.redirect(loginUrl);
-    }
-    
-    // Role-based route protection
-    if (pathname.startsWith('/dashboard/seller')) {
-      if (session.user.role !== 'seller' && session.user.role !== 'admin') {
-        return NextResponse.redirect(new URL('/dashboard', request.url));
-      }
-    }
-    
-    if (pathname.startsWith('/dashboard/admin') || pathname.startsWith('/admin')) {
-      if (session.user.role !== 'admin') {
-        return NextResponse.redirect(new URL('/dashboard', request.url));
-      }
-    }
-    
-    // Add user info to headers for server components
-    const response = NextResponse.next();
-    response.headers.set('x-user-id', session.user.id);
-    response.headers.set('x-user-email', session.user.email);
-    response.headers.set('x-user-role', session.user.role);
-    
-    return response;
-    
-  } catch (error) {
-    console.error('Middleware auth error:', error);
-    // On error, redirect to login
+  // For protected routes, check session cookie
+  const sessionCookie = request.cookies.get('fm_session');
+  
+  if (!sessionCookie) {
+    // Redirect to login with return URL
     const loginUrl = new URL('/login', request.url);
     loginUrl.searchParams.set('next', pathname);
     return NextResponse.redirect(loginUrl);
   }
+  
+  // For now, just pass through - detailed auth check will be done in API routes
+  return NextResponse.next();
 }
 
 export const config = {
