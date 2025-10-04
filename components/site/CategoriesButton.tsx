@@ -33,7 +33,7 @@ export default function CategoriesButton() {
         onClick={() => setOpen(v => !v)}
         aria-expanded={open}
         aria-haspopup="menu"
-        className="inline-flex items-center gap-2 px-3 py-2 rounded-lg border border-line hover:bg-bg-soft text-sm transition-micro"
+        className="inline-flex items-center gap-2 px-3 py-2 rounded-lg border border-line hover:bg-bg-soft text-ink text-sm transition-micro"
       >
         <Grid3X3 className="h-4 w-4" />
         Categorii

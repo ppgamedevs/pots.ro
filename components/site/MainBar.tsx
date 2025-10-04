@@ -39,7 +39,7 @@ export function MainBar({ categories, suggestions, onMegaMenuToggle, onMiniCartT
           
           <Link 
             href="/seller" 
-            className="hidden sm:inline-flex items-center gap-2 px-3 py-2 rounded-lg border border-line hover:bg-bg-soft text-sm transition-micro"
+            className="hidden sm:inline-flex items-center gap-2 px-3 py-2 rounded-lg border border-line hover:bg-bg-soft text-ink text-sm transition-micro"
           >
             <Store className="h-4 w-4" />
             Devino vânzător
@@ -47,7 +47,7 @@ export function MainBar({ categories, suggestions, onMegaMenuToggle, onMiniCartT
           
           <Link 
             href="/profile" 
-            className="inline-flex items-center gap-2 px-3 py-2 rounded-lg hover:bg-bg-soft text-sm transition-micro"
+            className="inline-flex items-center gap-2 px-3 py-2 rounded-lg hover:bg-bg-soft text-ink text-sm transition-micro"
           >
             <User className="h-4 w-4" />
             Cont
@@ -55,7 +55,7 @@ export function MainBar({ categories, suggestions, onMegaMenuToggle, onMiniCartT
           
           <Link 
             href="/favorites" 
-            className="inline-flex items-center gap-2 px-3 py-2 rounded-lg hover:bg-bg-soft text-sm transition-micro"
+            className="inline-flex items-center gap-2 px-3 py-2 rounded-lg hover:bg-bg-soft text-ink text-sm transition-micro"
           >
             <Heart className="h-4 w-4" />
             Favorite
