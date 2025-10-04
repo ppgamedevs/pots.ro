@@ -103,11 +103,11 @@ export function SiteFooter({ columns, payments, carriers }: SiteFooterProps) {
           <div className="flex flex-col lg:flex-row items-center justify-between gap-4">
             <div className="text-sm text-muted">
               © 2024 FloristMarket.ro • CUI: 12345678 • 
-              <Link href="/terms" className="hover:text-ink transition-micro ml-1">
+              <Link href="/(legal)/terms" className="hover:text-ink transition-micro ml-1">
                 Termeni și condiții
               </Link>
               {" • "}
-              <Link href="/privacy" className="hover:text-ink transition-micro">
+              <Link href="/(legal)/privacy" className="hover:text-ink transition-micro">
                 Politica de confidențialitate
               </Link>
             </div>

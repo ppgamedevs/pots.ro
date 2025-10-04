@@ -5,6 +5,8 @@ import { useState } from "react";
 import { Search } from "./Search";
 import { Button } from "../ui/button";
 import { Category } from "./SiteHeader";
+import CategoriesButton from "./CategoriesButton";
+import { Store, User, Heart, ShoppingCart } from "lucide-react";
 
 interface MainBarProps {
   categories: Category[];
@@ -36,36 +38,40 @@ export function MainBar({ categories, suggestions, onMegaMenuToggle, onMiniCartT
         </div>
 
         {/* Desktop Actions */}
-        <div className="hidden lg:flex items-center gap-4">
-          <Button 
-            variant="outline" 
-            size="sm"
-            onClick={() => onMegaMenuToggle(true)}
-            className="transition-micro"
+        <div className="hidden lg:flex items-center gap-3">
+          <CategoriesButton />
+          
+          <Link 
+            href="/seller" 
+            className="hidden sm:inline-flex items-center gap-2 px-3 py-2 rounded-lg border border-line hover:bg-bg-soft text-sm transition-micro"
           >
-            Categorii
-          </Button>
+            <Store className="h-4 w-4" />
+            Devino vânzător
+          </Link>
           
-          <Button variant="ghost" size="sm" className="transition-micro">
-            Devino Vânzător
-          </Button>
-          
-          <Button variant="ghost" size="sm" className="transition-micro">
+          <Link 
+            href="/profile" 
+            className="inline-flex items-center gap-2 px-3 py-2 rounded-lg hover:bg-bg-soft text-sm transition-micro"
+          >
+            <User className="h-4 w-4" />
             Cont
-          </Button>
+          </Link>
           
-          <Button variant="ghost" size="sm" className="transition-micro">
-            Favorite
-          </Button>
-          
-          <Button 
-            variant="ghost" 
-            size="sm"
-            onClick={() => onMiniCartToggle(true)}
-            className="transition-micro"
+          <Link 
+            href="/favorites" 
+            className="inline-flex items-center gap-2 px-3 py-2 rounded-lg hover:bg-bg-soft text-sm transition-micro"
           >
+            <Heart className="h-4 w-4" />
+            Favorite
+          </Link>
+          
+          <Link 
+            href="/cart" 
+            className="inline-flex items-center gap-2 px-3 py-2 rounded-lg bg-primary text-white text-sm hover:bg-primary/90 transition-micro"
+          >
+            <ShoppingCart className="h-4 w-4" />
             Coș
-          </Button>
+          </Link>
         </div>
 
         {/* Mobile Actions */}

@@ -1,114 +1,352 @@
-import { notFound } from "next/navigation";
-import { apiGetCategoryProducts, apiGetCategories } from "@/lib/api-client";
-import { Navbar } from "@/components/navbar";
-import { Footer } from "@/components/footer";
-import { Breadcrumbs } from "@/components/ui/breadcrumbs";
-import { H1, P } from "@/components/ui/typography";
-import { PromotionalBanner } from "@/components/promotions/PromotionalBanner";
-import CategoryFiltersClient from "./filters-trigger";
+"use client";
 
-async function getCategory(slug: string) {
-  try {
-    const categories = await apiGetCategories();
-    const category = categories.find(c => c.slug === slug);
-    
-    if (!category) return null;
-    
-    return {
-      name: category.name,
-      description: `Produse din categoria ${category.name} - calitate superioară pentru floristică`,
-    };
-  } catch (error) {
-    return null;
-  }
+import { useEffect, useState } from "react";
+import { useParams, useSearchParams } from "next/navigation";
+import { generateCategoryLDJSON } from "@/lib/seo/meta-catalog";
+import { SiteHeader } from "@/components/site/SiteHeader";
+import { SiteFooter } from "@/components/site/SiteFooter";
+import { CategoryHeader } from "@/components/catalog/CategoryHeader";
+import { FiltersBar } from "@/components/catalog/FiltersBar";
+import { SortDropdown } from "@/components/catalog/SortDropdown";
+import { ProductGrid } from "@/components/catalog/ProductGrid";
+import { Pagination } from "@/components/catalog/Pagination";
+import { CategoryHeaderSkeleton, FiltersBarSkeleton, ProductGridSkeleton } from "@/components/common/Skeletons";
+
+// Types
+interface Product {
+  id: string;
+  slug: string;
+  title: string;
+  description: string;
+  price: number;
+  oldPrice?: number;
+  images: {
+    src: string;
+    alt: string;
+  }[];
+  seller: {
+    name: string;
+    href: string;
+  };
+  stockLabel: string;
+  badges?: string[];
+  rating?: number;
+  reviewCount?: number;
+  attributes: {
+    label: string;
+    value: string;
+  }[];
+  category: string;
+  tags: string[];
 }
 
-export default async function CategoryPage({
-  params,
-}: {
-  params: Promise<{ slug: string }>;
-}) {
-  const { slug } = await params;
-  const category = await getCategory(slug);
-  if (!category) return notFound();
+interface Facet {
+  key: string;
+  label: string;
+  type: 'checkbox' | 'range' | 'select';
+  options: {
+    value: string;
+    label: string;
+    count: number;
+  }[];
+}
 
-  let products: any[] = [];
-  try {
-    const response = await apiGetCategoryProducts(slug);
-    products = response.items;
-  } catch (error) {
-    // Category not found or error - products will be empty array
-    products = [];
-  }
+interface CategoryResponse {
+  items: Product[];
+  total: number;
+  facets: Facet[];
+  currentPage: number;
+  totalPages: number;
+}
+
+const sortOptions = [
+  { label: 'Relevanță', value: 'relevance' },
+  { label: 'Preț crescător', value: 'price_asc' },
+  { label: 'Preț descrescător', value: 'price_desc' },
+  { label: 'Noutăți', value: 'newest' },
+  { label: 'Rating', value: 'rating' }
+];
+
+export default function Category() {
+  const params = useParams();
+  const searchParams = useSearchParams();
+  const categorySlug = params.slug as string;
   
-  // Convert products for ProductGrid
-  const gridProducts = products.map(product => ({
-    id: product.id,
-    slug: product.slug,
-    title: product.title,
-    price: product.price * 100, // Convert to cents for compatibility
-    currency: product.currency,
-    imageUrl: product.image,
-    sellerSlug: product.sellerSlug,
-    attributes: {
-      price_cents: product.price * 100,
-      stock_qty: 10, // Default stock
-      is_in_stock: true,
-      vendor_id: 1,
-      material: "ceramic" as const,
-      color: "natural" as const,
-      shape: "round" as const,
-      style: "modern" as const,
-      finish: "matte" as const,
-      diameter_mm: 200,
-      height_mm: 150,
-      length_mm: 200,
-      personalizable: false,
-      painted: false,
-      tags: ["ceramic", "natural", "modern"],
-      ribbon_included: false,
-      compatibility: ["bouquet", "box"],
-      pack_units: 1,
-      food_safe: false,
-      created_at: new Date().toISOString(),
-      popularity_score: 850,
-    }
-  }));
+  const [categoryData, setCategoryData] = useState<CategoryResponse | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const [selectedFilters, setSelectedFilters] = useState<Record<string, string[]>>({});
+  const [sortBy, setSortBy] = useState('relevance');
 
-  const breadcrumbItems = [
-    { name: "Categorii", href: "/c" },
-    { name: category.name, href: `/c/${slug}` },
+  // Get category info
+  const getCategoryInfo = (slug: string) => {
+    const categories: Record<string, { title: string; subtitle: string; image?: string }> = {
+      'ghivece': {
+        title: 'Ghivece',
+        subtitle: 'Descoperă o gamă variată de ghivece pentru plante, de la modele moderne la clasice, perfecte pentru orice stil de decor.',
+        image: '/placeholder.png'
+      },
+      'cutii': {
+        title: 'Cutii',
+        subtitle: 'Cutii elegante pentru aranjamente florale, cadouri sau decor. Materiale naturale și designuri rafinate.',
+        image: '/placeholder.png'
+      },
+      'accesorii': {
+        title: 'Accesorii',
+        subtitle: 'Toate accesoriile necesare pentru grădinărit și aranjamente florale. Unelte, panglici și multe altele.',
+        image: '/placeholder.png'
+      },
+      'ambalaje': {
+        title: 'Ambalaje',
+        subtitle: 'Ambalaje eco-friendly pentru flori și cadouri. Materiale reciclabile și designuri moderne.',
+        image: '/placeholder.png'
+      }
+    };
+    
+    return categories[slug] || {
+      title: slug.charAt(0).toUpperCase() + slug.slice(1),
+      subtitle: 'Descoperă produsele din această categorie'
+    };
+  };
+
+  useEffect(() => {
+    const fetchCategoryData = async () => {
+      try {
+        setLoading(true);
+        
+        const page = searchParams.get('page') || '1';
+        const sort = searchParams.get('sort') || 'relevance';
+        const filters = searchParams.get('filters') || '{}';
+        
+        setSortBy(sort);
+        setSelectedFilters(JSON.parse(filters));
+        
+        const response = await fetch(
+          `/api/catalog/category?slug=${categorySlug}&page=${page}&sort=${sort}&filters=${encodeURIComponent(filters)}`
+        );
+        
+        if (!response.ok) {
+          throw new Error('Categoria nu a fost găsită');
+        }
+        
+        const data = await response.json();
+        setCategoryData(data);
+      } catch (err) {
+        setError(err instanceof Error ? err.message : 'Eroare la încărcarea categoriei');
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    if (categorySlug) {
+      fetchCategoryData();
+    }
+  }, [categorySlug, searchParams]);
+
+  const handleFilterChange = (filters: Record<string, string[]>) => {
+    setSelectedFilters(filters);
+    // Update URL params
+    const newSearchParams = new URLSearchParams(searchParams);
+    newSearchParams.set('filters', JSON.stringify(filters));
+    newSearchParams.set('page', '1'); // Reset to first page
+    window.history.pushState(null, '', `?${newSearchParams.toString()}`);
+  };
+
+  const handleSortChange = (sort: string) => {
+    setSortBy(sort);
+    const newSearchParams = new URLSearchParams(searchParams);
+    newSearchParams.set('sort', sort);
+    newSearchParams.set('page', '1'); // Reset to first page
+    window.history.pushState(null, '', `?${newSearchParams.toString()}`);
+  };
+
+  const handlePageChange = (page: number) => {
+    const newSearchParams = new URLSearchParams(searchParams);
+    newSearchParams.set('page', page.toString());
+    window.history.pushState(null, '', `?${newSearchParams.toString()}`);
+  };
+
+  // Footer data
+  const footerColumns = [
+    {
+      title: "Companie",
+      links: [
+        { label: "Despre noi", href: "/about" },
+        { label: "Cariere", href: "/careers" },
+        { label: "Contact", href: "/contact" },
+        { label: "Presă", href: "/press" }
+      ]
+    },
+    {
+      title: "Ajutor",
+      links: [
+        { label: "Întrebări frecvente", href: "/faq" },
+        { label: "Livrare", href: "/shipping" },
+        { label: "Retururi", href: "/returns" },
+        { label: "Suport", href: "/help" }
+      ]
+    },
+    {
+      title: "Legal",
+      links: [
+        { label: "Termeni și condiții", href: "/terms" },
+        { label: "Politica de confidențialitate", href: "/privacy" },
+        { label: "Cookie-uri", href: "/cookies" },
+        { label: "GDPR", href: "/gdpr" }
+      ]
+    },
+    {
+      title: "Utile",
+      links: [
+        { label: "Devino vânzător", href: "/seller" },
+        { label: "Blog", href: "/blog" },
+        { label: "Ghiduri", href: "/guides" },
+        { label: "Parteneri", href: "/partners" }
+      ]
+    }
   ];
+
+  const payments = ["Visa", "Mastercard", "PayPal", "Revolut"];
+  const carriers = ["Fan Courier", "DPD", "Cargus", "Sameday"];
+
+  const categoryInfo = getCategoryInfo(categorySlug);
+
+  if (loading) {
+    return (
+      <>
+        <SiteHeader categories={[]} suggestions={[]} />
+        <main className="min-h-screen bg-bg">
+          <CategoryHeaderSkeleton />
+          <FiltersBarSkeleton />
+          <div className="max-w-7xl mx-auto px-4 py-8">
+            <ProductGridSkeleton count={12} />
+          </div>
+        </main>
+        <SiteFooter columns={footerColumns} payments={payments} carriers={carriers} />
+      </>
+    );
+  }
+
+  if (error || !categoryData) {
+    return (
+      <>
+        <SiteHeader categories={[]} suggestions={[]} />
+        <main className="min-h-screen bg-bg flex items-center justify-center">
+          <div className="text-center">
+            <h1 className="text-2xl font-semibold text-ink mb-2">Categoria nu a fost găsită</h1>
+            <p className="text-muted mb-4">Categoria pe care o căutați nu există.</p>
+            <a href="/" className="text-primary hover:text-primary/80">
+              Înapoi la homepage
+            </a>
+          </div>
+        </main>
+        <SiteFooter columns={footerColumns} payments={payments} carriers={carriers} />
+      </>
+    );
+  }
 
   return (
     <>
-      <Navbar />
-      <div className="min-h-screen bg-slate-50 dark:bg-slate-900">
-        <div className="max-w-7xl mx-auto px-4 py-8">
-          {/* Breadcrumbs */}
-          <Breadcrumbs items={breadcrumbItems} className="mb-6" />
-          
-          {/* Category header */}
-          <div className="mb-8">
-            <H1 className="text-3xl font-bold text-slate-900 dark:text-slate-100 mb-4">
-              {category.name}
-            </H1>
-            <P className="text-slate-600 dark:text-slate-400 text-lg">
-              {category.description}
-            </P>
+      {/* LD+JSON */}
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{
+          __html: JSON.stringify(generateCategoryLDJSON(categoryInfo, categoryData.total))
+        }}
+      />
+      
+      <SiteHeader 
+        categories={[]} 
+        suggestions={["ghivece ceramica", "cutii rotunde", "ambalaje hârtie", "accesorii decorative"]} 
+      />
+      
+      <main className="min-h-screen bg-bg">
+        {/* Category Header */}
+        <CategoryHeader
+          title={categoryInfo.title}
+          subtitle={categoryInfo.subtitle}
+          image={categoryInfo.image ? { src: categoryInfo.image, alt: categoryInfo.title } : undefined}
+          productCount={categoryData.total}
+        />
+
+        {/* Filters Bar */}
+        <FiltersBar
+          facets={categoryData.facets}
+          selected={selectedFilters}
+          onChange={handleFilterChange}
+        />
+
+        {/* Controls */}
+        <div className="bg-bg border-b border-line">
+          <div className="max-w-7xl mx-auto px-4 py-4">
+            <div className="flex flex-col sm:flex-row items-center justify-between gap-4">
+              {/* Results Count */}
+              <div className="text-sm text-muted">
+                {categoryData.total} produse găsite
+              </div>
+
+              {/* Sort Dropdown */}
+              <SortDropdown
+                value={sortBy}
+                onChange={handleSortChange}
+                options={sortOptions}
+              />
+            </div>
           </div>
-
-          {/* Promotional Banner */}
-          <PromotionalBanner categorySlug={slug} />
-
-          {/* Filters and Products */}
-          <CategoryFiltersClient 
-            products={gridProducts} 
-            categorySlug={slug} 
-          />
         </div>
-      </div>
-      <Footer />
+
+        {/* Products Grid */}
+        <div className="max-w-7xl mx-auto px-4 py-8">
+          {categoryData.items.length > 0 ? (
+            <>
+              <ProductGrid items={categoryData.items.map(item => ({
+                id: item.id,
+                image: item.images[0],
+                title: item.title,
+                seller: item.seller.name,
+                price: item.price,
+                oldPrice: item.oldPrice,
+                badge: item.badges?.[0] as 'nou' | 'reducere' | 'stoc redus' | undefined,
+                href: `/p/${item.slug}`
+              }))} />
+              
+              {/* Pagination */}
+              <Pagination
+                page={categoryData.currentPage}
+                totalPages={categoryData.totalPages}
+                onPageChange={handlePageChange}
+                totalItems={categoryData.total}
+              />
+            </>
+          ) : (
+            <div className="text-center py-12">
+              <h3 className="text-lg font-semibold text-ink mb-2">
+                Nu am găsit rezultate
+              </h3>
+              <p className="text-muted mb-4">
+                Încearcă să ajustezi filtrele sau să cauți altceva.
+              </p>
+              <button
+                onClick={() => {
+                  setSelectedFilters({});
+                  const newSearchParams = new URLSearchParams(searchParams);
+                  newSearchParams.delete('filters');
+                  window.history.pushState(null, '', `?${newSearchParams.toString()}`);
+                }}
+                className="text-primary hover:text-primary/80"
+              >
+                Șterge toate filtrele
+              </button>
+            </div>
+          )}
+        </div>
+      </main>
+      
+      <SiteFooter 
+        columns={footerColumns} 
+        payments={payments} 
+        carriers={carriers} 
+      />
     </>
   );
 }

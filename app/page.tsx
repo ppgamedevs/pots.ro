@@ -10,6 +10,7 @@ import { CategoryTiles } from "@/components/promo/CategoryTiles";
 import { ProductCard } from "@/components/product/ProductCard";
 import { EditorialTeasers } from "@/components/promo/EditorialTeasers";
 import { StructuredData } from "@/components/seo/StructuredData";
+import CookieBanner from "@/components/common/CookieBanner";
 import { Shield, Truck, CheckCircle, Headphones } from "lucide-react";
 
 // Types
@@ -97,27 +98,27 @@ export default function Home() {
     {
       title: "Companie",
       links: [
-        { label: "Despre noi", href: "/about" },
-        { label: "Cariere", href: "/careers" },
-        { label: "Contact", href: "/contact" },
-        { label: "Presă", href: "/press" }
+        { label: "Despre noi", href: "/(legal)/about" },
+        { label: "Cariere", href: "/(legal)/careers" },
+        { label: "Contact", href: "/(legal)/contact" },
+        { label: "Presă", href: "/(legal)/press" }
       ]
     },
     {
-      title: "Ajutor",
+      title: "Help Center",
       links: [
-        { label: "Întrebări frecvente", href: "/faq" },
-        { label: "Livrare", href: "/shipping" },
-        { label: "Retururi", href: "/returns" },
-        { label: "Suport", href: "/help" }
+        { label: "Caută ajutor", href: "/help" },
+        { label: "Comenzi", href: "/help/comenzi" },
+        { label: "Livrare", href: "/help/livrare" },
+        { label: "Retururi", href: "/help/retururi" }
       ]
     },
     {
       title: "Legal",
       links: [
-        { label: "Termeni și condiții", href: "/terms" },
-        { label: "Politica de confidențialitate", href: "/privacy" },
-        { label: "Cookie-uri", href: "/cookies" },
+        { label: "Termeni și condiții", href: "/(legal)/terms" },
+        { label: "Politica de confidențialitate", href: "/(legal)/privacy" },
+        { label: "Cookie-uri", href: "/(legal)/cookies" },
         { label: "GDPR", href: "/gdpr" }
       ]
     },
@@ -264,6 +265,8 @@ export default function Home() {
         payments={payments} 
         carriers={carriers} 
       />
+      
+      <CookieBanner />
     </>
   );
 }
