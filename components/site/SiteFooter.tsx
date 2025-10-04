@@ -46,12 +46,12 @@ export function SiteFooter({ columns, payments, carriers }: SiteFooterProps) {
           <div className="flex flex-col lg:flex-row items-center justify-between gap-6">
             {/* Payment Methods */}
             <div className="flex items-center gap-4">
-              <span className="text-sm text-muted">Metode de plată:</span>
+              <span className="text-sm font-medium text-ink">Metode de plată:</span>
               <div className="flex items-center gap-2">
                 {payments.map((payment, index) => (
                   <div
                     key={index}
-                    className="w-8 h-6 bg-bg border border-line rounded flex items-center justify-center text-xs text-muted"
+                    className="px-3 py-1 bg-white border border-line rounded-md text-xs font-medium text-ink shadow-sm"
                   >
                     {payment}
                   </div>
@@ -61,12 +61,12 @@ export function SiteFooter({ columns, payments, carriers }: SiteFooterProps) {
 
             {/* Carriers */}
             <div className="flex items-center gap-4">
-              <span className="text-sm text-muted">Curieri:</span>
+              <span className="text-sm font-medium text-ink">Curieri:</span>
               <div className="flex items-center gap-2">
                 {carriers.map((carrier, index) => (
                   <div
                     key={index}
-                    className="w-8 h-6 bg-bg border border-line rounded flex items-center justify-center text-xs text-muted"
+                    className="px-3 py-1 bg-white border border-line rounded-md text-xs font-medium text-ink shadow-sm"
                   >
                     {carrier}
                   </div>
@@ -82,16 +82,19 @@ export function SiteFooter({ columns, payments, carriers }: SiteFooterProps) {
             <h3 className="text-lg font-semibold text-ink mb-2">
               Abonează-te la newsletter
             </h3>
-            <p className="text-sm text-muted mb-4">
+            <p className="text-sm text-ink/70 mb-4">
               Primește oferte exclusive și noutăți despre produse
             </p>
             <div className="flex gap-2">
               <input
                 type="email"
                 placeholder="Adresa ta de email"
-                className="flex-1 px-3 py-2 border border-line rounded-lg focus-ring transition-micro"
+                className="flex-1 px-3 py-2 border border-line rounded-lg bg-white text-ink placeholder:text-ink/50 focus:border-primary focus:ring-2 focus:ring-primary/20 transition-micro"
               />
-              <Button size="sm" className="transition-micro">
+              <Button 
+                size="sm" 
+                className="bg-primary text-white hover:bg-primary/90 transition-micro font-medium"
+              >
                 Abonează-te
               </Button>
             </div>
@@ -101,7 +104,7 @@ export function SiteFooter({ columns, payments, carriers }: SiteFooterProps) {
         {/* Bottom Bar */}
         <div className="border-t border-line pt-8">
           <div className="flex flex-col lg:flex-row items-center justify-between gap-4">
-            <div className="text-sm text-muted">
+            <div className="text-sm text-ink/70">
               © 2024 FloristMarket.ro • CUI: 12345678 • 
               <Link href="/(legal)/terms" className="hover:text-ink transition-micro ml-1">
                 Termeni și condiții
@@ -113,18 +116,18 @@ export function SiteFooter({ columns, payments, carriers }: SiteFooterProps) {
             </div>
             
             <div className="flex items-center gap-4">
-              <Link href="/anpc" className="text-sm text-muted hover:text-ink transition-micro">
+              <Link href="/anpc" className="text-sm text-ink/70 hover:text-ink transition-micro">
                 ANPC
               </Link>
-              <Link href="/sol" className="text-sm text-muted hover:text-ink transition-micro">
+              <Link href="/sol" className="text-sm text-ink/70 hover:text-ink transition-micro">
                 SOL
               </Link>
               <div className="flex items-center gap-2">
-                <span className="text-sm text-muted">Social:</span>
-                <Link href="#" className="text-sm text-muted hover:text-ink transition-micro">
+                <span className="text-sm text-ink/70">Social:</span>
+                <Link href="#" className="text-sm text-ink/70 hover:text-ink transition-micro">
                   Facebook
                 </Link>
-                <Link href="#" className="text-sm text-muted hover:text-ink transition-micro">
+                <Link href="#" className="text-sm text-ink/70 hover:text-ink transition-micro">
                   Instagram
                 </Link>
               </div>
