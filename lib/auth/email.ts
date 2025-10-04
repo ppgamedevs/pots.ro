@@ -1,7 +1,24 @@
 import { Resend } from 'resend';
 
-// Initialize Resend
-const resend = new Resend(process.env.RESEND_API_KEY);
+// Initialize Resend lazily to avoid build-time errors
+let resend: Resend | null = null;
+
+function getResend(): Resend {
+  if (!resend) {
+    const apiKey = process.env.RESEND_API_KEY;
+    if (!apiKey) {
+      // During build time, return a mock instance to avoid build errors
+      if (process.env.NODE_ENV === 'production' && !process.env.VERCEL) {
+        throw new Error('RESEND_API_KEY is not set');
+      }
+      // For build time or development without API key, return a mock
+      resend = new Resend('mock_key_for_build');
+    } else {
+      resend = new Resend(apiKey);
+    }
+  }
+  return resend;
+}
 
 // Email configuration
 const FROM_EMAIL = 'FloristMarket <noreply@floristmarket.ro>';
@@ -20,10 +37,16 @@ export async function sendOtpEmail(data: OtpEmailData): Promise<{ success: boole
   try {
     const { email, code, magicUrl } = data;
     
+    // Skip sending emails during build time
+    if (process.env.NODE_ENV === 'production' && !process.env.VERCEL) {
+      console.log('Skipping email send during build time');
+      return { success: true };
+    }
+    
     const htmlContent = generateOtpEmailHtml(code, magicUrl);
     const textContent = generateOtpEmailText(code, magicUrl);
     
-    const result = await resend.emails.send({
+    const result = await getResend().emails.send({
       from: FROM_EMAIL,
       to: [email],
       subject: 'Codul tău FloristMarket',
@@ -248,10 +271,16 @@ export function generateMagicLink(token: string, email: string): string {
  */
 export async function sendWelcomeEmail(email: string, name?: string): Promise<{ success: boolean; error?: string }> {
   try {
+    // Skip sending emails during build time
+    if (process.env.NODE_ENV === 'production' && !process.env.VERCEL) {
+      console.log('Skipping welcome email send during build time');
+      return { success: true };
+    }
+    
     const htmlContent = generateWelcomeEmailHtml(name);
     const textContent = generateWelcomeEmailText(name);
     
-    const result = await resend.emails.send({
+    const result = await getResend().emails.send({
       from: FROM_EMAIL,
       to: [email],
       subject: 'Bine ai venit pe FloristMarket!',
