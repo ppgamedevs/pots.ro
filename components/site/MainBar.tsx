@@ -2,10 +2,10 @@
 
 import Link from "next/link";
 import { useState } from "react";
-import { Search } from "./Search";
 import { Button } from "../ui/button";
 import { Category } from "./SiteHeader";
 import CategoriesButton from "./CategoriesButton";
+import GlobalSearchTrigger from "../search/GlobalSearchTrigger";
 import { Store, User, Heart, ShoppingCart } from "lucide-react";
 
 interface MainBarProps {
@@ -30,11 +30,7 @@ export function MainBar({ categories, suggestions, onMegaMenuToggle, onMiniCartT
 
         {/* Desktop Navigation */}
         <div className="hidden lg:flex items-center flex-1 max-w-2xl mx-8">
-          <Search 
-            suggestions={suggestions}
-            placeholder="Caută ghivece, cutii, accesorii..."
-            className="w-full"
-          />
+          <GlobalSearchTrigger />
         </div>
 
         {/* Desktop Actions */}
@@ -99,12 +95,7 @@ export function MainBar({ categories, suggestions, onMegaMenuToggle, onMiniCartT
       {/* Mobile Search */}
       {searchOpen && (
         <div className="lg:hidden py-4 border-t border-line">
-          <Search 
-            suggestions={suggestions}
-            placeholder="Caută produse..."
-            className="w-full"
-            autoFocus
-          />
+          <GlobalSearchTrigger />
         </div>
       )}
     </div>

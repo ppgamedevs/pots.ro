@@ -29,31 +29,37 @@ export default function CookieBanner() {
       aria-label="Setări cookie" 
       className="fixed inset-x-3 bottom-3 z-50"
     >
-      <div className="mx-auto max-w-5xl rounded-2xl border border-line bg-white shadow-elev p-4 md:p-5 flex flex-col md:flex-row items-start md:items-center gap-3">
-        <p className="text-sm text-ink/80">
-          Folosim cookie-uri funcționale pentru o experiență mai bună. Poți gestiona preferințele în{" "}
-          <Link 
-            href="/help/legal/cookies" 
-            className="underline hover:text-primary transition-micro"
-          >
-            Politica Cookies
-          </Link>
-          .
-        </p>
-        
-        <div className="ms-auto flex gap-2">
-          <button 
-            onClick={handleAcceptNecessary}
-            className="px-4 py-2 rounded-lg border border-line text-sm hover:bg-bg-soft transition-micro"
-          >
-            Doar necesare
-          </button>
-          <button 
-            onClick={handleAcceptAll}
-            className="px-4 py-2 rounded-lg bg-primary text-white text-sm hover:bg-primary/90 transition-micro"
-          >
-            Accept toate
-          </button>
+      <div className="mx-auto max-w-5xl rounded-2xl border border-line bg-white shadow-elev p-4 md:p-6">
+        <div className="flex flex-col md:flex-row items-start md:items-center gap-4">
+          <div className="flex-1">
+            <h3 className="font-medium text-ink mb-2">Cookie-uri și confidențialitate</h3>
+            <p className="text-sm text-ink/80 leading-relaxed">
+              Folosim cookie-uri funcționale pentru o experiență mai bună. 
+              Poți gestiona preferințele în{" "}
+              <Link 
+                href="/privacy" 
+                className="text-primary hover:underline transition-micro"
+              >
+                Politica de confidențialitate
+              </Link>
+              .
+            </p>
+          </div>
+          
+          <div className="flex gap-3 w-full md:w-auto">
+            <button 
+              onClick={handleAcceptNecessary}
+              className="btn-outline flex-1 md:flex-none"
+            >
+              Doar necesare
+            </button>
+            <button 
+              onClick={handleAcceptAll}
+              className="btn-primary flex-1 md:flex-none"
+            >
+              Accept toate
+            </button>
+          </div>
         </div>
       </div>
     </div>

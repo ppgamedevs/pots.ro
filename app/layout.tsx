@@ -10,6 +10,9 @@ import { CookieConsent } from "@/components/cookie-consent";
 import { SpeedInsights } from "@vercel/speed-insights/next";
 import { Analytics } from "@vercel/analytics/next";
 import { ErrorBoundary } from "@/components/error-boundary";
+import { SiteHeader } from "@/components/site/SiteHeader";
+import { SiteFooter } from "@/components/site/SiteFooter";
+import CookieBanner from "@/components/common/CookieBanner";
 import { SITE_NAME, SITE_URL, SITE_DESCRIPTION, SITE_KEYWORDS, TWITTER_HANDLE, OG_IMAGE_DEFAULT } from "@/lib/constants";
 // import { PerformanceOptimizer, criticalCSS, criticalResources } from "@/components/ui/performance-optimizer";
 
@@ -66,19 +69,86 @@ export const metadata = {
 };
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
+  // Mock data for header and footer
+  const categories = [
+    { id: "ghivece", name: "Ghivece", href: "/c/ghivece" },
+    { id: "cutii", name: "Cutii", href: "/c/cutii" },
+    { id: "ambalaje", name: "Ambalaje", href: "/c/ambalaje" },
+  ];
+
+  const footerColumns = [
+    {
+      title: "Companie",
+      links: [
+        { label: "Despre noi", href: "/about" },
+        { label: "Cariere", href: "/careers" },
+        { label: "Contact", href: "/contact" },
+        { label: "Presă", href: "/press" }
+      ]
+    },
+    {
+      title: "Help Center",
+      links: [
+        { label: "Caută ajutor", href: "/help" },
+        { label: "Comenzi", href: "/help/comenzi" },
+        { label: "Livrare", href: "/help/livrare" },
+        { label: "Retururi", href: "/help/retururi" }
+      ]
+    },
+    {
+      title: "Legal",
+      links: [
+        { label: "Termeni și condiții", href: "/terms" },
+        { label: "Politica de confidențialitate", href: "/privacy" },
+        { label: "Cookie-uri", href: "/cookies" },
+        { label: "GDPR", href: "/gdpr" }
+      ]
+    },
+    {
+      title: "Utile",
+      links: [
+        { label: "Devino vânzător", href: "/seller" },
+        { label: "Blog", href: "/blog" },
+        { label: "Ghiduri", href: "/guides" },
+        { label: "Parteneri", href: "/partners" }
+      ]
+    }
+  ];
+
+  const payments = ["Visa", "Mastercard", "PayPal", "Revolut"];
+  const carriers = ["Fan Courier", "DPD", "Cargus", "Sameday"];
+
   return (
     <html lang="ro" className={inter.variable} suppressHydrationWarning>
       <body className="min-h-screen antialiased">
         <ThemeProvider>
           <ConfirmProvider>
             <ErrorBoundary>
-              {children}
+              <header>
+                <SiteHeader 
+                  categories={categories}
+                  suggestions={["ghivece ceramica", "cutii rotunde", "ambalaje hârtie"]}
+                />
+              </header>
+              
+              <main>
+                {children}
+              </main>
+              
+              <footer>
+                <SiteFooter 
+                  columns={footerColumns}
+                  payments={payments}
+                  carriers={carriers}
+                />
+              </footer>
             </ErrorBoundary>
             <Toaster />
             <SonnerToaster richColors position="top-center" closeButton />
             <PerformanceMonitor />
             <CommandPalette />
             <CookieConsent />
+            <CookieBanner />
             <SpeedInsights />
             <Analytics />
           </ConfirmProvider>

@@ -12,7 +12,8 @@ const config: Config = {
         // FloristMarket.ro Design System 2026
         primary: "#1C6B5A", // verde smarald
         ink: "#1F2421",      // text principal
-        muted: "#6B6B6B",    // text secundar
+        subink: "#333845",   // text secundar
+        muted: "#6B6B6B",    // text terțiar
         line: "#ECECEC",     // borders
         bg: "#FFFFFF",       // background principal
         "bg-soft": "#F7F4F1", // background secundar
@@ -94,6 +95,32 @@ const config: Config = {
       },
     },
   },
-  plugins: [],
+  plugins: [
+    function({ addUtilities }: any) {
+      addUtilities({
+        '.btn': {
+          '@apply inline-flex items-center justify-center px-4 py-2 rounded-lg font-medium text-sm transition-micro': {},
+        },
+        '.btn-primary': {
+          '@apply btn bg-primary text-white hover:bg-primary/90': {},
+        },
+        '.btn-ghost': {
+          '@apply btn hover:bg-bg-soft text-ink': {},
+        },
+        '.btn-outline': {
+          '@apply btn border border-line hover:bg-bg-soft text-ink': {},
+        },
+        '.chip': {
+          '@apply inline-flex items-center px-3 py-1 rounded-full text-xs font-medium bg-bg-soft text-ink border border-line': {},
+        },
+        '.field': {
+          '@apply w-full border border-line rounded-lg px-3 py-2 bg-white text-ink placeholder:text-muted focus:border-primary focus:ring-2 focus:ring-primary/20 transition-micro': {},
+        },
+        '.transition-micro': {
+          '@apply transition-all duration-150 ease-in-out': {},
+        },
+      });
+    },
+  ],
 };
 export default config;

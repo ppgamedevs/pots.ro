@@ -1,101 +1,88 @@
 import { NextRequest, NextResponse } from "next/server";
-import { db } from "@/db";
-import { products, categories, sellers } from "@/db/schema/core";
-import { sql, ilike, or, and, eq, desc } from "drizzle-orm";
-import { searchSchema } from "@/lib/validations";
-import { getPagination, buildPaginationMeta } from "@/lib/pagination";
 
-export const dynamic = 'force-dynamic';
+const ELASTIC_URL = process.env.ELASTIC_URL!;
+const ELASTIC_API_KEY = process.env.ELASTIC_API_KEY!;
+const INDEX = process.env.ELASTIC_INDEX || "products";
 
-export async function GET(request: NextRequest) {
+export async function GET(req: NextRequest) {
   try {
-    const { searchParams } = new URL(request.url);
-    const query = searchParams.get('q');
-    const category = searchParams.get('category');
-    const page = searchParams.get('page');
-    
-    if (!query) {
-      return NextResponse.json({ error: "Query parameter 'q' is required" }, { status: 400 });
+    const { searchParams } = new URL(req.url);
+    const q = (searchParams.get("q") || "").trim();
+    const from = Number(searchParams.get("from") || "0");
+    const size = Number(searchParams.get("size") || "24");
+    const sort = searchParams.get("sort") || "relevance";
+
+    const sortClause =
+      sort === "price_asc" ? [{ price: "asc" }] :
+      sort === "price_desc" ? [{ price: "desc" }] :
+      sort === "recent" ? [{ created_at: "desc" }] : ["_score"];
+
+    const body = q
+      ? {
+          query: {
+            multi_match: {
+              query: q,
+              fields: ["title^3", "seller^2", "category^1.5", "attributes.value"],
+              type: "most_fields",
+              operator: "and",
+            },
+          },
+          sort: sortClause,
+          from, 
+          size,
+          _source: ["id", "title", "price", "image", "seller", "category", "slug", "oldPrice", "badge"],
+        }
+      : {
+          query: { match_all: {} },
+          sort: sortClause,
+          from, 
+          size,
+          _source: ["id", "title", "price", "image", "seller", "category", "slug", "oldPrice", "badge"],
+        };
+
+    // For MVP, return mock data if Elasticsearch is not configured
+    if (!ELASTIC_URL || !ELASTIC_API_KEY) {
+      const mockProducts = Array.from({ length: size }, (_, i) => ({
+        id: `mock-${from + i}`,
+        title: q ? `Produs ${i + 1} pentru "${q}"` : `Produs ${i + 1}`,
+        price: Math.floor(Math.random() * 500) + 50,
+        image: { src: "/placeholder.png", alt: `Produs ${i + 1}` },
+        seller: `Vânzător ${i % 3 + 1}`,
+        category: ["Ghivece", "Cutii", "Ambalaje"][i % 3],
+        slug: `produs-${i + 1}`,
+        oldPrice: Math.random() > 0.7 ? Math.floor(Math.random() * 600) + 100 : undefined,
+        badge: Math.random() > 0.8 ? "Reducere" : undefined,
+      }));
+
+      return NextResponse.json({ 
+        items: mockProducts, 
+        total: q ? 12 : 100 
+      });
     }
 
-    const { q } = searchSchema.parse({ q: query });
-    const { offset, limit, meta } = getPagination({ page: page || undefined, pageSize: 24 });
-
-    // Build base condition
-    let baseCondition;
-    if (category) {
-      baseCondition = and(eq(products.status, 'active'), eq(products.categoryId, category));
-    } else {
-      baseCondition = eq(products.status, 'active');
-    }
-
-    // Try FTS first
-    let productResults = await db
-      .select({
-        id: products.id,
-        slug: products.slug,
-        title: products.title,
-        description: products.description,
-        priceCents: products.priceCents,
-        currency: products.currency,
-        imageUrl: products.imageUrl,
-        sellerId: products.sellerId,
-        score: sql<number>`ts_rank(${products.searchTsv}, websearch_to_tsquery('simple', ${q}))`,
-      })
-      .from(products)
-      .where(and(
-        baseCondition,
-        sql`${products.searchTsv} @@ websearch_to_tsquery('simple', ${q})`
-      ))
-      .orderBy(desc(sql`ts_rank(${products.searchTsv}, websearch_to_tsquery('simple', ${q}))`))
-      .limit(limit)
-      .offset(offset);
-
-    // If no FTS results, try trigram fallback
-    if (productResults.length === 0) {
-      productResults = await db
-        .select({
-          id: products.id,
-          slug: products.slug,
-          title: products.title,
-          description: products.description,
-          priceCents: products.priceCents,
-          currency: products.currency,
-          imageUrl: products.imageUrl,
-          sellerId: products.sellerId,
-          score: sql<number>`similarity(${products.title}, ${q})`,
-        })
-        .from(products)
-        .where(and(
-          baseCondition,
-          sql`similarity(${products.title}, ${q}) > 0.1`
-        ))
-        .orderBy(desc(sql`similarity(${products.title}, ${q})`))
-        .limit(limit)
-        .offset(offset);
-    }
-
-    // Get total count for pagination
-    const totalCount = await db
-      .select({ count: sql<number>`count(*)` })
-      .from(products)
-      .where(baseCondition);
-
-    const totalItems = totalCount[0]?.count || 0;
-    const paginationMeta = buildPaginationMeta(meta.page, meta.pageSize, totalItems);
-
-    return NextResponse.json({
-      items: productResults,
-      meta: paginationMeta,
+    const response = await fetch(`${ELASTIC_URL}/${INDEX}/_search`, {
+      method: "POST",
+      headers: {
+        Authorization: `ApiKey ${ELASTIC_API_KEY}`,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify(body),
+      cache: "no-store",
     });
+
+    if (!response.ok) {
+      console.error("Elasticsearch error:", response.status, response.statusText);
+      return NextResponse.json({ error: "search_failed" }, { status: 500 });
+    }
+
+    const data = await response.json();
+    const items = data.hits.hits.map((h: any) => h._source);
+    const total = data.hits.total?.value ?? items.length;
+
+    return NextResponse.json({ items, total });
 
   } catch (error) {
     console.error("Search API error:", error);
-    
-    if (error instanceof Error && error.name === 'ZodError') {
-      return NextResponse.json({ error: "Invalid query parameter" }, { status: 400 });
-    }
-    
-    return NextResponse.json({ error: "Internal server error" }, { status: 500 });
+    return NextResponse.json({ error: "internal_error" }, { status: 500 });
   }
 }
