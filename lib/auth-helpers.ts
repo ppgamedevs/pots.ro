@@ -1,51 +1,69 @@
-import { cookies } from "next/headers";
-import { lucia } from "@/auth/lucia";
-import { db } from "@/db";
-import { users } from "@/db/schema/core";
-import { eq } from "drizzle-orm";
+export interface User {
+  id: string;
+  email: string;
+  name: string | null;
+  role: 'buyer' | 'seller' | 'admin';
+}
 
-export async function getCurrentUser() {
-  const sessionId = cookies().get(lucia.sessionCookieName)?.value ?? null;
-  if (!sessionId) {
+export async function getSessionUser(): Promise<User | null> {
+  try {
+    const response = await fetch('/api/auth/me', {
+      credentials: 'include',
+    });
+    
+    if (response.ok) {
+      const data = await response.json();
+      return data.user;
+    } else if (response.status === 401) {
+      // User not authenticated
+      return null;
+    } else {
+      console.error('Error fetching user:', response.statusText);
+      return null;
+    }
+  } catch (error) {
+    console.error('Error fetching user:', error);
     return null;
   }
+}
 
-  const result = await lucia.validateSession(sessionId);
-  if (!result.session || !result.user) {
+export async function logout(): Promise<void> {
+  try {
+    const response = await fetch('/api/auth/logout', {
+      method: 'POST',
+      credentials: 'include',
+    });
+    
+    if (response.ok) {
+      window.location.href = '/login';
+    } else {
+      console.error('Logout failed:', response.statusText);
+    }
+  } catch (error) {
+    console.error('Logout error:', error);
+  }
+}
+
+// Server-side helper functions
+export async function getCurrentUser(): Promise<User | null> {
+  try {
+    const response = await fetch('/api/auth/me', {
+      credentials: 'include',
+    });
+    
+    if (response.ok) {
+      const data = await response.json();
+      return data.user;
+    }
+    
+    return null;
+  } catch (error) {
+    console.error('Error fetching current user:', error);
     return null;
   }
-
-  return result.user;
-}
-
-export async function requireRole(allowedRoles: ('buyer' | 'seller' | 'admin')[]) {
-  const user = await getCurrentUser();
-  if (!user) {
-    throw new Error("Authentication required");
-  }
-  
-  if (!allowedRoles.includes(user.role)) {
-    throw new Error("Insufficient permissions");
-  }
-  
-  return user;
-}
-
-export function isAdmin(user: { role: string } | null): boolean {
-  return user?.role === 'admin';
-}
-
-export function isSeller(user: { role: string } | null): boolean {
-  return user?.role === 'seller' || user?.role === 'admin';
 }
 
 export async function getUserId(): Promise<string | null> {
   const user = await getCurrentUser();
   return user?.id || null;
 }
-
-export async function getUserById(userId: string) {
-  const result = await db.select().from(users).where(eq(users.id, userId)).limit(1);
-  return result[0] || null;
-}
-

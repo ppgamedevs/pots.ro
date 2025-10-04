@@ -1,6 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { getServerSession } from 'next-auth';
-import { authOptions } from '@/lib/auth';
+import { getSession } from '@/lib/auth/session';
 import { db } from '@/db';
 import { sellerStatsDaily, sellers, orders } from '@/db/schema/core';
 import { eq, gte, desc, and, sql } from 'drizzle-orm';
@@ -8,13 +7,13 @@ import { eq, gte, desc, and, sql } from 'drizzle-orm';
 // GET /api/analytics/admin
 export async function GET(request: NextRequest) {
   try {
-    const session = await getServerSession(authOptions);
-    if (!session?.user) {
+    const session = await getSession();
+    if (!session) {
       return NextResponse.json({ error: 'Neautorizat' }, { status: 401 });
     }
 
     // Check if user is admin
-    if ((session.user as any).role !== 'admin') {
+    if (session.user.role !== 'admin') {
       return NextResponse.json({ error: 'Acces interzis' }, { status: 403 });
     }
 

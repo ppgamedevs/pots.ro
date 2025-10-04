@@ -1,6 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { getServerSession } from 'next-auth';
-import { authOptions } from '@/lib/auth';
+import { getSession } from '@/lib/auth/session';
 import { db } from '@/db';
 import { sellerStatsDaily, productStatsDaily, sellers, products } from '@/db/schema/core';
 import { eq, gte, lte, desc, and } from 'drizzle-orm';
@@ -12,8 +11,8 @@ export async function GET(
   { params }: { params: { id: string } }
 ) {
   try {
-    const session = await getServerSession(authOptions);
-    if (!session?.user) {
+    const session = await getSession();
+    if (!session) {
       return NextResponse.json({ error: 'Neautorizat' }, { status: 401 });
     }
 
@@ -40,11 +39,7 @@ export async function GET(
     }
 
     // Verify seller access (seller can only see their own stats)
-    const seller = await db.query.sellers.findFirst({
-      where: eq(sellers.userId, (session.user as any).id)
-    });
-
-    if (!seller || seller.id !== sellerId) {
+    if (session.user.role !== 'admin' && session.user.id !== sellerId) {
       return NextResponse.json({ error: 'Acces interzis' }, { status: 403 });
     }
 

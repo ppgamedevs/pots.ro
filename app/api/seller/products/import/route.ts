@@ -4,8 +4,7 @@
  */
 
 import { NextRequest, NextResponse } from 'next/server';
-import { getServerSession } from 'next-auth';
-import { authOptions } from '@/lib/auth';
+import { getSession } from '@/lib/auth/session';
 import { db } from '@/lib/db';
 import { products, categories, sellers } from '@/db/schema/core';
 import { eq } from 'drizzle-orm';
@@ -165,14 +164,14 @@ function parseCsv(csvContent: string): any[] {
 // POST - Import CSV
 export async function POST(request: NextRequest) {
   try {
-    const session = await getServerSession(authOptions);
-    if (!session?.user) {
+    const session = await getSession();
+    if (!session) {
       return NextResponse.json({ error: 'Neautorizat' }, { status: 401 });
     }
 
     // Verifică dacă user-ul este seller
     const seller = await db.query.sellers.findFirst({
-      where: eq(sellers.userId, (session.user as any).id)
+      where: eq(sellers.userId, session.user.id)
     });
 
     if (!seller) {

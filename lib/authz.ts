@@ -1,5 +1,5 @@
 import { NextRequest } from "next/server";
-import { validateRequest } from "@/auth/validate-request";
+import { getSession } from "@/lib/auth/session";
 
 export type UserRole = 'buyer' | 'seller' | 'admin';
 
@@ -14,16 +14,16 @@ export interface AuthenticatedUser {
  * Returns null if not authenticated
  */
 export async function getUser(req: NextRequest): Promise<AuthenticatedUser | null> {
-  const { user } = await validateRequest();
+  const session = await getSession();
   
-  if (!user) {
+  if (!session) {
     return null;
   }
   
   return {
-    id: user.id,
-    role: user.role,
-    email: user.email,
+    id: session.user.id,
+    role: session.user.role,
+    email: session.user.email,
   };
 }
 

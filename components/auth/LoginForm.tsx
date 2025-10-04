@@ -1,6 +1,7 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
+import { useSearchParams } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -12,7 +13,8 @@ interface LoginFormProps {
   redirectTo?: string;
 }
 
-export function LoginForm({ onSuccess, redirectTo = '/dashboard' }: LoginFormProps) {
+export function LoginForm({ onSuccess, redirectTo }: LoginFormProps) {
+  const searchParams = useSearchParams();
   const [step, setStep] = useState<'email' | 'otp'>('email');
   const [email, setEmail] = useState('');
   const [otp, setOtp] = useState('');
@@ -20,6 +22,14 @@ export function LoginForm({ onSuccess, redirectTo = '/dashboard' }: LoginFormPro
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
   const [countdown, setCountdown] = useState(0);
+
+  // Get redirect URL from search params or props
+  const getRedirectUrl = () => {
+    const next = searchParams.get('next');
+    if (next) return next;
+    if (redirectTo) return redirectTo;
+    return '/';
+  };
 
   // Handle email submission
   const handleEmailSubmit = async (e: React.FormEvent) => {
@@ -90,7 +100,15 @@ export function LoginForm({ onSuccess, redirectTo = '/dashboard' }: LoginFormPro
       if (onSuccess) {
         onSuccess(data.user);
       } else {
-        window.location.href = redirectTo;
+        // Redirect based on user role
+        const redirectUrl = getRedirectUrl();
+        if (data.user.role === 'admin') {
+          window.location.href = '/admin';
+        } else if (data.user.role === 'seller') {
+          window.location.href = '/dashboard/seller';
+        } else {
+          window.location.href = redirectUrl;
+        }
       }
 
     } catch (error) {
@@ -152,18 +170,8 @@ export function LoginForm({ onSuccess, redirectTo = '/dashboard' }: LoginFormPro
   };
 
   return (
-    <div className="min-h-screen bg-bg flex items-center justify-center p-4">
-      <Card className="w-full max-w-md">
-        <CardHeader className="text-center">
-          <CardTitle className="text-2xl font-semibold text-ink">
-            Intră în cont
-          </CardTitle>
-          <CardDescription className="text-muted">
-            Îți trimitem un cod pe e-mail. Fără parolă.
-          </CardDescription>
-        </CardHeader>
-        
-        <CardContent>
+    <Card className="w-full max-w-md mx-auto">
+      <CardContent className="p-6">
           {step === 'email' ? (
             <form onSubmit={handleEmailSubmit} className="space-y-4">
               <div className="space-y-2">
@@ -286,9 +294,8 @@ export function LoginForm({ onSuccess, redirectTo = '/dashboard' }: LoginFormPro
                 </div>
               </div>
             </form>
-          )}
-        </CardContent>
-      </Card>
-    </div>
+        )}
+      </CardContent>
+    </Card>
   );
 }

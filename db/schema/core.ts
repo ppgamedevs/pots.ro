@@ -1,4 +1,4 @@
-import { pgTable, uuid, text, timestamp, integer, jsonb, pgEnum, index, uniqueIndex, boolean, check, decimal } from "drizzle-orm/pg-core";
+import { pgTable, uuid, text, timestamp, integer, jsonb, pgEnum, index, uniqueIndex, boolean, check, decimal, varchar } from "drizzle-orm/pg-core";
 import { sql } from "drizzle-orm";
 
 // Enums
@@ -9,15 +9,17 @@ export const refundStatusEnum = pgEnum('refund_status', ['pending', 'processing'
 export const ledgerTypeEnum = pgEnum('ledger_type', ['charge', 'commission', 'payout', 'refund', 'recovery']);
 export const promotionTypeEnum = pgEnum('promotion_type', ['banner', 'discount']);
 
-// Users table
+// Users table for passwordless auth
 export const users = pgTable("users", {
   id: uuid("id").primaryKey().defaultRandom(),
   email: text("email").notNull().unique(),
-  passwordHash: text("password_hash").notNull(),
+  name: text("name"),
   role: text("role").notNull().default("buyer").$type<'buyer' | 'seller' | 'admin'>(),
   createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
   updatedAt: timestamp("updated_at", { withTimezone: true }).defaultNow().notNull(),
-});
+}, (table) => ({
+  emailIdx: index("users_email_idx").on(table.email),
+}));
 
 // Sellers table
 export const sellers = pgTable("sellers", {
@@ -147,13 +149,51 @@ export const cartItems = pgTable("cart_items", {
   cartItemsUnique: uniqueIndex("cart_items_unique").on(table.cartId, table.productId),
 }));
 
-// Sessions table for Lucia auth
-export const sessions = pgTable("sessions", {
-  id: text("id").primaryKey(),
-  userId: uuid("user_id").notNull().references(() => users.id, { onDelete: "cascade" }),
+// Auth OTP table for passwordless authentication
+export const authOtp = pgTable("auth_otp", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  email: text("email").notNull(),
+  codeHash: varchar("code_hash", { length: 255 }).notNull(),
+  magicTokenHash: varchar("magic_token_hash", { length: 255 }).notNull(),
   expiresAt: timestamp("expires_at").notNull(),
-  createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
-});
+  consumedAt: timestamp("consumed_at"),
+  ip: text("ip"),
+  userAgent: text("ua"),
+  attempts: integer("attempts").default(0).notNull(),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+}, (table) => ({
+  emailExpiresIdx: index("auth_otp_email_expires_idx").on(table.email, table.expiresAt),
+}));
+
+// Sessions table for httpOnly cookies
+export const sessions = pgTable("sessions", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  userId: uuid("user_id").references(() => users.id).notNull(),
+  sessionTokenHash: varchar("session_token_hash", { length: 255 }).notNull(),
+  expiresAt: timestamp("expires_at").notNull(),
+  ip: text("ip"),
+  userAgent: text("ua"),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  revokedAt: timestamp("revoked_at"),
+}, (table) => ({
+  userIdExpiresIdx: index("sessions_user_id_expires_idx").on(table.userId, table.expiresAt),
+}));
+
+// Auth audit table for security logging
+export const authAudit = pgTable("auth_audit", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  email: text("email"),
+  userId: uuid("user_id").references(() => users.id),
+  kind: text("kind").notNull().$type<'otp_request' | 'otp_verify' | 'login' | 'logout' | 'rate_limit' | 'otp_expired' | 'otp_denied'>(),
+  ip: text("ip"),
+  userAgent: text("ua"),
+  metadata: jsonb("metadata"),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+}, (table) => ({
+  emailIdx: index("auth_audit_email_idx").on(table.email),
+  userIdIdx: index("auth_audit_user_id_idx").on(table.userId),
+  kindIdx: index("auth_audit_kind_idx").on(table.kind),
+}));
 
 // Orders table
 export const orders = pgTable("orders", {

@@ -1,6 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { getServerSession } from 'next-auth';
-import { authOptions } from '@/lib/auth';
+import { getSession } from '@/lib/auth/session';
 import { db } from '@/db';
 import { promotions, sellers } from '@/db/schema/core';
 import { eq, and, desc } from 'drizzle-orm';
@@ -29,13 +28,13 @@ const createPromotionSchema = z.object({
 // GET /api/promotions - List promotions for seller
 export async function GET(request: NextRequest) {
   try {
-    const session = await getServerSession(authOptions);
-    if (!session?.user) {
+    const session = await getSession();
+    if (!session) {
       return NextResponse.json({ error: 'Neautorizat' }, { status: 401 });
     }
 
     const seller = await db.query.sellers.findFirst({
-      where: eq(sellers.userId, (session.user as any).id)
+      where: eq(sellers.userId, session.user.id)
     });
 
     if (!seller) {
@@ -76,13 +75,13 @@ export async function GET(request: NextRequest) {
 // POST /api/promotions - Create new promotion
 export async function POST(request: NextRequest) {
   try {
-    const session = await getServerSession(authOptions);
-    if (!session?.user) {
+    const session = await getSession();
+    if (!session) {
       return NextResponse.json({ error: 'Neautorizat' }, { status: 401 });
     }
 
     const seller = await db.query.sellers.findFirst({
-      where: eq(sellers.userId, (session.user as any).id)
+      where: eq(sellers.userId, session.user.id)
     });
 
     if (!seller) {
