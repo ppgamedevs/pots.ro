@@ -1,8 +1,6 @@
 "use client";
 import { useState } from "react";
 import { motion } from "framer-motion";
-import { Navbar } from "@/components/navbar";
-import { Footer } from "@/components/footer";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -139,9 +137,7 @@ export default function CheckoutPage() {
   ];
 
   return (
-    <>
-      <Navbar />
-      <main className="mx-auto max-w-6xl px-4 py-8">
+    <main className="mx-auto max-w-6xl px-4 py-8">
         <Breadcrumbs items={[
           { name: "Acasă", href: "/" },
           { name: "Coș", href: "/cart" },
@@ -448,7 +444,5 @@ export default function CheckoutPage() {
           </RHFProvider>
         </motion.div>
       </main>
-      <Footer />
-    </>
   );
 }

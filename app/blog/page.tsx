@@ -4,8 +4,6 @@
  */
 
 import { Metadata } from 'next';
-import { Navbar } from '@/components/navbar';
-import { Footer } from '@/components/footer';
 import { H1, P } from '@/components/ui/typography';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -70,8 +68,6 @@ export const metadata: Metadata = {
 export default function BlogPage() {
   return (
     <div className="min-h-screen bg-white">
-      <Navbar />
-      
       <main className="container mx-auto px-4 py-8">
         {/* Header */}
         <div className="text-center mb-12">
@@ -158,8 +154,6 @@ export default function BlogPage() {
           </div>
         </div>
       </main>
-
-      <Footer />
     </div>
   );
 }

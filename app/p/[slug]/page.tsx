@@ -3,8 +3,6 @@
 import { useEffect, useState } from "react";
 import { useParams } from "next/navigation";
 import { generateProductLDJSON } from "@/lib/seo/meta-catalog";
-import { SiteHeader } from "@/components/site/SiteHeader";
-import { SiteFooter } from "@/components/site/SiteFooter";
 import { PDPGallery } from "@/components/product/PDPGallery";
 import { PDPInfo } from "@/components/product/PDPInfo";
 import { PDPActions } from "@/components/product/PDPActions";
@@ -90,84 +88,34 @@ export default function PDP() {
     }
   };
 
-  // Footer data
-  const footerColumns = [
-    {
-      title: "Companie",
-      links: [
-        { label: "Despre noi", href: "/about" },
-        { label: "Cariere", href: "/careers" },
-        { label: "Contact", href: "/contact" },
-        { label: "Presă", href: "/press" }
-      ]
-    },
-    {
-      title: "Ajutor",
-      links: [
-        { label: "Întrebări frecvente", href: "/faq" },
-        { label: "Livrare", href: "/shipping" },
-        { label: "Retururi", href: "/returns" },
-        { label: "Suport", href: "/help" }
-      ]
-    },
-    {
-      title: "Legal",
-      links: [
-        { label: "Termeni și condiții", href: "/terms" },
-        { label: "Politica de confidențialitate", href: "/privacy" },
-        { label: "Cookie-uri", href: "/cookies" },
-        { label: "GDPR", href: "/gdpr" }
-      ]
-    },
-    {
-      title: "Utile",
-      links: [
-        { label: "Devino vânzător", href: "/seller" },
-        { label: "Blog", href: "/blog" },
-        { label: "Ghiduri", href: "/guides" },
-        { label: "Parteneri", href: "/partners" }
-      ]
-    }
-  ];
-
-  const payments = ["Visa", "Mastercard", "PayPal", "Revolut"];
-  const carriers = ["Fan Courier", "DPD", "Cargus", "Sameday"];
 
   if (loading) {
     return (
-      <>
-        <SiteHeader categories={[]} suggestions={[]} />
-        <main className="min-h-screen bg-bg">
-          <div className="max-w-7xl mx-auto px-4 py-8">
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-              <PDPGallerySkeleton />
-              <div className="space-y-6">
-                <PDPInfoSkeleton />
-                <PDPActionsSkeleton />
-              </div>
+      <main className="min-h-screen bg-bg">
+        <div className="max-w-7xl mx-auto px-4 py-8">
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+            <PDPGallerySkeleton />
+            <div className="space-y-6">
+              <PDPInfoSkeleton />
+              <PDPActionsSkeleton />
             </div>
           </div>
-        </main>
-        <SiteFooter columns={footerColumns} payments={payments} carriers={carriers} />
-      </>
+        </div>
+      </main>
     );
   }
 
   if (error || !productData) {
     return (
-      <>
-        <SiteHeader categories={[]} suggestions={[]} />
-        <main className="min-h-screen bg-bg flex items-center justify-center">
-          <div className="text-center">
-            <h1 className="text-2xl font-semibold text-ink mb-2">Produsul nu a fost găsit</h1>
-            <p className="text-muted mb-4">Produsul pe care îl căutați nu există sau a fost eliminat.</p>
-            <a href="/" className="text-primary hover:text-primary/80">
-              Înapoi la homepage
-            </a>
-          </div>
-        </main>
-        <SiteFooter columns={footerColumns} payments={payments} carriers={carriers} />
-      </>
+      <main className="min-h-screen bg-bg flex items-center justify-center">
+        <div className="text-center">
+          <h1 className="text-2xl font-semibold text-ink mb-2">Produsul nu a fost găsit</h1>
+          <p className="text-muted mb-4">Produsul pe care îl căutați nu există sau a fost eliminat.</p>
+          <a href="/" className="text-primary hover:text-primary/80">
+            Înapoi la homepage
+          </a>
+        </div>
+      </main>
     );
   }
 
@@ -181,11 +129,6 @@ export default function PDP() {
         dangerouslySetInnerHTML={{
           __html: JSON.stringify(generateProductLDJSON(product))
         }}
-      />
-      
-      <SiteHeader 
-        categories={[]} 
-        suggestions={["ghivece ceramica", "cutii rotunde", "ambalaje hârtie", "accesorii decorative"]} 
       />
       
       <main className="min-h-screen bg-bg">
@@ -220,7 +163,7 @@ export default function PDP() {
               />
 
               <PDPShipping
-                carriers={carriers}
+                carriers={["Fan Courier", "DPD", "Cargus", "Sameday"]}
                 eta="1-3 zile"
                 freeShippingThreshold={200}
                 currentPrice={product.price}
@@ -262,12 +205,6 @@ export default function PDP() {
         cta="Adaugă în coș"
         onClick={() => handleAddToCart(1)}
         stockLabel={product.stockLabel}
-      />
-      
-      <SiteFooter 
-        columns={footerColumns} 
-        payments={payments} 
-        carriers={carriers} 
       />
     </>
   );

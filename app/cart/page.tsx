@@ -1,8 +1,6 @@
 "use client";
 
 import { useState } from "react";
-import { Navbar } from "@/components/navbar";
-import { Footer } from "@/components/footer";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Breadcrumbs } from "@/components/ui/breadcrumbs";
@@ -88,93 +86,87 @@ export default function CartPage() {
 
   if (error) {
     return (
-      <>
-        <Navbar />
-        <div className="min-h-screen bg-slate-50 dark:bg-slate-900">
-          <div className="max-w-7xl mx-auto px-4 py-8">
-            <Breadcrumbs items={breadcrumbItems} />
-            <div className="text-center py-12">
-              <h1 className="text-2xl font-bold text-slate-900 dark:text-slate-100 mb-4">
-                Eroare la încărcarea coșului
-              </h1>
-              <p className="text-slate-600 dark:text-slate-300 mb-6">
-                Nu s-a putut încărca coșul de cumpărături. Vă rugăm să încercați din nou.
-              </p>
-              <Button onClick={() => window.location.reload()}>
-                Încearcă din nou
-              </Button>
-            </div>
+      <div className="min-h-screen bg-slate-50 dark:bg-slate-900">
+        <div className="max-w-7xl mx-auto px-4 py-8">
+          <Breadcrumbs items={breadcrumbItems} />
+          <div className="text-center py-12">
+            <h1 className="text-2xl font-bold text-slate-900 dark:text-slate-100 mb-4">
+              Eroare la încărcarea coșului
+            </h1>
+            <p className="text-slate-600 dark:text-slate-300 mb-6">
+              Nu s-a putut încărca coșul de cumpărături. Vă rugăm să încercați din nou.
+            </p>
+            <Button onClick={() => window.location.reload()}>
+              Încearcă din nou
+            </Button>
           </div>
         </div>
-        <Footer />
-      </>
+      </div>
     );
   }
 
   return (
-    <>
-      <Navbar />
-      <div className="min-h-screen bg-slate-50 dark:bg-slate-900">
-        <div className="max-w-7xl mx-auto px-4 py-8">
-          <Breadcrumbs items={breadcrumbItems} />
+    <div className="min-h-screen bg-slate-50 dark:bg-slate-900">
+      <div className="max-w-7xl mx-auto px-4 py-8">
+        <Breadcrumbs items={breadcrumbItems} />
 
-          <div className="mt-8">
-            <h1 className="text-3xl font-bold text-slate-900 dark:text-slate-100 mb-8">
-              Coșul tău de cumpărături
-            </h1>
+        <div className="mt-8">
+          <h1 className="text-3xl font-bold text-slate-900 dark:text-slate-100 mb-8">
+            Coșul tău de cumpărături
+          </h1>
 
-            {isLoading ? (
-              <div className="text-center py-12">
-                <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-brand mx-auto mb-4"></div>
-                <p className="text-slate-600 dark:text-slate-300">Se încarcă coșul...</p>
-              </div>
-            ) : !cart || cart.items.length === 0 ? (
-              <div className="text-center py-12">
-                <ShoppingCart className="h-24 w-24 mx-auto text-slate-300 dark:text-slate-600 mb-6" />
-                <h2 className="text-2xl font-semibold text-slate-900 dark:text-slate-100 mb-4">
-                  Coșul tău este gol
-                </h2>
-                <p className="text-slate-600 dark:text-slate-300 mb-8">
-                  Adaugă produse în coș pentru a începe cumpărăturile.
-                </p>
-                <Link href="/">
-                  <Button size="lg">
-                    <ArrowLeft className="h-5 w-5 mr-2" />
-                    Continuă cumpărăturile
-                  </Button>
-                </Link>
-              </div>
-            ) : (
-              <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-                {/* Cart Items */}
-                <div className="lg:col-span-2">
-                  <div className="bg-white dark:bg-slate-800 rounded-lg border border-slate-200 dark:border-slate-700 overflow-hidden">
-                    <div className="p-6 border-b border-slate-200 dark:border-slate-700">
-                      <h2 className="text-lg font-semibold text-slate-900 dark:text-slate-100">
-                        Produse în coș ({cart.items.length})
-                      </h2>
-                    </div>
-                    
-                    <div className="divide-y divide-slate-200 dark:divide-slate-700">
-                      {cart.items.map((item) => (
-                        <div
-                          key={item.productId}
-                          className="p-6 flex items-center gap-4"
-                        >
-                          {/* Product Image */}
-                          <div className="relative w-20 h-20 flex-shrink-0">
-                            <Image
-                              src="/placeholder.png"
-                              alt={item.productName}
-                              fill
-                              className="object-cover rounded-lg"
-                            />
-                          </div>
+          {isLoading ? (
+            <div className="text-center py-12">
+              <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-brand mx-auto mb-4"></div>
+              <p className="text-slate-600 dark:text-slate-300">Se încarcă coșul...</p>
+            </div>
+          ) : !cart || cart.items.length === 0 ? (
+            <div className="text-center py-12">
+              <ShoppingCart className="h-24 w-24 mx-auto text-slate-300 dark:text-slate-600 mb-6" />
+              <h2 className="text-2xl font-semibold text-slate-900 dark:text-slate-100 mb-4">
+                Coșul tău este gol
+              </h2>
+              <p className="text-slate-600 dark:text-slate-300 mb-8">
+                Adaugă produse în coș pentru a începe cumpărăturile.
+              </p>
+              <Link href="/">
+                <Button size="lg">
+                  <ArrowLeft className="h-5 w-5 mr-2" />
+                  Continuă cumpărăturile
+                </Button>
+              </Link>
+            </div>
+          ) : (
+            <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+              {/* Cart Items */}
+              <div className="lg:col-span-2">
+              <div className="bg-white dark:bg-slate-800 rounded-lg border border-slate-200 dark:border-slate-700 overflow-hidden">
+                <div className="p-6 border-b border-slate-200 dark:border-slate-700">
+                  <h2 className="text-lg font-semibold text-slate-900 dark:text-slate-100">
+                    Produse în coș ({cart.items.length})
+                  </h2>
+                </div>
+                
+                <div className="divide-y divide-slate-200 dark:divide-slate-700">
+                  {cart.items.map((item) => (
+                    <div
+                      key={item.productId}
+                      className="p-6 flex items-center gap-4"
+                    >
+                      {/* Product Image */}
+                      <div className="relative w-20 h-20 flex-shrink-0">
+                        <Image
+                          src="/placeholder.png"
+                          alt={item.productName}
+                          fill
+                          className="object-cover rounded-lg"
+                        />
+                      </div>
 
-                          {/* Product Info */}
-                          <div className="flex-1 min-w-0">
-                            <h3 className="font-medium text-slate-900 dark:text-slate-100 mb-1">
-                              {item.productName}
+                      {/* Product Info */}
+                      <div className="flex-1 min-w-0">
+                        <h3 className="font-medium text-slate-900 dark:text-slate-100 mb-1">
+                          {item.productName}
                             </h3>
                             <p className="text-slate-600 dark:text-slate-400 text-sm">
                               Preț unitar: {formatPrice(item.unitPrice, 'RON')}
@@ -295,7 +287,6 @@ export default function CartPage() {
           </div>
         </div>
       </div>
-      <Footer />
-    </>
+    </div>
   );
 }

@@ -3,8 +3,6 @@
 import { useEffect, useState } from "react";
 import { useParams, useSearchParams } from "next/navigation";
 import { generateCategoryLDJSON } from "@/lib/seo/meta-catalog";
-import { SiteHeader } from "@/components/site/SiteHeader";
-import { SiteFooter } from "@/components/site/SiteFooter";
 import { CategoryHeader } from "@/components/catalog/CategoryHeader";
 import { FiltersBar } from "@/components/catalog/FiltersBar";
 import { SortDropdown } from "@/components/catalog/SortDropdown";
@@ -166,82 +164,32 @@ export default function Category() {
     window.history.pushState(null, '', `?${newSearchParams.toString()}`);
   };
 
-  // Footer data
-  const footerColumns = [
-    {
-      title: "Companie",
-      links: [
-        { label: "Despre noi", href: "/about" },
-        { label: "Cariere", href: "/careers" },
-        { label: "Contact", href: "/contact" },
-        { label: "Presă", href: "/press" }
-      ]
-    },
-    {
-      title: "Ajutor",
-      links: [
-        { label: "Întrebări frecvente", href: "/faq" },
-        { label: "Livrare", href: "/shipping" },
-        { label: "Retururi", href: "/returns" },
-        { label: "Suport", href: "/help" }
-      ]
-    },
-    {
-      title: "Legal",
-      links: [
-        { label: "Termeni și condiții", href: "/terms" },
-        { label: "Politica de confidențialitate", href: "/privacy" },
-        { label: "Cookie-uri", href: "/cookies" },
-        { label: "GDPR", href: "/gdpr" }
-      ]
-    },
-    {
-      title: "Utile",
-      links: [
-        { label: "Devino vânzător", href: "/seller" },
-        { label: "Blog", href: "/blog" },
-        { label: "Ghiduri", href: "/guides" },
-        { label: "Parteneri", href: "/partners" }
-      ]
-    }
-  ];
-
-  const payments = ["Visa", "Mastercard", "PayPal", "Revolut"];
-  const carriers = ["Fan Courier", "DPD", "Cargus", "Sameday"];
 
   const categoryInfo = getCategoryInfo(categorySlug);
 
   if (loading) {
     return (
-      <>
-        <SiteHeader categories={[]} suggestions={[]} />
-        <main className="min-h-screen bg-bg">
-          <CategoryHeaderSkeleton />
-          <FiltersBarSkeleton />
-          <div className="max-w-7xl mx-auto px-4 py-8">
-            <ProductGridSkeleton count={12} />
-          </div>
-        </main>
-        <SiteFooter columns={footerColumns} payments={payments} carriers={carriers} />
-      </>
+      <main className="min-h-screen bg-bg">
+        <CategoryHeaderSkeleton />
+        <FiltersBarSkeleton />
+        <div className="max-w-7xl mx-auto px-4 py-8">
+          <ProductGridSkeleton count={12} />
+        </div>
+      </main>
     );
   }
 
   if (error || !categoryData) {
     return (
-      <>
-        <SiteHeader categories={[]} suggestions={[]} />
-        <main className="min-h-screen bg-bg flex items-center justify-center">
-          <div className="text-center">
-            <h1 className="text-2xl font-semibold text-ink mb-2">Categoria nu a fost găsită</h1>
-            <p className="text-muted mb-4">Categoria pe care o căutați nu există.</p>
-            <a href="/" className="text-primary hover:text-primary/80">
-              Înapoi la homepage
-            </a>
-          </div>
-        </main>
-        <SiteFooter columns={footerColumns} payments={payments} carriers={carriers} />
-      </>
+      <main className="min-h-screen bg-bg flex items-center justify-center">
+        <div className="text-center">
+          <h1 className="text-2xl font-semibold text-ink mb-2">Categoria nu a fost găsită</h1>
+          <p className="text-muted mb-4">Categoria pe care o căutați nu există.</p>
+          <a href="/" className="text-primary hover:text-primary/80">
+            Înapoi la homepage
+          </a>
+        </div>
+      </main>
     );
   }
 
@@ -253,11 +201,6 @@ export default function Category() {
         dangerouslySetInnerHTML={{
           __html: JSON.stringify(generateCategoryLDJSON(categoryInfo, categoryData.total))
         }}
-      />
-      
-      <SiteHeader 
-        categories={[]} 
-        suggestions={["ghivece ceramica", "cutii rotunde", "ambalaje hârtie", "accesorii decorative"]} 
       />
       
       <main className="min-h-screen bg-bg">
@@ -341,12 +284,6 @@ export default function Category() {
           )}
         </div>
       </main>
-      
-      <SiteFooter 
-        columns={footerColumns} 
-        payments={payments} 
-        carriers={carriers} 
-      />
     </>
   );
 }
