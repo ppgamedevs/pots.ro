@@ -1,3 +1,23 @@
+import React from "react";
+import { BlogHero } from "@/components/blog/BlogHero";
+import { PostCard } from "@/components/blog/PostCard";
+import { POSTS } from "@/lib/blog/posts";
+
+export const revalidate = 60;
+
+export default function BlogHomePage() {
+  return (
+    <div>
+      <BlogHero />
+      <main className="mx-auto max-w-7xl px-4 py-10">
+        <section className="grid md:grid-cols-3 gap-6">
+          {POSTS.map((p) => (<PostCard key={p.slug} {...p} />))}
+        </section>
+      </main>
+    </div>
+  );
+}
+
 /**
  * Pagină principală blog
  * Lista articole cu ISR
