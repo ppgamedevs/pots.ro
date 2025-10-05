@@ -17,36 +17,36 @@ export async function GET() {
     const posts: BlogPost[] = [
       {
         id: 'post-1',
-        title: 'Cum să alegi ghiveciul perfect pentru plantele tale',
+        title: 'Ghivece Ceramice Premium România 2025: Ghid Complet pentru Alegerea Perfectă',
         image: {
-          src: '/placeholder.png',
-          alt: 'Ghiveci perfect pentru plante'
+          src: '/blog/ghivece-ceramice-premium-2025.jpg',
+          alt: 'Ghivece Ceramice Premium România 2025'
         },
-        href: '/blog/ghiveci-perfect-plante',
-        readTime: '5 min',
-        excerpt: 'Ghid complet pentru alegerea ghiveciului potrivit în funcție de tipul de plantă și stilul tău.'
+        href: '/blog/ghivece-ceramice-premium-romania-2025',
+        readTime: '8 min',
+        excerpt: 'Descoperă cele mai bune ghivece ceramice din România pentru 2025. Ghid expert cu teste de calitate, materiale premium și sfaturi de specialiști pentru alegerea ghiveciului ideal pentru plantele tale.'
       },
       {
         id: 'post-2',
-        title: 'Tendințe în designul floral pentru 2024',
+        title: 'Tendințe Design Floral România 2025: Minimalism Japonez și Tehnologie Smart',
         image: {
-          src: '/placeholder.png',
-          alt: 'Tendințe design floral 2024'
+          src: '/blog/tendinte-design-floral-2025.jpg',
+          alt: 'Tendințe Design Floral România 2025'
         },
-        href: '/blog/tendinte-design-floral-2024',
-        readTime: '7 min',
-        excerpt: 'Descoperă cele mai noi tendințe în designul floral și cum să le aplici în casa ta.'
+        href: '/blog/tendinte-design-floral-romania-2025',
+        readTime: '10 min',
+        excerpt: 'Cele mai noi tendințe în designul floral pentru România în 2025. Minimalism japonez, ghivece smart cu tehnologie IoT, culori tropicale și stiluri moderne pentru casa românească.'
       },
       {
         id: 'post-3',
-        title: 'Îngrijirea plantelor în sezonul rece',
+        title: 'Îngrijire Plante Interioare România 2025: Sistem Complet pentru Clima Locală',
         image: {
-          src: '/placeholder.png',
-          alt: 'Îngrijire plante sezon rece'
+          src: '/blog/ingrijire-plante-interioare-2025.jpg',
+          alt: 'Îngrijire Plante Interioare România 2025'
         },
-        href: '/blog/ingrijire-plante-sezon-rece',
-        readTime: '4 min',
-        excerpt: 'Sfaturi practice pentru a-ți păstra plantele sănătoase în timpul iernii.'
+        href: '/blog/ingrijire-plante-interioare-romania-2025',
+        readTime: '12 min',
+        excerpt: 'Ghid expert pentru îngrijirea plantelor interioare în România în 2025. Adaptare la clima locală, sisteme de irigație automată, controlul umidității și protecția împotriva dăunătorilor.'
       }
     ];
 

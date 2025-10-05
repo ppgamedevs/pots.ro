@@ -22,8 +22,8 @@ export function EditorialTeasers({ posts }: EditorialTeasersProps) {
     <section className="py-8 lg:py-12 bg-bg">
       <div className="max-w-7xl mx-auto px-4">
         <div className="text-center mb-8">
-          <h2 className="text-3xl font-semibold text-ink mb-2">Ghiduri și inspirații</h2>
-          <p className="text-muted">Descoperă sfaturi și tendințe din lumea floristicii</p>
+          <h2 className="text-3xl font-semibold text-ink mb-2">Ghiduri Expert Ghivece și Plante România 2025</h2>
+          <p className="text-muted">Descoperă cele mai complete ghiduri pentru ghivece ceramice premium și plante interioare în România</p>
         </div>
         
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
