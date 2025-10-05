@@ -13,6 +13,7 @@ import { ErrorBoundary } from "@/components/error-boundary";
 import { SiteHeader } from "@/components/site/SiteHeader";
 import { SiteFooter } from "@/components/site/SiteFooter";
 import CookieBanner from "@/components/common/CookieBanner";
+import { ChatWidget } from "@/components/chat/ChatWidget";
 import { SITE_NAME, SITE_URL, SITE_DESCRIPTION, SITE_KEYWORDS, TWITTER_HANDLE, OG_IMAGE_DEFAULT } from "@/lib/constants";
 // import { PerformanceOptimizer, criticalCSS, criticalResources } from "@/components/ui/performance-optimizer";
 
@@ -142,6 +143,9 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
                   carriers={carriers}
                 />
               </footer>
+              
+              {/* Chat Widget */}
+              <ChatWidget />
             </ErrorBoundary>
             <Toaster />
             <SonnerToaster richColors position="top-center" closeButton />
