@@ -568,5 +568,63 @@ export const createTriggersAndIndexes = sql`
            p.image_url, p.status, p.category_id, p.search_tsv
     FROM products p
     WHERE p.status = 'active';
+
+  -- Chatbot & Support System Tables
+  CREATE TABLE IF NOT EXISTS buyers (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    name TEXT NOT NULL,
+    phone TEXT,
+    whatsapp_opt_in BOOLEAN DEFAULT FALSE,
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW() NOT NULL,
+    updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW() NOT NULL
+  );
+
+  CREATE TABLE IF NOT EXISTS sellers_extended (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    seller_id UUID NOT NULL REFERENCES sellers(id) ON DELETE CASCADE,
+    phone TEXT,
+    whatsapp_business_number TEXT,
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW() NOT NULL,
+    updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW() NOT NULL
+  );
+
+  CREATE TABLE IF NOT EXISTS orders_extended (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    order_id UUID NOT NULL REFERENCES orders(id) ON DELETE CASCADE,
+    eta_text TEXT, -- "mâine 14:00–18:00", "3-5 zile", etc.
+    tracking TEXT,
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW() NOT NULL,
+    updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW() NOT NULL
+  );
+
+  CREATE TABLE IF NOT EXISTS tickets (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    order_id UUID NOT NULL REFERENCES orders(id) ON DELETE CASCADE,
+    type TEXT NOT NULL DEFAULT 'order_eta', -- 'order_eta', 'order_cancel', 'return_policy'
+    state TEXT NOT NULL DEFAULT 'open', -- 'open', 'waiting_seller', 'answered', 'closed'
+    last_message TEXT,
+    assignee_seller_id UUID REFERENCES sellers(id),
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW() NOT NULL,
+    updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW() NOT NULL
+  );
+
+  CREATE TABLE IF NOT EXISTS messages (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    ticket_id UUID NOT NULL REFERENCES tickets(id) ON DELETE CASCADE,
+    sender TEXT NOT NULL, -- 'customer', 'bot', 'seller'
+    body TEXT NOT NULL,
+    channel TEXT NOT NULL, -- 'whatsapp', 'web', 'email'
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW() NOT NULL
+  );
+
+  -- Indexes for chatbot tables
+  CREATE INDEX IF NOT EXISTS idx_buyers_user_id ON buyers(user_id);
+  CREATE INDEX IF NOT EXISTS idx_sellers_extended_seller_id ON sellers_extended(seller_id);
+  CREATE INDEX IF NOT EXISTS idx_orders_extended_order_id ON orders_extended(order_id);
+  CREATE INDEX IF NOT EXISTS idx_tickets_order_id ON tickets(order_id);
+  CREATE INDEX IF NOT EXISTS idx_tickets_state ON tickets(state);
+  CREATE INDEX IF NOT EXISTS idx_messages_ticket_id ON messages(ticket_id);
+  CREATE INDEX IF NOT EXISTS idx_messages_created_at ON messages(created_at);
 `;
 
