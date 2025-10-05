@@ -1,34 +1,12 @@
 import React from "react";
-import { BlogHero } from "@/components/blog/BlogHero";
-import { PostCard } from "@/components/blog/PostCard";
-import { POSTS } from "@/lib/blog/posts";
-
-export const revalidate = 60;
-
-export default function BlogHomePage() {
-  return (
-    <div>
-      <BlogHero />
-      <main className="mx-auto max-w-7xl px-4 py-10">
-        <section className="grid md:grid-cols-3 gap-6">
-          {POSTS.map((p) => (<PostCard key={p.slug} {...p} />))}
-        </section>
-      </main>
-    </div>
-  );
-}
-
-/**
- * Pagină principală blog
- * Lista articole cu ISR
- */
-
 import { Metadata } from 'next';
 import { H1, P } from '@/components/ui/typography';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import Link from 'next/link';
 import { Calendar, User, ArrowRight } from 'lucide-react';
+
+export const revalidate = 60;
 
 // Mock data pentru blog posts
 const blogPosts = [
