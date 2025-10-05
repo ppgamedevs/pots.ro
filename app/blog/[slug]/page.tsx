@@ -5,148 +5,53 @@
 
 import { notFound } from 'next/navigation';
 import { Metadata } from 'next';
-import { Navbar } from '@/components/navbar';
-import { Footer } from '@/components/footer';
 import { H1, P } from '@/components/ui/typography';
 import { Badge } from '@/components/ui/badge';
 import { Breadcrumbs } from '@/components/ui/breadcrumbs';
 import { Calendar, User, Clock, Share2 } from 'lucide-react';
 import Link from 'next/link';
+import fs from 'fs';
+import path from 'path';
+import { remark } from 'remark';
+import html from 'remark-html';
 
 // Mock data pentru blog posts
 const blogPosts = [
   {
     id: '1',
-    title: 'Trenduri florale 2024: Ghivece și plante de modă',
-    slug: 'trenduri-florale-2024',
-    excerpt: 'Descoperă cele mai noi trenduri în lumea plantelor și ghivecelor pentru 2024. De la design-uri moderne la plante exotice.',
-    content: `# Trenduri florale 2024: Ghivece și plante de modă
-
-Anul 2024 aduce cu sine o nouă viziune asupra grădinăritului și decorării interioare. Iată cele mai importante trenduri pe care le vei vedea în magazinele de specialitate.
-
-## 1. Ghivece ceramice în nuanțe naturale
-
-Ceramica naturală este din nou în centrul atenției. Ghivecele în nuanțe de bej, crem și teracotă oferă o estetică caldă și prietenoasă, perfectă pentru orice interior.
-
-### Caracteristici principale:
-- Materiale 100% naturale
-- Design minimalist și elegant
-- Drenaj optim pentru rădăcini
-- Durabilitate îndelungată
-
-## 2. Plante exotice pentru interior
-
-Plantele tropicale continuă să fie în topul preferințelor. De la monstera deliciosa la ficus lyrata, aceste plante aduc o notă exotică în casa ta.
-
-## 3. Sistemul de irigație automată
-
-Tehnologia vine în ajutorul grădinarilor amatori. Sistemele de irigație automată devin accesibile și ușor de instalat.
-
-## Concluzie
-
-Aceste trenduri reflectă o abordare mai conștientă și durabilă a grădinăritului modern. Alege produsele care se potrivesc stilului tău și bugetului disponibil.`,
-    publishedAt: '2024-01-15T10:00:00Z',
+    title: 'Cum să alegi ghiveciul perfect pentru plantele tale',
+    slug: 'cum-alegi-ghiveciul-perfect',
+    excerpt: 'Ghid complet pentru alegerea ghiveciului potrivit pentru fiecare tip de plantă. Materiale, dimensiuni, drenaj și sfaturi practice pentru îngrijirea optimă.',
+    publishedAt: '2024-01-20T10:00:00Z',
     author: 'Elena Popescu',
-    image: '/blog/trenduri-florale-2024.jpg',
-    tags: ['trenduri', 'plante', 'ghivece'],
-    readTime: '5 min'
+    image: '/blog/ghiveci-perfect.jpg',
+    tags: ['ghid', 'ghivece', 'plante', 'îngrijire'],
+    readTime: '5 min',
+    file: 'cum-alegi-ghiveciul-perfect.md'
   },
   {
     id: '2',
-    title: 'Cum alegi cutia perfectă pentru plantele tale',
-    slug: 'cum-alegi-cutia-perfecta',
-    excerpt: 'Ghid complet pentru alegerea ghivecelor potrivite pentru fiecare tip de plantă. Materiale, dimensiuni și design.',
-    content: `# Cum alegi cutia perfectă pentru plantele tale
-
-Alegerea ghivecelor potrivite este esențială pentru sănătatea plantelor tale. Iată un ghid complet care te va ajuta să faci alegerea corectă.
-
-## Factori de luat în considerare
-
-### 1. Dimensiunea
-- Rădăcinile trebuie să aibă spațiu suficient
-- Prea mare poate cauza probleme de drenaj
-- Prea mică împiedică creșterea
-
-### 2. Materialul
-- **Ceramica**: elegantă, dar grea
-- **Plasticul**: ușor și ieftin
-- **Lemnul**: natural, dar necesită întreținere
-
-### 3. Sistemul de drenaj
-Orice ghivec trebuie să aibă găuri de drenaj pentru a evita putrezirea rădăcinilor.
-
-## Recomandări pe tipuri de plante
-
-### Plante cu rădăcini adânci
-- Ghivece înalte
-- Materiale rezistente
-- Drenaj excelent
-
-### Plante cu rădăcini superficiale
-- Ghivece late
-- Materiale ușoare
-- Sistem de irigație uniform
-
-## Concluzie
-
-Alegerea ghivecelor potrivite este o investiție în sănătatea plantelor tale. Ia în considerare toți factorii menționați pentru a face alegerea perfectă.`,
-    publishedAt: '2024-01-10T14:30:00Z',
+    title: 'Tendințe în designul floral pentru 2024',
+    slug: 'tendinte-design-floral-2024',
+    excerpt: 'Descoperă cele mai noi tendințe în lumea designului floral: minimalismul japonez, culorile tropicale, ghivecele sculpturale și tehnologia smart.',
+    publishedAt: '2024-01-15T14:30:00Z',
     author: 'Mihai Ionescu',
-    image: '/blog/cutia-perfecta.jpg',
-    tags: ['ghid', 'ghivece', 'plante'],
-    readTime: '4 min'
+    image: '/blog/tendinte-florale-2024.jpg',
+    tags: ['trenduri', 'design', 'florărie', '2024'],
+    readTime: '7 min',
+    file: 'tendinte-design-floral-2024.md'
   },
   {
     id: '3',
     title: 'Îngrijirea plantelor în sezonul rece',
     slug: 'ingrijirea-plantelor-sezon-rece',
-    excerpt: 'Sfaturi practice pentru a-ți menține plantele sănătoase în timpul iernii. Temperatură, umiditate și lumină.',
-    content: `# Îngrijirea plantelor în sezonul rece
-
-Iarna poate fi o provocare pentru plantele tale, dar cu câteva sfaturi practice, le poți menține sănătoase și frumoase.
-
-## Problemele principale ale iernii
-
-### 1. Lumină insuficientă
-- Zilele sunt mai scurte
-- Intensitatea luminii scade
-- Plantele pot deveni etiolate
-
-### 2. Umiditate scăzută
-- Încălzirea usucă aerul
-- Frunzele pot deveni maro
-- Risc de atacuri de păduchi
-
-### 3. Temperaturi extreme
-- Schimbări bruște de temperatură
-- Curent de aer rece
-- Supraîncălzire de la calorifere
-
-## Soluții practice
-
-### Pentru lumină
-- Mută plantele mai aproape de ferestre
-- Folosește lumini artificiale
-- Curăță frunzele pentru a absorbi mai multă lumină
-
-### Pentru umiditate
-- Folosește umidificatoare
-- Grupează plantele
-- Pulverizează cu apă
-
-### Pentru temperatură
-- Evită sursele de căldură directă
-- Menține temperaturi constante
-- Protejează de curentul de aer
-
-## Concluzie
-
-Cu atenție și îngrijire corespunzătoare, plantele tale vor trece iarna fără probleme și vor fi gata pentru un nou sezon de creștere.`,
-    publishedAt: '2024-01-05T09:15:00Z',
+    excerpt: 'Sfaturi practice pentru a-ți menține plantele sănătoase în timpul iernii. Temperatură, umiditate, lumină și protecția împotriva dăunătorilor.',
+    publishedAt: '2024-01-10T09:15:00Z',
     author: 'Ana Maria',
     image: '/blog/sezon-rece.jpg',
-    tags: ['îngrijire', 'iarnă', 'plante'],
-    readTime: '6 min'
+    tags: ['îngrijire', 'iarnă', 'plante', 'sfaturi'],
+    readTime: '4 min',
+    file: 'ingrijirea-plantelor-sezon-rece.md'
   }
 ];
 
@@ -199,6 +104,22 @@ export default async function BlogPostPage({ params }: BlogPostPageProps) {
     notFound();
   }
 
+  // Citim conținutul din fișierul markdown
+  let content = '';
+  try {
+    const filePath = path.join(process.cwd(), 'content', 'blog', post.file);
+    const fileContent = fs.readFileSync(filePath, 'utf8');
+    
+    // Procesăm markdown-ul în HTML
+    const processedContent = await remark()
+      .use(html)
+      .process(fileContent);
+    content = processedContent.toString();
+  } catch (error) {
+    console.error('Error reading blog post:', error);
+    content = '<p>Conținutul articolului nu a putut fi încărcat.</p>';
+  }
+
   const breadcrumbs = [
     { name: 'Acasă', href: '/' },
     { name: 'Blog', href: '/blog' },
@@ -207,8 +128,6 @@ export default async function BlogPostPage({ params }: BlogPostPageProps) {
 
   return (
     <div className="min-h-screen bg-white">
-      <Navbar />
-      
       <main className="container mx-auto px-4 py-8">
         {/* Breadcrumbs */}
         <Breadcrumbs items={breadcrumbs} className="mb-8" />
@@ -263,46 +182,10 @@ export default async function BlogPostPage({ params }: BlogPostPageProps) {
           </header>
 
           {/* Article Content */}
-          <div className="prose prose-lg max-w-none">
-            {post.content.split('\n').map((paragraph, index) => {
-              if (paragraph.startsWith('# ')) {
-                return (
-                  <h1 key={index} className="text-3xl font-bold mt-8 mb-4">
-                    {paragraph.substring(2)}
-                  </h1>
-                );
-              }
-              if (paragraph.startsWith('## ')) {
-                return (
-                  <h2 key={index} className="text-2xl font-semibold mt-6 mb-3">
-                    {paragraph.substring(3)}
-                  </h2>
-                );
-              }
-              if (paragraph.startsWith('### ')) {
-                return (
-                  <h3 key={index} className="text-xl font-medium mt-4 mb-2">
-                    {paragraph.substring(4)}
-                  </h3>
-                );
-              }
-              if (paragraph.startsWith('- ')) {
-                return (
-                  <li key={index} className="ml-4">
-                    {paragraph.substring(2)}
-                  </li>
-                );
-              }
-              if (paragraph.trim() === '') {
-                return <br key={index} />;
-              }
-              return (
-                <p key={index} className="mb-4 leading-relaxed">
-                  {paragraph}
-                </p>
-              );
-            })}
-          </div>
+          <div 
+            className="prose prose-lg max-w-none prose-headings:text-gray-900 prose-p:text-gray-700 prose-a:text-green-600 prose-strong:text-gray-900"
+            dangerouslySetInnerHTML={{ __html: content }}
+          />
 
           {/* Author Bio */}
           <div className="mt-12 p-6 bg-gray-50 rounded-lg">
@@ -339,8 +222,6 @@ export default async function BlogPostPage({ params }: BlogPostPageProps) {
           </div>
         </article>
       </main>
-
-      <Footer />
     </div>
   );
 }

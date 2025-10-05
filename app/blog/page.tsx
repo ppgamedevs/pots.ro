@@ -14,36 +14,39 @@ import { Calendar, User, ArrowRight } from 'lucide-react';
 const blogPosts = [
   {
     id: '1',
-    title: 'Trenduri florale 2024: Ghivece și plante de modă',
-    slug: 'trenduri-florale-2024',
-    excerpt: 'Descoperă cele mai noi trenduri în lumea plantelor și ghivecelor pentru 2024. De la design-uri moderne la plante exotice.',
-    content: '# Trenduri florale 2024\n\nConținutul complet al articolului...',
-    publishedAt: '2024-01-15T10:00:00Z',
+    title: 'Cum să alegi ghiveciul perfect pentru plantele tale',
+    slug: 'cum-alegi-ghiveciul-perfect',
+    excerpt: 'Ghid complet pentru alegerea ghiveciului potrivit pentru fiecare tip de plantă. Materiale, dimensiuni, drenaj și sfaturi practice pentru îngrijirea optimă.',
+    content: '# Cum să alegi ghiveciul perfect pentru plantele tale\n\nConținutul complet al articolului...',
+    publishedAt: '2024-01-20T10:00:00Z',
     author: 'Elena Popescu',
-    image: '/blog/trenduri-florale-2024.jpg',
-    tags: ['trenduri', 'plante', 'ghivece']
+    image: '/blog/ghiveci-perfect.jpg',
+    tags: ['ghid', 'ghivece', 'plante', 'îngrijire'],
+    readingTime: '5 min de citire'
   },
   {
     id: '2',
-    title: 'Cum alegi cutia perfectă pentru plantele tale',
-    slug: 'cum-alegi-cutia-perfecta',
-    excerpt: 'Ghid complet pentru alegerea ghivecelor potrivite pentru fiecare tip de plantă. Materiale, dimensiuni și design.',
-    content: '# Cum alegi cutia perfectă\n\nConținutul complet al articolului...',
-    publishedAt: '2024-01-10T14:30:00Z',
+    title: 'Tendințe în designul floral pentru 2024',
+    slug: 'tendinte-design-floral-2024',
+    excerpt: 'Descoperă cele mai noi tendințe în lumea designului floral: minimalismul japonez, culorile tropicale, ghivecele sculpturale și tehnologia smart.',
+    content: '# Tendințe în designul floral pentru 2024\n\nConținutul complet al articolului...',
+    publishedAt: '2024-01-15T14:30:00Z',
     author: 'Mihai Ionescu',
-    image: '/blog/cutia-perfecta.jpg',
-    tags: ['ghid', 'ghivece', 'plante']
+    image: '/blog/tendinte-florale-2024.jpg',
+    tags: ['trenduri', 'design', 'florărie', '2024'],
+    readingTime: '7 min de citire'
   },
   {
     id: '3',
     title: 'Îngrijirea plantelor în sezonul rece',
     slug: 'ingrijirea-plantelor-sezon-rece',
-    excerpt: 'Sfaturi practice pentru a-ți menține plantele sănătoase în timpul iernii. Temperatură, umiditate și lumină.',
+    excerpt: 'Sfaturi practice pentru a-ți menține plantele sănătoase în timpul iernii. Temperatură, umiditate, lumină și protecția împotriva dăunătorilor.',
     content: '# Îngrijirea plantelor în sezonul rece\n\nConținutul complet al articolului...',
-    publishedAt: '2024-01-05T09:15:00Z',
+    publishedAt: '2024-01-10T09:15:00Z',
     author: 'Ana Maria',
     image: '/blog/sezon-rece.jpg',
-    tags: ['îngrijire', 'iarnă', 'plante']
+    tags: ['îngrijire', 'iarnă', 'plante', 'sfaturi'],
+    readingTime: '4 min de citire'
   }
 ];
 
@@ -120,6 +123,9 @@ export default function BlogPage() {
                     <div className="flex items-center gap-1">
                       <Calendar className="h-4 w-4" />
                       {new Date(post.publishedAt).toLocaleDateString('ro-RO')}
+                    </div>
+                    <div className="text-xs bg-gray-100 px-2 py-1 rounded">
+                      {post.readingTime}
                     </div>
                   </div>
                 </div>
