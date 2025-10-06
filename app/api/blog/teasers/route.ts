@@ -19,7 +19,7 @@ export async function GET() {
         id: 'post-1',
         title: 'Ghivece Ceramice Premium România 2025: Ghid Complet pentru Alegerea Perfectă',
         image: {
-          src: '/blog/buchet-galben.png',
+          src: '/blog/ghivece-ceramice-premium-2025.jpg',
           alt: 'Ghivece Ceramice Premium România 2025'
         },
         href: '/blog/ghivece-ceramice-premium-romania-2025',
@@ -28,20 +28,20 @@ export async function GET() {
       },
       {
         id: 'post-2',
-        title: 'Tendințe Design Floral România 2025: Minimalism Japonez și Tehnologie Smart',
+        title: 'Tendințe design floral România 2026: naturalețe, tehnologie discretă și expresii locale',
         image: {
-            src: '/blog/buchet-galben.png',
-          alt: 'Tendințe Design Floral România 2025'
+          src: '/blog/buchet-galben.png',
+          alt: 'Tendințe Design Floral România 2026'
         },
-        href: '/blog/tendinte-design-floral-romania-2025',
-        readTime: '10 min',
-        excerpt: 'Cele mai noi tendințe în designul floral pentru România în 2025. Minimalism japonez, ghivece smart cu tehnologie IoT, culori tropicale și stiluri moderne pentru casa românească.'
+        href: '/blog/tendinte-design-floral-romania-2026',
+        readTime: '6 min',
+        excerpt: 'În 2026, designul floral în România renaște din conexiunea cu natura locală, reinterpretată prin tehnologie discretă și sensibilitate contextuală. Nu mai vrem doar frumos — vrem poveste, semnificație și durabilitate în fiecare aranjament.'
       },
       {
         id: 'post-3',
         title: 'Îngrijire Plante Interioare România 2025: Sistem Complet pentru Clima Locală',
         image: {
-          src: '/blog/buchet-galben.png',
+          src: '/blog/ingrijire-plante-interioare-2025.jpg',
           alt: 'Îngrijire Plante Interioare România 2025'
         },
         href: '/blog/ingrijire-plante-interioare-romania-2025',

@@ -18,21 +18,21 @@ const blogPosts = [
     content: '# Ghivece Ceramice Premium România 2025\n\nConținut expert despre ghivece ceramice...',
     publishedAt: '2025-01-15T10:00:00Z',
     author: 'Dr. Maria Popescu - Expert Botanică',
-    image: '/blog/buchet-galben.png',
+    image: '/blog/ghivece-ceramice-premium-2025.jpg',
     tags: ['ghivece ceramice', 'romania', '2025', 'plante interioare', 'ghid expert', 'calitate premium'],
     readingTime: '8 min de citire'
   },
   {
     id: '2',
-    title: 'Tendințe Design Floral România 2025: Minimalism Japonez și Tehnologie Smart',
-    slug: 'tendinte-design-floral-romania-2025',
-    excerpt: 'Cele mai noi tendințe în designul floral pentru România în 2025. Minimalism japonez, ghivece smart cu tehnologie IoT, culori tropicale și stiluri moderne pentru casa românească.',
-    content: '# Tendințe Design Floral România 2025\n\nAnaliză completă a trendurilor...',
-    publishedAt: '2025-01-10T14:30:00Z',
-    author: 'Alexandru Ionescu - Designer Floral',
+    title: 'Tendințe design floral România 2026: naturalețe, tehnologie discretă și expresii locale',
+    slug: 'tendinte-design-floral-romania-2026',
+    excerpt: 'În 2026, designul floral în România renaște din conexiunea cu natura locală, reinterpretată prin tehnologie discretă și sensibilitate contextuală. Nu mai vrem doar frumos — vrem poveste, semnificație și durabilitate în fiecare aranjament.',
+    content: '# Tendințe Design Floral România 2026\n\nAnaliză completă a trendurilor...',
+    publishedAt: '2025-10-15T14:30:00Z',
+    author: 'Echipa FloristMarket',
     image: '/blog/buchet-galben.png',
-    tags: ['design floral', 'romania', '2025', 'minimalism japonez', 'ghivece smart', 'trenduri'],
-    readingTime: '10 min de citire'
+    tags: ['design floral', 'romania', '2026', 'naturalețe', 'tehnologie discretă', 'sustainability'],
+    readingTime: '6 min de citire'
   },
   {
     id: '3',
@@ -42,7 +42,7 @@ const blogPosts = [
     content: '# Îngrijire Plante Interioare România 2025\n\nSistem complet de îngrijire...',
     publishedAt: '2025-01-05T09:15:00Z',
     author: 'Prof. Ana Maria - Specialist Horticultură',
-    image: '/blog/buchet-galben.png',
+    image: '/blog/ingrijire-plante-interioare-2025.jpg',
     tags: ['plante interioare', 'romania', '2025', 'îngrijire', 'clima locală', 'sistem automat'],
     readingTime: '12 min de citire'
   }
