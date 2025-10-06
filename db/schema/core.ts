@@ -8,6 +8,8 @@ export const payoutStatusEnum = pgEnum('payout_status', ['pending', 'processing'
 export const refundStatusEnum = pgEnum('refund_status', ['pending', 'processing', 'refunded', 'failed']);
 export const ledgerTypeEnum = pgEnum('ledger_type', ['charge', 'commission', 'payout', 'refund', 'recovery']);
 export const promotionTypeEnum = pgEnum('promotion_type', ['banner', 'discount']);
+export const sellerApplicationStatusEnum = pgEnum('seller_application_status', ['received','in_review','need_info','approved','rejected']);
+export const sellerStatusEnum = pgEnum('seller_status', ['onboarding','active','suspended']);
 
 // Users table for passwordless auth
 export const users = pgTable("users", {
@@ -21,19 +23,52 @@ export const users = pgTable("users", {
   emailIdx: index("users_email_idx").on(table.email),
 }));
 
-// Sellers table
+// Sellers table (extended for onboarding)
 export const sellers = pgTable("sellers", {
   id: uuid("id").primaryKey().defaultRandom(),
   userId: uuid("user_id").notNull().references(() => users.id, { onDelete: "cascade" }),
   slug: text("slug").notNull().unique(),
   brandName: text("brand_name").notNull(),
   about: text("about"),
+  legalName: text("legal_name"),
+  cui: text("cui"),
+  iban: text("iban"),
+  phone: text("phone"),
+  email: text("email"),
+  logoUrl: text("logo_url"),
+  bannerUrl: text("banner_url"),
+  returnPolicy: text("return_policy"),
+  shippingPrefs: jsonb("shipping_prefs"),
+  status: sellerStatusEnum("status").notNull().default('onboarding'),
   createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
   updatedAt: timestamp("updated_at", { withTimezone: true }).defaultNow().notNull(),
 }, (table) => ({
   sellersUserIdx: index("sellers_user_idx").on(table.userId),
   sellersSlugIdx: index("sellers_slug_idx").on(table.slug),
   sellersUserUnique: uniqueIndex("sellers_user_unique").on(table.userId),
+  sellersEmailIdx: index("sellers_email_idx").on(table.email),
+  sellersCuiIdx: index("sellers_cui_idx").on(table.cui),
+}));
+
+// Seller applications table
+export const sellerApplications = pgTable("seller_applications", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  company: text("company").notNull(),
+  cui: text("cui"),
+  contactName: text("contact_name"),
+  email: text("email").notNull(),
+  phone: text("phone"),
+  iban: text("iban"),
+  categories: jsonb("categories").$type<string[] | null>().default(null),
+  website: text("website"),
+  carrier: text("carrier"),
+  returnPolicy: text("return_policy"),
+  status: sellerApplicationStatusEnum("status").notNull().default('received'),
+  notes: text("notes"),
+  createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
+}, (table) => ({
+  sellerApplicationsEmailIdx: index("seller_app_email_idx").on(table.email),
+  sellerApplicationsCuiIdx: index("seller_app_cui_idx").on(table.cui),
 }));
 
 // Categories table
