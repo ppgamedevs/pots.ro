@@ -204,10 +204,10 @@ export default function BlogArticlePage({ params }: { params: { slug: string } }
                   className="article-content"
                   dangerouslySetInnerHTML={{ 
                     __html: content
-                      .replace(/<h2>/g, '<div class="heading-2">')
-                      .replace(/<\/h2>/g, '</div>')
-                      .replace(/<h3>/g, '<div class="heading-3">')
-                      .replace(/<\/h3>/g, '</div>')
+                      .replace(/<h2>/g, '<h2 class="heading-2">')
+                      .replace(/<\/h2>/g, '</h2>')
+                      .replace(/<h3>/g, '<h3 class="heading-3">')
+                      .replace(/<\/h3>/g, '</h3>')
                       .replace(/<p>/g, '<div class="paragraph">')
                       .replace(/<\/p>/g, '</div>')
                       .replace(/<ul>/g, '<div class="list">')
@@ -299,7 +299,7 @@ export default function BlogArticlePage({ params }: { params: { slug: string } }
 
       {/* Custom CSS for article content */}
       <style jsx global>{`
-        .article-content .heading-2 {
+        .article-content h2.heading-2 {
           font-family: var(--font-sans), 'Inter Tight', sans-serif;
           font-weight: 700;
           font-size: 1.75rem;
@@ -310,7 +310,7 @@ export default function BlogArticlePage({ params }: { params: { slug: string } }
           text-wrap: balance;
         }
         
-        .article-content .heading-3 {
+        .article-content h3.heading-3 {
           font-family: var(--font-sans), 'Inter Tight', sans-serif;
           font-weight: 600;
           font-size: 1.25rem;
