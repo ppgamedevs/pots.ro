@@ -4,7 +4,7 @@ import { ReadingProgress } from "@/components/blog/ReadingProgress";
 import { PostMetaBar } from "@/components/blog/PostMetaBar";
 import { ShareBar } from "@/components/blog/ShareBar";
 import { TOC } from "@/components/blog/TOC";
-import { POSTS, getPostBySlug } from "@/lib/blog/posts";
+import { POSTS, getPostBySlug, getPostContent } from "@/lib/blog/posts";
 import { PostCard } from "@/components/blog/PostCard";
 
 export const revalidate = 60;
@@ -13,29 +13,45 @@ export default function BlogArticlePage({ params }: { params: { slug: string } }
   const post = getPostBySlug(params.slug);
   if (!post) notFound();
   const url = `https://pots.ro/blog/${post.slug}`;
+  const html = getPostContent(post.slug);
   return (
     <div>
       <ReadingProgress />
       <PostMetaBar title={post.title} date={post.date} readingTime={post.readingTime} author={post.author} />
-      <div className="mx-auto max-w-5xl px-4 mt-8 grid lg:grid-cols-[1fr_280px] gap-10">
+      <div className="mx-auto max-w-6xl px-4 mt-8 grid lg:grid-cols-[1fr_320px] gap-10">
+        {/* Article */}
         <article className="prose prose-neutral max-w-3xl">
-          <div className="rounded-2xl overflow-hidden border border-line bg-bgsoft aspect-[16/9] mb-6">
+          {/* Hero */}
+          <div className="relative rounded-2xl overflow-hidden border border-line bg-bgsoft aspect-[16/9] mb-6">
             {post.cover && <img src={post.cover} alt={post.title} className="h-full w-full object-cover" />}
+            {/* Badge */}
+            {post.category && (
+              <span className="absolute top-3 left-3 bg-white/90 backdrop-blur px-3 py-1 rounded-full text-xs font-medium border border-line">
+                {post.category}
+              </span>
+            )}
           </div>
-          <p>
-            Acesta este un corp de articol demonstrativ. În proiectul real, conținutul va fi randat din MDX
-            cu stilizare <em>prose</em> și componente custom (Card, Callout, Gallery).
-          </p>
-          <h2>Idei cheie</h2>
-          <ul>
-            <li>Palete naturale: verde închis, crem, bej.</li>
-            <li>Texturi: ceramică mată, hârtie kraft, textile simple.</li>
-            <li>Forme: cutii rotunde, coloane înalte, geometrii curate.</li>
-          </ul>
-          <h2>Exemple rapide</h2>
-          <p>Combină ghivece ceramice albe cu panglică verde închis pentru un efect premium minimalist.</p>
+          {/* Rich content */}
+          {html ? (
+            <div dangerouslySetInnerHTML={{ __html: html }} />
+          ) : (
+            <p>Conținutul articolului va fi disponibil în curând.</p>
+          )}
         </article>
-        <TOC />
+        {/* Sidebar */}
+        <div className="space-y-6">
+          <TOC />
+          <div className="p-4 rounded-xl border border-line bg-white">
+            <div className="font-medium mb-2">Articole populare</div>
+            <div className="grid gap-3">
+              {POSTS.slice(0,3).map(p => (
+                <a key={p.slug} href={`/blog/${p.slug}`} className="block text-sm text-ink/80 hover:text-primary">
+                  {p.title}
+                </a>
+              ))}
+            </div>
+          </div>
+        </div>
       </div>
       <ShareBar url={url} title={post.title} />
       <section className="mx-auto max-w-7xl px-4 py-10">
