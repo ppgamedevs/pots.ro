@@ -12,7 +12,7 @@ export const revalidate = 60;
 export default function BlogArticlePage({ params }: { params: { slug: string } }) {
   const post = getPostBySlug(params.slug);
   if (!post) notFound();
-  const url = `https://floristmarket.ro/blog/${post.slug}`;
+  const url = `https://pots.ro/blog/${post.slug}`;
   return (
     <div>
       <ReadingProgress />
