@@ -15,31 +15,31 @@ import { PostCard } from "@/components/blog/PostCard";
 
 // Typography components with custom fonts
 const Title = ({ children, className = "" }: { children: React.ReactNode; className?: string }) => (
-  <h1 className={`font-display font-bold text-5xl md:text-6xl leading-tight tracking-tight text-[#1E1E1E] ${className}`}>
+  <h1 className={`font-display font-bold text-5xl md:text-6xl leading-tight tracking-tight text-[#1A1A1A] ${className}`}>
     {children}
   </h1>
 );
 
 const Subtitle = ({ children, className = "" }: { children: React.ReactNode; className?: string }) => (
-  <p className={`font-serif text-lg text-[#4B4B4B] leading-relaxed ${className}`}>
+  <p className={`font-serif text-lg text-[#4B4B4B] leading-relaxed tracking-[0.01em] ${className}`}>
     {children}
   </p>
 );
 
 const Heading2 = ({ children, className = "" }: { children: React.ReactNode; className?: string }) => (
-  <h2 className={`font-display font-bold text-3xl leading-tight text-[#1E1E1E] mt-12 mb-6 ${className}`}>
+  <h2 className={`font-display font-bold text-3xl leading-tight text-[#1A1A1A] mt-12 mb-6 text-balance ${className}`}>
     {children}
   </h2>
 );
 
 const Heading3 = ({ children, className = "" }: { children: React.ReactNode; className?: string }) => (
-  <h3 className={`font-display font-semibold text-xl leading-tight text-[#1E1E1E] mt-8 mb-4 ${className}`}>
+  <h3 className={`font-display font-semibold text-xl leading-tight text-[#1A1A1A] mt-8 mb-4 text-balance ${className}`}>
     {children}
   </h3>
 );
 
 const Paragraph = ({ children, className = "" }: { children: React.ReactNode; className?: string }) => (
-  <p className={`font-serif text-base leading-[1.8] text-[#1E1E1E] mb-6 ${className}`}>
+  <p className={`font-serif text-base leading-[1.8] text-[#1A1A1A] mb-6 tracking-[0.01em] ${className}`}>
     {children}
   </p>
 );
@@ -57,7 +57,7 @@ const List = ({ children, className = "" }: { children: React.ReactNode; classNa
 );
 
 const ListItem = ({ children, className = "" }: { children: React.ReactNode; className?: string }) => (
-  <li className={`flex items-start gap-3 font-serif text-base leading-[1.8] text-[#1E1E1E] ${className}`}>
+  <li className={`flex items-start gap-3 font-serif text-base leading-[1.8] text-[#1A1A1A] tracking-[0.01em] ${className}`}>
     <span className="w-2 h-2 bg-[#1B5232] rounded-full mt-3 flex-shrink-0"></span>
     <span>{children}</span>
   </li>
@@ -191,12 +191,13 @@ export default function BlogArticlePage({ params }: { params: { slug: string } }
           <div className="grid lg:grid-cols-[1fr_280px] gap-12">
             
             {/* Article Content */}
-            <article className="max-w-[720px] mx-auto lg:mx-0">
+            <article className="max-w-3xl mx-auto lg:mx-0 px-6 lg:px-0">
               <motion.div
                 initial={{ opacity: 0, y: 30 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ duration: 0.8, delay: 0.4 }}
-                className="prose prose-lg max-w-none"
+                className="prose prose-lg max-w-none leading-relaxed tracking-[0.01em]"
+                style={{ scrollBehavior: 'smooth' }}
               >
                 {/* Render content with custom components */}
                 <div 
@@ -299,31 +300,34 @@ export default function BlogArticlePage({ params }: { params: { slug: string } }
       {/* Custom CSS for article content */}
       <style jsx global>{`
         .article-content .heading-2 {
-          font-family: 'Inter Display', sans-serif;
+          font-family: var(--font-sans), 'Inter Tight', sans-serif;
           font-weight: 700;
           font-size: 1.75rem;
           line-height: 1.2;
-          color: #1E1E1E;
+          color: #1A1A1A;
           margin-top: 3rem;
           margin-bottom: 1.5rem;
+          text-wrap: balance;
         }
         
         .article-content .heading-3 {
-          font-family: 'Inter Display', sans-serif;
+          font-family: var(--font-sans), 'Inter Tight', sans-serif;
           font-weight: 600;
           font-size: 1.25rem;
           line-height: 1.3;
-          color: #1E1E1E;
+          color: #1A1A1A;
           margin-top: 2rem;
           margin-bottom: 1rem;
+          text-wrap: balance;
         }
         
         .article-content .paragraph {
-          font-family: 'Merriweather', serif;
+          font-family: var(--font-merriweather), 'Merriweather', serif;
           font-size: 1rem;
           line-height: 1.8;
-          color: #1E1E1E;
+          color: #1A1A1A;
           margin-bottom: 1.5rem;
+          letter-spacing: 0.01em;
         }
         
         .article-content .list {
@@ -334,11 +338,12 @@ export default function BlogArticlePage({ params }: { params: { slug: string } }
           display: flex;
           align-items: flex-start;
           gap: 0.75rem;
-          font-family: 'Merriweather', serif;
+          font-family: var(--font-merriweather), 'Merriweather', serif;
           font-size: 1rem;
           line-height: 1.8;
-          color: #1E1E1E;
+          color: #1A1A1A;
           margin-bottom: 0.75rem;
+          letter-spacing: 0.01em;
         }
         
         .article-content .list-item::before {
@@ -371,6 +376,20 @@ export default function BlogArticlePage({ params }: { params: { slug: string } }
         
         .article-content a:hover {
           text-decoration-color: #1B5232;
+        }
+        
+        .article-content blockquote {
+          font-family: var(--font-merriweather), 'Merriweather', serif;
+          font-style: italic;
+          font-size: 1.1rem;
+          line-height: 1.6;
+          color: #4B4B4B;
+          border-left: 4px solid #1B5232;
+          padding-left: 1.5rem;
+          margin: 2rem 0;
+          background: rgba(27, 82, 50, 0.05);
+          padding: 1.5rem;
+          border-radius: 0 8px 8px 0;
         }
       `}</style>
     </>

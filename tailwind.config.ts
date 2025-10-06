@@ -66,8 +66,8 @@ const config: Config = {
         elev: "0 8px 24px rgba(0,0,0,0.08)",  // umbră elevată
       },
       fontFamily: {
-        sans: ["var(--font-inter)", "Inter", "system-ui", "sans-serif"],
-        display: ["var(--font-inter)", "Inter", "system-ui", "sans-serif"],
+        sans: ["var(--font-sans)", "Inter Tight", "system-ui", "sans-serif"],
+        display: ["var(--font-sans)", "Inter Tight", "system-ui", "sans-serif"],
         serif: ["var(--font-merriweather)", "Merriweather", "Georgia", "serif"],
       },
       fontSize: {

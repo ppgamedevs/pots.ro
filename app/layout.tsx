@@ -1,5 +1,5 @@
 import "./globals.css";
-import { Inter, Merriweather } from "next/font/google";
+import { Inter_Tight, Merriweather } from "next/font/google";
 import { ThemeProvider } from "@/components/theme-provider";
 import { ConfirmProvider } from "@/components/ui/use-confirm";
 import { Toaster } from "@/components/ui/toast";
@@ -17,7 +17,13 @@ import { ChatWidget } from "@/components/chat/ChatWidget";
 import { SITE_NAME, SITE_URL, SITE_DESCRIPTION, SITE_KEYWORDS, TWITTER_HANDLE, OG_IMAGE_DEFAULT } from "@/lib/constants";
 // import { PerformanceOptimizer, criticalCSS, criticalResources } from "@/components/ui/performance-optimizer";
 
-const inter = Inter({ subsets: ["latin"], display: "swap", variable: "--font-inter" });
+const interTight = Inter_Tight({ 
+  subsets: ["latin-ext"], 
+  weight: ["400", "500", "600", "700"],
+  variable: "--font-sans",
+  display: "swap" 
+});
+
 const merriweather = Merriweather({ 
   subsets: ["latin"], 
   weight: ["400", "700"],
@@ -126,8 +132,8 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
   const carriers = ["Fan Courier", "DPD", "Cargus", "Sameday"];
 
   return (
-    <html lang="ro" className={`${inter.variable} ${merriweather.variable}`} suppressHydrationWarning>
-      <body className="min-h-screen antialiased">
+    <html lang="ro" className={`${interTight.variable} ${merriweather.variable}`} suppressHydrationWarning>
+      <body className="font-sans antialiased text-[#1A1A1A] bg-[#FAFAF8] min-h-screen">
         <ThemeProvider>
           <ConfirmProvider>
             <ErrorBoundary>
