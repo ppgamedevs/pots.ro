@@ -74,8 +74,8 @@ export async function GET() {
           type: 'card-small',
           title: 'Cutii elegante',
           image: {
-            src: '/placeholder.png',
-            alt: 'Cutii elegante'
+            src: '/images/cutii-elegante-rosii.jpg',
+            alt: 'Cutii elegante roșii pe fundal negru'
           },
           href: '/c/cutii'
         }

@@ -87,7 +87,7 @@ export default function Category() {
       'cutii': {
         title: 'Cutii',
         subtitle: 'Cutii elegante pentru aranjamente florale, cadouri sau decor. Materiale naturale și designuri rafinate.',
-        image: '/placeholder.png'
+        image: '/images/cutii-elegante-rosii.jpg'
       },
       'accesorii': {
         title: 'Accesorii',

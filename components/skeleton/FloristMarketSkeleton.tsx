@@ -365,13 +365,13 @@ export function HomePageSample() {
 
       <section className="mx-auto max-w-7xl px-4 py-10 grid md:grid-cols-3 gap-6">
         <PromoCard title="Colecția de ghivece" imageUrl="/images/promo1.jpg" href="/c/ghivece" />
-        <PromoCard title="Cutiile preferate" imageUrl="/images/promo2.jpg" href="/c/cutii" />
+        <PromoCard title="Cutiile preferate" imageUrl="/images/cutii-elegante-rosii.jpg" href="/c/cutii" />
         <PromoCard title="Accesorii esențiale" imageUrl="/images/promo3.jpg" href="/c/accesorii" />
       </section>
 
       <CategoryTiles items={[
         { name: "Ghivece", imageUrl: "/images/cat-ghivece.jpg", href: "/c/ghivece" },
-        { name: "Cutiile", imageUrl: "/images/cat-cutii.jpg", href: "/c/cutii" },
+        { name: "Cutiile", imageUrl: "/images/cutii-elegante-rosii.jpg", href: "/c/cutii" },
         { name: "Accesorii", imageUrl: "/images/cat-accesorii.jpg", href: "/c/accesorii" },
       ]} />
 
