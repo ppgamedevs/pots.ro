@@ -67,6 +67,8 @@ const config: Config = {
       },
       fontFamily: {
         sans: ["var(--font-inter)", "Inter", "system-ui", "sans-serif"],
+        display: ["var(--font-inter-display)", "Inter Display", "Inter", "system-ui", "sans-serif"],
+        serif: ["var(--font-merriweather)", "Merriweather", "Georgia", "serif"],
       },
       fontSize: {
         // Scale tipografică optimizată pentru Inter

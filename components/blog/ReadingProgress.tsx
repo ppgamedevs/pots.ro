@@ -1,20 +1,27 @@
 "use client";
 
-import React, { useEffect } from "react";
+import React, { useEffect, useState } from "react";
 
 export function ReadingProgress() {
-  useEffect(() => {
-    const progressBar = document.getElementById('progressBar');
-    if (!progressBar) return;
+  const [progress, setProgress] = useState(0);
 
-    function updateProgress() {
-      if (!progressBar) return;
-      const html = document.documentElement;
-      const scrollTop = html.scrollTop || document.body.scrollTop;
-      const scrollHeight = html.scrollHeight - html.clientHeight;
-      const scrollRatio = scrollHeight ? scrollTop / scrollHeight : 0;
-      progressBar.style.transform = `scaleX(${scrollRatio})`;
-    }
+  useEffect(() => {
+    const updateProgress = () => {
+      const article = document.querySelector('article');
+      if (!article) return;
+
+      const articleTop = article.offsetTop;
+      const articleHeight = article.offsetHeight;
+      const windowHeight = window.innerHeight;
+      const scrollTop = window.scrollY;
+
+      const progress = Math.min(
+        Math.max((scrollTop - articleTop + windowHeight) / articleHeight, 0),
+        1
+      );
+
+      setProgress(progress * 100);
+    };
 
     window.addEventListener('scroll', updateProgress, { passive: true });
     updateProgress();
@@ -25,8 +32,11 @@ export function ReadingProgress() {
   }, []);
 
   return (
-    <div className="fixed top-0 left-0 right-0 z-50 h-[3px] bg-transparent">
-      <div id="progressBar" className="h-full bg-primary origin-left scale-x-0" />
+    <div className="fixed top-0 left-0 w-full h-1 bg-[#EAEAEA] z-50">
+      <div
+        className="h-full bg-gradient-to-r from-[#1B5232] to-[#A3C0A0] transition-all duration-300 ease-out"
+        style={{ width: `${progress}%` }}
+      />
     </div>
   );
 }

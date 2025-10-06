@@ -1,120 +1,415 @@
 import React from "react";
 import { notFound } from "next/navigation";
+import { Metadata } from 'next';
+import Image from 'next/image';
+import Link from 'next/link';
+import { motion } from 'framer-motion';
+import { Facebook, Instagram, Copy, ChevronDown, User, Calendar, Clock } from 'lucide-react';
+import { POSTS, getPostBySlug, POST_CONTENT } from "@/lib/blog/posts";
 import { ReadingProgress } from "@/components/blog/ReadingProgress";
-import { PostMetaBar } from "@/components/blog/PostMetaBar";
-import { ShareBar } from "@/components/blog/ShareBar";
 import { TOC } from "@/components/blog/TOC";
-import { POSTS, getPostBySlug, getPostContent } from "@/lib/blog/posts";
-import type { Metadata } from "next";
+import { ShareBar } from "@/components/blog/ShareBar";
 import { PostCard } from "@/components/blog/PostCard";
 
 export const revalidate = 60;
 
+// Typography components with custom fonts
+const Title = ({ children, className = "" }: { children: React.ReactNode; className?: string }) => (
+  <h1 className={`font-display font-bold text-5xl md:text-6xl leading-tight tracking-tight text-[#1E1E1E] ${className}`}>
+    {children}
+  </h1>
+);
+
+const Subtitle = ({ children, className = "" }: { children: React.ReactNode; className?: string }) => (
+  <p className={`font-serif text-lg text-[#4B4B4B] leading-relaxed ${className}`}>
+    {children}
+  </p>
+);
+
+const Heading2 = ({ children, className = "" }: { children: React.ReactNode; className?: string }) => (
+  <h2 className={`font-display font-bold text-3xl leading-tight text-[#1E1E1E] mt-12 mb-6 ${className}`}>
+    {children}
+  </h2>
+);
+
+const Heading3 = ({ children, className = "" }: { children: React.ReactNode; className?: string }) => (
+  <h3 className={`font-display font-semibold text-xl leading-tight text-[#1E1E1E] mt-8 mb-4 ${className}`}>
+    {children}
+  </h3>
+);
+
+const Paragraph = ({ children, className = "" }: { children: React.ReactNode; className?: string }) => (
+  <p className={`font-serif text-base leading-[1.8] text-[#1E1E1E] mb-6 ${className}`}>
+    {children}
+  </p>
+);
+
+const Quote = ({ children, className = "" }: { children: React.ReactNode; className?: string }) => (
+  <blockquote className={`border-l-4 border-gradient-to-b from-[#1B5232] to-[#A3C0A0] pl-6 py-4 italic font-serif text-lg text-[#4B4B4B] my-8 bg-[#FAFAF7] rounded-r-lg ${className}`}>
+    {children}
+  </blockquote>
+);
+
+const List = ({ children, className = "" }: { children: React.ReactNode; className?: string }) => (
+  <ul className={`space-y-3 mb-6 ${className}`}>
+    {children}
+  </ul>
+);
+
+const ListItem = ({ children, className = "" }: { children: React.ReactNode; className?: string }) => (
+  <li className={`flex items-start gap-3 font-serif text-base leading-[1.8] text-[#1E1E1E] ${className}`}>
+    <span className="w-2 h-2 bg-[#1B5232] rounded-full mt-3 flex-shrink-0"></span>
+    <span>{children}</span>
+  </li>
+);
+
+const ImageWithCaption = ({ src, alt, caption, className = "" }: { src: string; alt: string; caption?: string; className?: string }) => (
+  <figure className={`my-8 ${className}`}>
+    <div className="relative overflow-hidden rounded-lg border border-[#EAEAEA]">
+      <Image
+        src={src}
+        alt={alt}
+        width={720}
+        height={400}
+        className="w-full h-auto object-cover transition-transform duration-500 hover:scale-105"
+      />
+    </div>
+    {caption && (
+      <figcaption className="text-sm italic text-[#4B4B4B] mt-3 text-center">
+        {caption}
+      </figcaption>
+    )}
+  </figure>
+);
+
 export async function generateMetadata({ params }: { params: { slug: string } }): Promise<Metadata> {
   const post = getPostBySlug(params.slug);
-  if (!post) return {};
-  const title = post.title + " | Pots.ro";
+  if (!post) {
+    return {};
+  }
+
+  const title = `${post.title} | FloristMarket.ro`;
   const description = post.excerpt;
-  const images = post.cover ? [post.cover] : ["/og-blog.jpg"];
+  const imageUrl = `${process.env.NEXT_PUBLIC_SITE_URL}${post.cover || '/og-blog.jpg'}`;
+  const url = `${process.env.NEXT_PUBLIC_SITE_URL}/blog/${post.slug}`;
+
   return {
     title,
     description,
-    openGraph: { title, description, images, type: "article" },
-    twitter: { card: "summary_large_image", title, description, images },
-    alternates: { canonical: `https://pots.ro/blog/${post.slug}` }
+    keywords: post.tags?.join(', ') || 'ghivece, plante, flori, design floral, ingrijire plante, romania',
+    openGraph: {
+      title,
+      description,
+      type: 'article',
+      url,
+      siteName: 'FloristMarket.ro',
+      images: [{ url: imageUrl }],
+      publishedTime: post.date,
+      authors: post.author?.name ? [post.author.name] : [],
+    },
+    twitter: {
+      card: 'summary_large_image',
+      title,
+      description,
+      images: [imageUrl],
+    },
+    alternates: {
+      canonical: url,
+    },
   };
 }
 
 export default function BlogArticlePage({ params }: { params: { slug: string } }) {
   const post = getPostBySlug(params.slug);
   if (!post) notFound();
-  const url = `https://pots.ro/blog/${post.slug}`;
-  const html = getPostContent(post.slug);
+
+  const url = `${process.env.NEXT_PUBLIC_SITE_URL}/blog/${post.slug}`;
+  const content = POST_CONTENT[post.slug] || post.excerpt;
+
+  // Schema.org structured data
   const jsonLd = {
     "@context": "https://schema.org",
     "@type": "BlogPosting",
-    headline: post.title,
-    image: post.cover ? [`https://pots.ro${post.cover}`] : undefined,
-    datePublished: post.date,
-    author: post.author?.name ? { "@type": "Person", name: post.author.name } : undefined,
-    description: post.excerpt,
-    url
+    "headline": post.title,
+    "image": post.cover ? `${process.env.NEXT_PUBLIC_SITE_URL}${post.cover}` : `${process.env.NEXT_PUBLIC_SITE_URL}/og-blog.jpg`,
+    "datePublished": post.date,
+    "dateModified": post.date,
+    "author": {
+      "@type": "Person",
+      "name": post.author?.name || "FloristMarket Team"
+    },
+    "publisher": {
+      "@type": "Organization",
+      "name": "FloristMarket.ro",
+      "logo": {
+        "@type": "ImageObject",
+        "url": `${process.env.NEXT_PUBLIC_SITE_URL}/logo.png`
+      }
+    },
+    "description": post.excerpt,
+    "mainEntityOfPage": {
+      "@type": "WebPage",
+      "@id": url
+    }
   };
+
   return (
-    <div>
+    <>
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
+      />
+      
       <ReadingProgress />
-      {/* Breadcrumbs */}
-      <nav className="mx-auto max-w-6xl px-4 pt-6 text-sm text-ink/60">
-        <a href="/" className="hover:text-primary">Acasă</a>
-        <span className="mx-2">/</span>
-        <a href="/blog" className="hover:text-primary">Blog</a>
-        <span className="mx-2">/</span>
-        <span className="text-ink">{post.title}</span>
-      </nav>
-
-      {/* Hero modern */}
-      <div className="mx-auto max-w-6xl px-4 mt-4">
-        <div className="relative overflow-hidden rounded-2xl border border-line">
-          <div className="aspect-[16/9]">
-            <img src={post.cover || "/images/blog-cover.jpg"} alt={post.title} className="h-full w-full object-cover" />
-          </div>
-          <div className="absolute inset-0 bg-gradient-to-t from-black/50 via-black/10 to-transparent" />
-          <div className="absolute bottom-4 left-4 right-4">
-            <h1 className="text-white text-2xl md:text-4xl font-semibold drop-shadow">{post.title}</h1>
-            <div className="mt-2 text-white/90 text-sm flex flex-wrap items-center gap-2">
-              {post.author?.name && <span>{post.author.name}</span>}
-              <span>•</span>
-              <time dateTime={post.date}>{new Date(post.date).toLocaleDateString('ro-RO')}</time>
-              {post.readingTime && <><span>•</span><span>{post.readingTime}</span></>}
+      
+      {/* Hero Section */}
+      <section className="relative w-full h-[720px] overflow-hidden">
+        <div className="relative w-full h-full">
+          {post.cover && (
+            <Image
+              src={post.cover}
+              alt={post.title}
+              fill
+              className="object-cover transition-transform duration-700 hover:scale-105"
+              priority
+            />
+          )}
+          {/* Gradient overlay */}
+          <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/20 to-transparent" />
+          
+          {/* Content overlay */}
+          <div className="absolute inset-0 flex items-end">
+            <div className="max-w-7xl mx-auto px-4 pb-16 w-full">
+              <motion.div
+                initial={{ opacity: 0, y: 30 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.8, delay: 0.2 }}
+                className="max-w-4xl"
+              >
+                <Title className="text-white mb-4">
+                  {post.title}
+                </Title>
+                
+                <Subtitle className="text-white/90 mb-6">
+                  {post.excerpt}
+                </Subtitle>
+                
+                <div className="flex items-center gap-6 text-white/80">
+                  <div className="flex items-center gap-2">
+                    <User className="h-4 w-4" />
+                    <span className="font-medium">{post.author?.name}</span>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <Calendar className="h-4 w-4" />
+                    <time dateTime={post.date}>
+                      {new Date(post.date).toLocaleDateString('ro-RO', { 
+                        day: 'numeric', 
+                        month: 'long', 
+                        year: 'numeric' 
+                      })}
+                    </time>
+                  </div>
+                  {post.readingTime && (
+                    <div className="flex items-center gap-2">
+                      <Clock className="h-4 w-4" />
+                      <span>{post.readingTime}</span>
+                    </div>
+                  )}
+                </div>
+              </motion.div>
             </div>
           </div>
-        </div>
-      </div>
-
-      <div className="mx-auto max-w-6xl px-4 mt-8 grid lg:grid-cols-[1fr_320px] gap-10">
-        {/* Article */}
-        <article className="prose prose-neutral max-w-3xl">
-          {/* Badge */}
-          {post.category && (
-            <div className="mb-4"><span className="chip">{post.category}</span></div>
-          )}
-          {/* Rich content */}
-          {html ? (
-            <div dangerouslySetInnerHTML={{ __html: html }} />
-          ) : (
-            <p>Conținutul articolului va fi disponibil în curând.</p>
-          )}
-          {/* CTA */}
-          <div className="mt-8 p-5 rounded-xl border border-line bg-bgsoft">
-            <div className="font-medium mb-2">Îți plac ghidurile noastre?</div>
-            <p className="text-ink/70 mb-3">Abonează-te pentru a primi analize și tendințe de la experți în aranjamente florale.</p>
-            <a href="#newsletter" className="inline-flex items-center px-4 py-2 rounded-lg bg-primary text-white hover:opacity-90 transition">Abonează-mă</a>
-          </div>
-          <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }} />
-        </article>
-        {/* Sidebar */}
-        <div className="space-y-6">
-          <TOC />
-          <div className="p-4 rounded-xl border border-line bg-white">
-            <div className="font-medium mb-2">Articole populare</div>
-            <div className="grid gap-3">
-              {POSTS.slice(0,3).map(p => (
-                <a key={p.slug} href={`/blog/${p.slug}`} className="block text-sm text-ink/80 hover:text-primary">
-                  {p.title}
-                </a>
-              ))}
-            </div>
-          </div>
-        </div>
-      </div>
-      <ShareBar url={url} title={post.title} />
-      <section className="mx-auto max-w-7xl px-4 py-10">
-        <h3 className="text-xl font-semibold mb-4">Articole similare</h3>
-        <div className="grid md:grid-cols-3 gap-6">
-          {POSTS.filter(p=>p.slug!==post.slug).slice(0,3).map(p=> <PostCard key={p.slug} {...p} />)}
         </div>
       </section>
-    </div>
+
+      {/* Main Content */}
+      <div className="min-h-screen bg-[#FAFAF7]">
+        <div className="max-w-7xl mx-auto px-4 py-16">
+          <div className="grid lg:grid-cols-[1fr_280px] gap-12">
+            
+            {/* Article Content */}
+            <article className="max-w-[720px] mx-auto lg:mx-0">
+              <motion.div
+                initial={{ opacity: 0, y: 30 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.8, delay: 0.4 }}
+                className="prose prose-lg max-w-none"
+              >
+                {/* Render content with custom components */}
+                <div 
+                  className="article-content"
+                  dangerouslySetInnerHTML={{ 
+                    __html: content
+                      .replace(/<h2>/g, '<div class="heading-2">')
+                      .replace(/<\/h2>/g, '</div>')
+                      .replace(/<h3>/g, '<div class="heading-3">')
+                      .replace(/<\/h3>/g, '</div>')
+                      .replace(/<p>/g, '<div class="paragraph">')
+                      .replace(/<\/p>/g, '</div>')
+                      .replace(/<ul>/g, '<div class="list">')
+                      .replace(/<\/ul>/g, '</div>')
+                      .replace(/<li>/g, '<div class="list-item">')
+                      .replace(/<\/li>/g, '</div>')
+                  }}
+                />
+              </motion.div>
+            </article>
+
+            {/* TOC Sidebar */}
+            <aside className="hidden lg:block">
+              <motion.div
+                initial={{ opacity: 0, x: 30 }}
+                animate={{ opacity: 1, x: 0 }}
+                transition={{ duration: 0.8, delay: 0.6 }}
+                className="sticky top-24"
+              >
+                <div className="bg-white/80 backdrop-blur-xl border-l border-[#EAEAEA] pl-6 py-6 rounded-r-lg">
+                  <h3 className="text-sm uppercase font-semibold text-[#1B5232] mb-4 tracking-wider">
+                    Cuprins
+                  </h3>
+                  <TOC />
+                </div>
+              </motion.div>
+            </aside>
+          </div>
+        </div>
+
+        {/* Article Footer */}
+        <motion.section
+          initial={{ opacity: 0, y: 30 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.8, delay: 0.8 }}
+          className="bg-white py-16"
+        >
+          <div className="max-w-7xl mx-auto px-4">
+            
+            {/* Share Bar */}
+            <div className="max-w-[720px] mx-auto mb-12">
+              <ShareBar url={url} title={post.title} />
+            </div>
+
+            {/* Related Articles */}
+            <div className="max-w-[720px] mx-auto mb-16">
+              <h3 className="font-display font-bold text-2xl text-[#1E1E1E] mb-8">
+                Articole similare
+              </h3>
+              <div className="grid md:grid-cols-3 gap-6">
+                {POSTS.filter(p => p.slug !== post.slug).slice(0, 3).map((relatedPost, index) => (
+                  <motion.div
+                    key={relatedPost.slug}
+                    initial={{ opacity: 0, y: 20 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ duration: 0.6, delay: 0.9 + index * 0.1 }}
+                  >
+                    <PostCard {...relatedPost} />
+                  </motion.div>
+                ))}
+              </div>
+            </div>
+
+            {/* CTA Section */}
+            <motion.div
+              initial={{ opacity: 0, y: 30 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.8, delay: 1.2 }}
+              className="max-w-[720px] mx-auto"
+            >
+              <div className="bg-gradient-to-r from-[#D9E4D0] to-[#A3C0A0] rounded-2xl p-8 text-center">
+                <h3 className="font-display font-bold text-2xl text-[#1B5232] mb-4">
+                  Devino vânzător pe FloristMarket
+                </h3>
+                <p className="font-serif text-lg text-[#4B4B4B] mb-6">
+                  Alătură-te comunității noastre de florari și începe să vinzi produsele tale online.
+                </p>
+                <Link
+                  href="/seller/apply"
+                  className="inline-flex items-center gap-2 bg-[#1B5232] text-white px-8 py-4 rounded-lg font-semibold hover:bg-[#1B5232]/90 transition-colors"
+                >
+                  Aplică acum
+                </Link>
+              </div>
+            </motion.div>
+          </div>
+        </motion.section>
+      </div>
+
+      {/* Custom CSS for article content */}
+      <style jsx global>{`
+        .article-content .heading-2 {
+          font-family: 'Inter Display', sans-serif;
+          font-weight: 700;
+          font-size: 1.75rem;
+          line-height: 1.2;
+          color: #1E1E1E;
+          margin-top: 3rem;
+          margin-bottom: 1.5rem;
+        }
+        
+        .article-content .heading-3 {
+          font-family: 'Inter Display', sans-serif;
+          font-weight: 600;
+          font-size: 1.25rem;
+          line-height: 1.3;
+          color: #1E1E1E;
+          margin-top: 2rem;
+          margin-bottom: 1rem;
+        }
+        
+        .article-content .paragraph {
+          font-family: 'Merriweather', serif;
+          font-size: 1rem;
+          line-height: 1.8;
+          color: #1E1E1E;
+          margin-bottom: 1.5rem;
+        }
+        
+        .article-content .list {
+          margin-bottom: 1.5rem;
+        }
+        
+        .article-content .list-item {
+          display: flex;
+          align-items: flex-start;
+          gap: 0.75rem;
+          font-family: 'Merriweather', serif;
+          font-size: 1rem;
+          line-height: 1.8;
+          color: #1E1E1E;
+          margin-bottom: 0.75rem;
+        }
+        
+        .article-content .list-item::before {
+          content: '';
+          width: 0.5rem;
+          height: 0.5rem;
+          background-color: #1B5232;
+          border-radius: 50%;
+          margin-top: 0.75rem;
+          flex-shrink: 0;
+        }
+        
+        .article-content strong {
+          font-weight: 600;
+          color: #1B5232;
+        }
+        
+        .article-content em {
+          font-style: italic;
+          color: #4B4B4B;
+        }
+        
+        .article-content a {
+          color: #1B5232;
+          text-decoration: underline;
+          text-decoration-color: #D9E4D0;
+          text-underline-offset: 0.25rem;
+          transition: all 0.2s ease;
+        }
+        
+        .article-content a:hover {
+          text-decoration-color: #1B5232;
+        }
+      `}</style>
+    </>
   );
 }
-
