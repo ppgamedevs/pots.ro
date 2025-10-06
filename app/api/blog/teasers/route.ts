@@ -19,7 +19,7 @@ export async function GET() {
         id: 'post-1',
         title: 'Ghivece Ceramice Premium România 2025: Ghid Complet pentru Alegerea Perfectă',
         image: {
-          src: '/blog/ghivece-ceramice-premium-2025.jpg',
+          src: '/blog/buchet-galben.png',
           alt: 'Ghivece Ceramice Premium România 2025'
         },
         href: '/blog/ghivece-ceramice-premium-romania-2025',
@@ -30,7 +30,7 @@ export async function GET() {
         id: 'post-2',
         title: 'Tendințe Design Floral România 2025: Minimalism Japonez și Tehnologie Smart',
         image: {
-          src: '/blog/tendinte-design-floral-2025.jpg',
+            src: '/blog/buchet-galben.png',
           alt: 'Tendințe Design Floral România 2025'
         },
         href: '/blog/tendinte-design-floral-romania-2025',
@@ -41,7 +41,7 @@ export async function GET() {
         id: 'post-3',
         title: 'Îngrijire Plante Interioare România 2025: Sistem Complet pentru Clima Locală',
         image: {
-          src: '/blog/ingrijire-plante-interioare-2025.jpg',
+          src: '/blog/buchet-galben.png',
           alt: 'Îngrijire Plante Interioare România 2025'
         },
         href: '/blog/ingrijire-plante-interioare-romania-2025',

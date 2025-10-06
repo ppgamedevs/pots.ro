@@ -18,7 +18,7 @@ const blogPosts = [
     content: '# Ghivece Ceramice Premium România 2025\n\nConținut expert despre ghivece ceramice...',
     publishedAt: '2025-01-15T10:00:00Z',
     author: 'Dr. Maria Popescu - Expert Botanică',
-    image: '/blog/ghivece-ceramice-premium-2025.jpg',
+    image: '/blog/buchet-galben.png',
     tags: ['ghivece ceramice', 'romania', '2025', 'plante interioare', 'ghid expert', 'calitate premium'],
     readingTime: '8 min de citire'
   },
@@ -30,7 +30,7 @@ const blogPosts = [
     content: '# Tendințe Design Floral România 2025\n\nAnaliză completă a trendurilor...',
     publishedAt: '2025-01-10T14:30:00Z',
     author: 'Alexandru Ionescu - Designer Floral',
-    image: '/blog/tendinte-design-floral-2025.jpg',
+    image: '/blog/buchet-galben.png',
     tags: ['design floral', 'romania', '2025', 'minimalism japonez', 'ghivece smart', 'trenduri'],
     readingTime: '10 min de citire'
   },
@@ -42,7 +42,7 @@ const blogPosts = [
     content: '# Îngrijire Plante Interioare România 2025\n\nSistem complet de îngrijire...',
     publishedAt: '2025-01-05T09:15:00Z',
     author: 'Prof. Ana Maria - Specialist Horticultură',
-    image: '/blog/ingrijire-plante-interioare-2025.jpg',
+    image: '/blog/buchet-galben.png',
     tags: ['plante interioare', 'romania', '2025', 'îngrijire', 'clima locală', 'sistem automat'],
     readingTime: '12 min de citire'
   }
