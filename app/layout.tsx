@@ -1,5 +1,5 @@
 import "./globals.css";
-import { Inter, Inter_Display, Merriweather } from "next/font/google";
+import { Inter, Merriweather } from "next/font/google";
 import { ThemeProvider } from "@/components/theme-provider";
 import { ConfirmProvider } from "@/components/ui/use-confirm";
 import { Toaster } from "@/components/ui/toast";
@@ -18,10 +18,9 @@ import { SITE_NAME, SITE_URL, SITE_DESCRIPTION, SITE_KEYWORDS, TWITTER_HANDLE, O
 // import { PerformanceOptimizer, criticalCSS, criticalResources } from "@/components/ui/performance-optimizer";
 
 const inter = Inter({ subsets: ["latin"], display: "swap", variable: "--font-inter" });
-const interDisplay = Inter_Display({ subsets: ["latin"], display: "swap", variable: "--font-inter-display" });
 const merriweather = Merriweather({ 
   subsets: ["latin"], 
-  weight: ["400", "500", "700"],
+  weight: ["400", "700"],
   display: "swap", 
   variable: "--font-merriweather" 
 });
@@ -127,7 +126,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
   const carriers = ["Fan Courier", "DPD", "Cargus", "Sameday"];
 
   return (
-    <html lang="ro" className={`${inter.variable} ${interDisplay.variable} ${merriweather.variable}`} suppressHydrationWarning>
+    <html lang="ro" className={`${inter.variable} ${merriweather.variable}`} suppressHydrationWarning>
       <body className="min-h-screen antialiased">
         <ThemeProvider>
           <ConfirmProvider>

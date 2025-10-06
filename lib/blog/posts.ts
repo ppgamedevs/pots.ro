@@ -12,15 +12,15 @@ export type PostFrontMatter = {
 
 export const POSTS: PostFrontMatter[] = [
   {
-    slug: "ghivece-ceramice-premium-romania-2025",
-    title: "Ghivece Ceramice Premium România 2025: Ghid Complet pentru Alegerea Perfectă",
-    excerpt: "Descoperă cele mai bune ghivece ceramice din România pentru 2025. Ghid expert cu teste de calitate, materiale premium și sfaturi de specialiști pentru alegerea ghiveciului ideal pentru plantele tale.",
-    cover: "/blog/ghivece-ceramice-premium-2025.jpg",
-    date: "2025-01-15",
-    category: "Ghiduri Expert",
-    author: { name: "Dr. Maria Popescu - Expert Botanică", avatar: "/images/avatar-expert-1.png" },
+    slug: "flori-in-beton-apartament-comunist",
+    title: "Flori în beton: cum să transformi un apartament comunist într-un spațiu viu",
+    excerpt: "Un ghid vizual și sincer despre cum florile, vasele potrivite și lumina caldă pot reumaniza un apartament comunist. Tendințe FloristMarket 2026 pentru spații mici și suflete mari.",
+    cover: "/images/blog-flori-in-beton.jpg",
+    date: "2025-10-15",
+    category: "Inspirație",
+    author: { name: "Echipa FloristMarket", avatar: "/images/avatar-fm.png" },
     readingTime: "8 min",
-    tags: ["ghivece ceramice", "romania", "2025", "plante interioare", "ghid expert", "calitate premium"]
+    tags: ["flori apartament", "design floral", "romania", "2026", "spații mici", "reumanizare"]
   },
   {
     slug: "tendinte-design-floral-romania-2026",
@@ -52,24 +52,82 @@ export function getPostBySlug(slug: string) {
 
 // Conținut expert pentru fiecare articol (HTML simplu stilizat de `prose`)
 export const POST_CONTENT: Record<string, string> = {
-  "ghivece-ceramice-premium-romania-2025": `
-    <p>Acest ghid expert te ajută să alegi ghiveciul ceramic potrivit pentru fiecare specie și spațiu din locuință. Am testat 27 de modele populare pe piața din România în 2025, evaluând <strong>porozitatea</strong>, <strong>stabilitatea</strong>, <strong>drenajul</strong> și <strong>rezistența la cicluri termice</strong>.</p>
-    <h2>Materiale și finisaje</h2>
+  "flori-in-beton-apartament-comunist": `
+    <p>În România, milioane de oameni locuiesc încă în apartamente comuniste — spații construite pentru eficiență, nu pentru frumusețe. Totuși, florile pot schimba complet modul în care trăim acolo. Nu sunt doar decorațiuni. Sunt <strong>rezistență estetică</strong>.</p>
+    
+    <p>Anul 2026 aduce o nouă filosofie: <em>„natura ca act de reumanizare"</em>. Nu contează câți metri pătrați ai — contează <strong>unde respiri verde</strong>.</p>
+    
+    <h2>1. Începe cu lumina – prima floare invizibilă</h2>
+    <p>Betonul rece, geamurile mici și lumina fluorescentă sunt inamicii oricărui aranjament floral. Primul pas nu este floarea, ci <strong>felul în care vezi floarea</strong>.</p>
+    
+    <blockquote>„Nicio plantă nu salvează o cameră care nu respiră lumină."<br />— <em>Ioana Stanciu, designer floral</em></blockquote>
+    
     <ul>
-      <li><strong>Ceramică arsă la temperatură înaltă</strong> – durabilitate excelentă, potrivită pentru plante cu irigare rară.</li>
-      <li><strong>Teracotă tratată</strong> – respiră, reduce risc de putrezire radiculară; necesită tăviță.</li>
-      <li><strong>Glazură mată</strong> – aspect premium, se curăță ușor, dar verifică orificiile de scurgere.</li>
+      <li>Draperii translucide în tonuri naturale, nu albe sterile.</li>
+      <li>Becuri calde (2700K) în loc de lumină rece (6500K).</li>
+      <li>Plasează florile acolo unde <strong>cad umbrele frumoase</strong>, nu în lumina directă.</li>
     </ul>
-    <h2>Dimensiuni și potrivire rădăcini</h2>
-    <p>Alege diametrul cu 2–4 cm mai mare decât balotul radicular. Pentru specii cu rădăcini pivotante (ex. ficus), preferă ghivece înalte; pentru rizomi (ex. calathea), alege variante late.</p>
-    <h2>Checklist de achiziție</h2>
-    <ol>
-      <li>Verifică minimum 1–3 orificii de drenaj.</li>
-      <li>Cere densitatea materialului (>1.9 g/cm³ pentru ceramică premium).</li>
-      <li>Testează stabilitatea: planta nu trebuie să se clatine.</li>
-    </ol>
-    <h2>Recomandări 2025</h2>
-    <p>Pentru apartamentele cu încălzire centrală, recomandăm ceramică groasă, glazurată mat, care minimizează evaporarea accelerată.</p>
+    
+    <h2>2. Alege vase cu memorie, nu doar cu formă</h2>
+    <p>Într-un apartament cu gresie veche și pereți lucioși, <strong>textura vasului</strong> e la fel de importantă ca floarea. Evită sticla lucioasă — nu are ce reflecta. Alege:</p>
+    
+    <ul>
+      <li>Ceramică brută, tonuri de lut sau alb cald.</li>
+      <li>Ghivece din ciment pictat manual, cu patină ușor neregulată.</li>
+      <li>Borcane și vase emailate din copilărie, reinterpretate.</li>
+    </ul>
+    
+    <p>Imperfecțiunea aduce <strong>umanitate într-un spațiu geometric</strong>. În designul floral modern, vasul nu mai e suport — e amintire.</p>
+    
+    <h2>3. Culori care încălzesc betonul</h2>
+    <p>În loc de contraste puternice, caută <strong>respirație cromatică</strong>. Paletele care funcționează cel mai bine în apartamentele comuniste sunt:</p>
+    
+    <ul>
+      <li>Galben muștar + verde măsliniu + crem</li>
+      <li>Terracotta + roz pudră + gri cald</li>
+      <li>Albastru vechi + lavandă + alb murdar</li>
+    </ul>
+    
+    <p>Betonul iubește culorile care îl liniștesc, nu pe cele care îl provoacă.</p>
+    
+    <h2>4. Pervazul – scena tăcută a florilor</h2>
+    <p>Pervazul este locul unde se întâlnesc exteriorul și interiorul. Nu-l trata ca pe un depozit. Fă-l altarul zilnic al luminii.</p>
+    
+    <ul>
+      <li>Folosește <strong>3 niveluri de înălțime</strong>: jos (ferigă), mediu (anturium), înalt (floare sezonieră).</li>
+      <li>Adaugă <strong>elemente minerale</strong> — pietre, scoici, ceramică brută.</li>
+      <li>Schimbă floarea principală lunar pentru a păstra vitalitatea spațiului.</li>
+    </ul>
+    
+    <blockquote>„Un pervaz cu flori e ca o fereastră spre tine."<br />— <em>Andreea Toma, arhitect de interior</em></blockquote>
+    
+    <h2>5. Mirosul – arhitectura invizibilă</h2>
+    <p>În spații mici, aroma e mai importantă decât imaginea. O floare parfumată poate schimba întreaga percepție a camerei.</p>
+    
+    <ul>
+      <li>Dormitor: iasomie, lavandă, frezie</li>
+      <li>Living: trandafir sălbatic, mentă, busuioc</li>
+      <li>Bucătărie: rozmarin, cimbru, oregano</li>
+    </ul>
+    
+    <p>Mirosul creează <strong>identitate emoțională</strong> – o formă subtilă de design senzorial.</p>
+    
+    <h2>6. Refuză plasticul</h2>
+    <p>Florile artificiale nu aduc viață, ci doar imitație. Dacă bugetul e limitat, alege <strong>flori uscate sau stabilizate</strong>, dar reale. O crenguță de salcie valorează mai mult decât un buchet de plastic.</p>
+    
+    <h2>7. Creează povești, nu compoziții</h2>
+    <p>În loc să „decorezi", imaginează fiecare colț ca o poveste:</p>
+    
+    <ul>
+      <li><strong>Colțul de lectură</strong> — o lampă caldă + o floare mică în vas ceramic.</li>
+      <li><strong>Masa de duminică</strong> — flori din piață, borcan reciclat, șervete din pânză.</li>
+      <li><strong>Holul de la intrare</strong> — o plantă care salută, un miros blând de pin.</li>
+    </ul>
+    
+    <blockquote>Florile nu sunt un decor. Sunt o conversație cu spațiul tău.</blockquote>
+    
+    <h2>🌱 Concluzie</h2>
+    <p>Un apartament comunist nu este o condamnare estetică. Este un fundal în care natura își poate recăpăta locul. În 2026, nu mai decorăm. <strong>Vindecăm spațiile în care trăim.</strong></p>
   `,
   "tendinte-design-floral-romania-2026": `
     <p>În 2026, designul floral în România renaște din conexiunea cu natura locală, reinterpretată prin tehnologie discretă și sensibilitate contextuală. Nu mai vrem doar frumos — vrem poveste, semnificație și durabilitate în fiecare aranjament.</p>

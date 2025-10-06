@@ -1,3 +1,5 @@
+"use client";
+
 import React from "react";
 import { notFound } from "next/navigation";
 import { Metadata } from 'next';
@@ -10,8 +12,6 @@ import { ReadingProgress } from "@/components/blog/ReadingProgress";
 import { TOC } from "@/components/blog/TOC";
 import { ShareBar } from "@/components/blog/ShareBar";
 import { PostCard } from "@/components/blog/PostCard";
-
-export const revalidate = 60;
 
 // Typography components with custom fonts
 const Title = ({ children, className = "" }: { children: React.ReactNode; className?: string }) => (
@@ -81,43 +81,6 @@ const ImageWithCaption = ({ src, alt, caption, className = "" }: { src: string; 
     )}
   </figure>
 );
-
-export async function generateMetadata({ params }: { params: { slug: string } }): Promise<Metadata> {
-  const post = getPostBySlug(params.slug);
-  if (!post) {
-    return {};
-  }
-
-  const title = `${post.title} | FloristMarket.ro`;
-  const description = post.excerpt;
-  const imageUrl = `${process.env.NEXT_PUBLIC_SITE_URL}${post.cover || '/og-blog.jpg'}`;
-  const url = `${process.env.NEXT_PUBLIC_SITE_URL}/blog/${post.slug}`;
-
-  return {
-    title,
-    description,
-    keywords: post.tags?.join(', ') || 'ghivece, plante, flori, design floral, ingrijire plante, romania',
-    openGraph: {
-      title,
-      description,
-      type: 'article',
-      url,
-      siteName: 'FloristMarket.ro',
-      images: [{ url: imageUrl }],
-      publishedTime: post.date,
-      authors: post.author?.name ? [post.author.name] : [],
-    },
-    twitter: {
-      card: 'summary_large_image',
-      title,
-      description,
-      images: [imageUrl],
-    },
-    alternates: {
-      canonical: url,
-    },
-  };
-}
 
 export default function BlogArticlePage({ params }: { params: { slug: string } }) {
   const post = getPostBySlug(params.slug);
