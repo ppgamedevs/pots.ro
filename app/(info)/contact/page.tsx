@@ -163,7 +163,7 @@ export default function ContactPage() {
               <div className="text-sm text-subink">
                 <p>FloristMarket.ro</p>
                 <p>București, România</p>
-                <p>CUI: 12345678</p>
+                <p>CUI: 43414871</p>
               </div>
             </div>
           </div>

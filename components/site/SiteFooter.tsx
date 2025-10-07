@@ -105,7 +105,7 @@ export function SiteFooter({ columns, payments, carriers }: SiteFooterProps) {
         <div className="border-t border-line pt-8">
           <div className="flex flex-col lg:flex-row items-center justify-between gap-4">
             <div className="text-sm text-ink/70">
-              © 2024 FloristMarket.ro • CUI: 12345678 • 
+              © 2025 FloristMarket.ro • OnlyTips SRL • CUI: 43414871 • 
               <Link href="/(legal)/terms" className="hover:text-ink transition-micro ml-1">
                 Termeni și condiții
               </Link>
