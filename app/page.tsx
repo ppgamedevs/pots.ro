@@ -150,7 +150,7 @@ export default function Home() {
                       title={item.title}
                       image={item.image}
                       href={item.href}
-                      tone="light"
+                      tone={/cutii/i.test(item.title) ? 'dark' : 'light'}
                     />
                   ))}
                 </div>
