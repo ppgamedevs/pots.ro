@@ -64,8 +64,8 @@ export async function GET() {
           type: 'card-small',
           title: 'Ghivece moderne',
           image: {
-            src: '/placeholder.png',
-            alt: 'Ghivece moderne'
+            src: '/images/ghivece-moderne.jpg',
+            alt: 'Ghiveci modern cu suculentă pe suport'
           },
           href: '/c/ghivece'
         },
