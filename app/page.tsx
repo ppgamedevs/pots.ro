@@ -150,7 +150,7 @@ export default function Home() {
                       title={item.title}
                       image={item.image}
                       href={item.href}
-                      tone={/cutii/i.test(item.title) ? 'dark' : 'light'}
+                      tone={/(cutii|ghivece)/i.test(item.title) ? 'dark' : 'light'}
                     />
                   ))}
                 </div>
@@ -162,7 +162,16 @@ export default function Home() {
           <CategoryTiles 
             items={categories.slice(0, 3).map(cat => ({
               name: cat.name,
-              image: { src: "/placeholder.png", alt: cat.name },
+              image: { 
+                src: cat.id === 'ambalaje' 
+                  ? '/images/ambalaje-buchete.jpg' 
+                  : cat.id === 'cutii' 
+                    ? '/images/cutii-rotunde-roz.jpg' 
+                    : cat.id === 'ghivece' 
+                      ? '/images/ghiveci-gri.jpg' 
+                      : '/placeholder.png',
+                alt: cat.name 
+              },
               href: cat.href
             }))}
           />
