@@ -198,6 +198,10 @@ export const POST_CONTENT: Record<string, string> = {
   "ingrijire-plante-interioare-romania-2025": `
     <p>Clima locală implică diferențe sezoniere mari. Sistemul propus optimizează <strong>lumină</strong>, <strong>umiditate</strong> și <strong>apă</strong> pentru specii populare în locuințele din România.</p>
     
+    <div class="my-8">
+      <img src="/blog/plante-topiar-bucatarie.jpg" alt="Plante topiar cu flori roz în bucătărie" class="w-full h-auto rounded-lg border border-gray-200" />
+    </div>
+    
     <h2>🌞 Regim de lumină</h2>
     <p>Clima României este variabilă, iar plantele interioare resimt direct diferențele dintre iarnă și vară. În 2025, tot mai mulți pasionați adoptă sisteme inteligente de lumină care reproduc ciclul natural al zilei.</p>
     
