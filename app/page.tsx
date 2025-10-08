@@ -9,8 +9,6 @@ import { ProductCard } from "@/components/product/ProductCard";
 import { EditorialTeasers } from "@/components/promo/EditorialTeasers";
 import { StructuredData } from "@/components/seo/StructuredData";
 import TrustedPartners from "@/components/TrustedPartners";
-import PartnersCarousel from "@/components/PartnersCarousel";
-import PaymentsStrip from "@/components/PaymentsStrip";
 import { Shield, Truck, CheckCircle, Headphones } from "lucide-react";
 
 // Types
@@ -208,9 +206,6 @@ export default function Home() {
           {/* Trusted Partners Section */}
           <TrustedPartners />
 
-          {/* Partners Carousel */}
-          <PartnersCarousel />
-
           {/* Slot E: Banner partener */}
           {promotions?.partner && (
             <section className="py-8">
@@ -224,9 +219,6 @@ export default function Home() {
           )}
         </div>
       </main>
-
-      {/* Payments Strip */}
-      <PaymentsStrip />
     </>
   );
 }
