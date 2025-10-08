@@ -5,15 +5,19 @@ import { useReducedMotion } from "@/lib/useReducedMotion";
 type Partner = { name: string; src: string; href?: string; width?: number; height?: number };
 
 const partners: Partner[] = [
-  { name: "NETOPIA Payments", src: "/partners/netopia.svg", href: "https://netopia-payments.com", width: 160, height: 56 },
-  { name: "Cargus", src: "/partners/cargus.svg", href: "https://www.cargus.ro", width: 160, height: 56 },
   { name: "Cardboard Street", src: "/partners/cardboard-street.svg", href: "https://cardboardstreet.eu", width: 200, height: 56 },
   { name: "Potto", src: "/partners/potto.svg", href: "#", width: 140, height: 56 },
 ];
 
+const paymentLogos: Partner[] = [
+  { name: "Visa", src: "/partners/payments/visa.svg", width: 64, height: 24 },
+  { name: "Mastercard", src: "/partners/payments/mastercard.svg", width: 64, height: 24 },
+  { name: "NETOPIA Payments", src: "/partners/netopia.svg", width: 120, height: 40 },
+];
+
 const badges = [
-  { title: "Plăți securizate", desc: "Visa / Mastercard / Netopia", emoji: "🔒" },
-  { title: "Livrare fiabilă", desc: "Cargus / DPD / Sameday", emoji: "🚚" },
+  { title: "Plăți securizate", desc: "Online, rapid și sigur", emoji: "🔒" },
+  { title: "Livrare fiabilă", desc: "Prin curieri naționali", emoji: "🚚" },
   { title: "Selleri verificați", desc: "profiluri auditate", emoji: "✅" },
   { title: "Retur 14 zile", desc: "proces simplu, transparent", emoji: "↩️" },
 ];
@@ -38,43 +42,63 @@ export default function TrustedPartners() {
             </div>
           </header>
 
-          {/* Logos */}
-          <div
-            className="mt-8 grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-6"
-            role="list"
-            aria-label="Logo parteneri"
-          >
-            {partners.map((p) => {
-              const Core = (
-                <div className="flex items-center justify-center rounded-xl border border-neutral-200 bg-white h-20">
-                  <Image
-                    src={p.src}
-                    alt={p.name}
-                    width={p.width ?? 160}
-                    height={p.height ?? 56}
-                    sizes="(max-width:640px) 40vw, (max-width:1024px) 25vw, 200px"
-                    className="grayscale opacity-80 hover:opacity-100 hover:grayscale-0 transition will-change-auto object-contain"
-                    priority={false}
-                  />
+              {/* Partner Logos */}
+              <div
+                className="mt-8 grid grid-cols-2 gap-6 max-w-md mx-auto"
+                role="list"
+                aria-label="Logo parteneri"
+              >
+                {partners.map((p) => {
+                  const Core = (
+                    <div className="flex items-center justify-center rounded-xl border border-neutral-200 bg-white h-20">
+                      <Image
+                        src={p.src}
+                        alt={p.name}
+                        width={p.width ?? 160}
+                        height={p.height ?? 56}
+                        sizes="(max-width:640px) 40vw, (max-width:1024px) 25vw, 200px"
+                        className="grayscale opacity-80 hover:opacity-100 hover:grayscale-0 transition will-change-auto object-contain"
+                        priority={false}
+                      />
+                    </div>
+                  );
+                  return p.href ? (
+                    <a
+                      key={p.name}
+                      role="listitem"
+                      href={p.href}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className={prefersReducedMotion ? "" : "hover:-translate-y-0.5 transition-transform"}
+                      aria-label={p.name}
+                    >
+                      {Core}
+                    </a>
+                  ) : (
+                    <div key={p.name} role="listitem">{Core}</div>
+                  );
+                })}
+              </div>
+
+              {/* Payment Logos */}
+              <div className="mt-8 pt-8 border-t border-neutral-200">
+                <div className="text-center mb-4">
+                  <span className="text-sm font-medium text-neutral-700">Plăți securizate prin:</span>
                 </div>
-              );
-              return p.href ? (
-                <a
-                  key={p.name}
-                  role="listitem"
-                  href={p.href}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className={prefersReducedMotion ? "" : "hover:-translate-y-0.5 transition-transform"}
-                  aria-label={p.name}
-                >
-                  {Core}
-                </a>
-              ) : (
-                <div key={p.name} role="listitem">{Core}</div>
-              );
-            })}
-          </div>
+                <div className="flex items-center justify-center gap-6">
+                  {paymentLogos.map((p) => (
+                    <div key={p.name} className="relative" style={{ width: p.width, height: p.height }}>
+                      <Image
+                        src={p.src}
+                        alt={p.name}
+                        fill
+                        sizes={`${p.width}px`}
+                        className="object-contain grayscale hover:grayscale-0 opacity-80 hover:opacity-100 transition"
+                      />
+                    </div>
+                  ))}
+                </div>
+              </div>
 
           {/* Trust badges */}
           <div className="mt-10 grid grid-cols-2 md:grid-cols-4 gap-4">
