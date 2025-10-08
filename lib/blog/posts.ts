@@ -37,7 +37,7 @@ export const POSTS: PostFrontMatter[] = [
     slug: "ingrijire-plante-interioare-romania-2025",
     title: "Îngrijire Plante Interioare România 2025: Sistem Complet pentru Clima Locală",
     excerpt: "Ghid expert pentru îngrijirea plantelor interioare în România în 2025. Adaptare la clima locală, sisteme de irigație automată, controlul umidității și protecția împotriva dăunătorilor.",
-    cover: "/blog/plante-topiar-bucatarie.jpg.jpg",
+    cover: "/blog/ingrijire-plante-interioare-2025.jpg",
     date: "2025-01-05",
     category: "Îngrijire Expertă",
     author: { name: "Prof. Ana Maria - Specialist Horticultură", avatar: "/images/avatar-expert-3.png" },
