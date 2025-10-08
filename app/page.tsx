@@ -206,17 +206,6 @@ export default function Home() {
           {/* Trusted Partners Section */}
           <TrustedPartners />
 
-          {/* Slot E: Banner partener */}
-          {promotions?.partner && (
-            <section className="py-8">
-              <PromoCard
-                title={promotions.partner.title}
-                image={promotions.partner.image}
-                href={promotions.partner.href}
-                tone="light"
-              />
-            </section>
-          )}
         </div>
       </main>
     </>

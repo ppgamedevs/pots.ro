@@ -1,5 +1,4 @@
 "use client";
-import Image from "next/image";
 import { useReducedMotion } from "@/lib/useReducedMotion";
 
 type Partner = { name: string; src: string; href?: string; width?: number; height?: number };
@@ -51,14 +50,13 @@ export default function TrustedPartners() {
                 {partners.map((p) => {
                   const Core = (
                     <div className="flex items-center justify-center rounded-xl border border-neutral-200 bg-white h-20">
-                      <Image
+                      <img
                         src={p.src}
                         alt={p.name}
                         width={p.width ?? 160}
                         height={p.height ?? 56}
-                        sizes="(max-width:640px) 40vw, (max-width:1024px) 25vw, 200px"
                         className="grayscale opacity-80 hover:opacity-100 hover:grayscale-0 transition will-change-auto object-contain"
-                        priority={false}
+                        loading="lazy"
                       />
                     </div>
                   );
@@ -88,12 +86,13 @@ export default function TrustedPartners() {
                 <div className="flex items-center justify-center gap-6">
                   {paymentLogos.map((p) => (
                     <div key={p.name} className="relative" style={{ width: p.width, height: p.height }}>
-                      <Image
+                      <img
                         src={p.src}
                         alt={p.name}
-                        fill
-                        sizes={`${p.width}px`}
+                        width={p.width}
+                        height={p.height}
                         className="object-contain grayscale hover:grayscale-0 opacity-80 hover:opacity-100 transition"
+                        loading="lazy"
                       />
                     </div>
                   ))}
