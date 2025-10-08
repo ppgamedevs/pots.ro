@@ -26,7 +26,7 @@ const blogPosts = [
     id: '2',
     title: 'Tendințe design floral România 2026: naturalețe, tehnologie discretă și expresii locale',
     slug: 'tendinte-design-floral-romania-2026',
-    excerpt: 'În 2026, designul floral în România renaște din conexiunea cu natura locală, reinterpretată prin tehnologie discretă și sensibilitate contextuală. Nu mai vrem doar frumos — vrem poveste, semnificație și durabilitate în fiecare aranjament.',
+    excerpt: 'În 2026, designul floral în România renaște din conexiunea cu natura locală, reinterpretată prin tehnologie discretă și sensibilitate contextuală. Nu mai vrem doar frumos - vrem poveste, semnificație și durabilitate în fiecare aranjament.',
     content: '# Tendințe Design Floral România 2026\n\nAnaliză completă a trendurilor...',
     publishedAt: '2025-10-15T14:30:00Z',
     author: 'Echipa FloristMarket',

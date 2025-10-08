@@ -35,7 +35,7 @@ export async function GET() {
         },
         href: '/blog/tendinte-design-floral-romania-2026',
         readTime: '6 min',
-        excerpt: 'În 2026, designul floral în România renaște din conexiunea cu natura locală, reinterpretată prin tehnologie discretă și sensibilitate contextuală. Nu mai vrem doar frumos — vrem poveste, semnificație și durabilitate în fiecare aranjament.'
+        excerpt: 'În 2026, designul floral în România renaște din conexiunea cu natura locală, reinterpretată prin tehnologie discretă și sensibilitate contextuală. Nu mai vrem doar frumos - vrem poveste, semnificație și durabilitate în fiecare aranjament.'
       },
       {
         id: 'post-3',

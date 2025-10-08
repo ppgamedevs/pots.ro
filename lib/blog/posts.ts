@@ -36,7 +36,7 @@ export const POSTS: PostFrontMatter[] = [
   {
     slug: "tendinte-design-floral-romania-2026",
     title: "Tendințe design floral România 2026: naturalețe, tehnologie discretă și expresii locale",
-    excerpt: "În 2026, designul floral în România renaște din conexiunea cu natura locală, reinterpretată prin tehnologie discretă și sensibilitate contextuală. Nu mai vrem doar frumos — vrem poveste, semnificație și durabilitate în fiecare aranjament.",
+    excerpt: "În 2026, designul floral în România renaște din conexiunea cu natura locală, reinterpretată prin tehnologie discretă și sensibilitate contextuală. Nu mai vrem doar frumos - vrem poveste, semnificație și durabilitate în fiecare aranjament.",
     cover: "/blog/buchet-galben.png", // imaginea specifică pentru acest articol
     date: "2025-10-15",
     category: "Inspirație",
@@ -70,13 +70,13 @@ export const POST_CONTENT: Record<string, string> = {
     
     <h3>🔹 Respirabilitate și echilibru termic</h3>
     <p>Ceramica permite o aerisire naturală a rădăcinilor. Spre deosebire de plastic, absoarbe și eliberează treptat umezeala, prevenind stagnarea apei și putrezirea rădăcinilor.</p>
-    <p>Perfect pentru plante tropicale, suculente sau bonsai — care au nevoie de un echilibru delicat între aer și apă.</p>
+    <p>Perfect pentru plante tropicale, suculente sau bonsai - care au nevoie de un echilibru delicat între aer și apă.</p>
     
     <h3>🔹 Greutate și stabilitate</h3>
     <p>Ghivecele ceramice au greutate proprie, ceea ce le face ideale pentru plante înalte sau voluminoase (ficus, monstera, areca). Nu se răstoarnă ușor, chiar și în curenți de aer sau pe balcon.</p>
     
     <h3>🔹 Longevitate și estetică</h3>
-    <p>Ceramica de calitate rămâne impecabilă ani de zile. Suprafețele pot fi mate, glazurate sau texturate manual — integrate ușor în designul interior.</p>
+    <p>Ceramica de calitate rămâne impecabilă ani de zile. Suprafețele pot fi mate, glazurate sau texturate manual - integrate ușor în designul interior.</p>
     
     <h2>2️⃣ Cum alegi dimensiunea potrivită</h2>
     
@@ -91,12 +91,12 @@ export const POST_CONTENT: Record<string, string> = {
     <h3>📏 Proporția vizuală</h3>
     <p>Un ghiveci prea mic face planta să pară disproporționată, iar unul prea mare menține solul ud prea mult timp. Raportul ideal: 1/3 ghiveci – 2/3 plantă.</p>
     
-    <h2>3️⃣ Drenajul — secretul unei plante sănătoase</h2>
+    <h2>3️⃣ Drenajul - secretul unei plante sănătoase</h2>
     <p>Fiecare ghiveci ceramic ar trebui să aibă:</p>
     
     <ul>
-      <li><strong>Orificii de drenaj</strong> — elimină excesul de apă.</li>
-      <li><strong>Farfurie ceramică separată</strong> — protejează mobilierul și permite evaporarea controlată.</li>
+      <li><strong>Orificii de drenaj</strong> - elimină excesul de apă.</li>
+      <li><strong>Farfurie ceramică separată</strong> - protejează mobilierul și permite evaporarea controlată.</li>
     </ul>
     
     <p><strong>Pro tip:</strong> adaugă un strat de argilă expandată sau pietriș de 2 cm la bază pentru aerisirea solului.</p>
@@ -115,33 +115,33 @@ export const POST_CONTENT: Record<string, string> = {
     <h2>5️⃣ Întreținerea ghivecelor ceramice</h2>
     <ul>
       <li>Curăță exteriorul lunar cu o lavetă umedă.</li>
-      <li>Evită detergenții acizi — pot matifia glazura.</li>
+      <li>Evită detergenții acizi - pot matifia glazura.</li>
       <li>La interior, spală vasul o dată la 6 luni pentru a elimina depunerile de calcar.</li>
-      <li>Nu lăsa ghivecele afară iarna — ceramica absoarbe apă și se poate fisura la îngheț.</li>
+      <li>Nu lăsa ghivecele afară iarna - ceramica absoarbe apă și se poate fisura la îngheț.</li>
     </ul>
     
     <h2>6️⃣ Recomandări FloristMarket pentru 2025</h2>
     
     <ul>
-      <li><strong>💡 Colecția "Terra Nova"</strong> — ghivece ceramice handmade din lut românesc, textură mată, culori naturale.</li>
-      <li><strong>💡 Colecția "Urban Verde"</strong> — design modern, gri beton + alb perlat, ideală pentru interioare minimaliste.</li>
-      <li><strong>💡 Colecția "Velvet Touch"</strong> — ghivece îmbrăcate în catifea premium, pentru aranjamente florale de lux.</li>
+      <li><strong>💡 Colecția "Terra Nova"</strong> - ghivece ceramice handmade din lut românesc, textură mată, culori naturale.</li>
+      <li><strong>💡 Colecția "Urban Verde"</strong> - design modern, gri beton + alb perlat, ideală pentru interioare minimaliste.</li>
+      <li><strong>💡 Colecția "Velvet Touch"</strong> - ghivece îmbrăcate în catifea premium, pentru aranjamente florale de lux.</li>
     </ul>
     
     <h2>🌿 Concluzie</h2>
-    <p>Un ghiveci ceramic nu este doar un recipient — este o parte din povestea plantei tale.</p>
+    <p>Un ghiveci ceramic nu este doar un recipient - este o parte din povestea plantei tale.</p>
     <p>Când alegi calitatea potrivită, echilibrezi funcționalitatea cu estetica, iar spațiul tău devine mai viu, mai calm și mai conectat cu natura.</p>
     <p>Alege ceramica premium produsă local, cu atenție la detalii, și transformă fiecare plantă într-o piesă de design.</p>
   `,
   "flori-in-beton-apartament-comunist": `
-    <p>În România, milioane de oameni locuiesc încă în apartamente comuniste — spații construite pentru eficiență, nu pentru frumusețe. Totuși, florile pot schimba complet modul în care trăim acolo. Nu sunt doar decorațiuni. Sunt <strong>rezistență estetică</strong>.</p>
+    <p>În România, milioane de oameni locuiesc încă în apartamente comuniste - spații construite pentru eficiență, nu pentru frumusețe. Totuși, florile pot schimba complet modul în care trăim acolo. Nu sunt doar decorațiuni. Sunt <strong>rezistență estetică</strong>.</p>
     
-    <p>Anul 2026 aduce o nouă filosofie: <em>„natura ca act de reumanizare"</em>. Nu contează câți metri pătrați ai — contează <strong>unde respiri verde</strong>.</p>
+    <p>Anul 2026 aduce o nouă filosofie: <em>„natura ca act de reumanizare"</em>. Nu contează câți metri pătrați ai - contează <strong>unde respiri verde</strong>.</p>
     
     <h2>1. Începe cu lumina – prima floare invizibilă</h2>
     <p>Betonul rece, geamurile mici și lumina fluorescentă sunt inamicii oricărui aranjament floral. Primul pas nu este floarea, ci <strong>felul în care vezi floarea</strong>.</p>
     
-    <blockquote>„Nicio plantă nu salvează o cameră care nu respiră lumină."<br />— <em>Ioana Stanciu, designer floral</em></blockquote>
+    <blockquote>„Nicio plantă nu salvează o cameră care nu respiră lumină."<br />- <em>Ioana Stanciu, designer floral</em></blockquote>
     
     <ul>
       <li>Draperii translucide în tonuri naturale, nu albe sterile.</li>
@@ -150,7 +150,7 @@ export const POST_CONTENT: Record<string, string> = {
     </ul>
     
     <h2>2. Alege vase cu memorie, nu doar cu formă</h2>
-    <p>Într-un apartament cu gresie veche și pereți lucioși, <strong>textura vasului</strong> e la fel de importantă ca floarea. Evită sticla lucioasă — nu are ce reflecta. Alege:</p>
+    <p>Într-un apartament cu gresie veche și pereți lucioși, <strong>textura vasului</strong> e la fel de importantă ca floarea. Evită sticla lucioasă - nu are ce reflecta. Alege:</p>
     
     <ul>
       <li>Ceramică brută, tonuri de lut sau alb cald.</li>
@@ -158,7 +158,7 @@ export const POST_CONTENT: Record<string, string> = {
       <li>Borcane și vase emailate din copilărie, reinterpretate.</li>
     </ul>
     
-    <p>Imperfecțiunea aduce <strong>umanitate într-un spațiu geometric</strong>. În designul floral modern, vasul nu mai e suport — e amintire.</p>
+    <p>Imperfecțiunea aduce <strong>umanitate într-un spațiu geometric</strong>. În designul floral modern, vasul nu mai e suport - e amintire.</p>
     
     <h2>3. Culori care încălzesc betonul</h2>
     <p>În loc de contraste puternice, caută <strong>respirație cromatică</strong>. Paletele care funcționează cel mai bine în apartamentele comuniste sunt:</p>
@@ -176,11 +176,11 @@ export const POST_CONTENT: Record<string, string> = {
     
     <ul>
       <li>Folosește <strong>3 niveluri de înălțime</strong>: jos (ferigă), mediu (anturium), înalt (floare sezonieră).</li>
-      <li>Adaugă <strong>elemente minerale</strong> — pietre, scoici, ceramică brută.</li>
+      <li>Adaugă <strong>elemente minerale</strong> - pietre, scoici, ceramică brută.</li>
       <li>Schimbă floarea principală lunar pentru a păstra vitalitatea spațiului.</li>
     </ul>
     
-    <blockquote>„Un pervaz cu flori e ca o fereastră spre tine."<br />— <em>Andreea Toma, arhitect de interior</em></blockquote>
+    <blockquote>„Un pervaz cu flori e ca o fereastră spre tine."<br />- <em>Andreea Toma, arhitect de interior</em></blockquote>
     
     <h2>5. Mirosul – arhitectura invizibilă</h2>
     <p>În spații mici, aroma e mai importantă decât imaginea. O floare parfumată poate schimba întreaga percepție a camerei.</p>
@@ -200,9 +200,9 @@ export const POST_CONTENT: Record<string, string> = {
     <p>În loc să „decorezi", imaginează fiecare colț ca o poveste:</p>
     
     <ul>
-      <li><strong>Colțul de lectură</strong> — o lampă caldă + o floare mică în vas ceramic.</li>
-      <li><strong>Masa de duminică</strong> — flori din piață, borcan reciclat, șervete din pânză.</li>
-      <li><strong>Holul de la intrare</strong> — o plantă care salută, un miros blând de pin.</li>
+      <li><strong>Colțul de lectură</strong> - o lampă caldă + o floare mică în vas ceramic.</li>
+      <li><strong>Masa de duminică</strong> - flori din piață, borcan reciclat, șervete din pânză.</li>
+      <li><strong>Holul de la intrare</strong> - o plantă care salută, un miros blând de pin.</li>
     </ul>
     
     <blockquote>Florile nu sunt un decor. Sunt o conversație cu spațiul tău.</blockquote>
@@ -211,7 +211,7 @@ export const POST_CONTENT: Record<string, string> = {
     <p>Un apartament comunist nu este o condamnare estetică. Este un fundal în care natura își poate recăpăta locul. În 2026, nu mai decorăm. <strong>Vindecăm spațiile în care trăim.</strong></p>
   `,
   "tendinte-design-floral-romania-2026": `
-    <p>În 2026, designul floral în România renaște din conexiunea cu natura locală, reinterpretată prin tehnologie discretă și sensibilitate contextuală. Nu mai vrem doar frumos — vrem poveste, semnificație și durabilitate în fiecare aranjament.</p>
+    <p>În 2026, designul floral în România renaște din conexiunea cu natura locală, reinterpretată prin tehnologie discretă și sensibilitate contextuală. Nu mai vrem doar frumos - vrem poveste, semnificație și durabilitate în fiecare aranjament.</p>
     
     <h2>1. Reîntoarcerea la elementele autohtone</h2>
     <p>În prim-plan vor reveni plantele spontane (ex: salcie, tei, coada-calului) și materiale tradiționale (panza de iută, hârtia de orez, răchita), integrate în aranjamente contemporane. Florarii români vor jongla cu tehnici tradiționale (mărgelire, răsucire manuală) pentru a genera texturi subtile, nu doar volume.</p>
@@ -226,7 +226,7 @@ export const POST_CONTENT: Record<string, string> = {
     <p>Culorile devin semnături locale, nu doar tendințe globale. Accentul se mută spre tonuri „îmbrățișate de climat": nuanțe care arată bine și în lumina de seară de septembrie.</p>
     
     <h2>2. Tehnologie invizibilă: senzori & conectivitate discretă</h2>
-    <p>Nu toate aranjamentele vor fi smart, dar cele care îndrăznesc vor ascunde senzori de umiditate, LED-uri colorate care schimbă intensitatea și mici actuatori care rotesc structuri sculpturale. Nu ca gadget — ca extensie vie.</p>
+    <p>Nu toate aranjamentele vor fi smart, dar cele care îndrăznesc vor ascunde senzori de umiditate, LED-uri colorate care schimbă intensitatea și mici actuatori care rotesc structuri sculpturale. Nu ca gadget - ca extensie vie.</p>
     
     <h3>„Florile gândesc"</h3>
     <p>În testele pilot realizate în 2025, s-au folosit:</p>
@@ -242,7 +242,7 @@ export const POST_CONTENT: Record<string, string> = {
     <ul>
       <li>columne florale suspendate</li>
       <li>arcuri voluminoase care "plutesc" în spațiu</li>
-      <li>utilizarea negativului — spațiu liber dintre flori, respirare vizuală</li>
+      <li>utilizarea negativului - spațiu liber dintre flori, respirare vizuală</li>
       <li>oglinzi mici în mix (reflectă lumina, dublează texturi)</li>
     </ul>
     <p>Nu compoziții dense: spațiu și aer devin elemente active.</p>
@@ -254,7 +254,7 @@ export const POST_CONTENT: Record<string, string> = {
       <li>papirus, hârtie de mătase colorată manual</li>
       <li>soluri decorative (nisip fin, mărgele naturale, mușchi stabilizat)</li>
     </ul>
-    <p>Texturile devin voce — nu doar fundal.</p>
+    <p>Texturile devin voce - nu doar fundal.</p>
     
     <h2>5. Stil local + sustainability ca imperativ</h2>
     <p>Designerii români se vor diferenția prin autentic: ierburi locale uscate, ramuri de salcie, semințe decorative românești (ex: măceș, trifoi). Totul fără transport de zeci de mii de kilometri. Ambalajele biodegradabile devin standard (hârtie reciclată, pungi de cânepă, moară de hârtie).</p>
@@ -265,7 +265,7 @@ export const POST_CONTENT: Record<string, string> = {
     <p>Analizează vegetația zonei tale (deal, munte, câmpie). Construiește 2-3 palete cromatice locale și joacă-te doar între ele. Clienții își vor asocia aranjamentele cu regiunea.</p>
     
     <h3>2. Combină tehnologie fără a evidenția cablurile</h3>
-    <p>Ascunde senzorii în baza aranjamentului, LED-urile sub frunze groase, și folosește microcontrolere foarte mici (&lt;8×8 mm). Testează în lumină slabă — tehnologia nu trebuie să strice impresia.</p>
+    <p>Ascunde senzorii în baza aranjamentului, LED-urile sub frunze groase, și folosește microcontrolere foarte mici (&lt;8×8 mm). Testează în lumină slabă - tehnologia nu trebuie să strice impresia.</p>
     
     <h3>3. Lasă spațiu să respire</h3>
     <p>25-35% spațiu negativ între elemente, nu umple tot. În spații mici asta e diferența între „aglomerat" și „respirabil".</p>
@@ -274,7 +274,7 @@ export const POST_CONTENT: Record<string, string> = {
     <p>Include în fotografie ramuri uscate, materiale locale, etichete scurte: „salcie din Maramureș / LED discret / hârtie manuală". Clienții cumpără poveste.</p>
     
     <h2>Concluzie</h2>
-    <p>Tendințele florale din 2026 în România nu sunt exotic, ci introspecție — reinterpretarea naturii locale prin tehnologie discretă și conștientă. Florarii care combină sensibilitate, etică și microtehnologie vor conduce piața.</p>
+    <p>Tendințele florale din 2026 în România nu sunt exotic, ci introspecție - reinterpretarea naturii locale prin tehnologie discretă și conștientă. Florarii care combină sensibilitate, etică și microtehnologie vor conduce piața.</p>
   `,
   "ingrijire-plante-interioare-romania-2025": `
     <p>Clima locală implică diferențe sezoniere mari. Sistemul propus optimizează <strong>lumină</strong>, <strong>umiditate</strong> și <strong>apă</strong> pentru specii populare în locuințele din România.</p>
@@ -316,10 +316,10 @@ export const POST_CONTENT: Record<string, string> = {
     <ul>
       <li><strong>Carantină de 14 zile</strong> pentru fiecare plantă nouă adusă acasă.</li>
       <li><strong>Tratamente preventive:</strong> pulverizări cu ulei de neem 0.5% o dată la 21–28 de zile.</li>
-      <li>Evită solurile reutilizate sau ghivecele nesterilizate — acestea pot ascunde ouă de trips sau musculițe negre.</li>
+      <li>Evită solurile reutilizate sau ghivecele nesterilizate - acestea pot ascunde ouă de trips sau musculițe negre.</li>
     </ul>
     
-    <p><strong>🧪 Truc expert:</strong> adaugă un strat subțire de nisip cuarțos peste substrat — împiedică insectele să depună ouă la suprafață.</p>
+    <p><strong>🧪 Truc expert:</strong> adaugă un strat subțire de nisip cuarțos peste substrat - împiedică insectele să depună ouă la suprafață.</p>
     
     <h2>🌱 Adaptare la climat și design interior</h2>
     <p>În apartamentele din România, spațiul și lumina variază mult. Arhitecții de interior recomandă „ecosisteme controlate" – colțuri verzi cu plante compatibile, aranjate estetic în funcție de microclimatul camerei.</p>
@@ -330,12 +330,12 @@ export const POST_CONTENT: Record<string, string> = {
       <li><strong>Zonele reci</strong> (balcoane închise): begonii și plante aromatice.</li>
     </ul>
     
-    <p>Integrează ghivece ceramice cu bazin dublu sau sisteme de drenaj ascuns — estetice, dar și funcționale.</p>
+    <p>Integrează ghivece ceramice cu bazin dublu sau sisteme de drenaj ascuns - estetice, dar și funcționale.</p>
     
     <h2>🌿 Concluzie</h2>
     <p>Îngrijirea plantelor interioare în România în 2025 înseamnă echilibru între natură și tehnologie.</p>
     <p>Cu un control atent al luminii, umidității și irigației, poți menține orice plantă tropicală sănătoasă chiar și în climat continental.</p>
-    <p>Alege echipamente inteligente, dar păstrează contactul cu natura — observă, adaptează și oferă condiții apropiate habitatului natural.</p>
+    <p>Alege echipamente inteligente, dar păstrează contactul cu natura - observă, adaptează și oferă condiții apropiate habitatului natural.</p>
   `,
 };
 
