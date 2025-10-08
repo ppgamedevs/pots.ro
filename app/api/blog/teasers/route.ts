@@ -20,7 +20,7 @@ export async function GET() {
         title: 'Ghivece Ceramice Premium România 2025: Ghid Complet pentru Alegerea Perfectă',
         image: {
           src: '/blog/ghivece-ceramice-premium-2025.jpg',
-          alt: 'Ghivece Ceramice Premium România 2025'
+          alt: 'Ghid Ghivece Ceramice Premium România 2025'
         },
         href: '/blog/ghivece-ceramice-premium-romania-2025',
         readTime: '8 min',

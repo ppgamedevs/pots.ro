@@ -12,6 +12,17 @@ export type PostFrontMatter = {
 
 export const POSTS: PostFrontMatter[] = [
   {
+    slug: "ghivece-ceramice-premium-romania-2025",
+    title: "Ghivece Ceramice Premium România 2025: Ghid Complet pentru Alegerea Perfectă",
+    excerpt: "Descoperă cele mai bune ghivece ceramice din România pentru 2025. Ghid expert cu teste de calitate, materiale premium și sfaturi de specialiști pentru alegerea ghiveciului ideal pentru plantele tale.",
+    cover: "/blog/ghivece-ceramice-premium-2025.jpg",
+    date: "2025-01-15",
+    category: "Ghid Expert",
+    author: { name: "Dr. Maria Popescu - Expert Botanică", avatar: "/images/avatar-expert-2.png" },
+    readingTime: "8 min",
+    tags: ["ghivece ceramice", "romania", "2025", "plante interioare", "ghid expert", "calitate premium"]
+  },
+  {
     slug: "flori-in-beton-apartament-comunist",
     title: "Flori în beton: cum să transformi un apartament comunist într-un spațiu viu",
     excerpt: "Un ghid vizual și sincer despre cum florile, vasele potrivite și lumina caldă pot reumaniza un apartament comunist. Tendințe FloristMarket 2026 pentru spații mici și suflete mari.",
@@ -52,6 +63,76 @@ export function getPostBySlug(slug: string) {
 
 // Conținut expert pentru fiecare articol (HTML simplu stilizat de `prose`)
 export const POST_CONTENT: Record<string, string> = {
+  "ghivece-ceramice-premium-romania-2025": `
+    <p>În 2025, alegerea ghivecelor ceramice de calitate devine o investiție în sănătatea plantelor și estetica spațiului. Ghidul nostru expert te va ajuta să alegi ghivecele perfecte pentru nevoile specifice ale plantelor tale.</p>
+    
+    <h2>1️⃣ De ce să alegi ceramică?</h2>
+    
+    <h3>🔹 Respirabilitate și echilibru termic</h3>
+    <p>Ceramica permite o aerisire naturală a rădăcinilor. Spre deosebire de plastic, absoarbe și eliberează treptat umezeala, prevenind stagnarea apei și putrezirea rădăcinilor.</p>
+    <p>Perfect pentru plante tropicale, suculente sau bonsai — care au nevoie de un echilibru delicat între aer și apă.</p>
+    
+    <h3>🔹 Greutate și stabilitate</h3>
+    <p>Ghivecele ceramice au greutate proprie, ceea ce le face ideale pentru plante înalte sau voluminoase (ficus, monstera, areca). Nu se răstoarnă ușor, chiar și în curenți de aer sau pe balcon.</p>
+    
+    <h3>🔹 Longevitate și estetică</h3>
+    <p>Ceramica de calitate rămâne impecabilă ani de zile. Suprafețele pot fi mate, glazurate sau texturate manual — integrate ușor în designul interior.</p>
+    
+    <h2>2️⃣ Cum alegi dimensiunea potrivită</h2>
+    
+    <h3>🌱 Regula generală: +2 cm diametru față de ghiveciul anterior</h3>
+    <p>La repicare, alege un vas cu diametru mai mare cu 2–3 cm și o adâncime adaptată sistemului radicular.</p>
+    
+    <ul>
+      <li><strong>Plante cu rădăcini adânci</strong> (ficus, palmieri): ghivece cilindrice.</li>
+      <li><strong>Plante cu rădăcini superficiale</strong> (suculente, begonii): ghivece late și joase.</li>
+    </ul>
+    
+    <h3>📏 Proporția vizuală</h3>
+    <p>Un ghiveci prea mic face planta să pară disproporționată, iar unul prea mare menține solul ud prea mult timp. Raportul ideal: 1/3 ghiveci – 2/3 plantă.</p>
+    
+    <h2>3️⃣ Drenajul — secretul unei plante sănătoase</h2>
+    <p>Fiecare ghiveci ceramic ar trebui să aibă:</p>
+    
+    <ul>
+      <li><strong>Orificii de drenaj</strong> — elimină excesul de apă.</li>
+      <li><strong>Farfurie ceramică separată</strong> — protejează mobilierul și permite evaporarea controlată.</li>
+    </ul>
+    
+    <p><strong>Pro tip:</strong> adaugă un strat de argilă expandată sau pietriș de 2 cm la bază pentru aerisirea solului.</p>
+    
+    <h2>4️⃣ Design și culoare</h2>
+    
+    <h3>🎨 În 2025, trendurile românești favorizează:</h3>
+    <ul>
+      <li>Texturi catifelate și nuanțe naturale: bej, teracotă, verde salvie, alb cald.</li>
+      <li>Forme minimaliste: cilindrice, rotunde, cu margini fine.</li>
+      <li>Accente metalice discrete: detalii aurii sau bronz, doar la modelele premium.</li>
+    </ul>
+    
+    <p>În spații luminoase, un ghiveci mat subliniază eleganța plantei. În camere întunecate, glazura lucioasă reflectă mai bine lumina.</p>
+    
+    <h2>5️⃣ Întreținerea ghivecelor ceramice</h2>
+    <ul>
+      <li>Curăță exteriorul lunar cu o lavetă umedă.</li>
+      <li>Evită detergenții acizi — pot matifia glazura.</li>
+      <li>La interior, spală vasul o dată la 6 luni pentru a elimina depunerile de calcar.</li>
+      <li>Nu lăsa ghivecele afară iarna — ceramica absoarbe apă și se poate fisura la îngheț.</li>
+    </ul>
+    
+    <h2>6️⃣ Recomandări FloristMarket pentru 2025</h2>
+    
+    <ul>
+      <li><strong>💡 Colecția "Terra Nova"</strong> — ghivece ceramice handmade din lut românesc, textură mată, culori naturale.</li>
+      <li><strong>💡 Colecția "Urban Verde"</strong> — design modern, gri beton + alb perlat, ideală pentru interioare minimaliste.</li>
+      <li><strong>💡 Colecția "Velvet Touch"</strong> — ghivece îmbrăcate în catifea premium, pentru aranjamente florale de lux.</li>
+    </ul>
+    
+    <h2>🌿 Concluzie</h2>
+    <p>Un ghiveci ceramic nu este doar un recipient — este o parte din povestea plantei tale.</p>
+    <p>Când alegi calitatea potrivită, echilibrezi funcționalitatea cu estetica, iar spațiul tău devine mai viu, mai calm și mai conectat cu natura.</p>
+    <p>Alege ceramica premium produsă local, cu atenție la detalii, și transformă fiecare plantă într-o piesă de design.</p>
+  `,
   "flori-in-beton-apartament-comunist": `
     <p>În România, milioane de oameni locuiesc încă în apartamente comuniste — spații construite pentru eficiență, nu pentru frumusețe. Totuși, florile pot schimba complet modul în care trăim acolo. Nu sunt doar decorațiuni. Sunt <strong>rezistență estetică</strong>.</p>
     
