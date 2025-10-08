@@ -37,7 +37,7 @@ export const POSTS: PostFrontMatter[] = [
     slug: "ingrijire-plante-interioare-romania-2025",
     title: "Îngrijire Plante Interioare România 2025: Sistem Complet pentru Clima Locală",
     excerpt: "Ghid expert pentru îngrijirea plantelor interioare în România în 2025. Adaptare la clima locală, sisteme de irigație automată, controlul umidității și protecția împotriva dăunătorilor.",
-    cover: "/blog/ingrijire-plante-interioare-2025.jpg",
+    cover: "/blog/plante-topiar-bucatarie.jpg",
     date: "2025-01-05",
     category: "Îngrijire Expertă",
     author: { name: "Prof. Ana Maria - Specialist Horticultură", avatar: "/images/avatar-expert-3.png" },
@@ -197,15 +197,64 @@ export const POST_CONTENT: Record<string, string> = {
   `,
   "ingrijire-plante-interioare-romania-2025": `
     <p>Clima locală implică diferențe sezoniere mari. Sistemul propus optimizează <strong>lumină</strong>, <strong>umiditate</strong> și <strong>apă</strong> pentru specii populare în locuințele din România.</p>
-    <h2>Regim de lumină</h2>
-    <p>Adaptează poziționarea pe ferestre: E/SE pentru specii mediteraneene, N pentru ferigă și calathea.</p>
-    <h2>Umiditate și irigare</h2>
+    
+    <h2>🌞 Regim de lumină</h2>
+    <p>Clima României este variabilă, iar plantele interioare resimt direct diferențele dintre iarnă și vară. În 2025, tot mai mulți pasionați adoptă sisteme inteligente de lumină care reproduc ciclul natural al zilei.</p>
+    
+    <h3>Orientarea ideală a ferestrelor:</h3>
     <ul>
-      <li>Umiditate țintă: 45–55% iarna, 50–65% vara (higrometru obligatoriu).</li>
-      <li>Irigare prin greutate: udă când ghiveciul pierde 25–35% din greutatea saturată.</li>
+      <li><strong>Est / Sud-Est</strong> → pentru plantele cu cerințe mediteraneene (ficus, aloe, monstera).</li>
+      <li><strong>Nord</strong> → pentru specii de umbră precum feriga, calathea, maranta.</li>
     </ul>
-    <h2>Prevenție dăunători</h2>
-    <p>Quarantină 14 zile pentru plante noi, tratamente preventive cu ulei de neem 0.5% la 21–28 zile.</p>
+    
+    <h3>Lumina artificială:</h3>
+    <p>Folosește benzi LED horticole cu spectru complet și control automat al duratei.</p>
+    <ul>
+      <li><strong>Primăvara</strong> – 14h/zi</li>
+      <li><strong>Iarna</strong> – 10h/zi</li>
+    </ul>
+    <p>Evită becurile clasice, care produc căldură excesivă și uscă solul.</p>
+    
+    <h2>💧 Umiditate și irigare</h2>
+    <p>România are o umiditate scăzută iarna, din cauza încălzirii centralizate. Un higrometru este esențial pentru orice colecționar de plante.</p>
+    
+    <h3>Umiditate ideală:</h3>
+    <ul>
+      <li><strong>Iarnă:</strong> 45–55%</li>
+      <li><strong>Vară:</strong> 50–65%</li>
+    </ul>
+    <p>Pulverizează apa doar dimineața, evitând frunzele lucioase expuse direct la soare.</p>
+    
+    <h3>Irigare prin greutate:</h3>
+    <p>Udă doar când ghiveciul pierde 25–35% din greutatea saturată (poți cântări periodic pentru precizie).</p>
+    <p>Pentru colecțiile mari, instalează sisteme automate de irigare cu senzori care ajustează debitul în funcție de temperatură și nivelul de evaporare.</p>
+    
+    <h2>🐛 Prevenție dăunători</h2>
+    <p>Plantele tropicale, tot mai populare în locuințele românilor, pot aduce insecte invazive dacă nu sunt tratate corect de la început.</p>
+    
+    <ul>
+      <li><strong>Carantină de 14 zile</strong> pentru fiecare plantă nouă adusă acasă.</li>
+      <li><strong>Tratamente preventive:</strong> pulverizări cu ulei de neem 0.5% o dată la 21–28 de zile.</li>
+      <li>Evită solurile reutilizate sau ghivecele nesterilizate — acestea pot ascunde ouă de trips sau musculițe negre.</li>
+    </ul>
+    
+    <p><strong>🧪 Truc expert:</strong> adaugă un strat subțire de nisip cuarțos peste substrat — împiedică insectele să depună ouă la suprafață.</p>
+    
+    <h2>🌱 Adaptare la climat și design interior</h2>
+    <p>În apartamentele din România, spațiul și lumina variază mult. Arhitecții de interior recomandă „ecosisteme controlate" – colțuri verzi cu plante compatibile, aranjate estetic în funcție de microclimatul camerei.</p>
+    
+    <ul>
+      <li><strong>Zonele calde</strong> (bucătărie, living sudic): suculente și ficuși.</li>
+      <li><strong>Zonele umede</strong> (baie, nord): ferigi, calathea, philodendron.</li>
+      <li><strong>Zonele reci</strong> (balcoane închise): begonii și plante aromatice.</li>
+    </ul>
+    
+    <p>Integrează ghivece ceramice cu bazin dublu sau sisteme de drenaj ascuns — estetice, dar și funcționale.</p>
+    
+    <h2>🌿 Concluzie</h2>
+    <p>Îngrijirea plantelor interioare în România în 2025 înseamnă echilibru între natură și tehnologie.</p>
+    <p>Cu un control atent al luminii, umidității și irigației, poți menține orice plantă tropicală sănătoasă chiar și în climat continental.</p>
+    <p>Alege echipamente inteligente, dar păstrează contactul cu natura — observă, adaptează și oferă condiții apropiate habitatului natural.</p>
   `,
 };
 
