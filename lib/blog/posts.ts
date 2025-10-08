@@ -37,7 +37,7 @@ export const POSTS: PostFrontMatter[] = [
     slug: "ingrijire-plante-interioare-romania-2025",
     title: "Îngrijire Plante Interioare România 2025: Sistem Complet pentru Clima Locală",
     excerpt: "Ghid expert pentru îngrijirea plantelor interioare în România în 2025. Adaptare la clima locală, sisteme de irigație automată, controlul umidității și protecția împotriva dăunătorilor.",
-    cover: "/blog/plante-topiar-bucatarie.jpg",
+    cover: "/blog/plante-topiar-bucatarie.jpg.jpg",
     date: "2025-01-05",
     category: "Îngrijire Expertă",
     author: { name: "Prof. Ana Maria - Specialist Horticultură", avatar: "/images/avatar-expert-3.png" },
@@ -199,7 +199,7 @@ export const POST_CONTENT: Record<string, string> = {
     <p>Clima locală implică diferențe sezoniere mari. Sistemul propus optimizează <strong>lumină</strong>, <strong>umiditate</strong> și <strong>apă</strong> pentru specii populare în locuințele din România.</p>
     
     <div class="my-8">
-      <img src="/blog/plante-topiar-bucatarie.jpg" alt="Plante topiar cu flori roz în bucătărie" class="w-full h-auto rounded-lg border border-gray-200" />
+      <img src="/blog/plante-topiar-bucatarie.jpg.jpg" alt="Plante topiar cu flori roz în bucătărie" class="w-full h-auto rounded-lg border border-gray-200" />
     </div>
     
     <h2>🌞 Regim de lumină</h2>
