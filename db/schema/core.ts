@@ -198,6 +198,8 @@ export const authOtp = pgTable("auth_otp", {
   createdAt: timestamp("created_at").defaultNow().notNull(),
 }, (table) => ({
   emailExpiresIdx: index("auth_otp_email_expires_idx").on(table.email, table.expiresAt),
+  emailCreatedIdx: index("auth_otp_email_created_idx").on(table.email, table.createdAt),
+  consumedAtIdx: index("auth_otp_consumed_at_idx").on(table.consumedAt),
 }));
 
 // Sessions table for httpOnly cookies
@@ -212,6 +214,8 @@ export const sessions = pgTable("sessions", {
   revokedAt: timestamp("revoked_at"),
 }, (table) => ({
   userIdExpiresIdx: index("sessions_user_id_expires_idx").on(table.userId, table.expiresAt),
+  sessionTokenHashIdx: index("sessions_token_hash_idx").on(table.sessionTokenHash),
+  revokedAtIdx: index("sessions_revoked_at_idx").on(table.revokedAt),
 }));
 
 // Auth audit table for security logging

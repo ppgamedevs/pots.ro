@@ -149,13 +149,11 @@ export async function POST(request: NextRequest) {
         })
         .returning();
       
-      // Send welcome email for new users
-      try {
-        await sendWelcomeEmail(normalizedEmail);
-      } catch (error) {
+      // Send welcome email asynchronously (don't block login)
+      sendWelcomeEmail(normalizedEmail).catch(error => {
         console.error('Failed to send welcome email:', error);
         // Don't fail the login if welcome email fails
-      }
+      });
     }
     
     // Create session
@@ -177,11 +175,16 @@ export async function POST(request: NextRequest) {
     // Set session cookie
     setSessionCookie(response, sessionToken);
     
-    // Log successful verification
-    await logAuthEvent('otp_verify', normalizedEmail, user.id, ip, userAgent);
-    await logAuthEvent('login', normalizedEmail, user.id, ip, userAgent, {
-      method: 'otp',
-      isNewUser,
+    // Log successful verification asynchronously
+    Promise.all([
+      logAuthEvent('otp_verify', normalizedEmail, user.id, ip, userAgent),
+      logAuthEvent('login', normalizedEmail, user.id, ip, userAgent, {
+        method: 'otp',
+        isNewUser,
+      })
+    ]).catch(error => {
+      console.error('Failed to log auth events:', error);
+      // Don't fail the login if logging fails
     });
     
     return response;

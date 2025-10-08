@@ -6,7 +6,7 @@ const scryptAsync = promisify(scrypt);
 // Configuration
 const SALT_LENGTH = 32;
 const KEY_LENGTH = 64;
-const SCRYPT_COST = 16384; // 2^14
+const SCRYPT_COST = process.env.NODE_ENV === 'production' ? 16384 : 8192; // Lower cost for development
 
 /**
  * Hash a value using scrypt

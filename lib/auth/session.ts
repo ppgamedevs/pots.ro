@@ -38,14 +38,17 @@ export async function createSession(
   const ip = getClientIP(request.headers);
   const userAgent = getUserAgent(request.headers);
   
-  // Insert session into database
+  // Insert session into database with minimal data
   const [sessionRecord] = await db.insert(sessions).values({
     userId: user.id,
     sessionTokenHash,
     expiresAt,
     ip,
     userAgent,
-  }).returning();
+  }).returning({
+    id: sessions.id,
+    expiresAt: sessions.expiresAt,
+  });
   
   const session: Session = {
     id: sessionRecord.id,
