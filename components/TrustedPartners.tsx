@@ -4,14 +4,8 @@ import { useReducedMotion } from "@/lib/useReducedMotion";
 type Partner = { name: string; src: string; href?: string; width?: number; height?: number };
 
 const partners: Partner[] = [
-  { name: "Cardboard Street", src: "/partners/cardboard-street.svg", href: "https://cardboardstreet.eu", width: 200, height: 56 },
+  { name: "Cardboard Street", src: "/partners/cardboard-street-test.svg", href: "https://cardboardstreet.eu", width: 200, height: 56 },
   { name: "Potto", src: "/partners/potto.svg", href: "#", width: 140, height: 56 },
-];
-
-const paymentLogos: Partner[] = [
-  { name: "Visa", src: "/partners/payments/visa.svg", width: 64, height: 24 },
-  { name: "Mastercard", src: "/partners/payments/mastercard.svg", width: 64, height: 24 },
-  { name: "NETOPIA Payments", src: "/partners/netopia.svg", width: 120, height: 40 },
 ];
 
 const badges = [
@@ -57,6 +51,7 @@ export default function TrustedPartners() {
                         height={p.height ?? 56}
                         className="grayscale opacity-80 hover:opacity-100 hover:grayscale-0 transition will-change-auto object-contain"
                         loading="lazy"
+                        style={{ maxWidth: '100%', height: 'auto' }}
                       />
                     </div>
                   );
@@ -78,26 +73,6 @@ export default function TrustedPartners() {
                 })}
               </div>
 
-              {/* Payment Logos */}
-              <div className="mt-8 pt-8 border-t border-neutral-200">
-                <div className="text-center mb-4">
-                  <span className="text-sm font-medium text-neutral-700">Plăți securizate prin:</span>
-                </div>
-                <div className="flex items-center justify-center gap-6">
-                  {paymentLogos.map((p) => (
-                    <div key={p.name} className="relative" style={{ width: p.width, height: p.height }}>
-                      <img
-                        src={p.src}
-                        alt={p.name}
-                        width={p.width}
-                        height={p.height}
-                        className="object-contain grayscale hover:grayscale-0 opacity-80 hover:opacity-100 transition"
-                        loading="lazy"
-                      />
-                    </div>
-                  ))}
-                </div>
-              </div>
 
           {/* Trust badges */}
           <div className="mt-10 grid grid-cols-2 md:grid-cols-4 gap-4">
