@@ -8,7 +8,7 @@ import { ShoppingCart, Plus, Minus } from "lucide-react";
 import { mutate } from "swr";
 
 interface AddToCartButtonProps {
-  productId: number;
+  productId: string; // Changed from number to string (UUID)
   stockQty: number;
   initialQty?: number;
   variant?: "default" | "outline" | "secondary" | "ghost" | "link" | "destructive";
@@ -40,13 +40,13 @@ export default function AddToCartButton({
 
     setLoading(true);
     try {
-      const response = await fetch('/api/cart/items', {
+      const response = await fetch('/api/cart/add', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
-          productId,
+          product_id: productId, // Changed from productId to product_id
           qty
         }),
       });

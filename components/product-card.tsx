@@ -70,7 +70,7 @@ export function ProductCard({ id, slug, title, price, currency = "RON", imageUrl
           
           {/* Add to Cart Button */}
           <AddToCartButton
-            productId={Number(id)}
+            productId={String(id)}
             stockQty={stockQty}
             variant="secondary"
             size="sm"

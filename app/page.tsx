@@ -181,27 +181,29 @@ export default function Home() {
           />
 
           {/* Produse recomandate */}
-          <section className="space-y-6">
-            <div className="text-center">
-              <h2 className="text-3xl font-semibold text-ink mb-2">Produse recomandate</h2>
-              <p className="text-muted">Descoperă cele mai populare produse din marketplace</p>
-            </div>
-            
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
-              {featuredProducts.slice(0, 8).map((product) => (
-              <ProductCard 
-                  key={product.id}
-                  image={product.image}
-                  title={product.title}
-                  seller={product.seller}
-                  price={product.price}
-                  oldPrice={product.oldPrice}
-                  badge={product.badge}
-                  href={product.href}
-                />
-              ))}
-            </div>
-          </section>
+          {featuredProducts.length > 0 && (
+            <section className="space-y-6">
+              <div className="text-center">
+                <h2 className="text-3xl font-semibold text-ink mb-2">Produse recomandate</h2>
+                <p className="text-muted">Descoperă cele mai populare produse din marketplace</p>
+              </div>
+              
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+                {featuredProducts.slice(0, 8).map((product) => (
+                <ProductCard 
+                    key={product.id}
+                    image={product.image}
+                    title={product.title}
+                    seller={product.seller}
+                    price={product.price}
+                    oldPrice={product.oldPrice}
+                    badge={product.badge}
+                    href={product.href}
+                  />
+                ))}
+              </div>
+            </section>
+          )}
 
           {/* Editorial/Blog */}
           <EditorialTeasers posts={blogPosts} />
