@@ -4,8 +4,8 @@ import { useReducedMotion } from "@/lib/useReducedMotion";
 type Partner = { name: string; src: string; href?: string; width?: number; height?: number };
 
 const partners: Partner[] = [
-  { name: "Cardboard Street", src: "/partners/cardboard-street-test.svg", href: "https://cardboardstreet.eu", width: 200, height: 56 },
-  { name: "Potto", src: "/partners/potto.svg", href: "#", width: 140, height: 56 },
+  { name: "Cardboard Street", src: "/partners/cardboard-street.png", href: "https://cardboardstreet.eu", width: 200, height: 56 },
+  { name: "Potto", src: "/partners/potto.png", href: "#", width: 140, height: 56 },
 ];
 
 const badges = [
