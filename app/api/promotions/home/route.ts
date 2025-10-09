@@ -52,12 +52,17 @@ export async function GET() {
         {
           id: 'card-1',
           type: 'card-large',
-          title: 'Colecția de toamnă',
+          title: 'Reducerile lunii',
+          subtitle: 'Descoperă ofertele speciale la cutii, ghivece și accesorii florale.',
           image: {
-            src: '/placeholder.png',
-            alt: 'Colecția de toamnă'
+            src: '/banners/deals.png',
+            alt: 'Reducerile lunii - FloristMarket'
           },
-          href: '/c/toamna'
+          href: '/reduceri',
+          ctaPrimary: {
+            label: 'Vezi toate reducerile →',
+            href: '/reduceri'
+          }
         },
         {
           id: 'card-2',

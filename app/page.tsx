@@ -136,10 +136,12 @@ export default function Home() {
                 {/* Card mare */}
                 <div className="lg:col-span-2">
                   <PromoCard
-                    title={promotions.grid[0]?.title || "Colecția de toamnă"}
-                    image={promotions.grid[0]?.image || { src: "/placeholder.png", alt: "Colecția de toamnă" }}
-                    href={promotions.grid[0]?.href || "/c/toamna"}
+                    title={promotions.grid[0]?.title || "Reducerile lunii"}
+                    subtitle={promotions.grid[0]?.subtitle}
+                    image={promotions.grid[0]?.image || { src: "/banners/deals.png", alt: "Reducerile lunii" }}
+                    href={promotions.grid[0]?.href || "/reduceri"}
                     tone="dark"
+                    ctaPrimary={promotions.grid[0]?.ctaPrimary}
                   />
                 </div>
                 
