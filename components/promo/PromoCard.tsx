@@ -52,14 +52,19 @@ export function PromoCard({ title, subtitle, image, href, tone = 'light', size =
         
         {/* Content */}
         <div className="absolute bottom-4 left-4 right-4">
-          <h3 className={`text-xl lg:text-2xl font-semibold ${textColor} mb-2`}>
-            {title}
-          </h3>
-          
-          {subtitle && (
-            <p className={`text-sm ${textColor} opacity-90 mb-3 max-w-md`}>
-              {subtitle}
-            </p>
+          {/* Hide title and subtitle for "Reducerile lunii" card */}
+          {title !== 'Reducerile lunii' && (
+            <>
+              <h3 className={`text-xl lg:text-2xl font-semibold ${textColor} mb-2`}>
+                {title}
+              </h3>
+              
+              {subtitle && (
+                <p className={`text-sm ${textColor} opacity-90 mb-3 max-w-md`}>
+                  {subtitle}
+                </p>
+              )}
+            </>
           )}
           
           {ctaPrimary ? (
