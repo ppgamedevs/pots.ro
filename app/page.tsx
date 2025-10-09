@@ -154,6 +154,7 @@ export default function Home() {
                       image={item.image}
                       href={item.href}
                       tone={/(cutii|ghivece)/i.test(item.title) ? 'dark' : 'light'}
+                      size="small"
                     />
                   ))}
                 </div>

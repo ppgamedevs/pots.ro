@@ -10,21 +10,27 @@ export interface PromoCardProps {
   image: SrcSet;
   href: string;
   tone?: 'light' | 'dark';
+  size?: 'large' | 'small';
   ctaPrimary?: {
     label: string;
     href: string;
   };
 }
 
-export function PromoCard({ title, subtitle, image, href, tone = 'light', ctaPrimary }: PromoCardProps) {
+export function PromoCard({ title, subtitle, image, href, tone = 'light', size = 'large', ctaPrimary }: PromoCardProps) {
   const textColor = tone === 'dark' ? 'text-white' : 'text-ink';
   const overlayClass = tone === 'dark' 
     ? 'bg-gradient-to-t from-black/60 via-black/20 to-transparent'
     : 'bg-gradient-to-t from-black/40 via-transparent to-transparent';
 
+  // Dimensiuni diferite pentru carduri
+  const heightClass = size === 'large' 
+    ? 'h-96 lg:h-[32rem]' // Înălțime mare pentru cardul principal
+    : 'h-44 lg:h-48'; // Înălțime mică pentru cardurile secundare
+
   return (
     <Link href={href} className="group block">
-      <div className="relative h-48 lg:h-64 overflow-hidden rounded-2xl transition-all duration-300 group-hover:scale-[1.02] group-hover:shadow-xl">
+      <div className={`relative ${heightClass} overflow-hidden rounded-2xl transition-all duration-300 group-hover:scale-[1.02] group-hover:shadow-xl`}>
         {/* Background Image */}
         <Image
           src={image.src}
