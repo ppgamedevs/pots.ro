@@ -7,12 +7,9 @@ function getResend(): Resend {
   if (!resend) {
     const apiKey = process.env.RESEND_API_KEY;
     if (!apiKey) {
-      // During build time, return a mock instance to avoid build errors
-      if (process.env.NODE_ENV === 'production' && !process.env.VERCEL) {
-        throw new Error('RESEND_API_KEY is not set');
-      }
-      // For build time or development without API key, return a mock
-      resend = new Resend('mock_key_for_build');
+      // For development without API key, return a mock instance
+      console.warn('RESEND_API_KEY not set - emails will be mocked in development');
+      resend = new Resend('mock_key_for_development');
     } else {
       resend = new Resend(apiKey);
     }
@@ -37,9 +34,10 @@ export async function sendOtpEmail(data: OtpEmailData): Promise<{ success: boole
   try {
     const { email, code, magicUrl } = data;
     
-    // Skip sending emails during build time
-    if (process.env.NODE_ENV === 'production' && !process.env.VERCEL) {
-      console.log('Skipping email send during build time');
+    // Mock email sending in development without API key
+    if (!process.env.RESEND_API_KEY) {
+      console.log(`[MOCK EMAIL] OTP sent to ${email}: ${code}`);
+      console.log(`[MOCK EMAIL] Magic link: ${magicUrl}`);
       return { success: true };
     }
     
@@ -271,9 +269,9 @@ export function generateMagicLink(token: string, email: string): string {
  */
 export async function sendWelcomeEmail(email: string, name?: string): Promise<{ success: boolean; error?: string }> {
   try {
-    // Skip sending emails during build time
-    if (process.env.NODE_ENV === 'production' && !process.env.VERCEL) {
-      console.log('Skipping welcome email send during build time');
+    // Mock email sending in development without API key
+    if (!process.env.RESEND_API_KEY) {
+      console.log(`[MOCK EMAIL] Welcome email sent to ${email}`);
       return { success: true };
     }
     
