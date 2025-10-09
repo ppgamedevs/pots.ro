@@ -24,7 +24,7 @@ export function PromoCard({ title, subtitle, image, href, tone = 'light', ctaPri
 
   return (
     <Link href={href} className="group block">
-      <div className="relative h-60 lg:h-80 overflow-hidden rounded-2xl transition-all duration-300 group-hover:scale-[1.02] group-hover:shadow-xl">
+      <div className="relative h-48 lg:h-64 overflow-hidden rounded-2xl transition-all duration-300 group-hover:scale-[1.02] group-hover:shadow-xl">
         {/* Background Image */}
         <Image
           src={image.src}

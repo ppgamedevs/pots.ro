@@ -54,7 +54,8 @@ export async function middleware(request: NextRequest) {
     '/dashboard-demo',
     '/skeleton-demo',
     '/seo',
-    '/sol'
+    '/sol',
+    '/reduceri'
   ];
   
   // Check if route is public
