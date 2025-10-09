@@ -12,7 +12,7 @@ type Partner = {
 
 const partners: Partner[] = [
   { name: "Cardboard Street", src: "/partners/cardboard-street.png", href: "https://cardboardstreet.eu", width: 200, height: 40 },
-  { name: "Potto", src: "/partners/potto.png", href: "#", width: 120, height: 40, variant: "light" }, // logo deschis
+  { name: "Potto", src: "/partners/potto.png", href: "https://potto.ro", width: 120, height: 40, variant: "light" }, // logo deschis
 ];
 
 const badges = [

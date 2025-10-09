@@ -29,7 +29,7 @@ export function SellerHero() {
         </div>
         <div className="aspect-[16/9] md:aspect-[4/3] rounded-xl overflow-hidden border border-line bg-bg-soft">
           <img 
-            src="/images/seller-hero.jpg" 
+            src="/images/seller.jpg" 
             alt="Devino vânzător" 
             className="h-full w-full object-cover" 
           />
