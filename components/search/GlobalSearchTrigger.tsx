@@ -80,6 +80,13 @@ export default function GlobalSearchTrigger() {
             <div className="flex items-center gap-2 mb-4">
               <span className="i-lucide:search h-5 w-5 text-muted" />
               <span className="text-sm font-medium text-ink">Caută produse...</span>
+              <button 
+                onClick={() => setOpen(false)}
+                className="ml-auto p-1 hover:bg-gray-100 rounded"
+                aria-label="Închide căutarea"
+              >
+                <span className="i-lucide:x h-4 w-4 text-muted" />
+              </button>
             </div>
             
             <form onSubmit={handleSubmit}>

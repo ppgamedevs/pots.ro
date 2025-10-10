@@ -6,7 +6,7 @@ import { Button } from "../ui/button";
 import { Category } from "./SiteHeader";
 import CategoriesButton from "./CategoriesButton";
 import GlobalSearchTrigger from "../search/GlobalSearchTrigger";
-import { Store, Heart, ShoppingCart } from "lucide-react";
+import { Store, ShoppingCart } from "lucide-react";
 import { UserMenu } from "./UserMenu";
 
 interface MainBarProps {
@@ -47,14 +47,6 @@ export function MainBar({ categories, suggestions, onMegaMenuToggle, onMiniCartT
           </Link>
           
           <UserMenu />
-          
-          <Link 
-            href="/favorites" 
-            className="inline-flex items-center gap-2 px-3 py-2 rounded-lg hover:bg-bg-soft text-ink text-sm transition-micro"
-          >
-            <Heart className="h-4 w-4" />
-            Favorite
-          </Link>
           
           <Link 
             href="/cart" 

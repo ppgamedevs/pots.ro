@@ -47,16 +47,9 @@ export async function logout(): Promise<void> {
 // Server-side helper functions
 export async function getCurrentUser(): Promise<User | null> {
   try {
-    const response = await fetch('/api/auth/me', {
-      credentials: 'include',
-    });
-    
-    if (response.ok) {
-      const data = await response.json();
-      return data.user;
-    }
-    
-    return null;
+    // Import the actual session function instead of making a fetch request
+    const { getCurrentUser: getSessionUser } = await import('@/lib/auth/session');
+    return await getSessionUser();
   } catch (error) {
     console.error('Error fetching current user:', error);
     return null;
