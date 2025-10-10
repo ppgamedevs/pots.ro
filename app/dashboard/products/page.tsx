@@ -17,7 +17,7 @@ import type { SellerProductListItem, SellerProductsResponse } from "@/lib/types"
 const mockProducts: SellerProductListItem[] = [
   {
     id: "1",
-    title: "Vază ceramică — Natur",
+    title: "Vază ceramică - Natur",
     price: 129.0,
     currency: "RON",
     status: "active",

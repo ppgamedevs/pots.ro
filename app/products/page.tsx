@@ -133,7 +133,7 @@ export default async function ProductsPage({
         <h1 className="text-3xl font-semibold text-ink">Produse</h1>
         {q && (
           <p className="text-subink mt-1">
-            Rezultate pentru "{q}" — {total} produse găsite
+            Rezultate pentru "{q}" - {total} produse găsite
           </p>
         )}
         {!q && (

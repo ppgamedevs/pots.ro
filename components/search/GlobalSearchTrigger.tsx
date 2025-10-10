@@ -1,5 +1,5 @@
 "use client";
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef } from "react";
 import Link from "next/link";
 
 interface Suggestion {
@@ -12,6 +12,7 @@ export default function GlobalSearchTrigger() {
   const [q, setQ] = useState("");
   const [suggestions, setSuggestions] = useState<Suggestion[]>([]);
   const [loading, setLoading] = useState(false);
+  const modalRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
@@ -26,6 +27,26 @@ export default function GlobalSearchTrigger() {
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
   }, []);
+
+  // Handle click outside
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (open && modalRef.current && !modalRef.current.contains(event.target as Node)) {
+        setOpen(false);
+      }
+    };
+
+    if (open) {
+      document.addEventListener('mousedown', handleClickOutside);
+      // Prevent body scroll when modal is open
+      document.body.style.overflow = 'hidden';
+    }
+
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+      document.body.style.overflow = 'unset';
+    };
+  }, [open]);
 
   useEffect(() => {
     const id = setTimeout(async () => {
@@ -70,11 +91,12 @@ export default function GlobalSearchTrigger() {
 
       {open && (
         <div 
-          className="fixed inset-0 z-50 bg-black/30" 
+          className="fixed inset-0 z-50 bg-black/30 flex items-start justify-center pt-24 px-4"
           onClick={() => setOpen(false)}
         >
           <div 
-            className="mx-auto mt-24 w-full max-w-2xl rounded-2xl bg-white p-4 shadow-elev" 
+            ref={modalRef}
+            className="w-full max-w-2xl rounded-2xl bg-white p-4 shadow-elev" 
             onClick={e => e.stopPropagation()}
           >
             <div className="flex items-center gap-2 mb-4">

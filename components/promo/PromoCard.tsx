@@ -25,8 +25,8 @@ export function PromoCard({ title, subtitle, image, href, tone = 'light', size =
 
   // Dimensiuni diferite pentru carduri - calculate pentru aliniere perfectă
   const heightClass = size === 'large' 
-    ? 'h-96 lg:h-[32rem]' // Înălțime mare pentru cardul principal (512px)
-    : 'h-44 lg:h-[15.25rem]'; // Înălțime mică pentru cardurile secundare (244px) - 2x244px + 24px gap = 512px
+    ? 'h-64 sm:h-80 lg:h-[32rem]' // Înălțime mare pentru cardul principal - mai mică pe mobile
+    : 'h-32 sm:h-40 lg:h-[15.25rem]'; // Înălțime mică pentru cardurile secundare - mai mică pe mobile
 
   return (
     <Link href={href} className="group block">
@@ -37,9 +37,9 @@ export function PromoCard({ title, subtitle, image, href, tone = 'light', size =
           alt={image.alt}
           fill
           className="object-cover transition-all duration-300 group-hover:scale-105"
-          sizes="(max-width: 768px) 100vw, (max-width: 1024px) 66vw, 50vw"
+          sizes="(max-width: 640px) 100vw, (max-width: 768px) 100vw, (max-width: 1024px) 66vw, 50vw"
           priority={size === 'large'}
-          quality={90}
+          quality={size === 'large' ? 85 : 75}
           placeholder="blur"
           blurDataURL="data:image/jpeg;base64,/9j/4AAQSkZJRgABAQAAAQABAAD/2wBDAAYEBQYFBAYGBQYHBwYIChAKCgkJChQODwwQFxQYGBcUFhYaHSUfGhsjHBYWICwgIyYnKSopGR8tMC0oMCUoKSj/2wBDAQcHBwoIChMKChMoGhYaKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCj/wAARCAABAAEDASIAAhEBAxEB/8QAFQABAQAAAAAAAAAAAAAAAAAAAAv/xAAhEAACAQMDBQAAAAAAAAAAAAABAgMABAUGIWGRkqGx0f/EABUBAQEAAAAAAAAAAAAAAAAAAAMF/8QAGhEAAgIDAAAAAAAAAAAAAAAAAAECEgMRkf/aAAwDAQACEQMRAD8AltJagyeH0AthI5xdrLcNM91BF5pX2HaH9bcfaSXWGaRmknyJckliyjqTzSlT54b6bk+h0R//2Q=="
         />
@@ -49,22 +49,22 @@ export function PromoCard({ title, subtitle, image, href, tone = 'light', size =
         
         {/* Discount Badge */}
         {title === 'Reducerile lunii' && (
-          <div className="absolute top-4 right-4 bg-red-500 text-white px-3 py-1 rounded-full text-sm font-semibold shadow-lg">
+          <div className="absolute top-2 sm:top-4 right-2 sm:right-4 bg-red-500 text-white px-2 sm:px-3 py-1 rounded-full text-xs sm:text-sm font-semibold shadow-lg">
             până la -30%
           </div>
         )}
         
         {/* Content */}
-        <div className="absolute bottom-4 left-4 right-4">
+        <div className="absolute bottom-2 sm:bottom-4 left-2 sm:left-4 right-2 sm:right-4">
           {/* Hide title and subtitle for "Reducerile lunii" card */}
           {title !== 'Reducerile lunii' && (
             <>
-              <h3 className={`text-xl lg:text-2xl font-semibold ${textColor} mb-2`}>
+              <h3 className={`text-lg sm:text-xl lg:text-2xl font-semibold ${textColor} mb-1 sm:mb-2`}>
                 {title}
               </h3>
               
               {subtitle && (
-                <p className={`text-sm ${textColor} opacity-90 mb-3 max-w-md`}>
+                <p className={`text-xs sm:text-sm ${textColor} opacity-90 mb-2 sm:mb-3 max-w-md`}>
                   {subtitle}
                 </p>
               )}
@@ -72,11 +72,11 @@ export function PromoCard({ title, subtitle, image, href, tone = 'light', size =
           )}
           
           {ctaPrimary ? (
-            <div className={`text-sm font-medium ${textColor} opacity-90 hover:opacity-100 transition-opacity`}>
+            <div className={`text-xs sm:text-sm font-medium ${textColor} opacity-90 hover:opacity-100 transition-opacity`}>
               {ctaPrimary.label}
             </div>
           ) : (
-            <div className={`text-sm ${textColor} opacity-90`}>
+            <div className={`text-xs sm:text-sm ${textColor} opacity-90`}>
               Descoperă colecția
             </div>
           )}

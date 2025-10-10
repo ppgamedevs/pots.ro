@@ -33,7 +33,7 @@ export async function GET() {
         id: 'hero-1',
         type: 'hero',
         title: 'Marketplace de floristică',
-        subtitle: 'Flori, ambalaje, cutii și accesorii — într-un singur loc.',
+        subtitle: 'Flori, ambalaje, cutii și accesorii - într-un singur loc.',
         image: {
           src: '/placeholder.png',
           alt: 'FloristMarket - Marketplace de floristică'

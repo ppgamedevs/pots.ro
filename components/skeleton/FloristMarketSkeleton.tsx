@@ -1,4 +1,4 @@
-// FloristMarket — Minimal UI Shell + PDP & Category (TSX + Tailwind skeleton)
+// FloristMarket - Minimal UI Shell + PDP & Category (TSX + Tailwind skeleton)
 // Stack: Next.js (App Router compatible), React, Tailwind. No external deps beyond icons if desired.
 // Split into files later. For now, a single scaffold you can paste and carve.
 
@@ -12,7 +12,7 @@ import React from "react";
 ========================= */
 
 /* =========================
-   1) GLOBAL SHELL — Header / Footer
+   1) GLOBAL SHELL - Header / Footer
 ========================= */
 
 export function TopBar() {
@@ -117,7 +117,7 @@ export function SearchBar() {
 }
 
 /* =========================
-   2) HOMEPAGE — Hero, USPs, Promo Grid, Categories, Featured Products, Editorial
+   2) HOMEPAGE - Hero, USPs, Promo Grid, Categories, Featured Products, Editorial
 ========================= */
 
 export function PromoHero(props: { title: string; subtitle?: string; imageUrl: string; ctaPrimary: { label: string; href: string }; ctaSecondary?: { label: string; href: string } }) {
@@ -219,7 +219,7 @@ export function ProductGrid({ items }: { items: ProductCardProps[] }) {
 }
 
 /* =========================
-   3) PDP — components
+   3) PDP - components
 ========================= */
 export function PDPGallery({ images, alt }: { images: { src: string }[]; alt: string }) {
   return (
@@ -300,7 +300,7 @@ export function PDPSpecs({ description, attributes }: { description: string; att
 }
 
 /* =========================
-   4) CATEGORY — components
+   4) CATEGORY - components
 ========================= */
 export function CategoryHeader({ title, subtitle, imageUrl }: { title: string; subtitle?: string; imageUrl?: string }) {
   return (
@@ -356,7 +356,7 @@ export function HomePageSample() {
       <SiteHeader />
       <PromoHero
         title="Marketplace de floristică."
-        subtitle="Tot ce ai nevoie pentru flori, ambalaje, cutii și accesorii — într-un singur loc."
+        subtitle="Tot ce ai nevoie pentru flori, ambalaje, cutii și accesorii - într-un singur loc."
         imageUrl="/images/hero-demo.jpg"
         ctaPrimary={{ label: "Descoperă produse", href: "/c/ghivece" }}
         ctaSecondary={{ label: "Devino vânzător", href: "/seller" }}

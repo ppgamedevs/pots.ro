@@ -149,15 +149,15 @@ export default function DemoFormPage() {
           <div className="space-y-3 text-sm">
             <div className="flex justify-between">
               <span className="font-medium text-slate-600 dark:text-slate-400">Titlu:</span>
-              <span className="text-slate-900 dark:text-slate-100">{form.getValues("title") || "—"}</span>
+              <span className="text-slate-900 dark:text-slate-100">{form.getValues("title") || "-"}</span>
             </div>
             <div className="flex justify-between">
               <span className="font-medium text-slate-600 dark:text-slate-400">Preț:</span>
-              <span className="text-slate-900 dark:text-slate-100">{form.getValues("price") || "—"} RON</span>
+              <span className="text-slate-900 dark:text-slate-100">{form.getValues("price") || "-"} RON</span>
             </div>
             <div className="flex justify-between">
               <span className="font-medium text-slate-600 dark:text-slate-400">Categorie:</span>
-              <span className="text-slate-900 dark:text-slate-100">{form.getValues("category") || "—"}</span>
+              <span className="text-slate-900 dark:text-slate-100">{form.getValues("category") || "-"}</span>
             </div>
             <div className="flex justify-between">
               <span className="font-medium text-slate-600 dark:text-slate-400">În stoc:</span>
@@ -169,7 +169,7 @@ export default function DemoFormPage() {
             </div>
             <div className="pt-2">
               <span className="font-medium text-slate-600 dark:text-slate-400 block mb-1">Descriere:</span>
-              <p className="text-slate-900 dark:text-slate-100">{form.getValues("description") || "—"}</p>
+              <p className="text-slate-900 dark:text-slate-100">{form.getValues("description") || "-"}</p>
             </div>
           </div>
         </Modal>

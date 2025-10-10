@@ -9,7 +9,7 @@ import type { SellerProduct } from "@/lib/types";
 // Mock data for demonstration
 const mockProduct: SellerProduct = {
   id: "1",
-  title: "Vază ceramică — Natur",
+  title: "Vază ceramică - Natur",
   description: "Vază ceramică elegantă, perfectă pentru aranjamente florale moderne.",
   price: 129.0,
   currency: "RON",

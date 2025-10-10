@@ -206,7 +206,7 @@ export function FullHeightFilters({
   );
 }
 
-/* ——— UI sub-componente simple ——— */
+/* - UI sub-componente simple - */
 
 function Section({ title, children }: { title: string; children: React.ReactNode }) {
   return (

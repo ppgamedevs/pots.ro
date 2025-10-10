@@ -16,7 +16,7 @@ export async function GET(
     vaze: [
       {
         id: "1",
-        title: "Vază ceramică — Natur",
+        title: "Vază ceramică - Natur",
         price: 129.0,
         currency: "RON",
         images: ["https://images.unsplash.com/photo-1578662996442-48f60103fc96?w=400&h=400&fit=crop&crop=center"],

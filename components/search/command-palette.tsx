@@ -152,7 +152,7 @@ export function CommandPalette() {
   );
 }
 
-/* — helpers — */
+/* - helpers - */
 
 const rowClass = clsx(
   "px-3 py-2 text-sm cursor-pointer",

@@ -37,7 +37,7 @@ const mockOrder = {
   items: [
     {
       id: '1',
-      productName: 'Vază ceramică — Natur',
+      productName: 'Vază ceramică - Natur',
       qty: 1,
       unitPrice: 12900,
       subtotal: 12900,
