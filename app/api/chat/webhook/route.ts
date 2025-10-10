@@ -172,7 +172,7 @@ async function handleOrderCancelRequest(): Promise<string> {
  * Handle return policy request
  */
 async function handleReturnPolicyRequest(): Promise<string> {
-  return "Politica de retur: Ai 14 zile să returnezi produsele în condiții originale. Pentru detalii complete, vizitează https://pots.ro/returns";
+  return "Politica de retur: Ai 14 zile să returnezi produsele în condiții originale. Pentru detalii complete, vizitează https://floristmarket.ro/returns";
 }
 
 /**

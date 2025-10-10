@@ -47,15 +47,27 @@ export function SiteFooter({ columns, payments, carriers }: SiteFooterProps) {
             {/* Payment Methods */}
             <div className="flex items-center gap-4">
               <span className="text-sm font-medium text-ink">Metode de plată:</span>
-              <div className="flex items-center gap-2">
-                {payments.map((payment, index) => (
-                  <div
-                    key={index}
-                    className="px-3 py-1 bg-white border border-line rounded-md text-xs font-medium text-ink shadow-sm"
-                  >
-                    {payment}
+              <div className="flex items-center gap-3">
+                {/* Visa */}
+                <div className="flex items-center justify-center w-12 h-8 bg-white border border-line rounded-md shadow-sm">
+                  <div className="w-8 h-5 bg-blue-600 rounded-sm flex items-center justify-center">
+                    <span className="text-white text-xs font-bold">VISA</span>
                   </div>
-                ))}
+                </div>
+                
+                {/* Mastercard */}
+                <div className="flex items-center justify-center w-12 h-8 bg-white border border-line rounded-md shadow-sm">
+                  <div className="w-8 h-5 bg-red-500 rounded-sm flex items-center justify-center">
+                    <span className="text-white text-xs font-bold">MC</span>
+                  </div>
+                </div>
+                
+                {/* Revolut */}
+                <div className="flex items-center justify-center w-12 h-8 bg-white border border-line rounded-md shadow-sm">
+                  <div className="w-8 h-5 bg-purple-600 rounded-sm flex items-center justify-center">
+                    <span className="text-white text-xs font-bold">R</span>
+                  </div>
+                </div>
               </div>
             </div>
 

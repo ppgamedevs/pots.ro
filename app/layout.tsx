@@ -94,9 +94,9 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
       title: "Companie",
       links: [
         { label: "Despre noi", href: "/about" },
-        { label: "Cariere", href: "/careers" },
+        { label: "Cariere", href: "/cariere" },
         { label: "Contact", href: "/contact" },
-        { label: "Presă", href: "/press" }
+        { label: "Presă", href: "/presa" }
       ]
     },
     {
@@ -111,8 +111,8 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
     {
       title: "Legal",
       links: [
-        { label: "Termeni și condiții", href: "/terms" },
-        { label: "Politica de confidențialitate", href: "/privacy" },
+        { label: "Termeni și condiții", href: "/termeni" },
+        { label: "Politica de confidențialitate", href: "/confidentialitate" },
         { label: "Cookie-uri", href: "/cookies" },
         { label: "GDPR", href: "/gdpr" }
       ]
@@ -122,13 +122,13 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
       links: [
         { label: "Devino vânzător", href: "/seller" },
         { label: "Blog", href: "/blog" },
-        { label: "Ghiduri", href: "/guides" },
-        { label: "Parteneri", href: "/partners" }
+        { label: "Ghiduri", href: "/ghiduri" },
+        { label: "Parteneri", href: "/parteneri" }
       ]
     }
   ];
 
-  const payments = ["Visa", "Mastercard", "PayPal", "Revolut"];
+  const payments = ["Visa", "Mastercard", "Revolut"];
   const carriers = ["Fan Courier", "DPD", "Cargus", "Sameday"];
 
   return (

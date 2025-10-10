@@ -67,7 +67,7 @@ export const metadata: Metadata = {
     images: ['/og-blog-expert-2025.jpg']
   },
   alternates: {
-    canonical: 'https://pots.ro/blog'
+    canonical: 'https://floristmarket.ro/blog'
   }
 };
 

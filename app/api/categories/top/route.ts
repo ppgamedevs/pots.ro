@@ -20,9 +20,7 @@ export async function GET() {
         href: '/c/ghivece',
         subcategories: [
           { id: 'ghivece-ceramica', name: 'Ceramică', href: '/c/ghivece/ceramica' },
-          { id: 'ghivece-plastic', name: 'Plastic', href: '/c/ghivece/plastic' },
-          { id: 'ghivece-metal', name: 'Metal', href: '/c/ghivece/metal' },
-          { id: 'ghivece-lemn', name: 'Lemn', href: '/c/ghivece/lemn' }
+          { id: 'ghivece-compozit', name: 'Material compozit', href: '/c/ghivece/compozit' }
         ]
       },
       {
@@ -30,10 +28,8 @@ export async function GET() {
         name: 'Cutii',
         href: '/c/cutii',
         subcategories: [
-          { id: 'cutii-rotunde', name: 'Rotunde', href: '/c/cutii/rotunde' },
-          { id: 'cutii-patroane', name: 'Pătrate', href: '/c/cutii/patroane' },
-          { id: 'cutii-rectangulare', name: 'Rectangulare', href: '/c/cutii/rectangulare' },
-          { id: 'cutii-speciale', name: 'Speciale', href: '/c/cutii/speciale' }
+          { id: 'cutii-normale', name: 'Cutii normale', href: '/c/cutii/normale' },
+          { id: 'cutii-elegante', name: 'Cutii elegante', href: '/c/cutii/elegante' }
         ]
       },
       {
@@ -41,10 +37,8 @@ export async function GET() {
         name: 'Ambalaje',
         href: '/c/ambalaje',
         subcategories: [
-          { id: 'ambalaje-hartie', name: 'Hârtie', href: '/c/ambalaje/hartie' },
-          { id: 'ambalaje-plastic', name: 'Plastic', href: '/c/ambalaje/plastic' },
-          { id: 'ambalaje-textil', name: 'Textil', href: '/c/ambalaje/textil' },
-          { id: 'ambalaje-metal', name: 'Metal', href: '/c/ambalaje/metal' }
+          { id: 'ambalaje-decorative', name: 'Decorative', href: '/c/ambalaje/decorative' },
+          { id: 'ambalaje-textil', name: 'Textil', href: '/c/ambalaje/textil' }
         ]
       },
       {
