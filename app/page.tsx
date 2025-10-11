@@ -7,7 +7,6 @@ import { CategoryTiles } from "@/components/promo/CategoryTiles";
 import { ProductCard } from "@/components/product/ProductCard";
 import { EditorialTeasers } from "@/components/promo/EditorialTeasers";
 import { StructuredData } from "@/components/seo/StructuredData";
-import { CredibilitySection } from "@/components/promo/CredibilitySection";
 import TrustedPartners from "@/components/TrustedPartners";
 
 // Types
@@ -116,8 +115,15 @@ export default function Home() {
             />
           )}
 
-          {/* Credibility Section */}
-          <CredibilitySection />
+          {/* Header Section */}
+          <section className="text-center py-8">
+            <h2 className="text-3xl lg:text-4xl font-bold text-gray-900 mb-4">
+              Totul pentru florăria ta
+            </h2>
+            <p className="text-lg text-gray-600 max-w-3xl mx-auto">
+              Descoperă produse verificate, ambalaje de calitate și livrare rapidă direct de la producători.
+            </p>
+          </section>
 
           {/* Slot B, C, D: Grid Promo */}
           {promotions?.grid && promotions.grid.length > 0 && (
@@ -141,10 +147,12 @@ export default function Home() {
                     <PromoCard
                       key={index}
                       title={item.title}
+                      subtitle={item.subtitle}
                       image={item.image}
                       href={item.href}
                       tone={/(cutii|ghivece)/i.test(item.title) ? 'dark' : 'light'}
                       size="small"
+                      ctaPrimary={item.ctaPrimary}
                     />
                   ))}
                 </div>
@@ -155,7 +163,7 @@ export default function Home() {
           {/* Categorii principale */}
           <CategoryTiles 
             items={categories.slice(0, 3).map(cat => ({
-              name: cat.name,
+              name: cat.id === 'ghivece' ? 'Ghivece & suporturi moderne' : cat.id === 'cutii' ? 'Cutiile rotunde din catifea - bestseller 2025' : cat.id === 'ambalaje' ? 'Panglici & decorațiuni premium' : cat.name,
               image: { 
                 src: cat.id === 'ambalaje' 
                   ? '/images/ambalaje-buchete.jpg' 
@@ -168,7 +176,9 @@ export default function Home() {
                         : '/placeholder.png',
                 alt: cat.name 
               },
-              href: cat.href
+              href: cat.href,
+              description: cat.id === 'ghivece' ? 'Ceramică, beton, metal - stil curat pentru vitrine și amenajări.' : cat.id === 'cutii' ? 'Seturi pe mărimi, fără capac, peste 20 de culori disponibile.' : cat.id === 'ambalaje' ? 'Panglici satin, organza, iută, accesorii și finishing-uri.' : undefined,
+              buttonText: cat.id === 'ghivece' ? 'Vezi colecția' : cat.id === 'cutii' ? 'Vezi colecția' : cat.id === 'ambalaje' ? 'Vezi colecția' : undefined
             }))}
           />
 

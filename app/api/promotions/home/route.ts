@@ -68,21 +68,31 @@ export async function GET() {
           id: 'card-2',
           type: 'card-small',
           title: 'Ghivece moderne',
+          subtitle: 'Design minimalist pentru plante de interior',
           image: {
             src: '/images/ghivece-moderne.jpg',
             alt: 'Ghiveci modern cu suculentă pe suport'
           },
-          href: '/c/ghivece'
+          href: '/c/ghivece',
+          ctaPrimary: {
+            label: 'Descoperă colecția',
+            href: '/c/ghivece'
+          }
         },
         {
           id: 'card-3',
           type: 'card-small',
           title: 'Cutii elegante',
+          subtitle: 'Recipiente premium pentru aranjamente florale',
           image: {
             src: '/images/cutii-elegante-rosii.jpg',
             alt: 'Cutii elegante roșii pe fundal negru'
           },
-          href: '/c/cutii'
+          href: '/c/cutii',
+          ctaPrimary: {
+            label: 'Descoperă colecția',
+            href: '/c/cutii'
+          }
         }
       ],
       partner: {

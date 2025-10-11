@@ -8,6 +8,8 @@ export interface CategoryTile {
   name: string;
   image: SrcSet;
   href: string;
+  description?: string;
+  buttonText?: string;
 }
 
 export interface CategoryTilesProps {
@@ -44,8 +46,17 @@ export function CategoryTiles({ items }: CategoryTilesProps) {
                     {item.name}
                   </h3>
                   
-                  <div className="text-sm text-white/90">
-                    Vezi produsele
+                  {item.description && (
+                    <p className="text-sm text-white/90 mb-3 max-w-md">
+                      {item.description}
+                    </p>
+                  )}
+                  
+                  <div className="inline-flex items-center gap-2 bg-white/90 backdrop-blur-sm px-4 py-2 rounded-full text-sm font-medium text-gray-900 hover:bg-white transition-colors">
+                    {item.buttonText || "Vezi produsele"}
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" className="opacity-80">
+                      <path d="M8 5l8 7-8 7" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                    </svg>
                   </div>
                 </div>
               </div>
