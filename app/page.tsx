@@ -210,9 +210,6 @@ export default function Home() {
           {/* Editorial/Blog */}
           <EditorialTeasers posts={blogPosts} />
 
-          {/* Trusted Partners Section */}
-          <TrustedPartners />
-
         </div>
       </main>
     </>
