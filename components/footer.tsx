@@ -68,12 +68,12 @@ export function Footer() {
             <h3 className="font-semibold mb-4 text-slate-900 dark:text-slate-100">Legal</h3>
             <ul className="space-y-3 text-slate-600 dark:text-slate-300">
               <li>
-                <Link href="/terms" className="hover:text-brand transition-colors">
+                <Link href="/termeni" className="hover:text-brand transition-colors">
                   Termeni și condiții
                 </Link>
               </li>
               <li>
-                <Link href="/privacy" className="hover:text-brand transition-colors">
+                <Link href="/confidentialitate" className="hover:text-brand transition-colors">
                   Politica de confidențialitate
                 </Link>
               </li>

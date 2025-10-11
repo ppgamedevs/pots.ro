@@ -321,7 +321,7 @@ export default function CheckoutPage() {
                             onChange={(checked) => form.setValue("acceptTerms", checked)}
                           />
                           <div className="text-sm">
-                            <p>Accept <Link href="/termeni" className="text-brand hover:underline">termenii și condițiile</Link> și <Link href="/gdpr" className="text-brand hover:underline">politica de confidențialitate</Link></p>
+                            <p>Accept <Link href="/termeni" className="text-brand hover:underline">termenii și condițiile</Link> și <Link href="/confidentialitate" className="text-brand hover:underline">politica de confidențialitate</Link></p>
                             {errors.acceptTerms && (
                               <p className="text-red-600 text-xs mt-1">{errors.acceptTerms.message as string}</p>
                             )}

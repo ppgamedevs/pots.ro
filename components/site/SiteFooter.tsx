@@ -131,11 +131,11 @@ export function SiteFooter({ columns, payments, carriers }: SiteFooterProps) {
           <div className="flex flex-col lg:flex-row items-center justify-between gap-4">
             <div className="text-sm text-ink/70">
               © 2025 FloristMarket.ro • OnlyTips SRL • CUI: 43414871 • 
-              <Link href="/(legal)/terms" className="hover:text-ink transition-micro ml-1">
+              <Link href="/termeni" className="hover:text-ink transition-micro ml-1">
                 Termeni și condiții
               </Link>
               {" • "}
-              <Link href="/(legal)/privacy" className="hover:text-ink transition-micro">
+              <Link href="/confidentialitate" className="hover:text-ink transition-micro">
                 Politica de confidențialitate
               </Link>
             </div>
