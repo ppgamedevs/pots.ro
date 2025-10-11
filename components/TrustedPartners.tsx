@@ -15,13 +15,6 @@ const partners: Partner[] = [
   { name: "Potto", src: "/partners/potto.png", href: "https://potto.ro", width: 120, height: 40, variant: "light" }, // logo deschis
 ];
 
-const badges = [
-  { title: "Plăți securizate", desc: "Online, rapid și sigur", emoji: "🔒" },
-  { title: "Livrare fiabilă", desc: "Prin curieri naționali", emoji: "🚚" },
-  { title: "Selleri verificați", desc: "profiluri auditate", emoji: "✅" },
-  { title: "Retur 14 zile", desc: "proces simplu, transparent", emoji: "↩️" },
-];
-
 export default function TrustedPartners() {
   return (
     <section aria-labelledby="partners-title" className="mx-auto max-w-7xl px-4 md:px-6 lg:px-8 py-16">
@@ -64,17 +57,6 @@ export default function TrustedPartners() {
                 <div key={p.name} aria-label={p.name}>{img}</div>
               );
             })}
-          </div>
-
-          {/* trust badges */}
-          <div className="mt-10 grid grid-cols-2 md:grid-cols-4 gap-4">
-            {badges.map((b) => (
-              <div key={b.title} className="rounded-2xl border border-neutral-200 bg-white p-5">
-                <div aria-hidden className="text-xl">{b.emoji}</div>
-                <div className="mt-1 font-medium text-neutral-900">{b.title}</div>
-                <div className="text-sm text-neutral-600">{b.desc}</div>
-              </div>
-            ))}
           </div>
         </div>
       </div>

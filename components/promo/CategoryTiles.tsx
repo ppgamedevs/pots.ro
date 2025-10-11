@@ -38,7 +38,7 @@ export function CategoryTiles({ items }: CategoryTilesProps) {
                 />
                 
                 {/* Gradient Overlay */}
-                <div className="absolute inset-0 bg-gradient-to-t from-black/50 via-transparent to-transparent" />
+                <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/30 to-transparent" />
                 
                 {/* Content */}
                 <div className="absolute bottom-4 left-4 right-4">
