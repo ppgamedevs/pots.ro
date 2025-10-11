@@ -8,6 +8,7 @@ import { ProductCard } from "@/components/product/ProductCard";
 import { EditorialTeasers } from "@/components/promo/EditorialTeasers";
 import { StructuredData } from "@/components/seo/StructuredData";
 import { CredibilitySection } from "@/components/promo/CredibilitySection";
+import TrustedPartners from "@/components/TrustedPartners";
 
 // Types
 interface HomePromotions {
