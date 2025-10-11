@@ -7,8 +7,7 @@ import { CategoryTiles } from "@/components/promo/CategoryTiles";
 import { ProductCard } from "@/components/product/ProductCard";
 import { EditorialTeasers } from "@/components/promo/EditorialTeasers";
 import { StructuredData } from "@/components/seo/StructuredData";
-import TrustedPartners from "@/components/TrustedPartners";
-import EverythingForFlorists from "@/components/EverythingForFlorists";
+import { CredibilitySection } from "@/components/promo/CredibilitySection";
 
 // Types
 interface HomePromotions {
@@ -116,8 +115,8 @@ export default function Home() {
             />
           )}
 
-          {/* Everything for Florists Section */}
-          <EverythingForFlorists />
+          {/* Credibility Section */}
+          <CredibilitySection />
 
           {/* Slot B, C, D: Grid Promo */}
           {promotions?.grid && promotions.grid.length > 0 && (
@@ -163,7 +162,9 @@ export default function Home() {
                     ? '/images/cutii-rotunde-roz.jpg' 
                     : cat.id === 'ghivece' 
                       ? '/images/ghiveci-gri.jpg' 
-                      : '/placeholder.png',
+                      : cat.id === 'accesorii'
+                        ? '/banners/for-florists/ribbons.jpg'
+                        : '/placeholder.png',
                 alt: cat.name 
               },
               href: cat.href
