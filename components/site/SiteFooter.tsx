@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import Image from "next/image";
 import { Button } from "../ui/button";
 
 export interface FooterColumn {
@@ -49,24 +50,36 @@ export function SiteFooter({ columns, payments, carriers }: SiteFooterProps) {
               <span className="text-sm font-medium text-ink">Metode de plată:</span>
               <div className="flex items-center gap-3">
                 {/* Visa */}
-                <div className="flex items-center justify-center w-12 h-8 bg-white border border-line rounded-md shadow-sm">
-                  <div className="w-8 h-5 bg-blue-600 rounded-sm flex items-center justify-center">
-                    <span className="text-white text-xs font-bold">VISA</span>
-                  </div>
+                <div className="flex items-center justify-center w-12 h-8 bg-white border border-line rounded-md shadow-sm p-1">
+                  <Image
+                    src="/partners/payments/visa.svg"
+                    alt="Visa"
+                    width={32}
+                    height={20}
+                    className="object-contain"
+                  />
                 </div>
                 
                 {/* Mastercard */}
-                <div className="flex items-center justify-center w-12 h-8 bg-white border border-line rounded-md shadow-sm">
-                  <div className="w-8 h-5 bg-red-500 rounded-sm flex items-center justify-center">
-                    <span className="text-white text-xs font-bold">MC</span>
-                  </div>
+                <div className="flex items-center justify-center w-12 h-8 bg-white border border-line rounded-md shadow-sm p-1">
+                  <Image
+                    src="/partners/payments/mastercard.svg"
+                    alt="Mastercard"
+                    width={32}
+                    height={20}
+                    className="object-contain"
+                  />
                 </div>
                 
                 {/* Revolut */}
-                <div className="flex items-center justify-center w-12 h-8 bg-white border border-line rounded-md shadow-sm">
-                  <div className="w-8 h-5 bg-purple-600 rounded-sm flex items-center justify-center">
-                    <span className="text-white text-xs font-bold">R</span>
-                  </div>
+                <div className="flex items-center justify-center w-12 h-8 bg-white border border-line rounded-md shadow-sm p-1">
+                  <Image
+                    src="/partners/payments/revolut.svg"
+                    alt="Revolut"
+                    width={32}
+                    height={20}
+                    className="object-contain"
+                  />
                 </div>
               </div>
             </div>

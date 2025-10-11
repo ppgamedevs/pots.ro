@@ -32,100 +32,106 @@ export const metadata: Metadata = {
 
 const guides = [
   {
-    id: "ghivece-perfect",
-    title: "Cum alegi ghiveciul perfect",
-    category: "Ghivece",
-    readTime: "5 min",
-    difficulty: "Începător",
-    icon: <Ruler className="h-6 w-6" />,
-    description: "Învață să alegi ghiveciul potrivit pentru fiecare tip de plantă, dimensiune și stil de decor.",
-    topics: [
-      "Dimensiuni și proporții",
-      "Materiale și durabilitate",
-      "Drenaj și aerisire",
-      "Stiluri decorative"
-    ],
-    href: "/ghiduri/ghivece-perfect"
-  },
-  {
-    id: "ingrijire-plante",
-    title: "Îngrijirea plantelor de interior",
+    id: "ghid-complet-incepatori",
+    title: "Ghidul complet pentru începători în grădinăritul de interior",
     category: "Îngrijire",
-    readTime: "8 min",
-    difficulty: "Intermediar",
+    readTime: "15 min",
+    difficulty: "Începător",
     icon: <Leaf className="h-6 w-6" />,
-    description: "Ghid complet pentru îngrijirea plantelor de interior: udare, fertilizare, lumină și temperatură.",
+    description: "Tot ce trebuie să știi pentru a începe să cultivi plante în casă. De la alegerea primelor plante până la crearea unui mediu ideal pentru ele.",
     topics: [
-      "Programul de udare",
-      "Tipuri de fertilizare",
-      "Necesități de lumină",
-      "Controlul temperaturii"
+      "Cele mai bune plante pentru începători",
+      "Cum să alegi locația potrivită",
+      "Tehnici de udare pentru fiecare tip de plantă",
+      "Semnale că plantele au nevoie de ajutor",
+      "Echipamentul esențial pentru începători"
     ],
-    href: "/ghiduri/ingrijire-plante"
+    href: "/ghiduri/ghid-complet-incepatori"
   },
   {
-    id: "aranjamente-florale",
-    title: "Crearea aranjamentelor florale",
-    category: "Design",
+    id: "plante-imposibil-omorat",
+    title: "10 plante imposibil de omorât pentru începători",
+    category: "Îngrijire",
     readTime: "12 min",
+    difficulty: "Începător",
+    icon: <Shield className="h-6 w-6" />,
+    description: "Descoperă cele mai rezistente plante de interior care supraviețuiesc chiar și celor mai neglijenți grădinari.",
+    topics: [
+      "Sansevieria - planta de fier",
+      "Pothos - planta care crește oriunde",
+      "ZZ Plant - perfectă pentru birou",
+      "Aloe Vera - planta medicinală",
+      "Spider Plant - ideală pentru bucătărie"
+    ],
+    href: "/ghiduri/plante-imposibil-omorat"
+  },
+  {
+    id: "ghivece-perfect-2025",
+    title: "Cum alegi ghiveciul perfect în 2025: Ghid complet pentru toate tipurile de plante",
+    category: "Ghivece",
+    readTime: "18 min",
+    difficulty: "Intermediar",
+    icon: <Ruler className="h-6 w-6" />,
+    description: "Ghidul definitiv pentru alegerea ghivecelor. Învață despre materiale, dimensiuni, drenaj și cum să creezi un sistem perfect pentru fiecare plantă.",
+    topics: [
+      "Materiale de ghivece: ceramică vs plastic vs teracotă",
+      "Calcularea dimensiunii perfecte pentru fiecare plantă",
+      "Sisteme de drenaj profesionale",
+      "Ghivece auto-irigante pentru vacanțe",
+      "Design și estetică în aranjarea ghivecelor"
+    ],
+    href: "/ghiduri/ghivece-perfect-2025"
+  },
+  {
+    id: "ingrijire-plante-interior-2025",
+    title: "Îngrijirea plantelor de interior în 2025: Tehnici moderne și sfaturi de la experți",
+    category: "Îngrijire",
+    readTime: "20 min",
+    difficulty: "Intermediar",
+    icon: <Droplets className="h-6 w-6" />,
+    description: "Tehnici avansate de îngrijire a plantelor de interior, de la sisteme de irigare automată la controlul umidității și luminii.",
+    topics: [
+      "Sisteme de irigare automată pentru plante",
+      "Controlul umidității în apartament",
+      "Iluminat artificial pentru plante",
+      "Fertilizare sezonieră și programe personalizate",
+      "Prevenirea și tratarea bolilor plantelor"
+    ],
+    href: "/ghiduri/ingrijire-plante-interior-2025"
+  },
+  {
+    id: "aranjamente-florale-profesionale",
+    title: "Crearea aranjamentelor florale profesionale: Tehnici de la florării",
+    category: "Design",
+    readTime: "25 min",
     difficulty: "Avansat",
     icon: <Sun className="h-6 w-6" />,
-    description: "Tehnici profesionale pentru crearea aranjamentelor florale frumoase și durabile.",
+    description: "Tehnici profesionale pentru crearea aranjamentelor florale spectaculoase. Învață secretul florăriilor pentru aranjamente care țin săptămâni.",
     topics: [
-      "Combinarea culorilor",
-      "Tehnici de aranjare",
-      "Păstrarea florilor",
-      "Accesorii decorative"
+      "Principiile designului floral",
+      "Combinarea culorilor în aranjamente",
+      "Tehnici de prelucrare a florilor",
+      "Conservarea și prelungirea vieții florilor",
+      "Aranjamente pentru ocazii speciale"
     ],
-    href: "/ghiduri/aranjamente-florale"
+    href: "/ghiduri/aranjamente-florale-profesionale"
   },
   {
-    id: "plante-toamna",
-    title: "Plante potrivite pentru toamnă",
-    category: "Sezonale",
-    readTime: "6 min",
-    difficulty: "Începător",
-    icon: <Droplets className="h-6 w-6" />,
-    description: "Descoperă cele mai potrivite plante pentru decorul de toamnă și cum să le îngrijești.",
-    topics: [
-      "Plante rezistente la frig",
-      "Culori de toamnă",
-      "Prepararea pentru iarnă",
-      "Decoruri sezoniere"
-    ],
-    href: "/ghiduri/plante-toamna"
-  },
-  {
-    id: "drenaj-sistem",
-    title: "Sistemul de drenaj în ghivece",
-    category: "Tehnic",
-    readTime: "4 min",
-    difficulty: "Intermediar",
-    icon: <Shield className="h-6 w-6" />,
-    description: "Înțelege importanța drenajului și cum să creezi un sistem eficient pentru plantele tale.",
-    topics: [
-      "Importanța drenajului",
-      "Materiale de drenaj",
-      "Instalarea sistemului",
-      "Întreținerea drenajului"
-    ],
-    href: "/ghiduri/drenaj-sistem"
-  },
-  {
-    id: "fertilizare-naturala",
-    title: "Fertilizare naturală și organică",
+    id: "plante-purificatoare-aer-2025",
+    title: "Plantele care purifică aerul în 2025: Ghid științific pentru un aer mai curat",
     category: "Eco",
-    readTime: "7 min",
-    difficulty: "Intermediar",
+    readTime: "14 min",
+    difficulty: "Începător",
     icon: <Star className="h-6 w-6" />,
-    description: "Metode naturale de fertilizare pentru plante sănătoase și mediu prietenos.",
+    description: "Descoperă plantele cu adevărat eficiente în purificarea aerului, bazat pe studii științifice recente.",
     topics: [
-      "Compostul natural",
-      "Fertilizatori organici",
-      "Tehnici de aplicare",
-      "Beneficii pentru mediu"
+      "Studiul NASA și plantele purificatoare",
+      "Top 10 plante pentru purificarea aerului",
+      "Cum să maximizezi efectul purificator",
+      "Plante pentru dormitor și birou",
+      "Beneficii pentru sănătate și productivitate"
     ],
-    href: "/ghiduri/fertilizare-naturala"
+    href: "/ghiduri/plante-purificatoare-aer-2025"
   }
 ];
 
@@ -170,24 +176,24 @@ const categories = [
 
 const featuredGuides = [
   {
-    title: "Ghidul complet pentru începători",
-    description: "Tot ce trebuie să știi pentru a începe să cultivi plante în casă",
+    title: "Ghidul complet pentru începători în grădinăritul de interior",
+    description: "Tot ce trebuie să știi pentru a începe să cultivi plante în casă. De la alegerea primelor plante până la crearea unui mediu ideal.",
     image: "/images/ghid-incepatori.jpg",
     readTime: "15 min",
     rating: 4.8
   },
   {
-    title: "10 plante imposibil de omorât",
-    description: "Plante rezistente perfecte pentru începători",
+    title: "10 plante imposibil de omorât pentru începători",
+    description: "Descoperă cele mai rezistente plante de interior care supraviețuiesc chiar și celor mai neglijenți grădinari.",
     image: "/images/plante-rezistente.jpg",
-    readTime: "8 min",
+    readTime: "12 min",
     rating: 4.9
   },
   {
-    title: "Decorul perfect cu plante",
-    description: "Cum să transformi casa într-un paradis verde",
-    image: "/images/decor-plante.jpg",
-    readTime: "12 min",
+    title: "Cum alegi ghiveciul perfect în 2025",
+    description: "Ghidul definitiv pentru alegerea ghivecelor. Învață despre materiale, dimensiuni, drenaj și sisteme profesionale.",
+    image: "/images/ghivece-perfect.jpg",
+    readTime: "18 min",
     rating: 4.7
   }
 ];
@@ -342,10 +348,10 @@ export default function GhiduriPage() {
       <section className="py-16 bg-primary text-white">
         <div className="container mx-auto px-4">
           <div className="max-w-4xl mx-auto text-center">
-            <h2 className="text-3xl font-bold mb-4">
+            <h2 className="text-3xl font-bold mb-4 text-white">
               Primește ghiduri noi în inbox
             </h2>
-            <p className="text-xl mb-8 opacity-90">
+            <p className="text-xl mb-8 opacity-90 text-white">
               Abonează-te la newsletter-ul nostru și primește cele mai noi ghiduri 
               despre îngrijirea plantelor direct în email.
             </p>

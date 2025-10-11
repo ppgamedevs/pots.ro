@@ -373,10 +373,10 @@ export default function RetururiPage() {
       <section className="py-16 bg-primary text-white">
         <div className="container mx-auto px-4">
           <div className="max-w-4xl mx-auto text-center">
-            <h2 className="text-3xl font-bold mb-4">
+            <h2 className="text-3xl font-bold mb-4 text-white">
               Ai întrebări despre retururi?
             </h2>
-            <p className="text-xl mb-8 opacity-90">
+            <p className="text-xl mb-8 opacity-90 text-white">
               Echipa noastră de suport te ajută cu orice întrebare despre retururi, 
               anulări sau procesul de rambursare.
             </p>
@@ -385,17 +385,23 @@ export default function RetururiPage() {
                 variant="secondary" 
                 size="lg"
                 className="bg-white text-primary hover:bg-gray-100"
+                asChild
               >
-                <Mail className="h-4 w-4 mr-2" />
-                Contactează suportul
+                <a href="mailto:support@floristmarket.ro">
+                  <Mail className="h-4 w-4 mr-2" />
+                  Contactează suportul
+                </a>
               </Button>
               <Button 
                 variant="outline" 
                 size="lg"
                 className="border-white text-white hover:bg-white/10"
+                asChild
               >
-                <Phone className="h-4 w-4 mr-2" />
-                Sună-ne
+                <a href="tel:+40211234567">
+                  <Phone className="h-4 w-4 mr-2" />
+                  Sună-ne
+                </a>
               </Button>
             </div>
           </div>

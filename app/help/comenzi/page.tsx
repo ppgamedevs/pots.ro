@@ -121,12 +121,6 @@ const paymentMethods = [
     security: "Plăți securizate SSL 256-bit"
   },
   {
-    name: "PayPal",
-    description: "Plăți rapide și sigure prin PayPal",
-    icon: <Shield className="h-6 w-6" />,
-    security: "Protecție PayPal Buyer Protection"
-  },
-  {
     name: "Revolut",
     description: "Plăți instant prin aplicația Revolut",
     icon: <CheckCircle className="h-6 w-6" />,
@@ -256,7 +250,7 @@ export default function ComenziPage() {
         <div className="container mx-auto px-4">
           <div className="max-w-6xl mx-auto">
             <h2 className="text-3xl font-bold text-center mb-12">Metode de plată</h2>
-            <div className="grid md:grid-cols-3 gap-8">
+            <div className="grid md:grid-cols-2 gap-8 max-w-2xl mx-auto">
               {paymentMethods.map((method, index) => (
                 <Card key={index} className="text-center hover:shadow-lg transition-shadow">
                   <CardContent className="p-6">
@@ -304,10 +298,10 @@ export default function ComenziPage() {
       <section className="py-16 bg-primary text-white">
         <div className="container mx-auto px-4">
           <div className="max-w-4xl mx-auto text-center">
-            <h2 className="text-3xl font-bold mb-4">
+            <h2 className="text-3xl font-bold mb-4 text-white">
               Ai întrebări despre comenzi?
             </h2>
-            <p className="text-xl mb-8 opacity-90">
+            <p className="text-xl mb-8 opacity-90 text-white">
               Echipa noastră de suport este aici să te ajute cu orice întrebare despre 
               plasarea sau gestionarea comenzilor.
             </p>
@@ -316,17 +310,23 @@ export default function ComenziPage() {
                 variant="secondary" 
                 size="lg"
                 className="bg-white text-primary hover:bg-gray-100"
+                asChild
               >
-                <Mail className="h-4 w-4 mr-2" />
-                Contactează suportul
+                <a href="mailto:support@floristmarket.ro">
+                  <Mail className="h-4 w-4 mr-2" />
+                  Contactează suportul
+                </a>
               </Button>
               <Button 
                 variant="outline" 
                 size="lg"
                 className="border-white text-white hover:bg-white/10"
+                asChild
               >
-                <Phone className="h-4 w-4 mr-2" />
-                Sună-ne
+                <a href="tel:+40211234567">
+                  <Phone className="h-4 w-4 mr-2" />
+                  Sună-ne
+                </a>
               </Button>
             </div>
           </div>

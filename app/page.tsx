@@ -3,13 +3,12 @@
 import { useEffect, useState } from "react";
 import { PromoHero } from "@/components/promo/PromoHero";
 import { PromoCard } from "@/components/promo/PromoCard";
-import { UspRow } from "@/components/promo/UspRow";
 import { CategoryTiles } from "@/components/promo/CategoryTiles";
 import { ProductCard } from "@/components/product/ProductCard";
 import { EditorialTeasers } from "@/components/promo/EditorialTeasers";
 import { StructuredData } from "@/components/seo/StructuredData";
 import TrustedPartners from "@/components/TrustedPartners";
-import { Shield, Truck, CheckCircle, Headphones } from "lucide-react";
+import EverythingForFlorists from "@/components/EverythingForFlorists";
 
 // Types
 interface HomePromotions {
@@ -83,15 +82,6 @@ export default function Home() {
     fetchData();
   }, []);
 
-  // USP Items
-  const uspItems = [
-    { icon: <Shield className="w-5 h-5" />, text: "Plăți securizate" },
-    { icon: <Truck className="w-5 h-5" />, text: "Retur 14 zile" },
-    { icon: <CheckCircle className="w-5 h-5" />, text: "Selleri verificați" },
-    { icon: <Headphones className="w-5 h-5" />, text: "Suport rapid" }
-  ];
-
-
   if (loading) {
     return (
       <main className="min-h-screen bg-bg">
@@ -126,8 +116,8 @@ export default function Home() {
             />
           )}
 
-          {/* USPs Row */}
-          <UspRow items={uspItems} />
+          {/* Everything for Florists Section */}
+          <EverythingForFlorists />
 
           {/* Slot B, C, D: Grid Promo */}
           {promotions?.grid && promotions.grid.length > 0 && (

@@ -339,10 +339,10 @@ export default function CookiesPage() {
       <section className="py-16 bg-primary text-white">
         <div className="container mx-auto px-4">
           <div className="max-w-4xl mx-auto text-center">
-            <h2 className="text-3xl font-bold mb-4">
+            <h2 className="text-3xl font-bold mb-4 text-white">
               Ai întrebări despre cookie-uri?
             </h2>
-            <p className="text-xl mb-8 opacity-90">
+            <p className="text-xl mb-8 opacity-90 text-white">
               Dacă ai întrebări despre utilizarea cookie-urilor pe FloristMarket, 
               nu ezita să ne contactezi pentru clarificări.
             </p>

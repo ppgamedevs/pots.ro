@@ -252,8 +252,8 @@ export default function CareersPage() {
                           <MapPin className="h-4 w-4" />
                           <span>{job.location}</span>
                         </div>
-                        <Button className="bg-primary hover:bg-primary/90">
-                          Aplică acum
+                        <Button className="bg-primary hover:bg-primary/90" asChild>
+                          <a href="/cariere/aplica">Aplică acum</a>
                         </Button>
                       </div>
                     </div>
@@ -320,10 +320,10 @@ export default function CareersPage() {
       <section className="py-16 bg-primary text-white">
         <div className="container mx-auto px-4">
           <div className="max-w-4xl mx-auto text-center">
-            <h2 className="text-3xl font-bold mb-4">
+            <h2 className="text-3xl font-bold mb-4 text-white">
               Nu găsești postul potrivit?
             </h2>
-            <p className="text-xl mb-8 opacity-90">
+            <p className="text-xl mb-8 opacity-90 text-white">
               Trimite-ne CV-ul tău și te vom contacta când avem o oportunitate potrivită pentru tine.
             </p>
             <div className="flex flex-col sm:flex-row gap-4 justify-center">
@@ -331,15 +331,17 @@ export default function CareersPage() {
                 variant="secondary" 
                 size="lg"
                 className="bg-white text-primary hover:bg-gray-100"
+                asChild
               >
-                Trimite CV-ul tău
+                <a href="/cariere/aplica">Trimite CV-ul tău</a>
               </Button>
               <Button 
                 variant="outline" 
                 size="lg"
                 className="border-white text-white hover:bg-white/10"
+                asChild
               >
-                Contactează-ne
+                <a href="mailto:hr@floristmarket.ro">Contactează-ne</a>
               </Button>
             </div>
           </div>
