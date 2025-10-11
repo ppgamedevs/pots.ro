@@ -9,6 +9,10 @@ export interface PromotionSlot {
     src: string;
     alt: string;
   };
+  video?: {
+    src: string;
+    poster?: string;
+  };
   href: string;
   ctaPrimary?: {
     label: string;
@@ -35,8 +39,12 @@ export async function GET() {
         title: 'Marketplace de floristică',
         subtitle: 'Flori, ambalaje, cutii și accesorii - într-un singur loc.',
         image: {
-          src: '/placeholder.png',
+          src: '/banners/hero-poster.jpg',
           alt: 'FloristMarket - Marketplace de floristică'
+        },
+        video: {
+          src: '/videos/hero-banner.mp4',
+          poster: '/banners/hero-poster.jpg'
         },
         href: '/products',
         ctaPrimary: {

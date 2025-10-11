@@ -19,22 +19,49 @@ export interface PromoHeroProps {
   title: string;
   subtitle?: string;
   image: SrcSet;
+  video?: {
+    src: string;
+    poster?: string; // Fallback image while video loads
+  };
   ctaPrimary: LinkProps;
   ctaSecondary?: LinkProps;
 }
 
-export function PromoHero({ title, subtitle, image, ctaPrimary, ctaSecondary }: PromoHeroProps) {
+export function PromoHero({ title, subtitle, image, video, ctaPrimary, ctaSecondary }: PromoHeroProps) {
   return (
     <section className="relative h-[540px] lg:h-[540px] overflow-hidden rounded-lg">
-      {/* Background Image */}
-      <Image
-        src={image.src}
-        alt={image.alt}
-        fill
-        className="object-cover"
-        priority
-        sizes="(max-width: 768px) 100vw, 1440px"
-      />
+      {/* Background Video or Image */}
+      {video ? (
+        <video
+          autoPlay
+          muted
+          loop
+          playsInline
+          className="absolute inset-0 w-full h-full object-cover"
+          poster={video.poster || image.src}
+          preload="metadata"
+        >
+          <source src={video.src} type="video/mp4" />
+          {/* Fallback to image if video fails to load */}
+          <Image
+            src={image.src}
+            alt={image.alt}
+            fill
+            className="object-cover"
+            priority
+            sizes="(max-width: 768px) 100vw, 1440px"
+          />
+        </video>
+      ) : (
+        <Image
+          src={image.src}
+          alt={image.alt}
+          fill
+          className="object-cover"
+          priority
+          sizes="(max-width: 768px) 100vw, 1440px"
+        />
+      )}
       
       {/* Gradient Overlay */}
       <div className="absolute inset-0 bg-gradient-to-r from-black/40 via-black/20 to-transparent" />

@@ -110,6 +110,7 @@ export default function Home() {
               title={promotions.hero.title}
               subtitle={promotions.hero.subtitle}
               image={promotions.hero.image}
+              video={promotions.hero.video}
               ctaPrimary={promotions.hero.ctaPrimary}
               ctaSecondary={promotions.hero.ctaSecondary}
             />
