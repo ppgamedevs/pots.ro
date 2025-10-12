@@ -1,5 +1,7 @@
 import { NextResponse } from "next/server";
 
+export const dynamic = 'force-static';
+
 export interface PromotionSlot {
   id: string;
   type: 'hero' | 'card-large' | 'card-small' | 'partner';

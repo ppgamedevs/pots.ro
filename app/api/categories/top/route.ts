@@ -1,5 +1,7 @@
 import { NextResponse } from "next/server";
 
+export const dynamic = 'force-static';
+
 export interface Category {
   id: string;
   name: string;

@@ -4,37 +4,25 @@
  */
 
 import { NextRequest, NextResponse } from 'next/server';
-import { db } from '@/lib/db';
-import { products, sellers } from '@/db/schema/core';
-import { eq } from 'drizzle-orm';
+
+export const dynamic = 'force-static';
 
 export async function GET(request: NextRequest) {
   try {
     // Cache pentru 15 minute
     const cacheControl = 'public, s-maxage=900, stale-while-revalidate=3600';
     
-    // Obține produsele active
-    const activeProducts = await db.query.products.findMany({
-      where: eq(products.status, 'active'),
-      with: {
-        seller: {
-          columns: {
-            slug: true
-          }
-        }
-      },
-      columns: {
-        id: true,
-        title: true,
-        updatedAt: true,
-        status: true
-      }
-    });
+    // Mock data pentru MVP - înlocuiește cu query real când baza de date este gata
+    const mockProducts = [
+      { id: '1', title: 'Ghiveci Ceramic Alb', updatedAt: new Date(), status: 'active' },
+      { id: '2', title: 'Cutie Inalta Nevopsita', updatedAt: new Date(), status: 'active' },
+      { id: '3', title: 'Panglica Satin', updatedAt: new Date(), status: 'active' },
+    ];
 
     // Generează XML sitemap
     const sitemap = `<?xml version="1.0" encoding="UTF-8"?>
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
-  ${activeProducts.map(product => {
+  ${mockProducts.map(product => {
     const slug = product.title
       .toLowerCase()
       .replace(/[^a-z0-9\s-]/g, '')

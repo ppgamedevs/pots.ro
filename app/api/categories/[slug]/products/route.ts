@@ -2,6 +2,8 @@ import { NextResponse } from "next/server";
 // import { mockProductsByCategory } from "@/lib/mock";
 import { cacheHeaders } from "@/lib/http";
 
+export const dynamic = 'force-static';
+
 export async function GET(
   _req: Request,
   { params }: { params: Promise<{ slug: string }> }

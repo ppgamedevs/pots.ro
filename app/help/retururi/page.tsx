@@ -1,4 +1,5 @@
-import { Metadata } from "next";
+"use client";
+
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -20,17 +21,6 @@ import {
 } from "lucide-react";
 import Link from "next/link";
 
-export const metadata: Metadata = {
-  title: "Retururi & Anulări - Help Center FloristMarket.ro",
-  description: "Ghid complet pentru retururi și anulări: condiții, solicitare, aprobare și rambursare pe FloristMarket.",
-  openGraph: {
-    title: "Retururi & Anulări - Help Center FloristMarket.ro",
-    description: "Ghid complet pentru retururi și anulări: condiții, solicitare, aprobare și rambursare pe FloristMarket.",
-  },
-  alternates: {
-    canonical: 'https://floristmarket.ro/help/retururi'
-  }
-};
 
 const returnConditions = [
   {

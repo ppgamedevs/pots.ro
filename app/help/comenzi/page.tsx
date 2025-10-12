@@ -1,4 +1,5 @@
-import { Metadata } from "next";
+"use client";
+
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -19,17 +20,6 @@ import {
 } from "lucide-react";
 import Link from "next/link";
 
-export const metadata: Metadata = {
-  title: "Comenzi - Help Center FloristMarket.ro",
-  description: "Ghid complet pentru plasarea și gestionarea comenzilor pe FloristMarket. Pași de comandă, statusuri și notificări.",
-  openGraph: {
-    title: "Comenzi - Help Center FloristMarket.ro",
-    description: "Ghid complet pentru plasarea și gestionarea comenzilor pe FloristMarket. Pași de comandă, statusuri și notificări.",
-  },
-  alternates: {
-    canonical: 'https://floristmarket.ro/help/comenzi'
-  }
-};
 
 const orderSteps = [
   {

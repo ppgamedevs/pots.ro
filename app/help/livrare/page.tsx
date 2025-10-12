@@ -1,4 +1,5 @@
-import { Metadata } from "next";
+"use client";
+
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -20,17 +21,6 @@ import {
 } from "lucide-react";
 import Link from "next/link";
 
-export const metadata: Metadata = {
-  title: "Livrare - Help Center FloristMarket.ro",
-  description: "Informații complete despre livrare: curieri, termene estimate, urmărire colet și costuri de livrare pe FloristMarket.",
-  openGraph: {
-    title: "Livrare - Help Center FloristMarket.ro",
-    description: "Informații complete despre livrare: curieri, termene estimate, urmărire colet și costuri de livrare pe FloristMarket.",
-  },
-  alternates: {
-    canonical: 'https://floristmarket.ro/help/livrare'
-  }
-};
 
 const couriers = [
   {
