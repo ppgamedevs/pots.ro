@@ -26,10 +26,10 @@ export const POSTS: PostFrontMatter[] = [
     slug: "flori-in-beton-apartament-comunist",
     title: "Flori în beton: cum să transformi un apartament comunist într-un spațiu viu",
     excerpt: "Un ghid vizual și sincer despre cum florile, vasele potrivite și lumina caldă pot reumaniza un apartament comunist. Tendințe FloristMarket 2026 pentru spații mici și suflete mari.",
-    cover: "/images/blog-flori-in-beton.jpg",
+    cover: "/images/plant-arrangements-interior.jpg",
     date: "2025-10-15",
     category: "Inspirație",
-    author: { name: "Echipa FloristMarket", avatar: "/images/avatar-fm.png" },
+    author: { name: "Echipa FloristMarket", avatar: "/placeholder.png" },
     readingTime: "8 min",
     tags: ["flori apartament", "design floral", "romania", "2026", "spații mici", "reumanizare"]
   },
@@ -40,7 +40,7 @@ export const POSTS: PostFrontMatter[] = [
     cover: "/blog/buchet-galben.png", // imaginea specifică pentru acest articol
     date: "2025-10-15",
     category: "Inspirație",
-    author: { name: "Echipa FloristMarket", avatar: "/images/avatar-fm.png" },
+    author: { name: "Echipa FloristMarket", avatar: "/placeholder.png" },
     readingTime: "6 min",
     tags: ["design floral", "romania", "2026", "naturalețe", "tehnologie discretă", "sustainability"]
   },
@@ -51,7 +51,7 @@ export const POSTS: PostFrontMatter[] = [
     cover: "/blog/ingrijire-plante-interioare-2025.jpg",
     date: "2025-01-05",
     category: "Îngrijire Expertă",
-    author: { name: "Prof. Ana Maria - Specialist Horticultură", avatar: "/images/avatar-expert-3.png" },
+    author: { name: "Prof. Ana Maria - Specialist Horticultură", avatar: "/placeholder.png" },
     readingTime: "12 min",
     tags: ["plante interioare", "romania", "2025", "îngrijire", "clima locală", "sistem automat"]
   },
