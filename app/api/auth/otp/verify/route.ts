@@ -141,7 +141,10 @@ export async function POST(request: NextRequest) {
     }
     
     // Verify the code
+    console.log('Verifying code:', code);
+    console.log('Against hash:', otpRecord.codeHash);
     const isValidCode = await verify(code, otpRecord.codeHash);
+    console.log('Verification result:', isValidCode);
     
     if (!isValidCode) {
       // Increment attempts

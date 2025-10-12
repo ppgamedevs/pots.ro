@@ -1,0 +1,16 @@
+# Placeholder pentru imaginea cu aranjamente de plante în interior
+
+Această imagine va fi înlocuită cu poza reală cu aranjamentele de plante din imaginea furnizată de utilizator.
+
+Imaginea ar trebui să fie salvată ca:
+- Nume: plant-arrangements-interior.jpg
+- Locație: public/images/plant-arrangements-interior.jpg
+- Descriere: Aranjamente de plante în interior - exemple de culori și texturi care transformă spațiile comuniste în locuri vii și primitoare
+
+Conținutul imaginii:
+- 6 aranjamente diferite de plante în ghivece
+- Poziționate pe pervaz, masă joasă și măsuță înaltă
+- Lumina naturală prin fereastră mare
+- Culori: verde predominant, maro (lemn), alb (ghivece), roz (flori), gri
+- Texturi variate: frunze lucioase și mate, lemn neted, răchită împletită, ceramică aspră
+- Atmosferă de prospețime, vitalitate și armonie

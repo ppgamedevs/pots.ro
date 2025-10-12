@@ -171,6 +171,18 @@ export const POST_CONTENT: Record<string, string> = {
     
     <p>Betonul iubește culorile care îl liniștesc, nu pe cele care îl provoacă.</p>
     
+    <figure class="my-8">
+      <img 
+        src="/images/plant-arrangements-interior.jpg" 
+        alt="Aranjamente de plante în interior - exemple de culori care încălzesc spațiile" 
+        class="w-full rounded-lg shadow-lg"
+        loading="lazy"
+      />
+      <figcaption class="mt-4 text-center text-sm text-gray-600 italic">
+        Aranjamente de plante în interior: exemple de culori și texturi care transformă spațiile comuniste în locuri vii și primitoare
+      </figcaption>
+    </figure>
+    
     <h2>4. Pervazul – scena tăcută a florilor</h2>
     <p>Pervazul este locul unde se întâlnesc exteriorul și interiorul. Nu-l trata ca pe un depozit. Fă-l altarul zilnic al luminii.</p>
     
