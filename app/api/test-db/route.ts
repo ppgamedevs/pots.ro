@@ -32,6 +32,28 @@ export async function GET() {
         CREATE INDEX IF NOT EXISTS auth_otp_email_created_idx ON auth_otp(email, created_at)
       `);
       
+      // Create auth_audit table for logging
+      await db.execute(`
+        CREATE TABLE IF NOT EXISTS auth_audit (
+          id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+          kind TEXT NOT NULL,
+          email TEXT,
+          user_id UUID REFERENCES users(id),
+          ip TEXT,
+          ua TEXT,
+          meta JSONB DEFAULT '{}',
+          created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+        )
+      `);
+      
+      await db.execute(`
+        CREATE INDEX IF NOT EXISTS auth_audit_kind_idx ON auth_audit(kind)
+      `);
+      
+      await db.execute(`
+        CREATE INDEX IF NOT EXISTS auth_audit_email_idx ON auth_audit(email)
+      `);
+      
       console.log('Auth tables created successfully');
     } catch (error) {
       console.log('Auth tables might already exist:', error);

@@ -13,7 +13,7 @@ import {
   ArrowRight,
   Shield,
   Package,
-  MessageCircle
+  MessageCircle,
   CreditCard,
   FileText,
   Calendar

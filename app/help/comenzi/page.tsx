@@ -13,7 +13,7 @@ import {
   Info,
   ArrowRight,
   Shield,
-  MessageCircle
+  MessageCircle,
   Truck,
   Package
 } from "lucide-react";
