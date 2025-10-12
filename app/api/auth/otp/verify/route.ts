@@ -177,14 +177,52 @@ export async function POST(request: NextRequest) {
     const isNewUser = !user;
     
     if (!user) {
-      // Create new user
-      [user] = await db
-        .insert(users)
-        .values({
-          email: normalizedEmail,
-          role: 'buyer',
-        })
-        .returning();
+      try {
+        // Create new user
+        [user] = await db
+          .insert(users)
+          .values({
+            email: normalizedEmail,
+            role: 'buyer',
+          })
+          .returning();
+      } catch (error) {
+        console.error('Error creating user:', error);
+        
+        // If users table doesn't exist, create it
+        if (error instanceof Error && error.message.includes('relation "users" does not exist')) {
+          try {
+            await db.execute(`
+              CREATE TABLE IF NOT EXISTS users (
+                id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+                email TEXT NOT NULL UNIQUE,
+                name TEXT,
+                role TEXT NOT NULL DEFAULT 'buyer',
+                created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+                updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+              )
+            `);
+            
+            await db.execute(`
+              CREATE INDEX IF NOT EXISTS users_email_idx ON users(email)
+            `);
+            
+            // Retry creating user
+            [user] = await db
+              .insert(users)
+              .values({
+                email: normalizedEmail,
+                role: 'buyer',
+              })
+              .returning();
+          } catch (createError) {
+            console.error('Error creating users table:', createError);
+            throw createError;
+          }
+        } else {
+          throw error;
+        }
+      }
       
       // Send welcome email asynchronously (don't block login)
       sendWelcomeEmail(normalizedEmail).catch(error => {

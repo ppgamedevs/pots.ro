@@ -26,7 +26,11 @@ export function LoginForm({ onSuccess, redirectTo }: LoginFormProps) {
   // Get redirect URL from search params or props
   const getRedirectUrl = () => {
     const next = searchParams.get('next');
-    if (next) return next;
+    if (next) {
+      // Convert English URLs to Romanian
+      if (next === '/register') return '/creare-cont';
+      return next;
+    }
     if (redirectTo) return redirectTo;
     return '/';
   };
