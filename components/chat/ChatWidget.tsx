@@ -148,14 +148,12 @@ export function ChatWidget({ className }: ChatWidgetProps) {
                 <Bot className="h-5 w-5" />
                 <span className="font-medium">Suport FloristMarket</span>
               </div>
-              <Button
+              <button
                 onClick={() => setIsOpen(false)}
-                variant="ghost"
-                size="sm"
-                className="h-8 w-8 p-0 text-white hover:bg-white/20 hover:text-white min-w-0 flex-shrink-0"
+                className="h-8 w-8 p-0 text-white hover:bg-white/20 hover:text-white min-w-0 flex-shrink-0 flex items-center justify-center rounded transition-colors"
               >
                 <X className="h-4 w-4" />
-              </Button>
+              </button>
             </div>
 
             {/* Messages */}
