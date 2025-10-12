@@ -171,14 +171,16 @@ export const POST_CONTENT: Record<string, string> = {
     
     <p>Betonul iubește culorile care îl liniștesc, nu pe cele care îl provoacă.</p>
     
-    <figure class="my-8">
+    <figure className="my-8">
       <img 
-        src="/images/plant-arrangements-interior.jpg" 
+        src="/images/plant-arrangements-interior.jpg?v=2025" 
         alt="Aranjamente de plante în interior - exemple de culori care încălzesc spațiile" 
-        class="w-full rounded-lg shadow-lg"
+        className="w-full rounded-lg shadow-lg"
         loading="lazy"
+        width="800"
+        height="600"
       />
-      <figcaption class="mt-4 text-center text-sm text-gray-600 italic">
+      <figcaption className="mt-4 text-center text-sm text-gray-600 italic">
         Aranjamente de plante în interior: exemple de culori și texturi care transformă spațiile comuniste în locuri vii și primitoare
       </figcaption>
     </figure>
