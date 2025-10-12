@@ -53,12 +53,46 @@ export async function POST(request: NextRequest) {
     }
     
     // Find the latest valid OTP record
-    const [otpRecord] = await db
+    let [otpRecord] = await db
       .select()
       .from(authOtp)
       .where(eq(authOtp.email, normalizedEmail))
       .orderBy(desc(authOtp.createdAt))
       .limit(1);
+    
+    // If no record found, try to create tables and retry
+    if (!otpRecord) {
+      try {
+        await db.execute(`
+          CREATE TABLE IF NOT EXISTS auth_otp (
+            id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+            email TEXT NOT NULL,
+            code_hash VARCHAR(255) NOT NULL,
+            magic_token_hash VARCHAR(255) NOT NULL,
+            expires_at TIMESTAMPTZ NOT NULL,
+            consumed_at TIMESTAMPTZ,
+            ip TEXT,
+            ua TEXT,
+            attempts INTEGER NOT NULL DEFAULT 0,
+            created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+          )
+        `);
+        
+        await db.execute(`
+          CREATE INDEX IF NOT EXISTS auth_otp_email_expires_idx ON auth_otp(email, expires_at)
+        `);
+        
+        // Retry the query
+        [otpRecord] = await db
+          .select()
+          .from(authOtp)
+          .where(eq(authOtp.email, normalizedEmail))
+          .orderBy(desc(authOtp.createdAt))
+          .limit(1);
+      } catch (error) {
+        console.error('Error creating auth tables:', error);
+      }
+    }
     
     if (!otpRecord) {
       await logAuthEvent('otp_denied', normalizedEmail, undefined, ip, userAgent, {
