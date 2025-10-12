@@ -40,15 +40,10 @@ export function PromoHero({ title, subtitle, image, video, ctaPrimary, ctaSecond
           preload="metadata"
         >
           <source src={video.src} type="video/mp4" />
-          {/* Fallback to image if video fails to load */}
-          <Image
-            src={image.src}
-            alt={image.alt}
-            fill
-            className="object-cover"
-            priority
-            sizes="(max-width: 768px) 100vw, 1440px"
-          />
+          {/* Fallback text if video fails to load */}
+          <div className="absolute inset-0 bg-gray-900 flex items-center justify-center">
+            <p className="text-white text-lg">Video not available</p>
+          </div>
         </video>
       ) : (
         <Image

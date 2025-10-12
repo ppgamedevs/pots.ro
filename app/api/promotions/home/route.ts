@@ -38,7 +38,7 @@ export async function GET() {
         title: 'Marketplace de floristică',
         subtitle: 'Flori, ambalaje, cutii și accesorii - într-un singur loc.',
         image: {
-          src: '/placeholder.png',
+          src: '/images/ghivece-moderne.jpg',
           alt: 'FloristMarket - Marketplace de floristică'
         },
         video: {
