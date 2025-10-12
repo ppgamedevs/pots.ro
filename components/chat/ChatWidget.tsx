@@ -41,9 +41,9 @@ export function ChatWidget({ className }: ChatWidgetProps) {
 
   // Expose openChat function globally
   useEffect(() => {
-    window.openChat = () => setIsOpen(true);
+    (window as any).openChat = () => setIsOpen(true);
     return () => {
-      delete window.openChat;
+      delete (window as any).openChat;
     };
   }, []);
 
