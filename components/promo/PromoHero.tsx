@@ -21,7 +21,6 @@ export interface PromoHeroProps {
   image: SrcSet;
   video?: {
     src: string;
-    poster?: string; // Fallback image while video loads
   };
   ctaPrimary: LinkProps;
   ctaSecondary?: LinkProps;
@@ -38,7 +37,6 @@ export function PromoHero({ title, subtitle, image, video, ctaPrimary, ctaSecond
           loop
           playsInline
           className="absolute inset-0 w-full h-full object-cover"
-          poster={video.poster || image.src}
           preload="metadata"
         >
           <source src={video.src} type="video/mp4" />
