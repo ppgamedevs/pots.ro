@@ -15,8 +15,10 @@ import {
   ArrowRight,
   Shield,
   Calendar,
-  Navigation
+  Navigation,
+  MessageCircle
 } from "lucide-react";
+import Link from "next/link";
 
 export const metadata: Metadata = {
   title: "Livrare - Help Center FloristMarket.ro",
@@ -423,21 +425,19 @@ export default function LivrarePage() {
                 className="bg-white text-primary hover:bg-gray-100"
                 asChild
               >
-                <a href="mailto:support@floristmarket.ro">
+                <Link href="/contact">
                   <Mail className="h-4 w-4 mr-2" />
                   Contactează suportul
-                </a>
+                </Link>
               </Button>
               <Button 
                 variant="outline" 
                 size="lg"
                 className="border-white text-white hover:bg-white/10"
-                asChild
+                onClick={() => window.openChat?.()}
               >
-                <a href="tel:+40211234567">
-                  <Phone className="h-4 w-4 mr-2" />
-                  Sună-ne
-                </a>
+                <MessageCircle className="h-4 w-4 mr-2" />
+                Live Chat
               </Button>
             </div>
           </div>

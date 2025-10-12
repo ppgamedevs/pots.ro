@@ -19,6 +19,13 @@ interface ChatWidgetProps {
   className?: string;
 }
 
+// Global function to open chat
+declare global {
+  interface Window {
+    openChat: () => void;
+  }
+}
+
 export function ChatWidget({ className }: ChatWidgetProps) {
   const [isOpen, setIsOpen] = useState(false);
   const [messages, setMessages] = useState<ChatMessage[]>([]);
@@ -31,6 +38,14 @@ export function ChatWidget({ className }: ChatWidgetProps) {
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [messages]);
+
+  // Expose openChat function globally
+  useEffect(() => {
+    window.openChat = () => setIsOpen(true);
+    return () => {
+      delete window.openChat;
+    };
+  }, []);
 
   // Load chat history on open
   useEffect(() => {
@@ -48,12 +63,12 @@ export function ChatWidget({ className }: ChatWidgetProps) {
           setMessages(data.messages);
         } else {
           // Add welcome message
-          addMessage('Salut! Sunt botul de suport FloristMarket. Cum te pot ajuta astăzi?', 'bot');
+          addMessage('Bună ziua! 👋\n\nSunt asistentul virtual FloristMarket și sunt aici să vă ajut cu orice întrebare aveți despre produse, comenzi, livrare sau orice altceva legat de marketplace-ul nostru.\n\nCum vă pot fi de folos astăzi?', 'bot');
         }
       }
     } catch (error) {
       console.error('Error loading chat history:', error);
-      addMessage('Salut! Sunt botul de suport FloristMarket. Cum te pot ajuta astăzi?', 'bot');
+      addMessage('Bună ziua! 👋\n\nSunt asistentul virtual FloristMarket și sunt aici să vă ajut cu orice întrebare aveți despre produse, comenzi, livrare sau orice altceva legat de marketplace-ul nostru.\n\nCum vă pot fi de folos astăzi?', 'bot');
     }
   };
 
@@ -136,7 +151,8 @@ export function ChatWidget({ className }: ChatWidgetProps) {
               <Button
                 onClick={() => setIsOpen(false)}
                 variant="ghost"
-                className="h-8 w-8 text-white hover:bg-white/20"
+                size="sm"
+                className="h-8 w-8 p-0 text-white hover:bg-white/20 hover:text-white min-w-0 flex-shrink-0"
               >
                 <X className="h-4 w-4" />
               </Button>
