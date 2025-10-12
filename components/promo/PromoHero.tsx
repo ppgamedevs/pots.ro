@@ -28,7 +28,7 @@ export interface PromoHeroProps {
 
 export function PromoHero({ title, subtitle, image, video, ctaPrimary, ctaSecondary }: PromoHeroProps) {
   return (
-    <section className="relative h-[540px] lg:h-[540px] overflow-hidden rounded-lg">
+    <section className="relative h-[400px] sm:h-[500px] lg:h-[540px] overflow-hidden rounded-lg">
       {/* Background Video or Image */}
       {video ? (
         <video
@@ -63,12 +63,12 @@ export function PromoHero({ title, subtitle, image, video, ctaPrimary, ctaSecond
       <div className="relative h-full flex items-center">
         <div className="max-w-7xl mx-auto px-4 w-full">
           <div className="max-w-2xl">
-            <h1 className="text-4xl lg:text-5xl font-bold text-white mb-4 leading-tight">
+            <h1 className="text-3xl sm:text-4xl lg:text-5xl font-bold text-white mb-4 leading-tight">
               {title}
             </h1>
             
             {subtitle && (
-              <p className="text-lg lg:text-xl text-white/90 mb-8 leading-relaxed">
+              <p className="text-base sm:text-lg lg:text-xl text-white/90 mb-8 leading-relaxed">
                 {subtitle}
               </p>
             )}

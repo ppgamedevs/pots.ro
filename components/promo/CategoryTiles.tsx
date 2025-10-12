@@ -20,14 +20,14 @@ export function CategoryTiles({ items }: CategoryTilesProps) {
   return (
     <section className="py-8 lg:py-12 bg-bg">
       <div className="max-w-7xl mx-auto px-4">
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 lg:gap-6">
           {items.map((item, index) => (
             <Link 
               key={index}
               href={item.href}
               className="group block"
             >
-              <div className="relative h-48 lg:h-64 overflow-hidden rounded-lg transition-micro group-hover:shadow-elev">
+              <div className="relative h-40 sm:h-48 lg:h-64 overflow-hidden rounded-lg transition-micro group-hover:shadow-elev">
                 {/* Background Image */}
                 <Image
                   src={item.image.src}

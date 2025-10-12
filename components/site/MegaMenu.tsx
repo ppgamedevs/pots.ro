@@ -37,17 +37,18 @@ export function MegaMenu({ categories, isOpen, onClose }: MegaMenuProps) {
       />
       
       {/* Mega Menu */}
-      <div className="fixed top-16 left-0 right-0 bg-bg border-b border-line shadow-elev z-50">
+      <div className="fixed top-16 left-0 right-0 bg-bg border-b border-line shadow-elev z-50 max-h-[calc(100vh-4rem)] overflow-y-auto">
         <div className="max-w-7xl mx-auto px-4 py-8">
-          <div className="grid grid-cols-3 gap-8">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
             {/* Categories Grid */}
-            <div className="col-span-2">
-              <div className="grid grid-cols-3 gap-6">
+            <div className="md:col-span-2">
+              <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-6">
                 {categories.map((category) => (
                   <div key={category.id} className="space-y-3">
                     <Link 
                       href={category.href}
                       className="text-lg font-semibold text-ink hover:text-primary transition-micro block"
+                      onClick={onClose}
                     >
                       {category.name}
                     </Link>
@@ -59,6 +60,7 @@ export function MegaMenu({ categories, isOpen, onClose }: MegaMenuProps) {
                             key={subcategory.id}
                             href={subcategory.href}
                             className="text-sm text-muted hover:text-ink transition-micro block"
+                            onClick={onClose}
                           >
                             {subcategory.name}
                           </Link>
@@ -71,14 +73,14 @@ export function MegaMenu({ categories, isOpen, onClose }: MegaMenuProps) {
             </div>
 
             {/* Promo Image */}
-            <div className="col-span-1">
-              <div className="relative h-60 bg-bg-soft rounded-lg overflow-hidden">
+            <div className="md:col-span-1">
+              <div className="relative h-48 md:h-60 bg-bg-soft rounded-lg overflow-hidden">
                 <Image
                   src="/placeholder.png"
                   alt="Promo categorie"
                   fill
                   className="object-cover"
-                  sizes="420px"
+                  sizes="(max-width: 768px) 100vw, 420px"
                 />
                 <div className="absolute inset-0 bg-gradient-to-t from-black/40 to-transparent" />
                 <div className="absolute bottom-4 left-4 text-white">
