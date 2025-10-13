@@ -39,16 +39,56 @@ export async function createSession(
   const userAgent = getUserAgent(request.headers);
   
   // Insert session into database with minimal data
-  const [sessionRecord] = await db.insert(sessions).values({
-    userId: user.id,
-    sessionTokenHash,
-    expiresAt,
-    ip,
-    userAgent,
-  }).returning({
-    id: sessions.id,
-    expiresAt: sessions.expiresAt,
-  });
+  let sessionRecord;
+  try {
+    [sessionRecord] = await db.insert(sessions).values({
+      userId: user.id,
+      sessionTokenHash,
+      expiresAt,
+      ip,
+      userAgent,
+    }).returning({
+      id: sessions.id,
+      expiresAt: sessions.expiresAt,
+    });
+  } catch (error) {
+    // Auto-create sessions table if it doesn't exist, then retry once
+    if (error instanceof Error && error.message.includes('relation "sessions" does not exist')) {
+      try {
+        await db.execute(`
+          CREATE TABLE IF NOT EXISTS sessions (
+            id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+            user_id UUID NOT NULL,
+            session_token_hash VARCHAR(255) NOT NULL,
+            expires_at TIMESTAMPTZ NOT NULL,
+            ip TEXT,
+            ua TEXT,
+            created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+            revoked_at TIMESTAMPTZ
+          )
+        `);
+        await db.execute(`
+          CREATE INDEX IF NOT EXISTS sessions_user_id_expires_idx ON sessions(user_id, expires_at)
+        `);
+        // Retry insert
+        [sessionRecord] = await db.insert(sessions).values({
+          userId: user.id,
+          sessionTokenHash,
+          expiresAt,
+          ip,
+          userAgent,
+        }).returning({
+          id: sessions.id,
+          expiresAt: sessions.expiresAt,
+        });
+      } catch (createError) {
+        console.error('Error creating sessions table:', createError);
+        throw createError;
+      }
+    } else {
+      throw error;
+    }
+  }
   
   const session: Session = {
     id: sessionRecord.id,

@@ -137,7 +137,7 @@ export async function GET(request: NextRequest) {
       .set({ consumedAt: new Date() })
       .where(eq(authOtp.id, otpRecord.id));
     
-    // Find or create user
+    // Find or create user with defensive table creation
     let [user] = await db
       .select()
       .from(users)
@@ -147,22 +147,53 @@ export async function GET(request: NextRequest) {
     const isNewUser = !user;
     
     if (!user) {
-      // Create new user
-      [user] = await db
-        .insert(users)
-        .values({
-          email: normalizedEmail,
-          role: 'buyer',
-        })
-        .returning();
-      
-      // Send welcome email for new users
       try {
-        await sendWelcomeEmail(normalizedEmail);
+        // Create new user
+        [user] = await db
+          .insert(users)
+          .values({
+            email: normalizedEmail,
+            role: 'buyer',
+          })
+          .returning();
       } catch (error) {
-        console.error('Failed to send welcome email:', error);
-        // Don't fail the login if welcome email fails
+        console.error('Error creating user (magic):', error);
+        if (error instanceof Error && error.message.includes('relation "users" does not exist')) {
+          try {
+            await db.execute(`
+              CREATE TABLE IF NOT EXISTS users (
+                id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+                email TEXT NOT NULL UNIQUE,
+                name TEXT,
+                role TEXT NOT NULL DEFAULT 'buyer',
+                created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+                updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+              )
+            `);
+            await db.execute(`
+              CREATE INDEX IF NOT EXISTS users_email_idx ON users(email)
+            `);
+            // Retry creating user
+            [user] = await db
+              .insert(users)
+              .values({
+                email: normalizedEmail,
+                role: 'buyer',
+              })
+              .returning();
+          } catch (createError) {
+            console.error('Error creating users table (magic):', createError);
+            throw createError;
+          }
+        } else {
+          throw error;
+        }
       }
+      
+      // Send welcome email for new users (async, don't block)
+      sendWelcomeEmail(normalizedEmail).catch(err => {
+        console.error('Failed to send welcome email (magic):', err);
+      });
     }
     
     // Create session
