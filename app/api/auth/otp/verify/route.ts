@@ -148,6 +148,7 @@ export async function POST(request: NextRequest) {
     console.log('[otp.verify] result', isValidCode);
     
     if (!isValidCode) {
+      console.log('[otp.verify] Code verification failed');
       // Increment attempts
       await incrementOtpAttempts(normalizedEmail);
       
@@ -157,10 +158,12 @@ export async function POST(request: NextRequest) {
       });
       
       return NextResponse.json(
-        { error: 'Cod invalid' },
+        { error: 'Codul este incorect' },
         { status: 400 }
       );
     }
+    
+    console.log('[otp.verify] Code verification successful, proceeding with user creation/login');
     
     // Mark OTP as consumed
     await db
@@ -169,15 +172,18 @@ export async function POST(request: NextRequest) {
       .where(eq(authOtp.id, otpRecord.id));
     
     // Find or create user
+    console.log('[otp.verify] Looking for user with email:', normalizedEmail);
     let [user] = await db
       .select()
       .from(users)
       .where(eq(users.email, normalizedEmail))
       .limit(1);
     
+    console.log('[otp.verify] User query result:', user ? 'found' : 'not found');
     const isNewUser = !user;
     
     if (!user) {
+      console.log('[otp.verify] Creating new user for:', normalizedEmail);
       try {
         // Create new user
         [user] = await db
@@ -187,6 +193,7 @@ export async function POST(request: NextRequest) {
             role: 'buyer',
           })
           .returning();
+        console.log('[otp.verify] New user created successfully:', user.id);
       } catch (error) {
         console.error('Error creating user:', error);
         

@@ -54,6 +54,33 @@ export async function GET() {
         CREATE INDEX IF NOT EXISTS auth_audit_email_idx ON auth_audit(email)
       `);
       
+      // Add name column to users table if it doesn't exist
+      await db.execute(`
+        ALTER TABLE users ADD COLUMN IF NOT EXISTS name TEXT
+      `);
+      
+      // Fix sessions table structure
+      await db.execute(`
+        ALTER TABLE sessions ADD COLUMN IF NOT EXISTS session_token_hash VARCHAR(255)
+      `);
+      
+      await db.execute(`
+        ALTER TABLE sessions ADD COLUMN IF NOT EXISTS ip TEXT
+      `);
+      
+      await db.execute(`
+        ALTER TABLE sessions ADD COLUMN IF NOT EXISTS ua TEXT
+      `);
+      
+      await db.execute(`
+        ALTER TABLE sessions ADD COLUMN IF NOT EXISTS revoked_at TIMESTAMPTZ
+      `);
+      
+      // Fix sessions table id column type
+      await db.execute(`
+        ALTER TABLE sessions ALTER COLUMN id TYPE UUID USING id::UUID
+      `);
+      
       console.log('Auth tables created successfully');
     } catch (error) {
       console.log('Auth tables might already exist:', error);
