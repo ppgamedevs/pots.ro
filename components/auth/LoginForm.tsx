@@ -109,7 +109,7 @@ export function LoginForm({ onSuccess, redirectTo }: LoginFormProps) {
         if (data.user.role === 'admin') {
           window.location.href = '/admin';
         } else if (data.user.role === 'seller') {
-          window.location.href = '/dashboard/seller';
+          window.location.href = '/seller';
         } else {
           window.location.href = redirectUrl;
         }

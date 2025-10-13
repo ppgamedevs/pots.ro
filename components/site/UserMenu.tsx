@@ -78,7 +78,7 @@ export function UserMenu() {
             
             {user.role === 'seller' && (
               <Link
-                href="/dashboard/seller"
+                href="/seller"
                 className="flex items-center gap-2 px-3 py-2 text-sm text-ink hover:bg-bg-soft rounded transition-micro"
                 onClick={() => setIsOpen(false)}
               >

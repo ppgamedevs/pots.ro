@@ -40,7 +40,7 @@ export default async function SellerLandingPage() {
                   <div className="font-medium">Onboarding în progres</div>
                   <div className="text-sm text-ink/70">{Math.round(progress)}% completat</div>
                 </div>
-                <a href="/dashboard/seller/onboarding" className="btn-primary">Continuă</a>
+                <a href="/seller/onboarding" className="btn-primary">Continuă</a>
               </div>
               <div className="mt-3 h-2 w-full bg-bgsoft rounded">
                 <div className="h-2 bg-primary rounded" style={{ width: `${Math.round(progress)}%` }} />
@@ -71,7 +71,7 @@ export default async function SellerLandingPage() {
           )}
           {seller && seller.status === 'onboarding' && (
             <Link 
-              href="/dashboard/seller/onboarding" 
+              href="/seller/onboarding" 
               className="inline-flex px-6 py-3 bg-ink text-white rounded-lg hover:bg-ink/90 transition-micro"
             >
               Continuă onboarding-ul
@@ -79,7 +79,7 @@ export default async function SellerLandingPage() {
           )}
           {seller && seller.status === 'active' && (
             <Link 
-              href="/dashboard/seller" 
+              href="/seller" 
               className="inline-flex px-6 py-3 border border-line rounded-lg hover:bg-bg-soft transition-micro"
             >
               Intră în dashboard

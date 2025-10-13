@@ -81,6 +81,11 @@ export async function GET() {
         ALTER TABLE sessions ALTER COLUMN id TYPE UUID USING id::UUID
       `);
       
+      // Fix sessions table id column to allow default UUID generation
+      await db.execute(`
+        ALTER TABLE sessions ALTER COLUMN id SET DEFAULT gen_random_uuid()
+      `);
+      
       // Fix users table password_hash column to allow NULL (for passwordless auth)
       await db.execute(`
         ALTER TABLE users ALTER COLUMN password_hash DROP NOT NULL

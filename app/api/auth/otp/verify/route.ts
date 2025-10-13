@@ -3,7 +3,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { z } from 'zod';
 import { db } from '@/db';
 import { users, authOtp } from '@/db/schema';
-import { eq, and, gt, desc } from 'drizzle-orm';
+import { eq, and, gt, desc, sql } from 'drizzle-orm';
 import { 
   hash, 
   verify, 
@@ -187,11 +187,11 @@ export async function POST(request: NextRequest) {
       try {
         // Create new user with explicit column specification
         console.log('[otp.verify] Attempting to insert user with email:', normalizedEmail);
-        const insertResult = await db.execute(`
+        const insertResult = await db.execute(sql`
           INSERT INTO users (email, role, name) 
-          VALUES ($1, $2, $3) 
+          VALUES (${normalizedEmail}, ${'buyer'}, ${null}) 
           RETURNING id, email, name, role, created_at
-        `, [normalizedEmail, 'buyer', null]);
+        `);
         
         console.log('[otp.verify] Insert result:', insertResult.rows);
         user = insertResult.rows[0];
@@ -249,7 +249,7 @@ export async function POST(request: NextRequest) {
     // Create response
     const response = NextResponse.json({
       ok: true,
-      redirect: '/dashboard',
+      redirect: '/account', // Redirect to account page for regular users
       user: {
         id: user.id,
         email: user.email,
