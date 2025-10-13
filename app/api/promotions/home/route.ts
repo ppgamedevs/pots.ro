@@ -75,7 +75,7 @@ export async function GET() {
         {
           id: 'card-2',
           type: 'card-small',
-          title: 'Ghivece moderne',
+          title: 'Ghivece Potto',
           subtitle: 'Design minimalist pentru plante de interior',
           image: {
             src: '/images/ghivece-moderne.jpg',

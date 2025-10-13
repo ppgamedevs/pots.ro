@@ -23,10 +23,10 @@ export function PromoCard({ title, subtitle, image, href, tone = 'light', size =
     ? 'bg-gradient-to-t from-black/60 via-black/20 to-transparent'
     : 'bg-gradient-to-t from-black/40 via-transparent to-transparent';
 
-  // Dimensiuni diferite pentru carduri - calculate pentru aliniere perfectă
+  // Dimensiuni uniforme pentru carduri - toate cardurile mici au aceeași înălțime
   const heightClass = size === 'large' 
-    ? 'h-64 sm:h-80 lg:h-[32rem]' // Înălțime mare pentru cardul principal - mai mică pe mobile
-    : 'h-32 sm:h-40 lg:h-[15.25rem]'; // Înălțime mică pentru cardurile secundare - mai mică pe mobile
+    ? 'h-64 sm:h-80 lg:h-[32rem]' // Înălțime mare pentru cardul principal
+    : 'h-40 sm:h-48 lg:h-56'; // Înălțime uniformă pentru toate cardurile mici
 
   return (
     <Link href={href} className="group block">
