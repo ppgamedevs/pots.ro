@@ -197,10 +197,17 @@ export async function POST(request: NextRequest) {
     await logAuthEvent('otp_request', normalizedEmail, undefined, ip, userAgent);
     
     // Always return success (don't reveal if user exists)
-    return NextResponse.json({ 
+    const response: any = { 
       ok: true,
       message: 'Codul a fost trimis pe email'
-    });
+    };
+    
+    // Return code in development mode for testing
+    if (process.env.NODE_ENV === 'development') {
+      response.debug = { code };
+    }
+    
+    return NextResponse.json(response);
     
   } catch (error) {
     console.error('OTP request error:', error);
