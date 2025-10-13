@@ -194,7 +194,7 @@ export async function POST(request: NextRequest) {
         `);
         
         console.log('[otp.verify] Insert result:', insertResult.rows);
-        user = insertResult.rows[0];
+        user = insertResult.rows[0] as any;
         console.log('[otp.verify] New user created successfully:', user.id);
       } catch (error) {
         console.error('Error creating user:', error);
