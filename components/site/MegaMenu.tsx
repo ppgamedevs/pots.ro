@@ -99,34 +99,28 @@ export function MegaMenu({ categories, isOpen, onClose }: MegaMenuProps) {
         
         <div className="max-w-7xl mx-auto px-4 pb-8">
           {/* Mobile Navigation */}
-          <div className="md:hidden mb-8">
-            <div className="grid grid-cols-2 gap-3">
-              <Link href="/creare-cont" onClick={onClose}>
-                <Button variant="outline" className="w-full justify-start h-12 text-sm">
-                  <User className="mr-2 h-4 w-4" />
-                  Creează cont
-                </Button>
-              </Link>
-              <Link href="/login" onClick={onClose}>
-                <Button variant="outline" className="w-full justify-start h-12 text-sm">
-                  <User className="mr-2 h-4 w-4" />
-                  Autentificare
-                </Button>
-              </Link>
-              <Link href="/seller" onClick={onClose}>
-                <Button variant="outline" className="w-full justify-start h-12 text-sm">
-                  <Store className="mr-2 h-4 w-4" />
-                  Devino vânzător
-                </Button>
-              </Link>
-              <Link href="/cart" onClick={onClose}>
-                <Button variant="outline" className="w-full justify-start h-12 text-sm">
-                  <ShoppingCart className="mr-2 h-4 w-4" />
-                  Coș de cumpărături
-                </Button>
-              </Link>
-            </div>
-          </div>
+                 <div className="md:hidden mb-8">
+                   <div className="grid grid-cols-2 gap-3">
+                     <Link href="/login" onClick={onClose}>
+                       <Button variant="outline" className="w-full justify-start h-12 text-sm">
+                         <User className="mr-2 h-4 w-4" />
+                         Contul meu
+                       </Button>
+                     </Link>
+                     <Link href="/seller" onClick={onClose}>
+                       <Button variant="outline" className="w-full justify-start h-12 text-sm">
+                         <Store className="mr-2 h-4 w-4" />
+                         Devino vânzător
+                       </Button>
+                     </Link>
+                     <Link href="/cart" onClick={onClose}>
+                       <Button variant="outline" className="w-full justify-start h-12 text-sm">
+                         <ShoppingCart className="mr-2 h-4 w-4" />
+                         Coș de cumpărături
+                       </Button>
+                     </Link>
+                   </div>
+                 </div>
           
           <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
             {/* Categories Grid */}
