@@ -1,3 +1,4 @@
+export const dynamic = 'force-dynamic';
 import { NextRequest, NextResponse } from 'next/server';
 import { z } from 'zod';
 import { db } from '@/db';
@@ -35,6 +36,7 @@ export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
     const { email, code } = otpVerifySchema.parse(body);
+    console.log('[otp.verify] incoming', { email });
     
     const normalizedEmail = normalizeEmail(email);
     const ip = getClientIP(request.headers);
@@ -90,7 +92,7 @@ export async function POST(request: NextRequest) {
           .orderBy(desc(authOtp.createdAt))
           .limit(1);
       } catch (error) {
-        console.error('Error creating auth tables:', error);
+        console.error('[otp.verify] Error creating auth tables:', error);
       }
     }
     
@@ -141,10 +143,9 @@ export async function POST(request: NextRequest) {
     }
     
     // Verify the code
-    console.log('Verifying code:', code);
-    console.log('Against hash:', otpRecord.codeHash);
+    console.log('[otp.verify] Verifying code for', normalizedEmail);
     const isValidCode = await verify(code, otpRecord.codeHash);
-    console.log('Verification result:', isValidCode);
+    console.log('[otp.verify] result', isValidCode);
     
     if (!isValidCode) {
       // Increment attempts
@@ -233,6 +234,7 @@ export async function POST(request: NextRequest) {
     
     // Create session
     const { sessionToken, session } = await createSession(user, request);
+    console.log('[otp.verify] session', session.id);
     
     // Create response
     const response = NextResponse.json({
@@ -265,7 +267,7 @@ export async function POST(request: NextRequest) {
     return response;
     
   } catch (error) {
-    console.error('OTP verify error:', error);
+    console.error('[otp.verify] error:', error);
     
     if (error instanceof z.ZodError) {
       return NextResponse.json(

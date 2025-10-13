@@ -1,3 +1,4 @@
+export const dynamic = 'force-dynamic';
 import { NextRequest, NextResponse } from 'next/server';
 import { db } from '@/db';
 import { users, authOtp } from '@/db/schema';
@@ -38,6 +39,7 @@ export async function GET(request: NextRequest) {
     const userAgent = getUserAgent(request.headers);
     
     // Find the latest valid OTP record
+    console.log('[magic] verifying magic link for', normalizedEmail);
     let [otpRecord] = await db
       .select()
       .from(authOtp)
@@ -75,7 +77,7 @@ export async function GET(request: NextRequest) {
           .orderBy(desc(authOtp.createdAt))
           .limit(1);
       } catch (error) {
-        console.error('Error creating auth tables:', error);
+        console.error('[magic] Error creating auth tables:', error);
       }
     }
     
@@ -118,6 +120,7 @@ export async function GET(request: NextRequest) {
     
     // Verify the magic token
     const isValidToken = await verify(token, otpRecord.magicTokenHash);
+    console.log('[magic] token valid?', isValidToken);
     
     if (!isValidToken) {
       await logAuthEvent('otp_denied', normalizedEmail, undefined, ip, userAgent, {
@@ -198,6 +201,7 @@ export async function GET(request: NextRequest) {
     
     // Create session
     const { sessionToken, session } = await createSession(user, request);
+    console.log('[magic] session created', session.id);
     
     // Log successful verification
     await logAuthEvent('otp_verify', normalizedEmail, user.id, ip, userAgent, {
@@ -217,7 +221,7 @@ export async function GET(request: NextRequest) {
     return response;
     
   } catch (error) {
-    console.error('Magic link error:', error);
+    console.error('[magic] Magic link error:', error);
     
     return NextResponse.json(
       { error: 'Eroare internă' },
