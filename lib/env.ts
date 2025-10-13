@@ -22,6 +22,7 @@ if (!process.env.DATABASE_URL) {
 export const COMMISSION_PCT = parseInt(process.env.COMMISSION_PCT || '1000', 10); // Default 10% (1000 basis points)
 export const NETOPIA_MERCHANT_ID = process.env.NETOPIA_MERCHANT_ID || '';
 export const NETOPIA_PRIVATE_KEY = process.env.NETOPIA_PRIVATE_KEY || '';
+export const NETOPIA_PUBLIC_CERT = process.env.NETOPIA_PUBLIC_CERT || '';
 export const SITE_URL = process.env.SITE_URL || process.env.NEXT_PUBLIC_BASE_URL || 'http://localhost:3000';
 
 // Validate required environment variables
