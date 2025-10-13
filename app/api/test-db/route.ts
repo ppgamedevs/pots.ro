@@ -81,6 +81,11 @@ export async function GET() {
         ALTER TABLE sessions ALTER COLUMN id TYPE UUID USING id::UUID
       `);
       
+      // Fix users table password_hash column to allow NULL (for passwordless auth)
+      await db.execute(`
+        ALTER TABLE users ALTER COLUMN password_hash DROP NOT NULL
+      `);
+      
       console.log('Auth tables created successfully');
     } catch (error) {
       console.log('Auth tables might already exist:', error);

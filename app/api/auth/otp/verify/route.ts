@@ -185,14 +185,16 @@ export async function POST(request: NextRequest) {
     if (!user) {
       console.log('[otp.verify] Creating new user for:', normalizedEmail);
       try {
-        // Create new user
-        [user] = await db
-          .insert(users)
-          .values({
-            email: normalizedEmail,
-            role: 'buyer',
-          })
-          .returning();
+        // Create new user with explicit column specification
+        console.log('[otp.verify] Attempting to insert user with email:', normalizedEmail);
+        const insertResult = await db.execute(`
+          INSERT INTO users (email, role, name) 
+          VALUES ($1, $2, $3) 
+          RETURNING id, email, name, role, created_at
+        `, [normalizedEmail, 'buyer', null]);
+        
+        console.log('[otp.verify] Insert result:', insertResult.rows);
+        user = insertResult.rows[0];
         console.log('[otp.verify] New user created successfully:', user.id);
       } catch (error) {
         console.error('Error creating user:', error);
@@ -240,8 +242,9 @@ export async function POST(request: NextRequest) {
     }
     
     // Create session
+    console.log('[otp.verify] Creating session for user:', user.id);
     const { sessionToken, session } = await createSession(user, request);
-    console.log('[otp.verify] session', session.id);
+    console.log('[otp.verify] Session created successfully:', session.id);
     
     // Create response
     const response = NextResponse.json({
