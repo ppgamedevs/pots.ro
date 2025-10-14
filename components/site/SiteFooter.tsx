@@ -144,9 +144,9 @@ export function SiteFooter({ columns, payments, carriers }: SiteFooterProps) {
               <a href="https://anpc.ro" target="_blank" rel="noopener noreferrer" className="text-sm text-ink/70 hover:text-ink transition-micro">
                 ANPC
               </a>
-              <a href="https://anpc.ro" target="_blank" rel="noopener noreferrer" className="text-sm text-ink/70 hover:text-ink transition-micro">
+              <Link href="/sol" className="text-sm text-ink/70 hover:text-ink transition-micro">
                 SOL
-              </a>
+              </Link>
               <div className="flex items-center gap-2">
                 <span className="text-sm text-ink/70">Social:</span>
                 <Link href="#" className="text-sm text-ink/70 hover:text-ink transition-micro">

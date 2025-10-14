@@ -42,9 +42,26 @@ export async function createSession(
   // Insert session into database with minimal data
   let sessionRecord;
   const generatedSessionId = crypto.randomUUID();
+  
+  console.log('[createSession] Starting session creation for user:', user.id);
+  console.log('[createSession] Generated session ID:', generatedSessionId);
+  console.log('[createSession] Session token hash length:', sessionTokenHash.length);
+  console.log('[createSession] Expires at:', expiresAt);
+  
   try {
     // Prefer explicitly providing an id to avoid DB default issues
-    [sessionRecord] = await db.insert(sessions).values({
+    console.log('[createSession] Attempting to insert session with explicit ID:', generatedSessionId);
+    console.log('[createSession] Values being inserted:', {
+      id: generatedSessionId,
+      userId: user.id,
+      sessionTokenHash: sessionTokenHash.substring(0, 20) + '...',
+      expiresAt,
+      ip,
+      userAgent: userAgent?.substring(0, 50) + '...',
+    });
+    
+    // Try to insert with explicit ID first
+    const insertQuery = db.insert(sessions).values({
       id: generatedSessionId,
       userId: user.id,
       sessionTokenHash,
@@ -55,9 +72,17 @@ export async function createSession(
       id: sessions.id,
       expiresAt: sessions.expiresAt,
     });
+    
+    console.log('[createSession] Insert query prepared, executing...');
+    [sessionRecord] = await insertQuery;
+    console.log('[createSession] Session created successfully:', sessionRecord);
   } catch (error) {
+    console.log('[createSession] Error occurred:', error);
+    console.log('[createSession] Error message:', error instanceof Error ? error.message : 'Unknown error');
+    
     // Auto-create sessions table if it doesn't exist, then retry once
     if (error instanceof Error && error.message.includes('relation "sessions" does not exist')) {
+      console.log('[createSession] Sessions table does not exist, creating it...');
       try {
         await db.execute(`
           CREATE TABLE IF NOT EXISTS sessions (
@@ -74,6 +99,7 @@ export async function createSession(
         await db.execute(`
           CREATE INDEX IF NOT EXISTS sessions_user_id_expires_idx ON sessions(user_id, expires_at)
         `);
+        console.log('[createSession] Sessions table created, retrying insert with ID:', generatedSessionId);
         // Retry insert after setting default (and keep explicit id for certainty)
         [sessionRecord] = await db.insert(sessions).values({
           id: generatedSessionId,
@@ -86,16 +112,19 @@ export async function createSession(
           id: sessions.id,
           expiresAt: sessions.expiresAt,
         });
+        console.log('[createSession] Session created successfully after table creation:', sessionRecord);
       } catch (createError) {
-        console.error('Error creating sessions table:', createError);
+        console.error('[createSession] Error creating sessions table:', createError);
         throw createError;
       }
     } else if (error instanceof Error && error.message.includes('null value in column "id" of relation "sessions"')) {
+      console.log('[createSession] Null ID error detected, fixing default UUID generator...');
       // Defensive fix: ensure the id column has a default UUID generator
       try {
         await db.execute(`
           ALTER TABLE sessions ALTER COLUMN id SET DEFAULT gen_random_uuid()
         `);
+        console.log('[createSession] Default UUID generator set, retrying insert with ID:', generatedSessionId);
         // Retry insert after setting default (and keep explicit id for certainty)
         [sessionRecord] = await db.insert(sessions).values({
           id: generatedSessionId,
@@ -108,11 +137,13 @@ export async function createSession(
           id: sessions.id,
           expiresAt: sessions.expiresAt,
         });
+        console.log('[createSession] Session created successfully after fixing default:', sessionRecord);
       } catch (alterError) {
-        console.error('Error setting default for sessions.id:', alterError);
+        console.error('[createSession] Error setting default for sessions.id:', alterError);
         throw alterError;
       }
     } else {
+      console.error('[createSession] Unexpected error:', error);
       throw error;
     }
   }

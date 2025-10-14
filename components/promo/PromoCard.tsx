@@ -23,9 +23,9 @@ export function PromoCard({ title, subtitle, image, href, tone = 'light', size =
     ? 'bg-gradient-to-t from-black/60 via-black/20 to-transparent'
     : 'bg-gradient-to-t from-black/40 via-transparent to-transparent';
 
-  // Dimensiuni uniforme pentru carduri - toate cardurile mici au aceeași înălțime
+  // Dimensiuni uniforme pentru carduri - cardul mare să fie înălțimea celor două carduri mici + gap
   const heightClass = size === 'large' 
-    ? 'h-48 sm:h-56 lg:h-64' // Înălțime redusă pentru cardul principal
+    ? 'h-80 sm:h-96 lg:h-[28rem]' // Înălțime care să se alinieze cu cele două carduri mici + gap
     : 'h-40 sm:h-48 lg:h-56'; // Înălțime uniformă pentru toate cardurile mici
 
   return (

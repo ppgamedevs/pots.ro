@@ -55,7 +55,7 @@ export default function SolPage() {
 
         <div className="mt-12 text-center">
           <a 
-            href="https://sol.anpc.ro" 
+            href="https://anpc.ro" 
             target="_blank" 
             rel="noopener noreferrer"
             className="inline-flex items-center px-6 py-3 bg-primary text-white rounded-lg hover:bg-primary/90 transition-micro font-medium"
