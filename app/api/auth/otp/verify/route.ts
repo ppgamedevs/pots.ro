@@ -245,8 +245,14 @@ export async function POST(request: NextRequest) {
     console.log('[otp.verify] Creating session for user:', user.id);
     console.log('[otp.verify] User object:', { id: user.id, email: user.email, role: user.role });
     console.log('[otp.verify] About to call createSession...');
+    
+    let sessionToken: string;
+    let session: any;
+    
     try {
-      const { sessionToken, session } = await createSession(user, request);
+      const sessionResult = await createSession(user, request);
+      sessionToken = sessionResult.sessionToken;
+      session = sessionResult.session;
       console.log('[otp.verify] Session created successfully:', { sessionId: session.id, userId: session.userId });
     } catch (sessionError) {
       console.error('[otp.verify] Error creating session:', sessionError);
