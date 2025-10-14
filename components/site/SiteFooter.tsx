@@ -141,12 +141,12 @@ export function SiteFooter({ columns, payments, carriers }: SiteFooterProps) {
             </div>
             
             <div className="flex items-center gap-4">
-              <Link href="/anpc" className="text-sm text-ink/70 hover:text-ink transition-micro">
+              <a href="https://anpc.ro" target="_blank" rel="noopener noreferrer" className="text-sm text-ink/70 hover:text-ink transition-micro">
                 ANPC
-              </Link>
-              <Link href="/sol" className="text-sm text-ink/70 hover:text-ink transition-micro">
+              </a>
+              <a href="https://anpc.ro" target="_blank" rel="noopener noreferrer" className="text-sm text-ink/70 hover:text-ink transition-micro">
                 SOL
-              </Link>
+              </a>
               <div className="flex items-center gap-2">
                 <span className="text-sm text-ink/70">Social:</span>
                 <Link href="#" className="text-sm text-ink/70 hover:text-ink transition-micro">

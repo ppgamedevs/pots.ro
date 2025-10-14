@@ -74,8 +74,9 @@ export async function createSession(
         await db.execute(`
           CREATE INDEX IF NOT EXISTS sessions_user_id_expires_idx ON sessions(user_id, expires_at)
         `);
-        // Retry insert
+        // Retry insert after setting default (and keep explicit id for certainty)
         [sessionRecord] = await db.insert(sessions).values({
+          id: generatedSessionId,
           userId: user.id,
           sessionTokenHash,
           expiresAt,

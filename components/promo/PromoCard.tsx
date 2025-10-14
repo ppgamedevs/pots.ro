@@ -25,7 +25,7 @@ export function PromoCard({ title, subtitle, image, href, tone = 'light', size =
 
   // Dimensiuni uniforme pentru carduri - toate cardurile mici au aceeași înălțime
   const heightClass = size === 'large' 
-    ? 'h-64 sm:h-80 lg:h-[32rem]' // Înălțime mare pentru cardul principal
+    ? 'h-48 sm:h-56 lg:h-64' // Înălțime redusă pentru cardul principal
     : 'h-40 sm:h-48 lg:h-56'; // Înălțime uniformă pentru toate cardurile mici
 
   return (
