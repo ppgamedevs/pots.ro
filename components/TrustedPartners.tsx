@@ -49,11 +49,7 @@ export default function TrustedPartners() {
                   priority={false}
                 />
               );
-              return p.href ? (
-                <a key={p.name} href={p.href} target="_blank" rel="noopener noreferrer" aria-label={p.name}>
-                  {img}
-                </a>
-              ) : (
+              return (
                 <div key={p.name} aria-label={p.name}>{img}</div>
               );
             })}
