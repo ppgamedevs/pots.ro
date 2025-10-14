@@ -28,7 +28,7 @@ export interface PromoHeroProps {
 
 export function PromoHero({ title, subtitle, image, video, ctaPrimary, ctaSecondary }: PromoHeroProps) {
   return (
-    <section className="relative h-[400px] sm:h-[500px] lg:h-[540px] overflow-hidden rounded-lg">
+    <section className="relative h-[400px] sm:h-[500px] lg:h-[480px] overflow-hidden rounded-lg">
       {/* Background Video or Image */}
       {video ? (
         <video
