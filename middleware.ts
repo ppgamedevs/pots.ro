@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { getSession } from '@/lib/auth/session';
 
 export async function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;
@@ -68,18 +69,26 @@ export async function middleware(request: NextRequest) {
     return NextResponse.next();
   }
   
-  // For protected routes, check session cookie
-  const sessionCookie = request.cookies.get('fm_session');
-  
-  if (!sessionCookie) {
-    // Redirect to login with return URL
+  // For protected routes, validate session
+  try {
+    const session = await getSession();
+    
+    if (!session) {
+      // Redirect to login with return URL
+      const loginUrl = new URL('/login', request.url);
+      loginUrl.searchParams.set('next', pathname);
+      return NextResponse.redirect(loginUrl);
+    }
+    
+    // Session is valid, continue
+    return NextResponse.next();
+  } catch (error) {
+    console.error('Middleware session validation error:', error);
+    // On error, redirect to login
     const loginUrl = new URL('/login', request.url);
     loginUrl.searchParams.set('next', pathname);
     return NextResponse.redirect(loginUrl);
   }
-  
-  // For now, just pass through - detailed auth check will be done in API routes
-  return NextResponse.next();
 }
 
 export const config = {

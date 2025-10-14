@@ -1,13 +1,18 @@
 import { Metadata } from "next";
 import Link from "next/link";
-import { User, ShoppingBag, Heart, Settings, LogOut } from "lucide-react";
+import { User, ShoppingBag, Heart, Settings } from "lucide-react";
+import { requireAuth } from '@/lib/auth/session';
+import { LogoutButton } from '@/components/auth/LogoutButton';
+
+export const dynamic = 'force-dynamic';
 
 export const metadata: Metadata = {
   title: "Contul meu - Pots.ro",
   description: "Gestionează contul tău și comenzile pe Pots.ro",
 };
 
-export default function MyAccountPage() {
+export default async function MyAccountPage() {
+  await requireAuth();
   return (
     <div className="min-h-screen bg-slate-50 dark:bg-slate-900">
       {/* Header */}
@@ -78,10 +83,7 @@ export default function MyAccountPage() {
                     </Link>
                   </li>
                   <li>
-                    <button className="flex items-center gap-3 px-3 py-2 rounded-lg text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors w-full text-left">
-                      <LogOut className="h-5 w-5" />
-                      Deconectare
-                    </button>
+                    <LogoutButton />
                   </li>
                 </ul>
               </div>

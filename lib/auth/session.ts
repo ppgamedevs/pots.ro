@@ -229,7 +229,13 @@ export function setSessionCookie(response: NextResponse, sessionToken: string): 
  * Clear session cookie
  */
 export function clearSessionCookie(response: NextResponse): void {
-  response.cookies.delete(SESSION_COOKIE_NAME);
+  response.cookies.set(SESSION_COOKIE_NAME, '', {
+    httpOnly: true,
+    secure: process.env.NODE_ENV === 'production',
+    sameSite: 'lax',
+    path: '/',
+    maxAge: 0, // Expire immediately
+  });
 }
 
 /**
