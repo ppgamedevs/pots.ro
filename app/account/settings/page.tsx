@@ -1,3 +1,4 @@
+export const dynamic = 'force-dynamic';
 import { requireAuth } from '@/lib/auth/session';
 
 export default async function AccountSettingsPage() {
