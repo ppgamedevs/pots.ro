@@ -91,6 +91,7 @@ export function LoginForm({ onSuccess, redirectTo }: LoginFormProps) {
         headers: {
           'Content-Type': 'application/json',
         },
+        credentials: 'include',
         body: JSON.stringify({ email, code: otp }),
       });
 

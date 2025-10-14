@@ -111,11 +111,8 @@ export async function GET(request: NextRequest) {
         reason: 'already_consumed',
         method: 'magic_link',
       });
-      
-      return NextResponse.json(
-        { error: 'Linkul a fost deja folosit' },
-        { status: 400 }
-      );
+      // Redirect to friendly UI page
+      return NextResponse.redirect(new URL('/auth/error', request.url));
     }
     
     // Verify the magic token
@@ -212,8 +209,9 @@ export async function GET(request: NextRequest) {
       isNewUser,
     });
     
-    // Create response with redirect
+    // Create response with redirect and ensure cookie is set for browser navigation
     const response = NextResponse.redirect(new URL('/account', request.url));
+    response.headers.set('Cache-Control', 'no-store');
     
     // Set session cookie
     setSessionCookie(response, sessionToken);

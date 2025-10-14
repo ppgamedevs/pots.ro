@@ -261,6 +261,7 @@ export async function POST(request: NextRequest) {
     
     // Set session cookie
     setSessionCookie(response, sessionToken);
+    response.headers.set('Cache-Control', 'no-store');
     
     // Log successful verification asynchronously
     Promise.all([
