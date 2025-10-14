@@ -85,6 +85,27 @@ export async function createSession(
         console.error('Error creating sessions table:', createError);
         throw createError;
       }
+    } else if (error instanceof Error && error.message.includes('null value in column "id" of relation "sessions"')) {
+      // Defensive fix: ensure the id column has a default UUID generator
+      try {
+        await db.execute(`
+          ALTER TABLE sessions ALTER COLUMN id SET DEFAULT gen_random_uuid()
+        `);
+        // Retry insert after setting default
+        [sessionRecord] = await db.insert(sessions).values({
+          userId: user.id,
+          sessionTokenHash,
+          expiresAt,
+          ip,
+          userAgent,
+        }).returning({
+          id: sessions.id,
+          expiresAt: sessions.expiresAt,
+        });
+      } catch (alterError) {
+        console.error('Error setting default for sessions.id:', alterError);
+        throw alterError;
+      }
     } else {
       throw error;
     }
