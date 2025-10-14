@@ -1,4 +1,5 @@
 import { cookies } from 'next/headers';
+import crypto from 'node:crypto';
 import { NextRequest, NextResponse } from 'next/server';
 import { db } from '@/db';
 import { sessions, users, authAudit } from '@/db/schema';
@@ -40,8 +41,11 @@ export async function createSession(
   
   // Insert session into database with minimal data
   let sessionRecord;
+  const generatedSessionId = crypto.randomUUID();
   try {
+    // Prefer explicitly providing an id to avoid DB default issues
     [sessionRecord] = await db.insert(sessions).values({
+      id: generatedSessionId,
       userId: user.id,
       sessionTokenHash,
       expiresAt,
@@ -91,8 +95,9 @@ export async function createSession(
         await db.execute(`
           ALTER TABLE sessions ALTER COLUMN id SET DEFAULT gen_random_uuid()
         `);
-        // Retry insert after setting default
+        // Retry insert after setting default (and keep explicit id for certainty)
         [sessionRecord] = await db.insert(sessions).values({
+          id: generatedSessionId,
           userId: user.id,
           sessionTokenHash,
           expiresAt,
