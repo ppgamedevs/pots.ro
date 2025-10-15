@@ -101,12 +101,13 @@ export function LoginForm({ onSuccess, redirectTo }: LoginFormProps) {
         throw new Error(data.error || 'Eroare la verificarea codului');
       }
 
-      // Success - the server will redirect us
+      // Success - redirect based on user role
       if (onSuccess) {
         onSuccess(data.user);
       } else {
-        // Server-side redirect will handle this
-        // No need for client-side redirect
+        // Use window.location.replace for better cookie handling
+        const redirectUrl = data.redirect || getRedirectUrl();
+        window.location.replace(redirectUrl);
       }
 
     } catch (error) {

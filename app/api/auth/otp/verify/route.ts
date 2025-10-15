@@ -259,17 +259,23 @@ export async function POST(request: NextRequest) {
       throw sessionError;
     }
     
-    // Create response with redirect (better for cookie handling)
-    const searchParams = new URL(request.url).searchParams;
-    const nextUrl = searchParams.get('next');
-    const redirectUrl = nextUrl || (user.role === 'admin' ? '/admin' : 
-                       user.role === 'seller' ? '/seller' : '/account');
-    
-    const response = NextResponse.redirect(new URL(redirectUrl, request.url));
-    response.headers.set('Cache-Control', 'no-store');
+    // Create JSON response (better for client-side handling)
+    const response = NextResponse.json({
+      ok: true,
+      redirect: user.role === 'admin' ? '/admin' : 
+                user.role === 'seller' ? '/seller' : '/account',
+      user: {
+        id: user.id,
+        email: user.email,
+        name: user.name,
+        role: user.role,
+      },
+      isNewUser,
+    });
     
     // Set session cookie
     await setSessionCookie(response, sessionToken, user);
+    response.headers.set('Cache-Control', 'no-store');
     
     // Log successful verification asynchronously
     Promise.all([
