@@ -217,6 +217,9 @@ export async function getSession(): Promise<Session | null> {
  * Set session cookie in response
  */
 export async function setSessionCookie(response: NextResponse, sessionToken: string, user: User): Promise<void> {
+  console.log('[setSessionCookie] Setting session cookie for user:', user.id);
+  console.log('[setSessionCookie] User data:', { id: user.id, email: user.email, role: user.role });
+  
   // Create JWT token for middleware validation
   const jwtToken = await createMiddlewareSessionToken({
     userId: user.id,
@@ -225,6 +228,8 @@ export async function setSessionCookie(response: NextResponse, sessionToken: str
     expiresAt: Math.floor((Date.now() + SESSION_DURATION_MS) / 1000),
   });
   
+  console.log('[setSessionCookie] JWT token created, setting cookie');
+  
   response.cookies.set(SESSION_COOKIE_NAME, jwtToken, {
     httpOnly: true,
     secure: process.env.NODE_ENV === 'production',
@@ -232,6 +237,8 @@ export async function setSessionCookie(response: NextResponse, sessionToken: str
     path: '/',
     maxAge: SESSION_DURATION_DAYS * 24 * 60 * 60, // 30 days in seconds
   });
+  
+  console.log('[setSessionCookie] Cookie set successfully');
 }
 
 /**

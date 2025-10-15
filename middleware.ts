@@ -71,19 +71,22 @@ export async function middleware(request: NextRequest) {
   
   // For protected routes, validate JWT session
   try {
+    console.log('[middleware] Validating session for protected route:', pathname);
     const session = await verifyMiddlewareSessionToken(request);
     
     if (!session) {
+      console.log('[middleware] No valid session found, redirecting to login');
       // Redirect to login with return URL
       const loginUrl = new URL('/login', request.url);
       loginUrl.searchParams.set('next', pathname);
       return NextResponse.redirect(loginUrl);
     }
     
+    console.log('[middleware] Session valid, continuing to:', pathname);
     // Session is valid, continue
     return NextResponse.next();
   } catch (error) {
-    console.error('Middleware session validation error:', error);
+    console.error('[middleware] Session validation error:', error);
     // On error, redirect to login
     const loginUrl = new URL('/login', request.url);
     loginUrl.searchParams.set('next', pathname);
