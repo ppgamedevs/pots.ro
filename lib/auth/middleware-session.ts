@@ -1,12 +1,12 @@
 import { NextRequest } from 'next/server';
-import { SignJWT, jwtVerify } from 'jose';
+import { SignJWT, jwtVerify, JWTPayload } from 'jose';
 
 const SESSION_COOKIE_NAME = 'fm_session';
 const JWT_SECRET = new TextEncoder().encode(
   process.env.JWT_SECRET || 'fallback-secret-key-that-is-long-enough-for-security-purposes-minimum-32-chars'
 );
 
-export interface MiddlewareSession {
+export interface MiddlewareSession extends JWTPayload {
   userId: string;
   email: string;
   role: 'buyer' | 'seller' | 'admin';
