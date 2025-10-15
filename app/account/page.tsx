@@ -7,8 +7,8 @@ import { LogoutButton } from '@/components/auth/LogoutButton';
 export const dynamic = 'force-dynamic';
 
 export const metadata: Metadata = {
-  title: "Contul meu - Pots.ro",
-  description: "Gestionează contul tău și comenzile pe Pots.ro",
+  title: "Contul meu - FloristMarket.ro",
+  description: "Gestionează contul tău și comenzile pe FloristMarket.ro",
 };
 
 export default async function MyAccountPage() {
@@ -21,7 +21,7 @@ export default async function MyAccountPage() {
           <div className="flex justify-between items-center h-16">
             <div className="flex items-center">
               <Link href="/" className="text-xl font-bold text-slate-900 dark:text-slate-100">
-                Pots.ro
+                FloristMarket.ro
               </Link>
             </div>
             <div className="flex items-center space-x-4">

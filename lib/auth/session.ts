@@ -5,7 +5,7 @@ import { db } from '@/db';
 import { sessions, users, authAudit } from '@/db/schema';
 import { eq, and, gt, isNull, lt } from 'drizzle-orm';
 import { hash, generateSessionToken, getClientIP, getUserAgent } from './crypto';
-import { createMiddlewareSessionToken } from './middleware-session';
+import { createMiddlewareSessionToken, verifyMiddlewareSessionToken } from './middleware-session';
 
 // Session configuration
 const SESSION_COOKIE_NAME = 'fm_session';
@@ -334,11 +334,40 @@ export async function logAuthEvent(
 }
 
 /**
- * Get current user from session
+ * Get current user from JWT session token (server-side)
  */
 export async function getCurrentUser(): Promise<User | null> {
-  const session = await getSession();
-  return session?.user || null;
+  try {
+    const cookieStore = cookies();
+    const sessionToken = cookieStore.get(SESSION_COOKIE_NAME)?.value;
+    
+    if (!sessionToken) {
+      return null;
+    }
+    
+    // Verify JWT token
+    const { jwtVerify } = await import('jose');
+    const JWT_SECRET = new TextEncoder().encode(
+      process.env.JWT_SECRET || 'fallback-secret-key-that-is-long-enough-for-security-purposes-minimum-32-chars'
+    );
+    
+    const { payload } = await jwtVerify(sessionToken, JWT_SECRET);
+    
+    // Check if token is expired
+    if (payload.exp && payload.exp < Date.now() / 1000) {
+      return null;
+    }
+    
+    return {
+      id: payload.userId as string,
+      email: payload.email as string,
+      name: null, // JWT doesn't store name
+      role: payload.role as 'buyer' | 'seller' | 'admin',
+    };
+  } catch (error) {
+    console.error('Error getting current user from JWT:', error);
+    return null;
+  }
 }
 
 /**
