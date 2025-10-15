@@ -5,6 +5,7 @@ import { db } from '@/db';
 import { sessions, users, authAudit } from '@/db/schema';
 import { eq, and, gt, isNull, lt } from 'drizzle-orm';
 import { hash, generateSessionToken, getClientIP, getUserAgent } from './crypto';
+import { createMiddlewareSessionToken } from './middleware-session';
 
 // Session configuration
 const SESSION_COOKIE_NAME = 'fm_session';
@@ -215,8 +216,16 @@ export async function getSession(): Promise<Session | null> {
 /**
  * Set session cookie in response
  */
-export function setSessionCookie(response: NextResponse, sessionToken: string): void {
-  response.cookies.set(SESSION_COOKIE_NAME, sessionToken, {
+export async function setSessionCookie(response: NextResponse, sessionToken: string, user: User): Promise<void> {
+  // Create JWT token for middleware validation
+  const jwtToken = await createMiddlewareSessionToken({
+    userId: user.id,
+    email: user.email,
+    role: user.role,
+    expiresAt: Math.floor((Date.now() + SESSION_DURATION_MS) / 1000),
+  });
+  
+  response.cookies.set(SESSION_COOKIE_NAME, jwtToken, {
     httpOnly: true,
     secure: process.env.NODE_ENV === 'production',
     sameSite: 'lax',

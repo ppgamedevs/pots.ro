@@ -214,7 +214,7 @@ export async function GET(request: NextRequest) {
     response.headers.set('Cache-Control', 'no-store');
     
     // Set session cookie
-    setSessionCookie(response, sessionToken);
+    await setSessionCookie(response, sessionToken, user);
     
     return response;
     

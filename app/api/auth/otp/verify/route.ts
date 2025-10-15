@@ -273,7 +273,7 @@ export async function POST(request: NextRequest) {
     });
     
     // Set session cookie
-    setSessionCookie(response, sessionToken);
+    await setSessionCookie(response, sessionToken, user);
     response.headers.set('Cache-Control', 'no-store');
     
     // Log successful verification asynchronously

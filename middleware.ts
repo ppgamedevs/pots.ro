@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { getSession } from '@/lib/auth/session';
+import { verifyMiddlewareSessionToken } from '@/lib/auth/middleware-session';
 
 export async function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;
@@ -69,9 +69,9 @@ export async function middleware(request: NextRequest) {
     return NextResponse.next();
   }
   
-  // For protected routes, validate session
+  // For protected routes, validate JWT session
   try {
-    const session = await getSession();
+    const session = await verifyMiddlewareSessionToken(request);
     
     if (!session) {
       // Redirect to login with return URL
