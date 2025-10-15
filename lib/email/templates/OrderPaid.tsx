@@ -37,9 +37,9 @@ ${data.invoiceUrl ? `Factura este disponibilă la: ${data.invoiceUrl}` : ''}
 
 Îți vom notifica când comanda va fi pregătită și expediată.
 
-Mulțumim că ai ales Pots.ro!
+Mulțumim că ai ales FloristMarket.ro!
 
-Echipa Pots.ro`;
+Echipa FloristMarket.ro`;
 }
 
 export function HtmlContent(data: OrderPaidEmailProps): React.ReactElement {
@@ -56,7 +56,7 @@ export function HtmlContent(data: OrderPaidEmailProps): React.ReactElement {
               src="https://floristmarket.ro/logo.png"
               width="120"
               height="40"
-              alt="Pots.ro"
+              alt="FloristMarket.ro"
               style={logo}
             />
           </Section>
@@ -96,7 +96,7 @@ export function HtmlContent(data: OrderPaidEmailProps): React.ReactElement {
           )}
           
           <Text style={text}>
-            Îți vom notifica când comanda va fi pregătită și expediată. Mulțumim că ai ales Pots.ro!
+            Îți vom notifica când comanda va fi pregătită și expediată. Mulțumim că ai ales FloristMarket.ro!
           </Text>
           
           <Text style={footer}>

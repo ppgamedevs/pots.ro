@@ -4,7 +4,8 @@ import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Alert, AlertDescription } from "@/components/ui/alert";
-import { Loader2, LogOut, User, Mail } from "lucide-react";
+import { Input } from "@/components/ui/input";
+import { Loader2, LogOut, User, Mail, Edit3, Save, X } from "lucide-react";
 
 interface User {
   id: string;
@@ -18,6 +19,9 @@ export function UserProfile() {
   const [loading, setLoading] = useState(true);
   const [logoutLoading, setLogoutLoading] = useState(false);
   const [error, setError] = useState('');
+  const [isEditingName, setIsEditingName] = useState(false);
+  const [nameValue, setNameValue] = useState('');
+  const [nameLoading, setNameLoading] = useState(false);
 
   // Fetch current user
   useEffect(() => {
@@ -28,6 +32,7 @@ export function UserProfile() {
         
         if (response.ok) {
           setUser(data.user);
+          setNameValue(data.user.name || '');
         } else {
           setError('Eroare la încărcarea profilului');
         }
@@ -40,6 +45,35 @@ export function UserProfile() {
 
     fetchUser();
   }, []);
+
+  // Handle name update
+  const handleNameUpdate = async () => {
+    setNameLoading(true);
+    setError('');
+
+    try {
+      const response = await fetch('/api/users/profile', {
+        method: 'PATCH',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ name: nameValue.trim() }),
+      });
+
+      const data = await response.json();
+
+      if (response.ok) {
+        setUser(prev => prev ? { ...prev, name: nameValue.trim() } : null);
+        setIsEditingName(false);
+      } else {
+        setError(data.error || 'Eroare la actualizarea numelui');
+      }
+    } catch (error) {
+      setError('Eroare de conexiune');
+    } finally {
+      setNameLoading(false);
+    }
+  };
 
   // Handle logout
   const handleLogout = async () => {
@@ -136,15 +170,59 @@ export function UserProfile() {
                 </div>
               </div>
 
-              {user.name && (
-                <div className="flex items-center gap-3 p-4 bg-bg-soft rounded-lg">
-                  <User className="h-5 w-5 text-muted" />
-                  <div>
-                    <p className="text-sm font-medium text-ink">Nume</p>
-                    <p className="text-sm text-muted">{user.name}</p>
-                  </div>
+              <div className="flex items-center gap-3 p-4 bg-bg-soft rounded-lg">
+                <User className="h-5 w-5 text-muted" />
+                <div className="flex-1">
+                  <p className="text-sm font-medium text-ink">Nume</p>
+                  {isEditingName ? (
+                    <div className="flex items-center gap-2 mt-1">
+                      <Input
+                        value={nameValue}
+                        onChange={(e) => setNameValue(e.target.value)}
+                        placeholder="Introdu numele tău"
+                        className="text-sm"
+                        disabled={nameLoading}
+                      />
+                      <Button
+                        size="sm"
+                        onClick={handleNameUpdate}
+                        disabled={nameLoading}
+                      >
+                        {nameLoading ? (
+                          <Loader2 className="h-4 w-4 animate-spin" />
+                        ) : (
+                          <Save className="h-4 w-4" />
+                        )}
+                      </Button>
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        onClick={() => {
+                          setIsEditingName(false);
+                          setNameValue(user?.name || '');
+                        }}
+                        disabled={nameLoading}
+                      >
+                        <X className="h-4 w-4" />
+                      </Button>
+                    </div>
+                  ) : (
+                    <div className="flex items-center gap-2 mt-1">
+                      <p className="text-sm text-muted">
+                        {user.name || 'Nu ai setat un nume'}
+                      </p>
+                      <Button
+                        size="sm"
+                        variant="ghost"
+                        onClick={() => setIsEditingName(true)}
+                        className="h-6 w-6 p-0"
+                      >
+                        <Edit3 className="h-3 w-3" />
+                      </Button>
+                    </div>
+                  )}
                 </div>
-              )}
+              </div>
             </div>
 
             <div className="pt-4 border-t border-line">

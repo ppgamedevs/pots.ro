@@ -30,9 +30,9 @@ ${data.reviewUrl ? `Poți lăsa o recenzie la: ${data.reviewUrl}` : ''}
 
 Sperăm că îți plac produsele! Dacă ai întrebări sau probleme cu comanda, nu ezita să ne contactezi.
 
-Mulțumim că ai ales Pots.ro!
+Mulțumim că ai ales FloristMarket.ro!
 
-Echipa Pots.ro`;
+Echipa FloristMarket.ro`;
 }
 
 export const OrderDeliveredEmail = ({
@@ -90,7 +90,7 @@ export const OrderDeliveredEmail = ({
           </Text>
           
           <Text style={footer}>
-            Mulțumim că ai ales Pots.ro!<br />
+            Mulțumim că ai ales FloristMarket.ro!<br />
             Echipa Pots.ro
           </Text>
         </Container>

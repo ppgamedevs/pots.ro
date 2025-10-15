@@ -49,7 +49,7 @@ const blogPosts = [
 ];
 
 export const metadata: Metadata = {
-  title: 'Blog Expert Ghivece și Plante România 2025 | Ghiduri Complete | Pots.ro',
+  title: 'Blog Expert Ghivece și Plante România 2025 | Ghiduri Complete | FloristMarket.ro',
   description: 'Blog expert cu ghiduri complete pentru ghivece ceramice, plante interioare și design floral în România 2025. Sfaturi de specialiști, tendințe moderne și soluții pentru clima locală.',
   keywords: 'ghivece ceramice romania, plante interioare romania, design floral 2025, ghivece premium, îngrijire plante, tendințe florale, blog expert ghivece',
   openGraph: {

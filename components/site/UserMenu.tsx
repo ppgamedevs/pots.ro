@@ -3,7 +3,7 @@
 import { useState } from "react";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
-import { User, LogOut, Settings, Heart } from "lucide-react";
+import { User, LogOut, Settings, Heart, ShoppingBag } from "lucide-react";
 import { useUser } from "@/lib/hooks/useUser";
 
 export function UserMenu() {
@@ -58,6 +58,24 @@ export function UserMenu() {
           </div>
           
           <div className="py-1">
+            <Link
+              href="/account"
+              className="flex items-center gap-2 px-3 py-2 text-sm text-ink hover:bg-bg-soft rounded transition-micro"
+              onClick={() => setIsOpen(false)}
+            >
+              <User className="h-4 w-4" />
+              Contul meu
+            </Link>
+            
+            <Link
+              href="/account/orders"
+              className="flex items-center gap-2 px-3 py-2 text-sm text-ink hover:bg-bg-soft rounded transition-micro"
+              onClick={() => setIsOpen(false)}
+            >
+              <ShoppingBag className="h-4 w-4" />
+              Comenzile mele
+            </Link>
+            
             <Link
               href="/favorites"
               className="flex items-center gap-2 px-3 py-2 text-sm text-ink hover:bg-bg-soft rounded transition-micro"

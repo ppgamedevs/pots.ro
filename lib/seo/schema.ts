@@ -30,7 +30,7 @@ export function organizationSchema() {
   return {
     "@context": "https://schema.org",
     "@type": "Organization",
-    "name": "Pots.ro",
+    "name": "FloristMarket.ro",
     "url": "https://floristmarket.ro",
     "logo": "https://floristmarket.ro/logo.png",
     "description": "Romania's premier marketplace for pottery and ceramics",
@@ -51,7 +51,7 @@ export function websiteSchema() {
   return {
     "@context": "https://schema.org",
     "@type": "WebSite",
-    "name": "Pots.ro",
+    "name": "FloristMarket.ro",
     "url": "https://floristmarket.ro",
     "potentialAction": {
       "@type": "SearchAction",

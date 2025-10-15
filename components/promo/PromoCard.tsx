@@ -25,7 +25,7 @@ export function PromoCard({ title, subtitle, image, href, tone = 'light', size =
 
   // Dimensiuni uniforme pentru carduri - cardul mare să fie exact înălțimea celor două carduri mici + gap
   const heightClass = size === 'large' 
-    ? 'h-80 sm:h-96 lg:h-[29rem]' // Înălțime care să se alinieze perfect cu cele două carduri mici + gap (2 * 14rem + 1rem gap)
+    ? 'h-80 sm:h-96 lg:h-[29.5rem]' // Înălțime care să se alinieze perfect cu cele două carduri mici + gap (2 * 14rem + 1.5rem gap)
     : 'h-40 sm:h-48 lg:h-56'; // Înălțime uniformă pentru toate cardurile mici
 
   return (

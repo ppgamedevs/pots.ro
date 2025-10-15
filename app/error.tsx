@@ -18,7 +18,7 @@ export default function ServerError() {
         <div className="text-center mb-8">
           <Link href="/" className="inline-block">
             <div className="text-4xl font-bold text-green-600 mb-2">
-              Pots.ro
+              FloristMarket.ro
             </div>
             <div className="text-sm text-gray-600">
               Platforma ta de plante
@@ -97,7 +97,7 @@ export default function ServerError() {
 
         {/* Footer simplu */}
         <div className="text-center mt-8 text-xs text-gray-500">
-          © 2024 Pots.ro - Toate drepturile rezervate
+          © 2024 FloristMarket.ro - Toate drepturile rezervate
         </div>
       </div>
     </div>

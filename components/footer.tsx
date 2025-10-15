@@ -160,7 +160,7 @@ export function Footer() {
               <h3 className="font-semibold mb-4 text-slate-900 dark:text-slate-100">Urmărește-ne</h3>
               <div className="flex gap-4">
                 <a
-                  href="https://facebook.com/potsro"
+                  href="https://facebook.com/floristmarketro"
                   target="_blank"
                   rel="nofollow noopener"
                   className="p-2 rounded-lg bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-700 transition-colors"
@@ -169,7 +169,7 @@ export function Footer() {
                   <Facebook className="h-5 w-5 text-slate-600 dark:text-slate-300" />
                 </a>
                 <a
-                  href="https://instagram.com/potsro"
+                  href="https://instagram.com/floristmarketro"
                   target="_blank"
                   rel="nofollow noopener"
                   className="p-2 rounded-lg bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-700 transition-colors"
@@ -178,7 +178,7 @@ export function Footer() {
                   <Instagram className="h-5 w-5 text-slate-600 dark:text-slate-300" />
                 </a>
                 <a
-                  href="https://tiktok.com/@potsro"
+                  href="https://tiktok.com/@floristmarketro"
                   target="_blank"
                   rel="nofollow noopener"
                   className="p-2 rounded-lg bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-700 transition-colors"
@@ -187,7 +187,7 @@ export function Footer() {
                   <Music2 className="h-5 w-5 text-slate-600 dark:text-slate-300" />
                 </a>
                 <a
-                  href="https://linkedin.com/company/potsro"
+                  href="https://linkedin.com/company/floristmarketro"
                   target="_blank"
                   rel="nofollow noopener"
                   className="p-2 rounded-lg bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-700 transition-colors"
@@ -196,7 +196,7 @@ export function Footer() {
                   <Linkedin className="h-5 w-5 text-slate-600 dark:text-slate-300" />
                 </a>
                 <a
-                  href="https://youtube.com/@potsro"
+                  href="https://youtube.com/@floristmarketro"
                   target="_blank"
                   rel="nofollow noopener"
                   className="p-2 rounded-lg bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-700 transition-colors"

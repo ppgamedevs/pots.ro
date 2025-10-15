@@ -15,27 +15,6 @@ export default async function MyAccountPage() {
   await requireAuth();
   return (
     <div className="min-h-screen bg-slate-50 dark:bg-slate-900">
-      {/* Header */}
-      <header className="bg-white dark:bg-slate-800 border-b border-slate-200 dark:border-slate-700">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex justify-between items-center h-16">
-            <div className="flex items-center">
-              <Link href="/" className="text-xl font-bold text-slate-900 dark:text-slate-100">
-                FloristMarket.ro
-              </Link>
-            </div>
-            <div className="flex items-center space-x-4">
-              <Link 
-                href="/" 
-                className="text-slate-600 dark:text-slate-300 hover:text-slate-900 dark:hover:text-slate-100"
-              >
-                Înapoi la site
-              </Link>
-            </div>
-          </div>
-        </div>
-      </header>
-
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         <div className="flex flex-col lg:flex-row gap-8">
           {/* Sidebar */}
