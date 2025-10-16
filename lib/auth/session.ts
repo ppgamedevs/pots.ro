@@ -326,7 +326,7 @@ export async function logAuthEvent(
       userId,
       ip,
       userAgent,
-      meta,
+      metadata: meta,
     });
   } catch (error) {
     console.error('Error logging auth event:', error);
