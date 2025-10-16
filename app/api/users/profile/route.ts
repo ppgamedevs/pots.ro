@@ -34,7 +34,6 @@ export async function PATCH(request: NextRequest) {
       .update(users)
       .set({
         name: validatedData.name,
-        updatedAt: new Date(),
       })
       .where(eq(users.id, user.id))
       .returning({
@@ -61,7 +60,7 @@ export async function PATCH(request: NextRequest) {
     
     if (error instanceof z.ZodError) {
       return NextResponse.json(
-        { error: 'Date invalide', details: error.errors },
+        { error: 'Date invalide', details: error.issues },
         { status: 400 }
       );
     }
