@@ -16,7 +16,9 @@ export const users = pgTable("users", {
   id: uuid("id").primaryKey().defaultRandom(),
   email: text("email").notNull().unique(),
   name: text("name"),
+  password: text("password"), // For password-based auth
   role: text("role").notNull().default("buyer").$type<'buyer' | 'seller' | 'admin'>(),
+  notificationPreferences: jsonb("notification_preferences"), // User notification settings
   createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
   updatedAt: timestamp("updated_at", { withTimezone: true }).defaultNow().notNull(),
 }, (table) => ({
@@ -496,6 +498,9 @@ export const createTriggersAndIndexes = sql`
   $$ language 'plpgsql';
 
   -- Triggers for updated_at
+  CREATE TRIGGER update_users_updated_at BEFORE UPDATE ON users
+    FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
+  
   CREATE TRIGGER update_categories_updated_at BEFORE UPDATE ON categories
     FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
   

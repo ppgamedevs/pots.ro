@@ -34,43 +34,56 @@ const merriweather = Merriweather({
 export const metadata = {
   metadataBase: new URL(SITE_URL),
   title: {
-    default: `${SITE_NAME} – Marketplace de Floristică`,
+    default: `${SITE_NAME} – Marketplace-ul profesioniștilor din floristică`,
     template: `%s | ${SITE_NAME}`
   },
   icons: {
     icon: '/favicon.svg',
+    apple: '/favicon.svg',
   },
   description: SITE_DESCRIPTION,
   keywords: SITE_KEYWORDS,
+  authors: [{ name: "FloristMarket.ro" }],
+  creator: "FloristMarket.ro",
+  publisher: "FloristMarket.ro",
+  formatDetection: {
+    email: false,
+    address: false,
+    telephone: false,
+  },
   openGraph: {
     type: "website",
     locale: "ro_RO",
     url: SITE_URL,
     siteName: SITE_NAME,
-    title: `${SITE_NAME} – Marketplace de Floristică`,
-    description: SITE_DESCRIPTION,
+    title: `${SITE_NAME} – Marketplace-ul profesioniștilor din floristică`,
+    description: "Totul pentru florăria ta: cutii din catifea, ghivece ceramice, panglici și accesorii florale, direct de la producători români.",
     images: [
       {
         url: OG_IMAGE_DEFAULT,
         width: 1200,
         height: 630,
-        alt: `${SITE_NAME} – Marketplace de Floristică`,
+        alt: "FloristMarket – Marketplace de accesorii florale premium",
+        type: "image/jpeg",
       },
     ],
   },
   twitter: {
     card: "summary_large_image",
-    title: `${SITE_NAME} – Marketplace de Floristică`,
-    description: SITE_DESCRIPTION,
+    title: `${SITE_NAME} – Marketplace-ul profesioniștilor din floristică`,
+    description: "Conectăm florăriile din România cu furnizorii de accesorii și ambalaje florale premium.",
     images: [OG_IMAGE_DEFAULT],
     creator: TWITTER_HANDLE,
+    site: TWITTER_HANDLE,
   },
   robots: {
     index: true,
     follow: true,
+    nocache: false,
     googleBot: {
       index: true,
       follow: true,
+      noimageindex: false,
       "max-video-preview": -1,
       "max-image-preview": "large",
       "max-snippet": -1,
@@ -79,6 +92,10 @@ export const metadata = {
   verification: {
     google: "your-google-verification-code",
   },
+  alternates: {
+    canonical: SITE_URL,
+  },
+  category: "E-commerce",
 };
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {

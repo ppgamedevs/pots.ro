@@ -1,95 +1,112 @@
 "use client";
 
-import { useEffect } from "react";
+import { SITE_NAME, SITE_URL, SITE_DESCRIPTION } from "@/lib/constants";
 
 export function StructuredData() {
-  useEffect(() => {
-    const structuredData = {
-      "@context": "https://schema.org",
-      "@graph": [
-        {
-          "@type": "Organization",
-          "@id": "https://floristmarket.ro/#organization",
-          "name": "FloristMarket",
-          "url": "https://floristmarket.ro",
-          "logo": {
-            "@type": "ImageObject",
-            "url": "https://floristmarket.ro/logo.png",
-            "width": 200,
-            "height": 60
-          },
-          "description": "Marketplace de floristică din România",
-          "address": {
-            "@type": "PostalAddress",
-            "addressCountry": "RO"
-          },
-          "contactPoint": {
-            "@type": "ContactPoint",
-            "telephone": "+40-XXX-XXX-XXX",
-            "contactType": "customer service",
-            "availableLanguage": "Romanian"
-          },
-          "sameAs": [
-            "https://www.facebook.com/floristmarket",
-            "https://www.instagram.com/floristmarket"
-          ]
+  const structuredData = {
+    "@context": "https://schema.org",
+    "@graph": [
+      {
+        "@type": "Organization",
+        "@id": `${SITE_URL}/#organization`,
+        "name": SITE_NAME,
+        "url": SITE_URL,
+        "logo": {
+          "@type": "ImageObject",
+          "url": `${SITE_URL}/favicon.svg`,
+          "width": 512,
+          "height": 512
         },
-        {
-          "@type": "WebSite",
-          "@id": "https://floristmarket.ro/#website",
-          "url": "https://floristmarket.ro",
-          "name": "FloristMarket",
-          "description": "Marketplace de floristică din România",
-          "publisher": {
-            "@id": "https://floristmarket.ro/#organization"
-          },
-          "potentialAction": [
-            {
-              "@type": "SearchAction",
-              "target": {
-                "@type": "EntryPoint",
-                "urlTemplate": "https://floristmarket.ro/search?q={search_term_string}"
-              },
-              "query-input": "required name=search_term_string"
-            }
-          ]
-        },
-        {
-          "@type": "WebPage",
-          "@id": "https://floristmarket.ro/#webpage",
-          "url": "https://floristmarket.ro",
-          "name": "FloristMarket – Marketplace de floristică",
-          "isPartOf": {
-            "@id": "https://floristmarket.ro/#website"
-          },
-          "about": {
-            "@id": "https://floristmarket.ro/#organization"
-          },
-          "description": "Descoperă cel mai mare marketplace de floristică din România. Ghivece, cutii, ambalaje și accesorii de calitate de la selleri verificați."
-        },
-        {
-          "@type": "BreadcrumbList",
-          "itemListElement": [
-            {
-              "@type": "ListItem",
-              "position": 1,
-              "name": "Acasă",
-              "item": "https://floristmarket.ro"
-            }
-          ]
+        "description": SITE_DESCRIPTION,
+        "sameAs": [
+          "https://www.facebook.com/floristmarketro",
+          "https://www.instagram.com/floristmarketro",
+          "https://twitter.com/floristmarketro"
+        ],
+        "contactPoint": {
+          "@type": "ContactPoint",
+          "contactType": "customer service",
+          "availableLanguage": "Romanian"
         }
-      ]
-    };
+      },
+      {
+        "@type": "WebSite",
+        "@id": `${SITE_URL}/#website`,
+        "url": SITE_URL,
+        "name": SITE_NAME,
+        "description": SITE_DESCRIPTION,
+        "publisher": {
+          "@id": `${SITE_URL}/#organization`
+        },
+        "inLanguage": "ro-RO"
+      },
+      {
+        "@type": "WebPage",
+        "@id": `${SITE_URL}/#webpage`,
+        "url": SITE_URL,
+        "name": `${SITE_NAME} – Marketplace-ul profesioniștilor din floristică`,
+        "isPartOf": {
+          "@id": `${SITE_URL}/#website`
+        },
+        "about": {
+          "@id": `${SITE_URL}/#organization`
+        },
+        "description": SITE_DESCRIPTION,
+        "inLanguage": "ro-RO"
+      },
+      {
+        "@type": "Store",
+        "@id": `${SITE_URL}/#store`,
+        "name": SITE_NAME,
+        "description": "Marketplace online pentru produse de floristică",
+        "url": SITE_URL,
+        "telephone": "+40-XXX-XXX-XXX",
+        "address": {
+          "@type": "PostalAddress",
+          "addressCountry": "RO",
+          "addressLocality": "București"
+        },
+        "openingHours": "Mo-Fr 09:00-18:00",
+        "paymentAccepted": ["Cash", "Credit Card", "Debit Card"],
+        "currenciesAccepted": "RON"
+      },
+      {
+        "@type": "ItemList",
+        "name": "Categorii principale",
+        "itemListElement": [
+          {
+            "@type": "ListItem",
+            "position": 1,
+            "name": "Ghivece",
+            "url": `${SITE_URL}/c/ghivece`
+          },
+          {
+            "@type": "ListItem",
+            "position": 2,
+            "name": "Cutii",
+            "url": `${SITE_URL}/c/cutii`
+          },
+          {
+            "@type": "ListItem",
+            "position": 3,
+            "name": "Ambalaje",
+            "url": `${SITE_URL}/c/ambalaje`
+          },
+          {
+            "@type": "ListItem",
+            "position": 4,
+            "name": "Accesorii",
+            "url": `${SITE_URL}/c/accesorii`
+          }
+        ]
+      }
+    ]
+  };
 
-    const script = document.createElement("script");
-    script.type = "application/ld+json";
-    script.text = JSON.stringify(structuredData);
-    document.head.appendChild(script);
-
-    return () => {
-      document.head.removeChild(script);
-    };
-  }, []);
-
-  return null;
+  return (
+    <script
+      type="application/ld+json"
+      dangerouslySetInnerHTML={{ __html: JSON.stringify(structuredData) }}
+    />
+  );
 }
