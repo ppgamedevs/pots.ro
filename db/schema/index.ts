@@ -17,8 +17,11 @@ export const users = pgTable("users", {
   id: uuid("id").primaryKey().defaultRandom(),
   email: text("email").notNull().unique(),
   name: text("name"),
+  password: text("password"), // For password-based auth
   role: userRoleEnum("role").default('buyer').notNull(),
+  notificationPreferences: jsonb("notification_preferences"), // User notification settings
   createdAt: timestamp("created_at").defaultNow().notNull(),
+  updatedAt: timestamp("updated_at").defaultNow().notNull(),
 }, (table) => ({
   emailIdx: index("users_email_idx").on(table.email),
 }));

@@ -7,7 +7,7 @@ dotenvConfig();
 import "./lib/env";
 
 export default defineConfig({
-  schema: "./db/schema/core.ts",
+  schema: "./db/schema/index.ts",
   out: "./drizzle",
   dialect: "postgresql",
   dbCredentials: {

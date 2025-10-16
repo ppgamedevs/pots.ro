@@ -33,7 +33,15 @@ export async function POST(request: NextRequest) {
 
     // Get user from database with password
     const userWithPassword = await db
-      .select()
+      .select({
+        id: users.id,
+        email: users.email,
+        name: users.name,
+        role: users.role,
+        password: users.password,
+        createdAt: users.createdAt,
+        updatedAt: users.updatedAt,
+      })
       .from(users)
       .where(eq(users.id, user.id))
       .limit(1);
