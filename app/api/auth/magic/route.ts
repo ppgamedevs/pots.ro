@@ -15,6 +15,7 @@ import {
   setSessionCookie, 
   logAuthEvent 
 } from '@/lib/auth/session';
+import { sendWelcomeEmail } from '@/lib/auth/email';
 import { generateUniqueDisplayId } from '@/lib/utils/displayId';
 
 /**
