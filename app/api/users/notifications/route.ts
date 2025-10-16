@@ -124,7 +124,7 @@ export async function GET(request: NextRequest) {
 
     if (dbUser.notificationPreferences) {
       try {
-        preferences = JSON.parse(dbUser.notificationPreferences);
+        preferences = JSON.parse(dbUser.notificationPreferences as string);
       } catch (error) {
         console.error('Error parsing notification preferences:', error);
       }
