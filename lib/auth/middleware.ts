@@ -176,12 +176,12 @@ export const ROUTE_PROTECTION = {
   
   // Buyer routes (buyer, seller, admin)
   buyer: [
-    '/profile',
+    '/profil',
     '/dashboard',
     '/cart',
     '/checkout',
     '/orders',
-    '/favorites',
+    '/favorite',
   ],
   
   // Seller routes (seller, admin)

@@ -14,31 +14,42 @@ export function useUser() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  useEffect(() => {
-    const fetchUser = async () => {
-      try {
-        const response = await fetch('/api/auth/me', {
-          credentials: 'include',
-        });
-        
-        if (response.ok) {
-          const data = await response.json();
-          setUser(data.user);
-        } else if (response.status === 401) {
-          // User not authenticated
-          setUser(null);
-        } else {
-          setError('Eroare la încărcarea utilizatorului');
-        }
-      } catch (error) {
-        console.error('Error fetching user:', error);
-        setError('Eroare de conexiune');
-      } finally {
-        setLoading(false);
+  const fetchUser = async () => {
+    try {
+      const response = await fetch('/api/auth/me', {
+        credentials: 'include',
+      });
+      
+      if (response.ok) {
+        const data = await response.json();
+        setUser(data.user);
+      } else if (response.status === 401) {
+        // User not authenticated
+        setUser(null);
+      } else {
+        setError('Eroare la încărcarea utilizatorului');
       }
+    } catch (error) {
+      console.error('Error fetching user:', error);
+      setError('Eroare de conexiune');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchUser();
+
+    // Listen for profile updates
+    const handleProfileUpdate = () => {
+      fetchUser();
     };
 
-    fetchUser();
+    window.addEventListener('userProfileUpdated', handleProfileUpdate);
+    
+    return () => {
+      window.removeEventListener('userProfileUpdated', handleProfileUpdate);
+    };
   }, []);
 
   const logout = async () => {
@@ -65,6 +76,7 @@ export function useUser() {
     loading,
     error,
     logout,
+    refreshUser: fetchUser,
     isAuthenticated: !!user,
     isAdmin: user?.role === 'admin',
     isSeller: user?.role === 'seller' || user?.role === 'admin',

@@ -65,6 +65,10 @@ export function UserProfile() {
       if (response.ok) {
         setUser(prev => prev ? { ...prev, name: nameValue.trim() } : null);
         setIsEditingName(false);
+        // Dispatch custom event to notify other components
+        window.dispatchEvent(new CustomEvent('userProfileUpdated', { 
+          detail: { name: nameValue.trim() } 
+        }));
       } else {
         setError(data.error || 'Eroare la actualizarea numelui');
       }

@@ -45,7 +45,7 @@ export default async function MyAccountPage() {
                   </li>
                   <li>
                     <Link
-                      href="/account/wishlist"
+                      href="/favorite"
                       className="flex items-center gap-3 px-3 py-2 rounded-lg text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-700 transition-colors"
                     >
                       <Heart className="h-5 w-5" />
@@ -104,7 +104,7 @@ export default async function MyAccountPage() {
                 </Link>
 
                 <Link
-                  href="/account/wishlist"
+                  href="/favorite"
                   className="bg-white dark:bg-slate-800 rounded-lg shadow-sm border border-slate-200 dark:border-slate-700 p-6 hover:shadow-md transition-shadow"
                 >
                   <div className="flex items-center gap-4">
