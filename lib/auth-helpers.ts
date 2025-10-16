@@ -35,7 +35,7 @@ export async function logout(): Promise<void> {
     });
     
     if (response.ok) {
-      window.location.href = '/login';
+      window.location.href = '/autentificare';
     } else {
       console.error('Logout failed:', response.statusText);
     }

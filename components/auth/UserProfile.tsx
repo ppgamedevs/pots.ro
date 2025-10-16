@@ -91,7 +91,7 @@ export function UserProfile() {
 
       if (response.ok) {
         // Redirect to login page
-        window.location.href = '/login';
+        window.location.href = '/autentificare';
       } else {
         const data = await response.json();
         setError(data.error || 'Eroare la logout');
@@ -125,7 +125,7 @@ export function UserProfile() {
           </CardHeader>
           <CardContent>
             <Button 
-              onClick={() => window.location.href = '/login'}
+              onClick={() => window.location.href = '/autentificare'}
               className="w-full"
             >
               Autentificare

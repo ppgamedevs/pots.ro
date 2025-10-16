@@ -61,7 +61,7 @@ export function useUser() {
       
       if (response.ok) {
         setUser(null);
-        window.location.href = '/login';
+        window.location.href = '/autentificare';
       } else {
         setError('Eroare la logout');
       }

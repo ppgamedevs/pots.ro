@@ -20,7 +20,7 @@ export async function middleware(request: NextRequest) {
   // Public routes that don't require authentication
   const publicRoutes = [
     '/',
-    '/login',
+    '/autentificare',
     '/about',
     '/contact',
     '/cariere',
@@ -32,11 +32,13 @@ export async function middleware(request: NextRequest) {
     '/returns',
     '/shipping',
     '/help',
+    '/ajutor',
     '/ghiduri',
     '/gdpr',
     '/blog',
     '/products',
     '/search',
+    '/cautare',
     '/seller',
     '/seller/requirements',
     '/seller/apply',
@@ -45,7 +47,9 @@ export async function middleware(request: NextRequest) {
     '/p',
     '/s',
     '/cart',
+    '/cos',
     '/checkout',
+    '/finalizare',
     '/checkout/success',
     '/checkout/fail',
     '/ui-demo',
@@ -77,7 +81,7 @@ export async function middleware(request: NextRequest) {
     if (!session) {
       console.log('[middleware] No valid session found, redirecting to login');
       // Redirect to login with return URL
-      const loginUrl = new URL('/login', request.url);
+      const loginUrl = new URL('/autentificare', request.url);
       loginUrl.searchParams.set('next', pathname);
       return NextResponse.redirect(loginUrl);
     }
@@ -88,7 +92,7 @@ export async function middleware(request: NextRequest) {
   } catch (error) {
     console.error('[middleware] Session validation error:', error);
     // On error, redirect to login
-    const loginUrl = new URL('/login', request.url);
+    const loginUrl = new URL('/autentificare', request.url);
     loginUrl.searchParams.set('next', pathname);
     return NextResponse.redirect(loginUrl);
   }

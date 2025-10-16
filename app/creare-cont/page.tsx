@@ -46,7 +46,7 @@ export default function RegisterPage() {
     try {
       // For now, redirect to login with a message
       // In a real implementation, you'd call the signup API
-      router.push("/login?message=Contul a fost creat cu succes! Te poți conecta acum.");
+      router.push("/autentificare?message=Contul a fost creat cu succes! Te poți conecta acum.");
     } catch (err) {
       setError("A apărut o eroare. Te rugăm să încerci din nou.");
     } finally {

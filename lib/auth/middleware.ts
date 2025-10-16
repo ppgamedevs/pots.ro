@@ -10,7 +10,6 @@ export async function authMiddleware(request: NextRequest) {
   // Skip middleware for public routes
   const publicRoutes = [
     '/',
-    '/login',
     '/autentificare',
     '/api/auth/otp/request',
     '/api/auth/otp/verify',
@@ -28,7 +27,7 @@ export async function authMiddleware(request: NextRequest) {
     
     if (!user) {
       // Redirect to login for protected routes
-      const loginUrl = new URL('/login', request.url);
+      const loginUrl = new URL('/autentificare', request.url);
       loginUrl.searchParams.set('redirect', pathname);
       return NextResponse.redirect(loginUrl);
     }
@@ -49,7 +48,7 @@ export async function authMiddleware(request: NextRequest) {
     console.error('Auth middleware error:', error);
     
     // Redirect to login on error
-    const loginUrl = new URL('/login', request.url);
+    const loginUrl = new URL('/autentificare', request.url);
     loginUrl.searchParams.set('redirect', pathname);
     return NextResponse.redirect(loginUrl);
   }
@@ -166,7 +165,6 @@ export const ROUTE_PROTECTION = {
   // Public routes (no auth required)
   public: [
     '/',
-    '/login',
     '/autentificare',
     '/about',
     '/contact',
