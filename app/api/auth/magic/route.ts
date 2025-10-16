@@ -1,7 +1,7 @@
 export const dynamic = 'force-dynamic';
 import { NextRequest, NextResponse } from 'next/server';
 import { db } from '@/db';
-import { users, authOtp } from '@/db/schema';
+import { users, authOtp } from '@/db/schema/core';
 import { eq, and, gt, desc } from 'drizzle-orm';
 import { 
   hash, 

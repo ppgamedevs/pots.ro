@@ -2,7 +2,7 @@ import { cookies } from 'next/headers';
 import crypto from 'node:crypto';
 import { NextRequest, NextResponse } from 'next/server';
 import { db } from '@/db';
-import { sessions, users, authAudit } from '@/db/schema';
+import { sessions, users, authAudit } from '@/db/schema/core';
 import { eq, and, gt, isNull, lt } from 'drizzle-orm';
 import { hash, generateSessionToken, getClientIP, getUserAgent } from './crypto';
 import { createMiddlewareSessionToken, verifyMiddlewareSessionToken } from './middleware-session';

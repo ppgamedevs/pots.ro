@@ -1,6 +1,6 @@
 import { NextRequest } from 'next/server';
 import { db } from '@/db';
-import { authOtp, authAudit } from '@/db/schema';
+import { authOtp, authAudit } from '@/db/schema/core';
 import { eq, and, gt, desc } from 'drizzle-orm';
 import { getClientIP, getUserAgent, getEmailRateLimitKey, getIPRateLimitKey, getOtpAttemptsKey } from './crypto';
 import { logAuthEvent } from './session';
