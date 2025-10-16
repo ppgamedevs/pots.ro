@@ -1,8 +1,11 @@
 import { Metadata } from "next";
 import Link from "next/link";
 import { User, ShoppingBag, Heart, Settings } from "lucide-react";
-import { requireAuth } from '@/lib/auth/session';
+import { requireAuth, getCurrentUser } from '@/lib/auth/session';
 import { LogoutButton } from '@/components/auth/LogoutButton';
+import { db } from '@/db';
+import { users } from '@/db/schema/core';
+import { eq } from 'drizzle-orm';
 
 export const dynamic = 'force-dynamic';
 
@@ -13,6 +16,38 @@ export const metadata: Metadata = {
 
 export default async function MyAccountPage() {
   await requireAuth();
+  const user = await getCurrentUser();
+  
+  if (!user) {
+    return <div>Eroare la încărcarea utilizatorului</div>;
+  }
+
+  // Get user data with displayId and createdAt
+  const userData = await db
+    .select({
+      displayId: users.displayId,
+      createdAt: users.createdAt,
+    })
+    .from(users)
+    .where(eq(users.id, user.id))
+    .limit(1);
+
+  const userInfo = userData[0];
+  
+  // Format registration date
+  const formatRegistrationDate = (date: Date) => {
+    const now = new Date();
+    const diffTime = Math.abs(now.getTime() - date.getTime());
+    const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+    
+    if (diffDays === 1) return "Astăzi";
+    if (diffDays === 2) return "Ieri";
+    if (diffDays <= 7) return `${diffDays} zile`;
+    if (diffDays <= 30) return `${Math.ceil(diffDays / 7)} săptămâni`;
+    if (diffDays <= 365) return `${Math.ceil(diffDays / 30)} luni`;
+    return `${Math.ceil(diffDays / 365)} ani`;
+  };
+
   return (
     <div className="min-h-screen bg-slate-50 dark:bg-slate-900">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
@@ -25,15 +60,6 @@ export default async function MyAccountPage() {
                   Contul meu
                 </h2>
                 <ul className="space-y-2">
-                  <li>
-                    <Link
-                      href="/account"
-                      className="flex items-center gap-3 px-3 py-2 rounded-lg text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-700 transition-colors"
-                    >
-                      <User className="h-5 w-5" />
-                      Informații personale
-                    </Link>
-                  </li>
                   <li>
                     <Link
                       href="/comenzi"
@@ -154,7 +180,7 @@ export default async function MyAccountPage() {
                     Membru din
                   </h3>
                   <p className="text-3xl font-bold text-green-600 dark:text-green-400">
-                    Astăzi
+                    {userInfo ? formatRegistrationDate(userInfo.createdAt) : "Astăzi"}
                   </p>
                   <p className="text-sm text-slate-600 dark:text-slate-300">
                     Data înregistrării

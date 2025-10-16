@@ -16,6 +16,7 @@ export const users = pgTable("users", {
   id: uuid("id").primaryKey().defaultRandom(),
   email: text("email").notNull().unique(),
   name: text("name"),
+  displayId: text("display_id").notNull().unique(), // Unique display ID for user greeting
   password: text("password"), // For password-based auth
   role: text("role").notNull().default("buyer").$type<'buyer' | 'seller' | 'admin'>(),
   notificationPreferences: jsonb("notification_preferences"), // User notification settings
@@ -23,6 +24,7 @@ export const users = pgTable("users", {
   updatedAt: timestamp("updated_at", { withTimezone: true }).defaultNow().notNull(),
 }, (table) => ({
   emailIdx: index("users_email_idx").on(table.email),
+  displayIdIdx: index("users_display_id_idx").on(table.displayId),
 }));
 
 // Sellers table (extended for onboarding)

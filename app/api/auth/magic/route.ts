@@ -15,7 +15,7 @@ import {
   setSessionCookie, 
   logAuthEvent 
 } from '@/lib/auth/session';
-import { sendWelcomeEmail } from '@/lib/auth/email';
+import { generateUniqueDisplayId } from '@/lib/utils/displayId';
 
 /**
  * GET /api/auth/magic?t=token&e=email
@@ -149,10 +149,12 @@ export async function GET(request: NextRequest) {
     if (!user) {
       try {
         // Create new user
+        const displayId = await generateUniqueDisplayId(db, users);
         [user] = await db
           .insert(users)
           .values({
             email: normalizedEmail,
+            displayId: displayId,
             role: 'buyer',
           })
           .returning();
@@ -165,6 +167,7 @@ export async function GET(request: NextRequest) {
                 id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
                 email TEXT NOT NULL UNIQUE,
                 name TEXT,
+                display_id TEXT NOT NULL UNIQUE,
                 role TEXT NOT NULL DEFAULT 'buyer',
                 created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
                 updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
@@ -173,11 +176,16 @@ export async function GET(request: NextRequest) {
             await db.execute(`
               CREATE INDEX IF NOT EXISTS users_email_idx ON users(email)
             `);
+            await db.execute(`
+              CREATE INDEX IF NOT EXISTS users_display_id_idx ON users(display_id)
+            `);
             // Retry creating user
+            const displayId = await generateUniqueDisplayId(db, users);
             [user] = await db
               .insert(users)
               .values({
                 email: normalizedEmail,
+                displayId: displayId,
                 role: 'buyer',
               })
               .returning();

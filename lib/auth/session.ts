@@ -16,6 +16,7 @@ export interface User {
   id: string;
   email: string;
   name: string | null;
+  displayId: string;
   role: 'buyer' | 'seller' | 'admin';
 }
 
@@ -358,11 +359,31 @@ export async function getCurrentUser(): Promise<User | null> {
       return null;
     }
     
+    // Get user data from database to include displayId
+    const userRecord = await db
+      .select({
+        id: users.id,
+        email: users.email,
+        name: users.name,
+        displayId: users.displayId,
+        role: users.role,
+      })
+      .from(users)
+      .where(eq(users.id, payload.userId as string))
+      .limit(1);
+
+    if (!userRecord.length) {
+      return null;
+    }
+
+    const userData = userRecord[0];
+    
     return {
-      id: payload.userId as string,
-      email: payload.email as string,
-      name: null, // JWT doesn't store name
-      role: payload.role as 'buyer' | 'seller' | 'admin',
+      id: userData.id,
+      email: userData.email,
+      name: userData.name,
+      displayId: userData.displayId,
+      role: userData.role,
     };
   } catch (error) {
     console.error('Error getting current user from JWT:', error);

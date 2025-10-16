@@ -24,6 +24,7 @@ interface User {
   id: string;
   email: string;
   name: string | null;
+  displayId: string;
   role: 'buyer' | 'seller' | 'admin';
 }
 
@@ -44,6 +45,8 @@ export function AccountSettings() {
   // Form states
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
+  const [displayId, setDisplayId] = useState('');
+  const [newEmail, setNewEmail] = useState('');
   const [currentPassword, setCurrentPassword] = useState('');
   const [newPassword, setNewPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
@@ -69,6 +72,7 @@ export function AccountSettings() {
           setUser(userData.user);
           setName(userData.user.name || '');
           setEmail(userData.user.email);
+          setDisplayId(userData.user.displayId);
         } else {
           setError('Eroare la încărcarea profilului');
         }
@@ -198,6 +202,96 @@ export function AccountSettings() {
     }
   };
 
+  // Handle display ID update
+  const handleDisplayIdUpdate = async () => {
+    if (!displayId.trim()) {
+      setError('ID-ul de afișare nu poate fi gol');
+      return;
+    }
+
+    if (displayId.length < 3) {
+      setError('ID-ul de afișare trebuie să aibă cel puțin 3 caractere');
+      return;
+    }
+
+    setSaving(true);
+    setError('');
+    setSuccess('');
+
+    try {
+      const response = await fetch('/api/users/profile', {
+        method: 'PATCH',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ displayId: displayId.trim() }),
+      });
+
+      const data = await response.json();
+
+      if (response.ok) {
+        setUser(prev => prev ? { ...prev, displayId: displayId.trim() } : null);
+        setSuccess('ID-ul de afișare a fost actualizat cu succes!');
+        // Dispatch custom event to notify other components
+        window.dispatchEvent(new CustomEvent('userProfileUpdated', { 
+          detail: { displayId: displayId.trim() } 
+        }));
+      } else {
+        setError(data.error || 'Eroare la actualizarea ID-ului de afișare');
+      }
+    } catch (error) {
+      setError('Eroare de conexiune');
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  // Handle email change
+  const handleEmailChange = async () => {
+    if (!newEmail.trim()) {
+      setError('Email-ul nou nu poate fi gol');
+      return;
+    }
+
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(newEmail)) {
+      setError('Email-ul nou nu este valid');
+      return;
+    }
+
+    setSaving(true);
+    setError('');
+    setSuccess('');
+
+    try {
+      const response = await fetch('/api/users/change-email', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ 
+          newEmail: newEmail.trim(),
+          currentPassword 
+        }),
+      });
+
+      const data = await response.json();
+
+      if (response.ok) {
+        setUser(prev => prev ? { ...prev, email: newEmail.trim() } : null);
+        setEmail(newEmail.trim());
+        setNewEmail('');
+        setCurrentPassword('');
+        setSuccess('Email-ul a fost actualizat cu succes!');
+      } else {
+        setError(data.error || 'Eroare la actualizarea email-ului');
+      }
+    } catch (error) {
+      setError('Eroare de conexiune');
+    } finally {
+      setSaving(false);
+    }
+  };
+
   if (loading) {
     return (
       <div className="flex items-center justify-center py-12">
@@ -257,6 +351,20 @@ export function AccountSettings() {
           </div>
           
           <div className="space-y-2">
+            <Label htmlFor="displayId">ID de afișare</Label>
+            <Input
+              id="displayId"
+              value={displayId}
+              onChange={(e) => setDisplayId(e.target.value)}
+              placeholder="ex: happycat123"
+              disabled={saving}
+            />
+            <p className="text-sm text-slate-500">
+              Acest ID apare în salutul din header. Poate fi modificat oricând.
+            </p>
+          </div>
+          
+          <div className="space-y-2">
             <Label htmlFor="email">Email</Label>
             <Input
               id="email"
@@ -265,27 +373,46 @@ export function AccountSettings() {
               className="bg-slate-50"
             />
             <p className="text-sm text-slate-500">
-              Emailul nu poate fi modificat. Contactează-ne pentru a schimba emailul.
+              Emailul poate fi schimbat folosind secțiunea de mai jos.
             </p>
           </div>
 
-          <Button 
-            onClick={handleNameUpdate}
-            disabled={saving || !name.trim()}
-            className="w-full sm:w-auto"
-          >
-            {saving ? (
-              <>
-                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                Se salvează...
-              </>
-            ) : (
-              <>
-                <Save className="mr-2 h-4 w-4" />
-                Salvează modificările
-              </>
-            )}
-          </Button>
+          <div className="flex gap-2">
+            <Button 
+              onClick={handleNameUpdate}
+              disabled={saving || !name.trim()}
+              variant="outline"
+            >
+              {saving ? (
+                <>
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  Se salvează...
+                </>
+              ) : (
+                <>
+                  <Save className="mr-2 h-4 w-4" />
+                  Salvează numele
+                </>
+              )}
+            </Button>
+            
+            <Button 
+              onClick={handleDisplayIdUpdate}
+              disabled={saving || !displayId.trim() || displayId === user.displayId}
+            >
+              {saving ? (
+                <>
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  Se salvează...
+                </>
+              ) : (
+                <>
+                  <Save className="mr-2 h-4 w-4" />
+                  Salvează ID-ul
+                </>
+              )}
+            </Button>
+          </div>
         </CardContent>
       </Card>
 
@@ -363,6 +490,62 @@ export function AccountSettings() {
               <>
                 <Lock className="mr-2 h-4 w-4" />
                 Schimbă parola
+              </>
+            )}
+          </Button>
+        </CardContent>
+      </Card>
+
+      {/* Email Change */}
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <Mail className="h-5 w-5" />
+            Schimbă email-ul
+          </CardTitle>
+          <CardDescription>
+            Pentru securitate, introdu parola actuală pentru a schimba email-ul
+          </CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          <div className="space-y-2">
+            <Label htmlFor="newEmail">Email nou</Label>
+            <Input
+              id="newEmail"
+              type="email"
+              value={newEmail}
+              onChange={(e) => setNewEmail(e.target.value)}
+              placeholder="Introdu noul email"
+              disabled={saving}
+            />
+          </div>
+
+          <div className="space-y-2">
+            <Label htmlFor="emailCurrentPassword">Parola actuală</Label>
+            <Input
+              id="emailCurrentPassword"
+              type="password"
+              value={currentPassword}
+              onChange={(e) => setCurrentPassword(e.target.value)}
+              placeholder="Introdu parola actuală"
+              disabled={saving}
+            />
+          </div>
+
+          <Button 
+            onClick={handleEmailChange}
+            disabled={saving || !newEmail || !currentPassword}
+            className="w-full sm:w-auto"
+          >
+            {saving ? (
+              <>
+                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                Se schimbă...
+              </>
+            ) : (
+              <>
+                <Mail className="mr-2 h-4 w-4" />
+                Schimbă email-ul
               </>
             )}
           </Button>

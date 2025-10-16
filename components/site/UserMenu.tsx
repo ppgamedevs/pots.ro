@@ -43,7 +43,7 @@ export function UserMenu() {
       >
         <User className="h-4 w-4" />
         <span className="hidden sm:inline">
-          Salut, {user.name || user.email.split('@')[0]}
+          Salut, {user.displayId || user.name || user.email.split('@')[0]}
         </span>
         <span className="sm:hidden">Cont</span>
       </button>
