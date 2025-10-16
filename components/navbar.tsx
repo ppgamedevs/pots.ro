@@ -95,7 +95,7 @@ export function Navbar() {
             Admin
           </Link>
           <MiniCart />
-          <Link href="/auth/login">
+          <Link href="/auth/autentificare">
             <Button size="sm" aria-label="Sign in to your account">Autentificare</Button>
           </Link>
         </div>

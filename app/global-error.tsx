@@ -89,7 +89,7 @@ export default function Error({ error, reset }: ErrorProps) {
                   Contactează-ne
                 </Link>
                 <span className="text-gray-300">•</span>
-                <Link href="/help" className="text-green-600 hover:text-green-700 text-sm">
+                <Link href="/ajutor" className="text-green-600 hover:text-green-700 text-sm">
                   Ajutor
                 </Link>
               </div>

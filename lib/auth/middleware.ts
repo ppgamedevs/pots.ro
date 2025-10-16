@@ -11,6 +11,7 @@ export async function authMiddleware(request: NextRequest) {
   const publicRoutes = [
     '/',
     '/login',
+    '/autentificare',
     '/api/auth/otp/request',
     '/api/auth/otp/verify',
     '/api/auth/magic',
@@ -166,9 +167,12 @@ export const ROUTE_PROTECTION = {
   public: [
     '/',
     '/login',
+    '/autentificare',
     '/about',
     '/contact',
     '/faq',
+    '/help',
+    '/ajutor',
     '/terms',
     '/privacy',
     '/cookies',
@@ -179,9 +183,13 @@ export const ROUTE_PROTECTION = {
     '/profil',
     '/dashboard',
     '/cart',
+    '/cos',
     '/checkout',
+    '/finalizare',
     '/orders',
+    '/comenzi',
     '/favorite',
+    '/setari',
   ],
   
   // Seller routes (seller, admin)

@@ -245,7 +245,7 @@ export default function CartPage() {
                     </div>
                   </div>
 
-                  <Link href="/checkout" className="w-full">
+                  <Link href="/finalizare" className="w-full">
                     <Button size="lg" className="w-full mb-4">
                       <ArrowRight className="h-5 w-5 mr-2" />
                       Continuă la checkout

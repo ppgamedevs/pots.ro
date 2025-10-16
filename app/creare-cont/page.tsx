@@ -208,7 +208,7 @@ export default function RegisterPage() {
           <div className="mt-6 text-center">
             <p className="text-sm text-muted">
               Ai deja cont?{" "}
-              <Link href="/login" className="text-primary hover:underline font-medium">
+              <Link href="/autentificare" className="text-primary hover:underline font-medium">
                 Conectează-te aici
               </Link>
             </p>

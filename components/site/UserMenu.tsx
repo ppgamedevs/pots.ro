@@ -23,7 +23,7 @@ export function UserMenu() {
     return (
       <div className="flex items-center gap-2">
         <Link 
-          href="/login" 
+          href="/autentificare" 
           className="inline-flex items-center gap-2 px-3 py-2 rounded-lg hover:bg-bg-soft text-ink text-sm transition-micro"
         >
           <User className="h-4 w-4" />
@@ -68,7 +68,7 @@ export function UserMenu() {
             </Link>
             
             <Link
-              href="/account/orders"
+              href="/comenzi"
               className="flex items-center gap-2 px-3 py-2 text-sm text-ink hover:bg-bg-soft rounded transition-micro"
               onClick={() => setIsOpen(false)}
             >

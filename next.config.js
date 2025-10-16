@@ -86,6 +86,67 @@ const nextConfig = {
         ]
       }
     ]
+  },
+
+  // SEO Redirects for old English URLs to new Romanian URLs
+  async redirects() {
+    return [
+      // Account related redirects
+      {
+        source: '/favorites',
+        destination: '/favorite',
+        permanent: true, // 301 redirect for SEO
+      },
+      {
+        source: '/profile',
+        destination: '/profil',
+        permanent: true,
+      },
+      {
+        source: '/account/orders',
+        destination: '/comenzi',
+        permanent: true,
+      },
+      {
+        source: '/account/settings',
+        destination: '/setari',
+        permanent: true,
+      },
+      {
+        source: '/account/wishlist',
+        destination: '/favorite',
+        permanent: true,
+      },
+      
+      // Shopping related redirects
+      {
+        source: '/cart',
+        destination: '/cos',
+        permanent: true,
+      },
+      {
+        source: '/checkout',
+        destination: '/finalizare',
+        permanent: true,
+      },
+      
+      // Navigation redirects
+      {
+        source: '/search',
+        destination: '/cautare',
+        permanent: true,
+      },
+      {
+        source: '/login',
+        destination: '/autentificare',
+        permanent: true,
+      },
+      {
+        source: '/help',
+        destination: '/ajutor',
+        permanent: true,
+      },
+    ]
   }
 }
 

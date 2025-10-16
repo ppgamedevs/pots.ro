@@ -49,7 +49,7 @@ export function MainBar({ categories, suggestions, onMegaMenuToggle, onMiniCartT
           <UserMenu />
           
           <Link 
-            href="/cart" 
+            href="/cos" 
             className="inline-flex items-center gap-2 px-3 py-2 rounded-lg bg-primary text-white text-sm hover:bg-primary/90 transition-micro"
           >
             <ShoppingCart className="h-4 w-4" />

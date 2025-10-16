@@ -314,7 +314,7 @@ export default function MiniCart({ className = "" }: MiniCartProps) {
                 </span>
               </div>
               
-              <Link href="/cart" onClick={() => setIsOpen(false)}>
+              <Link href="/cos" onClick={() => setIsOpen(false)}>
                 <Button className="w-full">
                   Vezi coșul
                   <ArrowRight className="h-4 w-4 ml-2" />

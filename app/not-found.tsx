@@ -50,7 +50,7 @@ export default function NotFound() {
                 </Button>
               </Link>
               
-              <Link href="/search" className="block">
+              <Link href="/cautare" className="block">
                 <Button variant="outline" className="w-full">
                   <Search className="h-4 w-4 mr-2" />
                   Caută produse

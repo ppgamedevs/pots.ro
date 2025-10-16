@@ -14,7 +14,7 @@ export default function AuthErrorPage() {
           Mergi la Contul meu
         </Link>
         <div className="mt-4 text-sm text-slate-500">
-          Sau <Link href="/login" className="text-slate-900 hover:underline">autentifică-te din nou</Link>
+          Sau <Link href="/autentificare" className="text-slate-900 hover:underline">autentifică-te din nou</Link>
         </div>
       </div>
     </div>

@@ -101,7 +101,7 @@ export function MegaMenu({ categories, isOpen, onClose }: MegaMenuProps) {
           {/* Mobile Navigation */}
                  <div className="md:hidden mb-8">
                    <div className="grid grid-cols-2 gap-3">
-                     <Link href="/login" onClick={onClose}>
+                     <Link href="/autentificare" onClick={onClose}>
                        <Button variant="outline" className="w-full justify-start h-12 text-sm">
                          <User className="mr-2 h-4 w-4" />
                          Contul meu
@@ -113,7 +113,7 @@ export function MegaMenu({ categories, isOpen, onClose }: MegaMenuProps) {
                          Devino vânzător
                        </Button>
                      </Link>
-                     <Link href="/cart" onClick={onClose}>
+                     <Link href="/cos" onClick={onClose}>
                        <Button variant="outline" className="w-full justify-start h-12 text-sm">
                          <ShoppingCart className="mr-2 h-4 w-4" />
                          Coș de cumpărături

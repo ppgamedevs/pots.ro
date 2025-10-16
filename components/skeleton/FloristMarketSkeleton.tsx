@@ -48,7 +48,7 @@ export function MainBar({ onOpenMenu }: { onOpenMenu?: () => void }) {
           <a href="/seller" className="hidden sm:inline-flex text-sm px-3 py-2 border border-line rounded-lg hover:bg-bg-soft">Devino vânzător</a>
           <a href="/account" aria-label="Cont" className="p-2"><span className="i-lucide:user h-5 w-5" /></a>
           <a href="/favorite" aria-label="Favorite" className="p-2"><span className="i-lucide:heart h-5 w-5" /></a>
-          <a href="/cart" aria-label="Coș" className="p-2 relative">
+          <a href="/cos" aria-label="Coș" className="p-2 relative">
             <span className="i-lucide:shopping-cart h-5 w-5" />
             <span className="absolute -right-1 -top-1 bg-primary text-white text-[10px] leading-4 px-1 rounded">2</span>
           </a>
