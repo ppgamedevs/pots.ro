@@ -323,6 +323,8 @@ export async function POST(request: NextRequest) {
     
   } catch (error) {
     console.error('[otp.verify] error:', error);
+    console.error('[otp.verify] error stack:', error instanceof Error ? error.stack : 'No stack trace');
+    console.error('[otp.verify] error message:', error instanceof Error ? error.message : 'No message');
     
     if (error instanceof z.ZodError) {
       return NextResponse.json(
@@ -331,8 +333,12 @@ export async function POST(request: NextRequest) {
       );
     }
     
+    // Return more specific error information for debugging
+    const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+    console.error('[otp.verify] returning 500 error:', errorMessage);
+    
     return NextResponse.json(
-      { error: 'Eroare internă' },
+      { error: 'Eroare internă', details: errorMessage },
       { status: 500 }
     );
   }
