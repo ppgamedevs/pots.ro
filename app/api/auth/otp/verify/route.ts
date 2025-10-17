@@ -203,6 +203,14 @@ export async function POST(request: NextRequest) {
       } catch (error) {
         console.error('Error creating user:', error);
         
+        // If it's a database connection error, return a more specific error
+        if (error instanceof Error && error.message.includes('connection')) {
+          return NextResponse.json(
+            { error: 'Eroare de conexiune la baza de date' },
+            { status: 503 }
+          );
+        }
+        
         // If users table doesn't exist, create it
         if (error instanceof Error && error.message.includes('relation "users" does not exist')) {
           try {

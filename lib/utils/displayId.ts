@@ -50,27 +50,33 @@ export async function generateUniqueDisplayId(db: any, users: any): Promise<stri
   let attempts = 0;
   const maxAttempts = 10;
   
-  do {
-    displayId = generateDisplayId();
-    attempts++;
-    
-    if (attempts > maxAttempts) {
-      // Fallback to timestamp-based ID if we can't generate a unique one
-      displayId = `user${Date.now()}`;
-      break;
-    }
-    
-    // Check if displayId already exists
-    const existing = await db
-      .select({ id: users.id })
-      .from(users)
-      .where(eq(users.displayId, displayId))
-      .limit(1);
-    
-    if (existing.length === 0) {
-      break; // Found unique ID
-    }
-  } while (true);
+  try {
+    do {
+      displayId = generateDisplayId();
+      attempts++;
+      
+      if (attempts > maxAttempts) {
+        // Fallback to timestamp-based ID if we can't generate a unique one
+        displayId = `user${Date.now()}`;
+        break;
+      }
+      
+      // Check if displayId already exists
+      const existing = await db
+        .select({ id: users.id })
+        .from(users)
+        .where(eq(users.displayId, displayId))
+        .limit(1);
+      
+      if (existing.length === 0) {
+        break; // Found unique ID
+      }
+    } while (true);
+  } catch (error) {
+    console.error('Error generating unique display ID:', error);
+    // Fallback to timestamp-based ID if database query fails
+    displayId = `user${Date.now()}`;
+  }
   
   return displayId;
 }
