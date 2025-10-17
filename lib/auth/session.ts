@@ -184,6 +184,7 @@ export async function getSession(): Promise<Session | null> {
           id: users.id,
           email: users.email,
           name: users.name,
+          displayId: users.displayId,
           role: users.role,
         },
       })

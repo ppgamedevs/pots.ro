@@ -21,6 +21,7 @@ import {
   incrementOtpAttempts
 } from '@/lib/auth/rateLimit';
 import { sendWelcomeEmail } from '@/lib/auth/email';
+import { generateUniqueDisplayId } from '@/lib/utils/displayId';
 
 // Validation schema
 const otpVerifySchema = z.object({
@@ -185,11 +186,14 @@ export async function POST(request: NextRequest) {
     if (!user) {
       console.log('[otp.verify] Creating new user for:', normalizedEmail);
       try {
+        // Generate unique display ID
+        const displayId = await generateUniqueDisplayId(db, users);
+        
         // Create new user with explicit column specification
         console.log('[otp.verify] Attempting to insert user with email:', normalizedEmail);
         const insertResult = await db.execute(sql`
-          INSERT INTO users (email, role, name) 
-          VALUES (${normalizedEmail}, ${'buyer'}, ${null}) 
+          INSERT INTO users (email, display_id, role, name) 
+          VALUES (${normalizedEmail}, ${displayId}, ${'buyer'}, ${null}) 
           RETURNING id, email, name, role, created_at
         `);
         
@@ -207,6 +211,7 @@ export async function POST(request: NextRequest) {
                 id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
                 email TEXT NOT NULL UNIQUE,
                 name TEXT,
+                display_id TEXT NOT NULL UNIQUE,
                 role TEXT NOT NULL DEFAULT 'buyer',
                 created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
                 updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
@@ -217,11 +222,15 @@ export async function POST(request: NextRequest) {
               CREATE INDEX IF NOT EXISTS users_email_idx ON users(email)
             `);
             
+            // Generate unique display ID
+            const displayId = await generateUniqueDisplayId(db, users);
+            
             // Retry creating user
             [user] = await db
               .insert(users)
               .values({
                 email: normalizedEmail,
+                displayId: displayId,
                 role: 'buyer',
               })
               .returning();
