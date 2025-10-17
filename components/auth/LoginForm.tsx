@@ -91,6 +91,8 @@ export function LoginForm({ onSuccess, redirectTo }: LoginFormProps) {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
+          'Cache-Control': 'no-cache',
+          'Pragma': 'no-cache',
         },
         credentials: 'include',
         body: JSON.stringify({ email, code: otp }),
