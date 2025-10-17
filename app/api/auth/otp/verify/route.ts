@@ -35,7 +35,13 @@ const otpVerifySchema = z.object({
  */
 export async function POST(request: NextRequest) {
   try {
+    console.log('[otp.verify] Starting OTP verification');
+    console.log('[otp.verify] Request URL:', request.url);
+    console.log('[otp.verify] Request method:', request.method);
+    console.log('[otp.verify] Request headers:', Object.fromEntries(request.headers.entries()));
+    
     const body = await request.json();
+    console.log('[otp.verify] Request body:', body);
     const { email, code } = otpVerifySchema.parse(body);
     console.log('[otp.verify] incoming', { email });
     
