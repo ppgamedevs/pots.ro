@@ -30,7 +30,7 @@ export async function GET(request: NextRequest) {
       })
       .from(categories);
 
-    const urls = categoriesResult.map(category => ({
+    const urls = categoriesResult.map((category: any) => ({
       loc: `${baseUrl}/c/${category.slug}`,
       lastmod: category.updatedAt.toISOString(),
       changefreq: 'monthly',
@@ -39,7 +39,7 @@ export async function GET(request: NextRequest) {
 
     const sitemap = `<?xml version="1.0" encoding="UTF-8"?>
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
-${urls.map(url => `  <url>
+${urls.map((url: any) => `  <url>
     <loc>${url.loc}</loc>
     <lastmod>${url.lastmod}</lastmod>
     <changefreq>${url.changefreq}</changefreq>
