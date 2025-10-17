@@ -33,6 +33,14 @@ const otpVerifySchema = z.object({
  * POST /api/auth/otp/verify
  * Verify OTP code
  */
+export async function OPTIONS(request: NextRequest) {
+  const response = new NextResponse(null, { status: 200 });
+  response.headers.set('Access-Control-Allow-Origin', '*');
+  response.headers.set('Access-Control-Allow-Methods', 'POST, GET, OPTIONS');
+  response.headers.set('Access-Control-Allow-Headers', 'Content-Type, Authorization');
+  return response;
+}
+
 export async function POST(request: NextRequest) {
   try {
     console.log('[otp.verify] Starting OTP verification');
@@ -313,6 +321,11 @@ export async function POST(request: NextRequest) {
     await setSessionCookie(response, sessionToken, user);
     response.headers.set('Cache-Control', 'no-store');
     
+    // Add CORS headers
+    response.headers.set('Access-Control-Allow-Origin', '*');
+    response.headers.set('Access-Control-Allow-Methods', 'POST, GET, OPTIONS');
+    response.headers.set('Access-Control-Allow-Headers', 'Content-Type, Authorization');
+    
     // Log successful verification asynchronously
     Promise.all([
       logAuthEvent('otp_verify', normalizedEmail, user.id, ip, userAgent),
@@ -333,19 +346,27 @@ export async function POST(request: NextRequest) {
     console.error('[otp.verify] error message:', error instanceof Error ? error.message : 'No message');
     
     if (error instanceof z.ZodError) {
-      return NextResponse.json(
+      const response = NextResponse.json(
         { error: 'Date invalide', details: error.issues },
         { status: 400 }
       );
+      response.headers.set('Access-Control-Allow-Origin', '*');
+      response.headers.set('Access-Control-Allow-Methods', 'POST, GET, OPTIONS');
+      response.headers.set('Access-Control-Allow-Headers', 'Content-Type, Authorization');
+      return response;
     }
     
     // Return more specific error information for debugging
     const errorMessage = error instanceof Error ? error.message : 'Unknown error';
     console.error('[otp.verify] returning 500 error:', errorMessage);
     
-    return NextResponse.json(
+    const response = NextResponse.json(
       { error: 'Eroare internă', details: errorMessage },
       { status: 500 }
     );
+    response.headers.set('Access-Control-Allow-Origin', '*');
+    response.headers.set('Access-Control-Allow-Methods', 'POST, GET, OPTIONS');
+    response.headers.set('Access-Control-Allow-Headers', 'Content-Type, Authorization');
+    return response;
   }
 }
