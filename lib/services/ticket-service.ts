@@ -171,7 +171,7 @@ export async function getTicketMessages(ticketId: string): Promise<Message[]> {
       ORDER BY created_at ASC
     `);
 
-    return result.rows.map(row => ({
+    return result.rows.map((row: any) => ({
       id: row.id as string,
       ticket_id: row.ticket_id as string,
       sender: row.sender as Message['sender'],
@@ -244,7 +244,7 @@ export async function getWaitingTickets(): Promise<Ticket[]> {
       ORDER BY t.created_at ASC
     `);
 
-    return result.rows.map(row => ({
+    return result.rows.map((row: any) => ({
       id: row.id as string,
       order_id: row.order_id as string,
       type: row.type as Ticket['type'],
@@ -290,7 +290,7 @@ export async function getTicketStats(): Promise<{
       closed: 0
     };
 
-    result.rows.forEach(row => {
+    result.rows.forEach((row: any) => {
       stats[row.state as keyof typeof stats] = parseInt(row.count as string);
     });
 

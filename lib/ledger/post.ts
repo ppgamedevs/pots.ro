@@ -62,7 +62,7 @@ export async function recordOrderPaid(orderId: string): Promise<void> {
 
   // Calculează totalurile
   const totalAmount = order.totalCents / 100;
-  const commissionAmount = items.reduce((sum, item) => sum + item.commissionAmountCents, 0) / 100;
+  const commissionAmount = items.reduce((sum: number, item: any) => sum + item.commissionAmountCents, 0) / 100;
 
   // Înregistrează CHARGE (total încasat)
   await postLedgerEntry({
@@ -241,7 +241,7 @@ export async function getEntityLedgerHistory(
     orderBy: [desc(ledger.createdAt)]
   });
 
-  return entries.map(entry => ({
+  return entries.map((entry: any) => ({
     id: entry.id,
     type: entry.type,
     amount: parseFloat(entry.amount),

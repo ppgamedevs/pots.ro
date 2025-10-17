@@ -261,13 +261,13 @@ export async function getBypassStats(): Promise<{
       orderBy: [conversationFlags.updatedAt]
     });
 
-    const totalSuspected = flags.filter(f => f.bypassSuspected).length;
-    const totalAttempts = flags.reduce((sum, f) => sum + f.attempts24h, 0);
+    const totalSuspected = flags.filter((f: any) => f.bypassSuspected).length;
+    const totalAttempts = flags.reduce((sum: number, f: any) => sum + f.attempts24h, 0);
 
     return {
       totalSuspected,
       totalAttempts,
-      recentFlags: flags.map(f => ({
+      recentFlags: flags.map((f: any) => ({
         conversationId: f.conversationId,
         attempts24h: f.attempts24h,
         bypassSuspected: f.bypassSuspected,
