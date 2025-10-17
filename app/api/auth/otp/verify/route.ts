@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { z } from 'zod';
+import { SignJWT } from 'jose';
 
 // Simple validation schema
 const otpVerifySchema = z.object({
@@ -44,15 +45,24 @@ export async function POST(request: NextRequest) {
       redirect: '/'
     });
     
-    // Set a simple session cookie without database operations
-    const sessionData = JSON.stringify({
+    // Set a proper JWT session cookie
+    const JWT_SECRET = new TextEncoder().encode(
+      process.env.JWT_SECRET || 'fallback-secret-key-that-is-long-enough-for-security-purposes-minimum-32-chars'
+    );
+    
+    const expiresAt = Math.floor(Date.now() / 1000) + (30 * 24 * 60 * 60); // 30 days
+    
+    const jwt = await new SignJWT({
       userId: mockUser.id,
       email: mockUser.email,
       role: mockUser.role,
-      expires: Date.now() + (30 * 24 * 60 * 60 * 1000) // 30 days
-    });
+    })
+      .setProtectedHeader({ alg: 'HS256' })
+      .setIssuedAt()
+      .setExpirationTime(expiresAt)
+      .sign(JWT_SECRET);
     
-    response.cookies.set('fm_session', sessionData, {
+    response.cookies.set('fm_session', jwt, {
       httpOnly: true,
       secure: process.env.NODE_ENV === 'production',
       sameSite: 'lax',
