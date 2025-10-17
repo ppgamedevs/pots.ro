@@ -96,8 +96,10 @@ export function LoginForm({ onSuccess, redirectTo }: LoginFormProps) {
       });
 
       const data = await response.json();
+      console.log('OTP verify response:', { status: response.status, data });
 
       if (!response.ok) {
+        console.log('OTP verify error:', data);
         throw new Error(data.error || 'Eroare la verificarea codului');
       }
 
