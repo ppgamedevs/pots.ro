@@ -38,7 +38,7 @@ export async function POST(request: NextRequest) {
     };
     
     // Create a real session
-    const sessionToken = await createSession(mockUser);
+    const { sessionToken } = await createSession(mockUser, request);
     
     // Create response with session
     const response = NextResponse.json({ 
