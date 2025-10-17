@@ -42,7 +42,8 @@ export async function POST(request: NextRequest) {
       success: true, 
       message: 'OTP verification successful',
       user: mockUser,
-      redirect: '/'
+      redirect: '/',
+      sessionCreated: true
     });
     
     // Set a proper JWT session cookie
@@ -64,9 +65,10 @@ export async function POST(request: NextRequest) {
     
     response.cookies.set('fm_session', jwt, {
       httpOnly: true,
-      secure: process.env.NODE_ENV === 'production',
+      secure: false, // Set to false for testing
       sameSite: 'lax',
-      maxAge: 30 * 24 * 60 * 60 // 30 days
+      maxAge: 30 * 24 * 60 * 60, // 30 days
+      path: '/' // Explicitly set path
     });
     
     // Add CORS headers
