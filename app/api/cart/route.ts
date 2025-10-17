@@ -65,13 +65,13 @@ export async function GET(request: NextRequest) {
       .where(eq(cartItems.cartId, cart.id));
 
     // Filter out inactive products and calculate totals
-    const activeItems = items.filter(item => item.product_status === 'active');
-    const subtotalCents = activeItems.reduce((sum, item) => sum + (item.price_cents * item.qty), 0);
+    const activeItems = items.filter((item: any) => item.product_status === 'active');
+    const subtotalCents = activeItems.reduce((sum: number, item: any) => sum + (item.price_cents * item.qty), 0);
 
     // Remove inactive items from cart
-    const inactiveItems = items.filter(item => item.product_status !== 'active');
+    const inactiveItems = items.filter((item: any) => item.product_status !== 'active');
     if (inactiveItems.length > 0) {
-      const inactiveProductIds = inactiveItems.map(item => item.product_id);
+      const inactiveProductIds = inactiveItems.map((item: any) => item.product_id);
       await db
         .delete(cartItems)
         .where(and(

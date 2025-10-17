@@ -89,7 +89,7 @@ export async function GET(
 
     return NextResponse.json({
       range,
-      series: dailyStats.map(stat => ({
+      series: dailyStats.map((stat: any) => ({
         date: stat.date.toISOString().split('T')[0],
         views: stat.views,
         addToCart: stat.addToCart,
