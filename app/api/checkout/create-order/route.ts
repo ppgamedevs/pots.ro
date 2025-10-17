@@ -190,7 +190,7 @@ export async function POST(request: NextRequest) {
       const order = orderResult[0];
 
       // Insert order items with individual discounts
-      const orderItemsData = cartItemsResult.map(item => {
+      const orderItemsData = cartItemsResult.map((item: any) => {
         const itemSubtotalCents = item.priceCents * item.qty;
         
         // Calculate item-specific discount (proportional to total discount)

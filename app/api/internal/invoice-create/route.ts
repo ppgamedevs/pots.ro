@@ -61,7 +61,7 @@ export async function POST(request: NextRequest) {
         email: shippingAddress?.email,
         address: shippingAddress,
       },
-      items: orderItemsResult.map(item => ({
+      items: orderItemsResult.map((item: any) => ({
         name: `Product ${item.productId}`, // In real implementation, join with products table
         qty: item.qty,
         unitPrice: item.unitPriceCents / 100,

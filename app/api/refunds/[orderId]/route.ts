@@ -166,7 +166,7 @@ async function processRefund(
       where: eq(payouts.orderId, orderId)
     });
 
-    const wasPostPayout = orderPayouts.some(p => p.status === 'paid');
+    const wasPostPayout = orderPayouts.some((p: any) => p.status === 'paid');
 
     // Procesează refund-ul prin provider (mock pentru MVP)
     const result = await retryWithLogging(

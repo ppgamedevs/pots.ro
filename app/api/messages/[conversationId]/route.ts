@@ -147,7 +147,7 @@ export async function GET(request: NextRequest, { params }: { params: { conversa
     
     return NextResponse.json({
       ok: true,
-      messages: messagesResult.reverse().map(msg => ({
+      messages: messagesResult.reverse().map((msg: any) => ({
         id: msg.id,
         body: msg.body,
         senderId: msg.senderId,

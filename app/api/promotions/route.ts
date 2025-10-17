@@ -48,7 +48,7 @@ export async function GET(request: NextRequest) {
       .orderBy(desc(promotions.createdAt));
 
     return NextResponse.json({
-      promotions: sellerPromotions.map(promo => ({
+      promotions: sellerPromotions.map((promo: any) => ({
         id: promo.id,
         title: promo.title,
         type: promo.type,

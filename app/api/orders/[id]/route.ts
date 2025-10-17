@@ -102,7 +102,7 @@ export async function GET(request: NextRequest, { params }: { params: { id: stri
       delivery_status: order.deliveryStatus,
       created_at: order.createdAt,
       updated_at: order.updatedAt,
-      items: orderItemsResult.map(item => ({
+      items: orderItemsResult.map((item: any) => ({
         id: item.id,
         product_id: item.productId,
         seller_id: item.sellerId,

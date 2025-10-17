@@ -24,7 +24,7 @@ export async function GET(request: NextRequest) {
       .limit(10);
 
     return NextResponse.json({
-      records: records.map(r => ({
+      records: records.map((r: any) => ({
         ...r,
         isExpired: r.expiresAt < new Date(),
         isConsumed: !!r.consumedAt,
