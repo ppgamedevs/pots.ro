@@ -101,6 +101,8 @@ export function LoginForm({ onSuccess, redirectTo }: LoginFormProps) {
       console.log('Response status:', response.status);
       const data = await response.json();
       console.log('OTP verify response:', { status: response.status, data });
+      console.log('Response headers:', Object.fromEntries(response.headers.entries()));
+      console.log('Response cookies:', response.headers.get('set-cookie'));
 
       if (!response.ok) {
         console.log('OTP verify error:', data);
@@ -113,6 +115,8 @@ export function LoginForm({ onSuccess, redirectTo }: LoginFormProps) {
       } else {
         // Use window.location.replace for better cookie handling
         const redirectUrl = data.redirect || getRedirectUrl();
+        console.log('Redirecting to:', redirectUrl);
+        console.log('Current cookies before redirect:', document.cookie);
         window.location.replace(redirectUrl);
       }
 

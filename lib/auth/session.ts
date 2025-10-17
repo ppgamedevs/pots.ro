@@ -238,7 +238,6 @@ export async function setSessionCookie(response: NextResponse, sessionToken: str
     sameSite: 'lax',
     path: '/',
     maxAge: SESSION_DURATION_DAYS * 24 * 60 * 60, // 30 days in seconds
-    domain: process.env.NODE_ENV === 'production' ? '.floristmarket.ro' : undefined
   });
   
   console.log('[setSessionCookie] Cookie set successfully');
@@ -254,7 +253,6 @@ export function clearSessionCookie(response: NextResponse): void {
     sameSite: 'lax',
     path: '/',
     maxAge: 0, // Expire immediately
-    domain: process.env.NODE_ENV === 'production' ? '.floristmarket.ro' : undefined
   });
 }
 

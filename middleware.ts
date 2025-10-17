@@ -61,7 +61,8 @@ export async function middleware(request: NextRequest) {
     '/skeleton-demo',
     '/seo',
     '/sol',
-    '/reduceri'
+    '/reduceri',
+    '/debug-session'
   ];
   
   // Check if route is public

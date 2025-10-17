@@ -72,8 +72,7 @@ export async function POST(request: NextRequest) {
       secure: process.env.NODE_ENV === 'production',
       sameSite: 'lax',
       maxAge: 30 * 24 * 60 * 60, // 30 days
-      path: '/',
-      domain: process.env.NODE_ENV === 'production' ? '.floristmarket.ro' : undefined
+      path: '/'
     });
     
     // Add CORS headers
