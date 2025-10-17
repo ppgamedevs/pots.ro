@@ -191,11 +191,24 @@ export async function POST(request: NextRequest) {
         
         // Create new user with explicit column specification
         console.log('[otp.verify] Attempting to insert user with email:', normalizedEmail);
-        const insertResult = await db.execute(sql`
-          INSERT INTO users (email, display_id, role, name) 
-          VALUES (${normalizedEmail}, ${displayId}, ${'buyer'}, ${null}) 
-          RETURNING id, email, name, role, created_at
-        `);
+        
+        // Try with display_id first, fallback to without it if column doesn't exist
+        let insertResult;
+        try {
+          insertResult = await db.execute(sql`
+            INSERT INTO users (email, display_id, role, name) 
+            VALUES (${normalizedEmail}, ${displayId}, ${'buyer'}, ${null}) 
+            RETURNING id, email, name, role, created_at
+          `);
+        } catch (displayIdError) {
+          console.log('[otp.verify] display_id column not found, trying without it');
+          // Fallback: insert without display_id if column doesn't exist
+          insertResult = await db.execute(sql`
+            INSERT INTO users (email, role, name) 
+            VALUES (${normalizedEmail}, ${'buyer'}, ${null}) 
+            RETURNING id, email, name, role, created_at
+          `);
+        }
         
         console.log('[otp.verify] Insert result:', insertResult.rows);
         user = insertResult.rows[0] as any;
