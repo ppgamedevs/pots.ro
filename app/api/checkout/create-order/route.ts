@@ -86,7 +86,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Calculate subtotal
-    const subtotalCents = cartItemsResult.reduce((sum, item) => sum + (item.priceCents * item.qty), 0);
+    const subtotalCents = cartItemsResult.reduce((sum: number, item: any) => sum + (item.priceCents * item.qty), 0);
 
     // Apply promotions/discounts
     let totalDiscountCents = 0;
@@ -163,9 +163,9 @@ export async function POST(request: NextRequest) {
     };
 
     // Create order and order items in a transaction
-    const newOrder = await db.transaction(async (tx) => {
+    const newOrder = await db.transaction(async (tx: any) => {
       // Get unique seller IDs from cart items
-      const uniqueSellerIds = [...new Set(cartItemsResult.map(item => item.seller.id))];
+      const uniqueSellerIds = [...new Set(cartItemsResult.map((item: any) => item.seller.id))];
       
       // For MVP, create one order per seller (simplified approach)
       // In a real system, you might want to group by seller and create multiple orders
