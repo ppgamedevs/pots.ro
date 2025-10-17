@@ -86,6 +86,7 @@ export function LoginForm({ onSuccess, redirectTo }: LoginFormProps) {
     setError('');
 
     try {
+      console.log('Making OTP verify request with:', { email, code: otp });
       const response = await fetch('/api/auth/otp/verify', {
         method: 'POST',
         headers: {
@@ -95,6 +96,7 @@ export function LoginForm({ onSuccess, redirectTo }: LoginFormProps) {
         body: JSON.stringify({ email, code: otp }),
       });
 
+      console.log('Response status:', response.status);
       const data = await response.json();
       console.log('OTP verify response:', { status: response.status, data });
 
