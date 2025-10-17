@@ -8,12 +8,12 @@ import { logAuthEvent } from './session';
 // Rate limit configuration
 const RATE_LIMITS = {
   OTP_REQUEST: {
-    EMAIL_PER_HOUR: 5,
-    IP_PER_HOUR: 10,
-    COOLDOWN_SECONDS: 60,
+    EMAIL_PER_HOUR: 20,       // 20 requests per hour (increased from 5)
+    IP_PER_HOUR: 50,          // 50 requests per hour (increased from 10)
+    COOLDOWN_SECONDS: 30,     // 30 seconds cooldown (reduced from 60)
   },
   OTP_VERIFY: {
-    MAX_ATTEMPTS: 5,
+    MAX_ATTEMPTS: 10,         // 10 verification attempts (increased from 5)
   },
 } as const;
 
