@@ -1,6 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { z } from 'zod';
-import { createSession, setSessionCookie } from '@/lib/auth/session';
 
 // Simple validation schema
 const otpVerifySchema = z.object({
@@ -37,9 +36,6 @@ export async function POST(request: NextRequest) {
       role: 'buyer' as const
     };
     
-    // Create a real session
-    const { sessionToken } = await createSession(mockUser, request);
-    
     // Create response with session
     const response = NextResponse.json({ 
       success: true, 
@@ -48,8 +44,20 @@ export async function POST(request: NextRequest) {
       redirect: '/'
     });
     
-    // Set session cookie
-    await setSessionCookie(response, sessionToken, mockUser);
+    // Set a simple session cookie without database operations
+    const sessionData = JSON.stringify({
+      userId: mockUser.id,
+      email: mockUser.email,
+      role: mockUser.role,
+      expires: Date.now() + (30 * 24 * 60 * 60 * 1000) // 30 days
+    });
+    
+    response.cookies.set('fm_session', sessionData, {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === 'production',
+      sameSite: 'lax',
+      maxAge: 30 * 24 * 60 * 60 // 30 days
+    });
     
     // Add CORS headers
     response.headers.set('Access-Control-Allow-Origin', '*');
