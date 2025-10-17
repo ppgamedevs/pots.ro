@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { z } from 'zod';
+import { createSession, setSessionCookie } from '@/lib/auth/session';
 
 // Simple validation schema
 const otpVerifySchema = z.object({
@@ -27,20 +28,28 @@ export async function POST(request: NextRequest) {
     const { email, code } = otpVerifySchema.parse(body);
     console.log('[otp.verify] Parsed data:', { email, code });
     
-    // For now, return a mock success response to test the flow
-    // TODO: Replace with real database logic once we confirm this works
+    // Create a mock user for testing
+    const mockUser = {
+      id: 'temp-user-id',
+      email: email,
+      name: null,
+      displayId: 'temp-display-id',
+      role: 'buyer' as const
+    };
+    
+    // Create a real session
+    const sessionToken = await createSession(mockUser);
+    
+    // Create response with session
     const response = NextResponse.json({ 
       success: true, 
       message: 'OTP verification successful',
-      user: {
-        id: 'temp-user-id',
-        email: email,
-        name: null,
-        displayId: 'temp-display-id',
-        role: 'buyer'
-      },
+      user: mockUser,
       redirect: '/'
     });
+    
+    // Set session cookie
+    await setSessionCookie(response, sessionToken, mockUser);
     
     // Add CORS headers
     response.headers.set('Access-Control-Allow-Origin', '*');
