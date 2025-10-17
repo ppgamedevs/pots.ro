@@ -57,18 +57,23 @@ export async function POST(request: NextRequest) {
       userId: mockUser.id,
       email: mockUser.email,
       role: mockUser.role,
+      exp: expiresAt
     })
       .setProtectedHeader({ alg: 'HS256' })
       .setIssuedAt()
       .setExpirationTime(expiresAt)
       .sign(JWT_SECRET);
     
+    console.log('[otp.verify] JWT token created:', jwt.substring(0, 50) + '...');
+    console.log('[otp.verify] JWT expires at:', new Date(expiresAt * 1000).toISOString());
+    
     response.cookies.set('fm_session', jwt, {
       httpOnly: true,
-      secure: false, // Set to false for testing
+      secure: process.env.NODE_ENV === 'production',
       sameSite: 'lax',
       maxAge: 30 * 24 * 60 * 60, // 30 days
-      path: '/' // Explicitly set path
+      path: '/',
+      domain: process.env.NODE_ENV === 'production' ? '.floristmarket.ro' : undefined
     });
     
     // Add CORS headers

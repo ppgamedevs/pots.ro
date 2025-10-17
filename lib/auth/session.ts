@@ -238,6 +238,7 @@ export async function setSessionCookie(response: NextResponse, sessionToken: str
     sameSite: 'lax',
     path: '/',
     maxAge: SESSION_DURATION_DAYS * 24 * 60 * 60, // 30 days in seconds
+    domain: process.env.NODE_ENV === 'production' ? '.floristmarket.ro' : undefined
   });
   
   console.log('[setSessionCookie] Cookie set successfully');
@@ -253,6 +254,7 @@ export function clearSessionCookie(response: NextResponse): void {
     sameSite: 'lax',
     path: '/',
     maxAge: 0, // Expire immediately
+    domain: process.env.NODE_ENV === 'production' ? '.floristmarket.ro' : undefined
   });
 }
 
@@ -343,7 +345,11 @@ export async function getCurrentUser(): Promise<User | null> {
     const cookieStore = cookies();
     const sessionToken = cookieStore.get(SESSION_COOKIE_NAME)?.value;
     
+    console.log('[getCurrentUser] Session token present:', !!sessionToken);
+    console.log('[getCurrentUser] Session token length:', sessionToken?.length || 0);
+    
     if (!sessionToken) {
+      console.log('[getCurrentUser] No session token found');
       return null;
     }
     
@@ -355,12 +361,35 @@ export async function getCurrentUser(): Promise<User | null> {
     
     const { payload } = await jwtVerify(sessionToken, JWT_SECRET);
     
+    console.log('[getCurrentUser] JWT payload:', {
+      userId: payload.userId,
+      email: payload.email,
+      role: payload.role,
+      exp: payload.exp,
+      expDate: payload.exp ? new Date(payload.exp * 1000).toISOString() : 'no exp',
+      currentTime: Math.floor(Date.now() / 1000),
+      currentDate: new Date().toISOString()
+    });
+    
     // Check if token is expired
     if (payload.exp && payload.exp < Date.now() / 1000) {
+      console.log('[getCurrentUser] Token expired');
       return null;
     }
     
     // Get user data from database to include displayId
+    // For now, return mock user data since we're in development mode
+    if (process.env.NODE_ENV === 'development' && !process.env.DATABASE_URL) {
+      console.log('[getCurrentUser] Using mock user data for development');
+      return {
+        id: payload.userId as string,
+        email: payload.email as string,
+        name: null,
+        displayId: 'dev-user-' + (payload.userId as string).substring(0, 8),
+        role: payload.role as 'buyer' | 'seller' | 'admin',
+      };
+    }
+    
     const userRecord = await db
       .select({
         id: users.id,
@@ -374,10 +403,13 @@ export async function getCurrentUser(): Promise<User | null> {
       .limit(1);
 
     if (!userRecord.length) {
+      console.log('[getCurrentUser] No user found in database');
       return null;
     }
 
     const userData = userRecord[0];
+    
+    console.log('[getCurrentUser] User found in database:', userData);
     
     return {
       id: userData.id,

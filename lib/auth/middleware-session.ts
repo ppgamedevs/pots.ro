@@ -58,7 +58,9 @@ export async function verifyMiddlewareSessionToken(request: NextRequest): Promis
       email: payload.email,
       role: payload.role,
       exp: payload.exp,
-      currentTime: Math.floor(Date.now() / 1000)
+      expDate: payload.exp ? new Date(payload.exp * 1000).toISOString() : 'no exp',
+      currentTime: Math.floor(Date.now() / 1000),
+      currentDate: new Date().toISOString()
     });
     
     // Check if token is expired
