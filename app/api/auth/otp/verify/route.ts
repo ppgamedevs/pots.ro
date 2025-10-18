@@ -1,6 +1,10 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { z } from 'zod';
 import { SignJWT } from 'jose';
+import { db } from '@/db';
+import { users } from '@/db/schema/core';
+import { eq } from 'drizzle-orm';
+import { generateUniqueDisplayId } from '@/lib/utils/displayId';
 
 // Simple validation schema
 const otpVerifySchema = z.object({
@@ -28,20 +32,43 @@ export async function POST(request: NextRequest) {
     const { email, code } = otpVerifySchema.parse(body);
     console.log('[otp.verify] Parsed data:', { email, code });
     
-    // Create a mock user for testing
-    const mockUser = {
-      id: 'temp-user-id',
-      email: email,
-      name: null,
-      displayId: 'temp-display-id',
-      role: 'buyer' as const
-    };
+    // Find or create user
+    let user = await db
+      .select()
+      .from(users)
+      .where(eq(users.email, email))
+      .limit(1);
+    
+    if (!user.length) {
+      // Create new user
+      const displayId = await generateUniqueDisplayId(db, users);
+      const newUser = await db
+        .insert(users)
+        .values({
+          email: email,
+          name: null,
+          displayId: displayId,
+          role: 'buyer',
+        })
+        .returning();
+      
+      user = newUser;
+    }
+    
+    const userData = user[0];
+    console.log('[otp.verify] User data:', userData);
     
     // Create response with session
     const response = NextResponse.json({ 
       success: true, 
       message: 'OTP verification successful',
-      user: mockUser,
+      user: {
+        id: userData.id,
+        email: userData.email,
+        name: userData.name,
+        displayId: userData.displayId,
+        role: userData.role,
+      },
       redirect: '/',
       sessionCreated: true
     });
@@ -54,9 +81,9 @@ export async function POST(request: NextRequest) {
     const expiresAt = Math.floor(Date.now() / 1000) + (30 * 24 * 60 * 60); // 30 days
     
     const jwt = await new SignJWT({
-      userId: mockUser.id,
-      email: mockUser.email,
-      role: mockUser.role,
+      userId: userData.id,
+      email: userData.email,
+      role: userData.role,
       exp: expiresAt
     })
       .setProtectedHeader({ alg: 'HS256' })

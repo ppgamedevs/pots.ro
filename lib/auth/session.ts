@@ -376,18 +376,6 @@ export async function getCurrentUser(): Promise<User | null> {
     }
     
     // Get user data from database to include displayId
-    // For now, return mock user data since we're in development mode
-    if (process.env.NODE_ENV === 'development' && !process.env.DATABASE_URL) {
-      console.log('[getCurrentUser] Using mock user data for development');
-      return {
-        id: payload.userId as string,
-        email: payload.email as string,
-        name: null,
-        displayId: 'dev-user-' + (payload.userId as string).substring(0, 8),
-        role: payload.role as 'buyer' | 'seller' | 'admin',
-      };
-    }
-    
     const userRecord = await db
       .select({
         id: users.id,
@@ -413,7 +401,7 @@ export async function getCurrentUser(): Promise<User | null> {
       id: userData.id,
       email: userData.email,
       name: userData.name,
-      displayId: userData.displayId,
+      displayId: userData.displayId || 'user-' + userData.id.substring(0, 8),
       role: userData.role,
     };
   } catch (error) {

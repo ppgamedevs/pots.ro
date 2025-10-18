@@ -50,6 +50,13 @@
       "when": 1760647190004,
       "tag": "0006_add_display_id",
       "breakpoints": true
+    },
+    {
+      "idx": 7,
+      "version": "7",
+      "when": 1760776854440,
+      "tag": "0007_opposite_magma",
+      "breakpoints": true
     }
   ]
 }
