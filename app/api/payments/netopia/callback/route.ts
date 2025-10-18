@@ -1,5 +1,55 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { parseNetopiaCallback, verifyNetopiaSignature, isNetopiaPaymentSuccess } from '@/lib/netopia';
+import { db } from '@/db';
+import { orders, users } from '@/db/schema/core';
+import { eq } from 'drizzle-orm';
+import { sendPaymentConfirmationEmail } from '@/lib/email/payment-confirmation';
+import { updateInventoryAfterPayment } from '@/lib/inventory/payment-updates';
+
+// Helper function to get order with buyer data
+async function getOrderWithBuyer(orderId: string) {
+  const orderResult = await db
+    .select({
+      id: orders.id,
+      status: orders.status,
+      currency: orders.currency,
+      subtotalCents: orders.subtotalCents,
+      shippingFeeCents: orders.shippingFeeCents,
+      totalCents: orders.totalCents,
+      createdAt: orders.createdAt,
+      buyer: {
+        id: users.id,
+        email: users.email,
+        name: users.name,
+      }
+    })
+    .from(orders)
+    .innerJoin(users, eq(orders.buyerId, users.id))
+    .where(eq(orders.id, orderId))
+    .limit(1);
+
+  if (!orderResult.length) {
+    throw new Error('Order not found');
+  }
+
+  const orderData = orderResult[0];
+  
+  // Transform to OrderPublic format
+  return {
+    id: orderData.id,
+    status: orderData.status,
+    currency: orderData.currency,
+    totals: {
+      subtotal_cents: orderData.subtotalCents,
+      shipping_fee_cents: orderData.shippingFeeCents,
+      total_cents: orderData.totalCents,
+      currency: orderData.currency,
+    },
+    items: [], // We'll get items separately if needed
+    createdAt: orderData.createdAt,
+    buyer: orderData.buyer,
+  };
+}
 
 export async function POST(request: NextRequest) {
   try {
@@ -36,13 +86,62 @@ export async function POST(request: NextRequest) {
     const isSuccess = isNetopiaPaymentSuccess(callbackData.status);
 
     if (isSuccess) {
-      // TODO: Update order status in database
-      console.log('Payment successful for order:', callbackData.orderId);
-      
-      // TODO: Send confirmation email
-      // TODO: Update inventory
-      // TODO: Generate invoice
+      // Update order status in database
+      try {
+        await db
+          .update(orders)
+          .set({ 
+            status: 'paid',
+            paidAt: new Date(),
+            updatedAt: new Date()
+          })
+          .where(eq(orders.id, callbackData.orderId));
+        
+        console.log('Order status updated to paid for:', callbackData.orderId);
+        
+        // Send confirmation email
+        try {
+          const orderData = await getOrderWithBuyer(callbackData.orderId);
+          await sendPaymentConfirmationEmail({
+            order: orderData,
+            customerEmail: orderData.buyer.email,
+            customerName: orderData.buyer.name,
+          });
+        } catch (emailError) {
+          console.error('Error sending payment confirmation email:', emailError);
+          // Don't fail the callback if email fails
+        }
+        
+        // Update inventory
+        try {
+          const orderData = await getOrderWithBuyer(callbackData.orderId);
+          await updateInventoryAfterPayment(orderData);
+        } catch (inventoryError) {
+          console.error('Error updating inventory:', inventoryError);
+          // Don't fail the callback if inventory update fails
+        }
+        
+        // TODO: Generate invoice
+      } catch (dbError) {
+        console.error('Error updating order status:', dbError);
+        // Still return success to Netopia to avoid retries
+      }
     } else {
+      // Update order status to failed
+      try {
+        await db
+          .update(orders)
+          .set({ 
+            status: 'failed',
+            updatedAt: new Date()
+          })
+          .where(eq(orders.id, callbackData.orderId));
+        
+        console.log('Order status updated to failed for:', callbackData.orderId);
+      } catch (dbError) {
+        console.error('Error updating order status to failed:', dbError);
+      }
+      
       console.log('Payment failed for order:', callbackData.orderId, 'Status:', callbackData.status);
     }
 
@@ -96,8 +195,59 @@ export async function GET(request: NextRequest) {
     const isSuccess = isNetopiaPaymentSuccess(callbackData.status);
 
     if (isSuccess) {
-      console.log('Payment successful for order:', callbackData.orderId);
+      // Update order status in database
+      try {
+        await db
+          .update(orders)
+          .set({ 
+            status: 'paid',
+            paidAt: new Date(),
+            updatedAt: new Date()
+          })
+          .where(eq(orders.id, callbackData.orderId));
+        
+        console.log('Order status updated to paid for:', callbackData.orderId);
+        
+        // Send confirmation email
+        try {
+          const orderData = await getOrderWithBuyer(callbackData.orderId);
+          await sendPaymentConfirmationEmail({
+            order: orderData,
+            customerEmail: orderData.buyer.email,
+            customerName: orderData.buyer.name,
+          });
+        } catch (emailError) {
+          console.error('Error sending payment confirmation email:', emailError);
+          // Don't fail the callback if email fails
+        }
+        
+        // Update inventory
+        try {
+          const orderData = await getOrderWithBuyer(callbackData.orderId);
+          await updateInventoryAfterPayment(orderData);
+        } catch (inventoryError) {
+          console.error('Error updating inventory:', inventoryError);
+          // Don't fail the callback if inventory update fails
+        }
+      } catch (dbError) {
+        console.error('Error updating order status:', dbError);
+      }
     } else {
+      // Update order status to failed
+      try {
+        await db
+          .update(orders)
+          .set({ 
+            status: 'failed',
+            updatedAt: new Date()
+          })
+          .where(eq(orders.id, callbackData.orderId));
+        
+        console.log('Order status updated to failed for:', callbackData.orderId);
+      } catch (dbError) {
+        console.error('Error updating order status to failed:', dbError);
+      }
+      
       console.log('Payment failed for order:', callbackData.orderId, 'Status:', callbackData.status);
     }
 

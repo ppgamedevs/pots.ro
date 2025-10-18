@@ -35,6 +35,7 @@ export function NetopiaPayment({
         headers: {
           'Content-Type': 'application/json',
         },
+        credentials: 'include',
         body: JSON.stringify({
           orderId,
           amount,
@@ -53,18 +54,25 @@ export function NetopiaPayment({
         // Create a temporary div to inject the form HTML
         const tempDiv = document.createElement('div');
         tempDiv.innerHTML = data.formHtml;
+        tempDiv.style.display = 'none'; // Hide the form
         document.body.appendChild(tempDiv);
         
         // Submit the form
         const form = tempDiv.querySelector('form') as HTMLFormElement;
         if (form) {
           form.submit();
+        } else {
+          throw new Error('Payment form not found');
         }
         
-        // Clean up
+        // Clean up after a delay
         setTimeout(() => {
-          document.body.removeChild(tempDiv);
-        }, 1000);
+          if (document.body.contains(tempDiv)) {
+            document.body.removeChild(tempDiv);
+          }
+        }, 5000);
+      } else {
+        throw new Error('No payment form received');
       }
 
     } catch (err) {
