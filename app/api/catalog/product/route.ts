@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { db } from "@/db";
 import { products, productImages, sellers, categories } from "@/db/schema/core";
 import { eq, and, ne } from "drizzle-orm";
+import type { InferSelectModel } from "drizzle-orm";
 
 export interface Product {
   id: string;
@@ -157,7 +158,10 @@ export async function GET(request: NextRequest) {
       .limit(4);
 
     const similar: Product[] = await Promise.all(
-      similarProducts.map(async ({ product: similarProduct, seller: similarSeller }) => {
+      similarProducts.map(async ({ product: similarProduct, seller: similarSeller }: { 
+        product: InferSelectModel<typeof products>; 
+        seller: InferSelectModel<typeof sellers> 
+      }) => {
         const similarImages = await db
           .select()
           .from(productImages)
