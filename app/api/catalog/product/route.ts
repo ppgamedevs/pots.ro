@@ -116,7 +116,7 @@ export async function GET(request: NextRequest) {
       description: product.description || '',
       price: product.priceCents / 100,
       images: images.length > 0 
-        ? images.map(img => ({ src: img.url, alt: img.alt || product.title }))
+        ? images.map((img: { url: string; alt: string | null }) => ({ src: img.url, alt: img.alt || product.title }))
         : product.imageUrl 
           ? [{ src: product.imageUrl, alt: product.title }]
           : [{ src: '/placeholder.png', alt: product.title }],
