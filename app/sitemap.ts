@@ -2,6 +2,7 @@ import { MetadataRoute } from 'next'
 import { db } from '@/db'
 import { products, categories, sellers } from '@/db/schema/core'
 import { eq } from 'drizzle-orm'
+import type { InferSelectModel } from 'drizzle-orm'
 
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   const baseUrl = 'https://floristmarket.ro'
@@ -73,7 +74,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
       })
       .from(categories)
 
-    const categoryPages: MetadataRoute.Sitemap = categoriesData.map(category => ({
+    const categoryPages: MetadataRoute.Sitemap = categoriesData.map((category: InferSelectModel<typeof categories>) => ({
       url: `${baseUrl}/c/${category.slug}`,
       lastModified: category.updatedAt || new Date(),
       changeFrequency: 'daily' as const,
@@ -91,7 +92,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
       .where(eq(products.status, 'active'))
       .limit(50000) // Bing limit: 50,000 URLs per sitemap
 
-    const productPages: MetadataRoute.Sitemap = productsData.map(product => ({
+    const productPages: MetadataRoute.Sitemap = productsData.map((product: InferSelectModel<typeof products>) => ({
       url: `${baseUrl}/p/${product.id}-${product.slug}`,
       lastModified: product.updatedAt || new Date(),
       changeFrequency: 'weekly' as const,
@@ -107,7 +108,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
       .from(sellers)
       .where(eq(sellers.status, 'active'))
 
-    const sellerPages: MetadataRoute.Sitemap = sellersData.map(seller => ({
+    const sellerPages: MetadataRoute.Sitemap = sellersData.map((seller: InferSelectModel<typeof sellers>) => ({
       url: `${baseUrl}/s/${seller.slug}`,
       lastModified: seller.updatedAt || new Date(),
       changeFrequency: 'weekly' as const,
