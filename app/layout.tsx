@@ -150,6 +150,23 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
 
   return (
     <html lang="ro" className={`${interTight.variable} ${merriweather.variable}`} suppressHydrationWarning>
+      <head>
+        {/* Google tag (gtag.js) */}
+        <script async src="https://www.googletagmanager.com/gtag/js?id=G-EEMSRXZBG7"></script>
+        <script
+          dangerouslySetInnerHTML={{
+            __html: `
+              window.dataLayer = window.dataLayer || [];
+              function gtag(){dataLayer.push(arguments);}
+              gtag('js', new Date());
+              gtag('config', 'G-EEMSRXZBG7');
+            `,
+          }}
+        />
+        {/* Preconnect to external domains for performance */}
+        <link rel="preconnect" href="https://www.googletagmanager.com" />
+        <link rel="dns-prefetch" href="https://www.googletagmanager.com" />
+      </head>
       <body className="font-sans antialiased text-[#1A1A1A] bg-[#FAFAF8] min-h-screen">
         <ThemeProvider>
           <ConfirmProvider>

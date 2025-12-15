@@ -65,6 +65,7 @@ export function MiniCart({ isOpen, onClose }: MiniCartProps) {
               size="sm"
               onClick={onClose}
               className="p-1"
+              aria-label="Închide coșul de cumpărături"
             >
               <X className="w-4 h-4" />
             </Button>

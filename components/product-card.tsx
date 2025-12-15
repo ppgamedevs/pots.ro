@@ -59,7 +59,10 @@ export function ProductCard({ id, slug, title, price, currency = "RON", imageUrl
       <div className="mt-3 space-y-1">
         <Link href={`/p/${id}-${slug}`} className="line-clamp-1 font-medium text-slate-900 dark:text-slate-100">{title}</Link>
         {sellerSlug && (
-          <Link href={`/s/${sellerSlug}`} className="text-xs text-slate-500 dark:text-slate-400 hover:text-brand">
+          <Link 
+            href={`/s/${sellerSlug}`} 
+            className="text-xs text-slate-500 dark:text-slate-400 hover:text-brand hover:underline focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2 rounded"
+          >
             {sellerSlug}
           </Link>
         )}

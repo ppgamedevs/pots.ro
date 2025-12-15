@@ -40,6 +40,7 @@ export function UserMenu() {
         className="inline-flex items-center gap-2 px-3 py-2 rounded-lg hover:bg-bg-soft text-ink text-sm transition-micro"
         aria-expanded={isOpen}
         aria-haspopup="menu"
+        aria-label="Deschide meniul utilizatorului"
       >
         <User className="h-4 w-4" />
         <span className="hidden sm:inline">

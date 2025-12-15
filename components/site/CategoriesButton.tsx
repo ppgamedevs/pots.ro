@@ -33,6 +33,7 @@ export default function CategoriesButton() {
         onClick={() => setOpen(v => !v)}
         aria-expanded={open}
         aria-haspopup="menu"
+        aria-label="Deschide meniul de categorii"
         className="inline-flex items-center gap-2 px-3 py-2 rounded-lg border border-line hover:bg-bg-soft text-ink text-sm transition-micro"
       >
         <Grid3X3 className="h-4 w-4" />
@@ -66,7 +67,7 @@ export default function CategoriesButton() {
           <div className="mt-4 text-right">
             <Link 
               href="/c" 
-              className="text-sm underline hover:text-primary transition-micro"
+              className="text-sm underline hover:text-primary transition-micro focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2 rounded"
             >
               Vezi toate categoriile
             </Link>

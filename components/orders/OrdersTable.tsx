@@ -129,7 +129,7 @@ export function OrdersTable({
                   <td className="py-3 px-4">
                     <Link 
                       href={`/${role}/orders/${order.id}`}
-                      className="font-medium text-blue-600 hover:text-blue-800"
+                      className="font-medium text-blue-600 hover:text-blue-800 underline focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 rounded"
                     >
                       {formatOrderId(order.id)}
                     </Link>
