@@ -19,8 +19,49 @@ export async function POST(request: NextRequest) {
     const userId = await getUserId();
     const sessionId = userId ? null : await getOrSetSessionId();
 
-    const body = await request.json();
-    const { product_id, qty } = addToCartSchema.parse(body);
+    let body;
+    try {
+      body = await request.json();
+    } catch (error) {
+      console.error('Failed to parse request body:', error);
+      return NextResponse.json({ 
+        error: "Invalid request body" 
+      }, { status: 400 });
+    }
+    
+    // Validate request body
+    if (!body || typeof body !== 'object') {
+      return NextResponse.json({ 
+        error: "Invalid request body format" 
+      }, { status: 400 });
+    }
+
+    if (!body.product_id || !body.qty) {
+      return NextResponse.json({ 
+        error: "Missing required fields: product_id and qty are required",
+        received: { product_id: body.product_id, qty: body.qty }
+      }, { status: 400 });
+    }
+
+    let product_id: string;
+    let qty: number;
+    
+    try {
+      const parsed = addToCartSchema.parse(body);
+      product_id = parsed.product_id;
+      qty = parsed.qty;
+    } catch (error) {
+      console.error('Schema validation error:', error);
+      if (error instanceof z.ZodError) {
+        return NextResponse.json({ 
+          error: "Invalid request data",
+          details: error.errors 
+        }, { status: 400 });
+      }
+      throw error;
+    }
+    
+    console.log('Add to cart request:', { product_id, qty, userId: userId || 'anonymous', sessionId: sessionId || 'none' });
 
     // Get product to verify it's active and get price
     const product = await db
@@ -38,6 +79,14 @@ export async function POST(request: NextRequest) {
 
     const productData = product[0];
     const currency = normalizeCurrency(productData.currency);
+
+    // Check stock availability
+    if (productData.stock < qty) {
+      return NextResponse.json({ 
+        error: "Insufficient stock",
+        availableStock: productData.stock 
+      }, { status: 400 });
+    }
 
     // Get or create cart
     let cart;
@@ -98,8 +147,14 @@ export async function POST(request: NextRequest) {
       .limit(1);
 
     if (existingItem[0]) {
-      // Update quantity
+      // Update quantity - check stock again
       const newQty = Math.min(existingItem[0].qty + qty, 99);
+      if (productData.stock < newQty) {
+        return NextResponse.json({ 
+          error: "Insufficient stock",
+          availableStock: productData.stock 
+        }, { status: 400 });
+      }
       await db
         .update(cartItems)
         .set({ qty: newQty })
@@ -122,8 +177,17 @@ export async function POST(request: NextRequest) {
   } catch (error) {
     console.error("Add to cart error:", error);
     
-    if (error instanceof Error && error.name === 'ZodError') {
-      return NextResponse.json({ error: "Invalid request data" }, { status: 400 });
+    if (error instanceof z.ZodError) {
+      return NextResponse.json({ 
+        error: "Invalid request data",
+        details: error.errors 
+      }, { status: 400 });
+    }
+    
+    if (error instanceof Error) {
+      return NextResponse.json({ 
+        error: error.message || "Internal server error" 
+      }, { status: 500 });
     }
     
     return NextResponse.json({ error: "Internal server error" }, { status: 500 });

@@ -40,25 +40,55 @@ export default function AddToCartButton({
 
     setLoading(true);
     try {
+      // Validate productId format (should be UUID)
+      if (!productId || typeof productId !== 'string') {
+        console.error('Invalid productId:', productId);
+        toast("Eroare: ID produs invalid.", "error");
+        setLoading(false);
+        return;
+      }
+
+      const requestBody = {
+        product_id: productId,
+        qty
+      };
+
+      console.log('Adding to cart:', requestBody);
+
       const response = await fetch('/api/cart/add', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify({
-          product_id: productId, // Changed from productId to product_id
-          qty
-        }),
+        credentials: 'include', // Important for cookies/session
+        body: JSON.stringify(requestBody),
       });
 
       if (!response.ok) {
-        const error = await response.json();
+        const error = await response.json().catch(() => ({ error: 'Unknown error' }));
+        console.error('Add to cart error:', error);
+        
         if (error.error === "Insufficient stock") {
           toast(`Doar ${error.availableStock} produse disponibile în stoc.`, "error");
           return;
         }
-        throw new Error(error.error || 'Failed to add to cart');
+        
+        if (error.error === "Product not found or not available") {
+          toast("Produsul nu este disponibil.", "error");
+          return;
+        }
+        
+        if (error.error === "Session ID required for anonymous cart") {
+          toast("Eroare de sesiune. Te rugăm să reîmprospătezi pagina.", "error");
+          return;
+        }
+        
+        toast(error.error || "Nu s-a putut adăuga produsul în coș.", "error");
+        return;
       }
+
+      const result = await response.json();
+      console.log('Add to cart success:', result);
 
       // Refresh cart data
       mutate('/api/cart');
@@ -67,7 +97,9 @@ export default function AddToCartButton({
 
       onAdd?.();
     } catch (error) {
-      toast("Nu s-a putut adăuga produsul în coș.", "error");
+      console.error('Add to cart exception:', error);
+      const errorMessage = error instanceof Error ? error.message : "Nu s-a putut adăuga produsul în coș.";
+      toast(errorMessage, "error");
     } finally {
       setLoading(false);
     }
