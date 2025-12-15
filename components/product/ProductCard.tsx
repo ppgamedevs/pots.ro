@@ -128,7 +128,7 @@ export function ProductCard({
           <AddToCartButton
             productId={productId}
             stockQty={stockQty}
-            variant="primary"
+            variant="default"
             size="sm"
             className="w-full"
           />
