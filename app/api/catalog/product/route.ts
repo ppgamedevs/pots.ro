@@ -135,6 +135,17 @@ export async function GET(request: NextRequest) {
     };
 
     // Get similar products (same category, different product)
+    // Build conditions array and filter out undefined values
+    const similarConditions = [
+      eq(products.status, 'active'),
+      ne(products.id, product.id),
+    ];
+
+    // Add category condition only if category exists
+    if (category) {
+      similarConditions.push(eq(products.categoryId, category.id));
+    }
+
     const similarProducts = await db
       .select({
         product: products,
@@ -142,13 +153,7 @@ export async function GET(request: NextRequest) {
       })
       .from(products)
       .innerJoin(sellers, eq(products.sellerId, sellers.id))
-      .where(
-        and(
-          eq(products.status, 'active'),
-          category ? eq(products.categoryId, category.id) : undefined,
-          ne(products.id, product.id)
-        )
-      )
+      .where(and(...similarConditions))
       .limit(4);
 
     const similar: Product[] = await Promise.all(
