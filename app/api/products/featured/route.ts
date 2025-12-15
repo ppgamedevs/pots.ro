@@ -18,6 +18,7 @@ export interface FeaturedProduct {
   oldPrice?: number;
   badge?: 'nou' | 'reducere' | 'stoc redus';
   href: string;
+  stockQty?: number;
 }
 
 export async function GET() {
@@ -65,6 +66,7 @@ export async function GET() {
           price: product.priceCents / 100, // Convert cents to RON
           href: `/p/${product.id}-${product.slug}`,
           badge: product.stock < 5 ? 'stoc redus' : undefined,
+          stockQty: product.stock || 0,
         };
       })
     );

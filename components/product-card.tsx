@@ -30,7 +30,7 @@ export function ProductCard({ id, slug, title, price, currency = "RON", imageUrl
 
   return (
     <div className="group rounded-2xl bg-white dark:bg-slate-900/60 border border-slate-200 dark:border-white/10
-                    hover:shadow-soft transition-all duration-200 p-3 hover:-translate-y-[1px]">
+                    hover:shadow-soft transition-all duration-200 p-3 hover:-translate-y-[1px] flex flex-col h-full">
       <Link href={`/p/${id}-${slug}`} className="block relative">
         <AspectRatio ratio={1} className="overflow-hidden rounded-xl">
           <Image
@@ -56,8 +56,11 @@ export function ProductCard({ id, slug, title, price, currency = "RON", imageUrl
         </div>
       </Link>
 
-      <div className="mt-3 space-y-1">
-        <Link href={`/p/${id}-${slug}`} className="line-clamp-1 font-medium text-slate-900 dark:text-slate-100">{title}</Link>
+      <div className="mt-3 space-y-1 flex-1 flex flex-col">
+        {/* Title - fixed height for 2 lines */}
+        <Link href={`/p/${id}-${slug}`} className="line-clamp-2 min-h-[2.5rem] font-medium text-slate-900 dark:text-slate-100">
+          {title}
+        </Link>
         {sellerSlug && (
           <Link 
             href={`/s/${sellerSlug}`} 
@@ -66,7 +69,8 @@ export function ProductCard({ id, slug, title, price, currency = "RON", imageUrl
             {sellerSlug}
           </Link>
         )}
-        <div className="flex items-center justify-between pt-2">
+        {/* Price and Button - pushed to bottom */}
+        <div className="flex items-center justify-between pt-2 mt-auto">
           <div className="text-base font-semibold text-slate-900 dark:text-slate-100">
             {price.toFixed(2)} {currency}
           </div>

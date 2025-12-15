@@ -195,6 +195,7 @@ export default function Home() {
                 {featuredProducts.slice(0, 8).map((product) => (
                 <ProductCard 
                     key={product.id}
+                    id={product.id}
                     image={product.image}
                     title={product.title}
                     seller={product.seller}
@@ -202,6 +203,7 @@ export default function Home() {
                     oldPrice={product.oldPrice}
                     badge={product.badge}
                     href={product.href}
+                    stockQty={product.stockQty}
                   />
                 ))}
               </div>
