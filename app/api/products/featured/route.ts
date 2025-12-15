@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { db } from "@/db";
 import { products, productImages, sellers } from "@/db/schema/core";
 import { eq, and, desc } from "drizzle-orm";
+import type { InferSelectModel } from "drizzle-orm";
 
 export const dynamic = 'force-dynamic';
 
@@ -34,7 +35,10 @@ export async function GET() {
       .limit(8);
 
     const featuredProducts: FeaturedProduct[] = await Promise.all(
-      result.map(async ({ product, seller }) => {
+      result.map(async ({ product, seller }: { 
+        product: InferSelectModel<typeof products>; 
+        seller: InferSelectModel<typeof sellers> 
+      }) => {
         // Get primary image
         const images = await db
           .select()
