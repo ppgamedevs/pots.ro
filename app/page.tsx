@@ -32,6 +32,7 @@ interface FeaturedProduct {
   oldPrice?: number;
   badge?: 'nou' | 'reducere' | 'stoc redus';
   href: string;
+  stockQty?: number;
 }
 
 interface BlogPost {
