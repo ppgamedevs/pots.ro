@@ -6,8 +6,7 @@ import { Badge } from "@/components/ui/badge";
 import { Breadcrumbs } from "@/components/ui/breadcrumbs";
 import { useToast } from "@/lib/hooks/use-toast";
 import { ShoppingCart, Plus, Minus, Trash2, ArrowLeft, ArrowRight } from "lucide-react";
-import { mutate } from "swr";
-import useSWR from "swr";
+import useSWR, { mutate } from "swr";
 import Link from "next/link";
 import Image from "next/image";
 import type { Cart, CartItem } from "@/lib/types";
@@ -16,9 +15,9 @@ export default function CartPage() {
   const { toast } = useToast();
   const [loading, setLoading] = useState<Record<string, boolean>>({});
 
-  const { data: cart, error, isLoading } = useSWR<Cart>('/api/cart', (url: string) =>
-    fetch(url).then(res => res.json())
-  );
+  const fetcher = (url: string) => fetch(url, { credentials: 'include' }).then(res => res.json());
+  
+  const { data: cart, error, isLoading } = useSWR<Cart>('/api/cart', fetcher);
 
   const updateQuantity = async (productId: string, newQty: number) => {
     if (newQty < 1 || newQty > 99) return;
@@ -31,19 +30,24 @@ export default function CartPage() {
         headers: {
           'Content-Type': 'application/json',
         },
+        credentials: 'include', // Important for cookies/session
         body: JSON.stringify({ qty: newQty }),
       });
 
       if (!response.ok) {
-        throw new Error('Failed to update quantity');
+        const errorData = await response.json().catch(() => ({ error: 'Unknown error' }));
+        console.error('Update quantity error:', errorData);
+        throw new Error(errorData.error || 'Failed to update quantity');
       }
 
-      // Refresh cart data
-      mutate('/api/cart');
+      // Revalidate and refresh cart data - force a fresh fetch
+      await mutate('/api/cart', fetcher, { revalidate: true });
 
       toast("Cantitate actualizată", "success");
     } catch (error) {
-      toast("Nu s-a putut actualiza cantitatea.", "error");
+      console.error('Update quantity exception:', error);
+      const errorMessage = error instanceof Error ? error.message : "Nu s-a putut actualiza cantitatea.";
+      toast(errorMessage, "error");
     } finally {
       setLoading(prev => ({ ...prev, [productId]: false }));
     }
@@ -55,18 +59,23 @@ export default function CartPage() {
     try {
       const response = await fetch(`/api/cart/items/${productId}`, {
         method: 'DELETE',
+        credentials: 'include', // Important for cookies/session
       });
 
       if (!response.ok) {
-        throw new Error('Failed to remove item');
+        const errorData = await response.json().catch(() => ({ error: 'Unknown error' }));
+        console.error('Remove item error:', errorData);
+        throw new Error(errorData.error || 'Failed to remove item');
       }
 
-      // Refresh cart data
-      mutate('/api/cart');
+      // Revalidate and refresh cart data - force a fresh fetch
+      await mutate('/api/cart', fetcher, { revalidate: true });
 
       toast("Produs eliminat din coș", "success");
     } catch (error) {
-      toast("Nu s-a putut elimina produsul.", "error");
+      console.error('Remove item exception:', error);
+      const errorMessage = error instanceof Error ? error.message : "Nu s-a putut elimina produsul.";
+      toast(errorMessage, "error");
     } finally {
       setLoading(prev => ({ ...prev, [productId]: false }));
     }
