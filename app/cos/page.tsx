@@ -6,7 +6,7 @@ import { Badge } from "@/components/ui/badge";
 import { Breadcrumbs } from "@/components/ui/breadcrumbs";
 import { useToast } from "@/lib/hooks/use-toast";
 import { ShoppingCart, Plus, Minus, Trash2, ArrowLeft, ArrowRight } from "lucide-react";
-import useSWR, { mutate } from "swr";
+import useSWR from "swr";
 import Link from "next/link";
 import Image from "next/image";
 import type { Cart, CartItem } from "@/lib/types";
@@ -17,31 +17,74 @@ export default function CartPage() {
 
   const fetcher = (url: string) => fetch(url, { credentials: 'include' }).then(res => res.json());
   
-  const { data: cart, error, isLoading } = useSWR<Cart>('/api/cart', fetcher);
+  const { data: cart, error, isLoading, mutate: mutateCart } = useSWR<Cart>('/api/cart', fetcher);
+
+  const emptyCart: Cart = {
+    id: "",
+    items: [],
+    totals: { subtotal: 0, shipping: 0, tax: 0, total: 0, currency: "RON" },
+    createdAt: "",
+    updatedAt: "",
+  };
+
+  const recomputeTotals = (items: CartItem[], prevTotals: Cart["totals"]): Cart["totals"] => {
+    const subtotal = items.reduce((sum, item) => sum + (item.subtotal ?? item.unitPrice * item.qty), 0);
+    const shipping = prevTotals?.shipping ?? 0;
+    const tax = prevTotals?.tax ?? 0;
+    return {
+      ...prevTotals,
+      subtotal,
+      shipping,
+      tax,
+      total: subtotal + shipping + tax,
+      currency: prevTotals?.currency || "RON",
+    };
+  };
 
   const updateQuantity = async (productId: string, newQty: number) => {
     if (newQty < 1 || newQty > 99) return;
+    if (!cart) return;
 
     setLoading(prev => ({ ...prev, [productId]: true }));
     
     try {
-      const response = await fetch(`/api/cart/items/${productId}`, {
-        method: 'PATCH',
-        headers: {
-          'Content-Type': 'application/json',
+      await mutateCart(
+        async (current) => {
+          const response = await fetch(`/api/cart/items/${productId}`, {
+            method: "PATCH",
+            headers: { "Content-Type": "application/json" },
+            credentials: "include",
+            body: JSON.stringify({ qty: newQty }),
+          });
+
+          if (!response.ok) {
+            const errorData = await response.json().catch(() => ({ error: "Unknown error" }));
+            console.error("Update quantity error:", errorData);
+            throw new Error(errorData.error || "Failed to update quantity");
+          }
+
+          // Pull fresh server truth after the mutation
+          return await fetcher("/api/cart");
         },
-        credentials: 'include', // Important for cookies/session
-        body: JSON.stringify({ qty: newQty }),
-      });
-
-      if (!response.ok) {
-        const errorData = await response.json().catch(() => ({ error: 'Unknown error' }));
-        console.error('Update quantity error:', errorData);
-        throw new Error(errorData.error || 'Failed to update quantity');
-      }
-
-      // Revalidate and refresh cart data - force a fresh fetch
-      await mutate('/api/cart', fetcher, { revalidate: true });
+        {
+          optimisticData: (current) => {
+            const base = current ?? cart ?? emptyCart;
+            const nextItems = base.items.map((it) =>
+              it.productId === productId
+                ? { ...it, qty: newQty, subtotal: it.unitPrice * newQty }
+                : it
+            );
+            return {
+              ...base,
+              items: nextItems,
+              totals: recomputeTotals(nextItems, base.totals),
+            };
+          },
+          rollbackOnError: true,
+          populateCache: true,
+          revalidate: false,
+        }
+      );
 
       toast("Cantitate actualizată", "success");
     } catch (error) {
@@ -54,22 +97,40 @@ export default function CartPage() {
   };
 
   const removeItem = async (productId: string) => {
+    if (!cart) return;
     setLoading(prev => ({ ...prev, [productId]: true }));
     
     try {
-      const response = await fetch(`/api/cart/items/${productId}`, {
-        method: 'DELETE',
-        credentials: 'include', // Important for cookies/session
-      });
+      await mutateCart(
+        async (current) => {
+          const response = await fetch(`/api/cart/items/${productId}`, {
+            method: "DELETE",
+            credentials: "include",
+          });
 
-      if (!response.ok) {
-        const errorData = await response.json().catch(() => ({ error: 'Unknown error' }));
-        console.error('Remove item error:', errorData);
-        throw new Error(errorData.error || 'Failed to remove item');
-      }
+          if (!response.ok) {
+            const errorData = await response.json().catch(() => ({ error: "Unknown error" }));
+            console.error("Remove item error:", errorData);
+            throw new Error(errorData.error || "Failed to remove item");
+          }
 
-      // Revalidate and refresh cart data - force a fresh fetch
-      await mutate('/api/cart', fetcher, { revalidate: true });
+          return await fetcher("/api/cart");
+        },
+        {
+          optimisticData: (current) => {
+            const base = current ?? cart ?? emptyCart;
+            const nextItems = base.items.filter((it) => it.productId !== productId);
+            return {
+              ...base,
+              items: nextItems,
+              totals: recomputeTotals(nextItems, base.totals),
+            };
+          },
+          rollbackOnError: true,
+          populateCache: true,
+          revalidate: false,
+        }
+      );
 
       toast("Produs eliminat din coș", "success");
     } catch (error) {
