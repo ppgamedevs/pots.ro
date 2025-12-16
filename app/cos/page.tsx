@@ -154,25 +154,30 @@ export default function CartPage() {
                         className="p-6 flex items-center gap-4"
                       >
                         {/* Product Image */}
-                        <div className="relative w-20 h-20 flex-shrink-0">
-                          <Image
-                            src="/placeholder.png"
-                            alt={item.productName}
-                            fill
-                            className="object-cover rounded-lg"
-                          />
-                        </div>
+                        <Link href={`/p/${item.productId}-${item.slug || ''}`}>
+                          <div className="relative w-20 h-20 flex-shrink-0">
+                            <Image
+                              src={item.imageUrl || '/placeholder.png'}
+                              alt={item.productName}
+                              fill
+                              className="object-cover rounded-lg"
+                              sizes="80px"
+                            />
+                          </div>
+                        </Link>
 
                         {/* Product Info */}
                         <div className="flex-1 min-w-0">
-                          <h3 className="font-medium text-slate-900 dark:text-slate-100 mb-1">
-                            {item.productName}
-                          </h3>
+                          <Link href={`/p/${item.productId}-${item.slug || ''}`}>
+                            <h3 className="font-medium text-slate-900 dark:text-slate-100 mb-1 hover:text-primary transition-micro">
+                              {item.productName}
+                            </h3>
+                          </Link>
                           <p className="text-slate-600 dark:text-slate-400 text-sm">
-                            Preț unitar: {formatPrice(item.unitPrice, 'RON')}
+                            Preț unitar: {formatPrice(item.unitPrice, cart.totals.currency || 'RON')}
                           </p>
                           <p className="text-slate-600 dark:text-slate-400 text-sm">
-                            Total: {formatPrice(item.unitPrice * item.qty, 'RON')}
+                            Total: {formatPrice(item.subtotal || (item.unitPrice * item.qty), cart.totals.currency || 'RON')}
                           </p>
                         </div>
 
@@ -183,6 +188,7 @@ export default function CartPage() {
                             size="sm"
                             onClick={() => updateQuantity(item.productId, item.qty - 1)}
                             disabled={loading[item.productId] || item.qty <= 1}
+                            aria-label="Scade cantitatea"
                           >
                             <Minus className="h-4 w-4" />
                           </Button>
@@ -194,6 +200,7 @@ export default function CartPage() {
                             size="sm"
                             onClick={() => updateQuantity(item.productId, item.qty + 1)}
                             disabled={loading[item.productId] || item.qty >= 99}
+                            aria-label="Crește cantitatea"
                           >
                             <Plus className="h-4 w-4" />
                           </Button>
@@ -206,6 +213,7 @@ export default function CartPage() {
                           onClick={() => removeItem(item.productId)}
                           disabled={loading[item.productId]}
                           className="text-red-600 hover:text-red-700 hover:bg-red-50"
+                          aria-label="Elimină din coș"
                         >
                           <Trash2 className="h-4 w-4" />
                         </Button>
@@ -228,7 +236,7 @@ export default function CartPage() {
                         Subtotal ({cart.items.length} produse)
                       </span>
                       <span className="font-medium">
-                        {formatPrice(cart.items.reduce((sum, item) => sum + (item.unitPrice * item.qty), 0), 'RON')}
+                        {formatPrice(cart.totals.subtotal, cart.totals.currency || 'RON')}
                       </span>
                     </div>
                     <div className="flex justify-between text-sm">
@@ -239,7 +247,7 @@ export default function CartPage() {
                       <div className="flex justify-between text-lg font-semibold">
                         <span>Total</span>
                         <span className="text-brand">
-                          {formatPrice(cart.items.reduce((sum, item) => sum + (item.unitPrice * item.qty), 0), 'RON')}
+                          {formatPrice(cart.totals.total, cart.totals.currency || 'RON')}
                         </span>
                       </div>
                     </div>

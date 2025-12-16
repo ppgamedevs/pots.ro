@@ -146,7 +146,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
   ];
 
   const payments = ["Visa", "Mastercard", "Revolut"];
-  const carriers = ["Fan Courier", "DPD", "Cargus", "Sameday"];
+  const carriers = ["Cargus"];
 
   return (
     <html lang="ro" className={`${interTight.variable} ${merriweather.variable}`} suppressHydrationWarning>

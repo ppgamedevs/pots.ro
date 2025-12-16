@@ -55,6 +55,7 @@ export type Cart = {
     shipping: number;
     tax: number;
     total: number;
+    currency?: string;
   };
   createdAt: string;
   updatedAt: string;
@@ -64,10 +65,12 @@ export type CartItem = {
   id: string;
   productId: string;
   productName: string;
+  slug?: string;
   qty: number;
   unitPrice: number;
   subtotal: number;
-  sellerId: string;
+  imageUrl?: string;
+  sellerId?: string;
 };
 
 export type SellerPublic = {

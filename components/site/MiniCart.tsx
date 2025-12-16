@@ -3,6 +3,10 @@
 import { useEffect } from "react";
 import { Button } from "../ui/button";
 import { X } from "lucide-react";
+import useSWR from "swr";
+import Link from "next/link";
+import Image from "next/image";
+import type { Cart } from "@/lib/types";
 
 interface MiniCartProps {
   isOpen: boolean;
@@ -10,6 +14,11 @@ interface MiniCartProps {
 }
 
 export function MiniCart({ isOpen, onClose }: MiniCartProps) {
+  // Fetch cart data
+  const { data: cart, error, isLoading } = useSWR<Cart>('/api/cart', (url: string) =>
+    fetch(url).then(res => res.json())
+  );
+
   // Close on escape key
   useEffect(() => {
     const handleEscape = (e: KeyboardEvent) => {
@@ -26,25 +35,8 @@ export function MiniCart({ isOpen, onClose }: MiniCartProps) {
 
   if (!isOpen) return null;
 
-  // Mock cart items
-  const cartItems = [
-    {
-      id: "1",
-      title: "Ghiveci ceramică albă",
-      price: 45,
-      quantity: 1,
-      image: "/placeholder.png"
-    },
-    {
-      id: "2", 
-      title: "Cutie rotundă din lemn",
-      price: 89,
-      quantity: 2,
-      image: "/placeholder.png"
-    }
-  ];
-
-  const total = cartItems.reduce((sum, item) => sum + (item.price * item.quantity), 0);
+  const cartItems = cart?.items || [];
+  const total = cart?.totals?.total || 0;
 
   return (
     <>
@@ -72,59 +64,72 @@ export function MiniCart({ isOpen, onClose }: MiniCartProps) {
           </div>
 
           {/* Cart Items */}
-          <div className="space-y-3 mb-4">
-            {cartItems.map((item) => (
-              <div key={item.id} className="flex items-center gap-3">
-                <div className="w-12 h-12 bg-bg-soft rounded border border-line flex-shrink-0">
-                  {/* Image placeholder */}
+          {isLoading ? (
+            <div className="text-center py-8 text-muted text-sm">Se încarcă...</div>
+          ) : error ? (
+            <div className="text-center py-8 text-muted text-sm">Eroare la încărcare</div>
+          ) : cartItems.length === 0 ? (
+            <div className="text-center py-8 text-muted text-sm">Coșul este gol</div>
+          ) : (
+            <div className="space-y-3 mb-4 max-h-64 overflow-y-auto">
+              {cartItems.map((item) => (
+                <div key={item.id} className="flex items-center gap-3">
+                  <Link href={`/p/${item.productId}-${item.slug || ''}`} onClick={onClose}>
+                    <div className="relative w-12 h-12 bg-bg-soft rounded border border-line flex-shrink-0 overflow-hidden">
+                      <Image
+                        src={item.imageUrl || '/placeholder.png'}
+                        alt={item.productName}
+                        fill
+                        className="object-cover"
+                        sizes="48px"
+                      />
+                    </div>
+                  </Link>
+                  <div className="flex-1 min-w-0">
+                    <Link href={`/p/${item.productId}-${item.slug || ''}`} onClick={onClose}>
+                      <p className="text-sm font-medium text-ink truncate hover:text-primary transition-micro">
+                        {item.productName}
+                      </p>
+                    </Link>
+                    <p className="text-xs text-muted">
+                      {item.qty} × {item.unitPrice.toLocaleString('ro-RO')} lei
+                    </p>
+                  </div>
+                  <div className="text-sm font-semibold text-ink">
+                    {(item.subtotal || (item.unitPrice * item.qty)).toLocaleString('ro-RO')} lei
+                  </div>
                 </div>
-                <div className="flex-1 min-w-0">
-                  <p className="text-sm font-medium text-ink truncate">
-                    {item.title}
-                  </p>
-                  <p className="text-xs text-muted">
-                    {item.quantity} × {item.price} lei
-                  </p>
-                </div>
-                <div className="text-sm font-semibold text-ink">
-                  {(item.price * item.quantity).toLocaleString('ro-RO')} lei
-                </div>
-              </div>
-            ))}
-          </div>
+              ))}
+            </div>
+          )}
 
           {/* Total */}
-          <div className="border-t border-line pt-4 mb-4">
-            <div className="flex items-center justify-between">
-              <span className="text-lg font-semibold text-ink">Total:</span>
-              <span className="text-lg font-semibold text-primary">
-                {total.toLocaleString('ro-RO')} lei
-              </span>
+          {cartItems.length > 0 && (
+            <div className="border-t border-line pt-4 mb-4">
+              <div className="flex items-center justify-between">
+                <span className="text-lg font-semibold text-ink">Total:</span>
+                <span className="text-lg font-semibold text-primary">
+                  {total.toLocaleString('ro-RO')} {cart?.totals?.currency || 'RON'}
+                </span>
+              </div>
             </div>
-          </div>
+          )}
 
           {/* Actions */}
-          <div className="space-y-2">
-            <Button 
-              className="w-full transition-micro"
-              onClick={() => {
-                // Navigate to cart page
-                window.location.href = '/cart';
-              }}
-            >
-              Vezi coșul
-            </Button>
-            <Button 
-              variant="outline" 
-              className="w-full transition-micro"
-              onClick={() => {
-                // Navigate to checkout
-                window.location.href = '/checkout';
-              }}
-            >
-              Finalizează
-            </Button>
-          </div>
+          {cartItems.length > 0 && (
+            <div className="space-y-2">
+              <Link href="/cos" onClick={onClose}>
+                <Button className="w-full transition-micro">
+                  Vezi coșul
+                </Button>
+              </Link>
+              <Link href="/finalizare" onClick={onClose}>
+                <Button variant="outline" className="w-full transition-micro">
+                  Finalizează
+                </Button>
+              </Link>
+            </div>
+          )}
         </div>
       </div>
     </>

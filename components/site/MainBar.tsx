@@ -3,11 +3,14 @@
 import Link from "next/link";
 import { useState } from "react";
 import { Button } from "../ui/button";
+import { Badge } from "../ui/badge";
 import { Category } from "./SiteHeader";
 import CategoriesButton from "./CategoriesButton";
 import GlobalSearchTrigger from "../search/GlobalSearchTrigger";
 import { Store, ShoppingCart, Menu } from "lucide-react";
 import { UserMenu } from "./UserMenu";
+import useSWR from "swr";
+import type { Cart } from "@/lib/types";
 
 interface MainBarProps {
   categories: Category[];
@@ -18,6 +21,13 @@ interface MainBarProps {
 
 export function MainBar({ categories, suggestions, onMegaMenuToggle, onMiniCartToggle }: MainBarProps) {
   const [searchOpen, setSearchOpen] = useState(false);
+  
+  // Fetch cart data for item count
+  const { data: cart } = useSWR<Cart>('/api/cart', (url: string) =>
+    fetch(url).then(res => res.json())
+  );
+  
+  const itemCount = cart?.items?.reduce((sum, item) => sum + item.qty, 0) || 0;
 
   return (
     <div className="max-w-7xl mx-auto px-4">
@@ -50,10 +60,18 @@ export function MainBar({ categories, suggestions, onMegaMenuToggle, onMiniCartT
           
           <Link 
             href="/cos" 
-            className="inline-flex items-center gap-2 px-3 py-2 rounded-lg bg-primary text-white text-sm hover:bg-primary/90 transition-micro"
+            className="relative inline-flex items-center gap-2 px-3 py-2 rounded-lg bg-primary text-white text-sm hover:bg-primary/90 transition-micro"
           >
             <ShoppingCart className="h-4 w-4" />
             Coș
+            {itemCount > 0 && (
+              <Badge
+                variant="destructive"
+                className="absolute -top-1 -right-1 h-5 w-5 flex items-center justify-center p-0 text-xs"
+              >
+                {itemCount > 99 ? '99+' : itemCount}
+              </Badge>
+            )}
           </Link>
         </div>
 
@@ -85,10 +103,18 @@ export function MainBar({ categories, suggestions, onMegaMenuToggle, onMiniCartT
             variant="ghost" 
             size="sm"
             onClick={() => onMiniCartToggle(true)}
-            className="transition-micro p-2"
-            aria-label="Coș de cumpărături"
+            className="relative transition-micro p-2"
+            aria-label={`Coș de cumpărături (${itemCount} produse)`}
           >
             <ShoppingCart className="h-5 w-5" />
+            {itemCount > 0 && (
+              <Badge
+                variant="destructive"
+                className="absolute -top-1 -right-1 h-5 w-5 flex items-center justify-center p-0 text-xs"
+              >
+                {itemCount > 99 ? '99+' : itemCount}
+              </Badge>
+            )}
           </Button>
         </div>
       </div>

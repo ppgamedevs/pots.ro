@@ -1,67 +1,109 @@
-import { NextResponse } from "next/server";
-import { getCartId, setCartIdCookie } from "@/lib/cart-utils";
-import { cacheHeaders } from "@/lib/http";
-import type { Cart } from "@/lib/types";
+import { NextRequest, NextResponse } from "next/server";
+import { db } from "@/db";
+import { carts, cartItems, products } from "@/db/schema/core";
+import { eq, and } from "drizzle-orm";
+import { getUserId } from "@/lib/auth-helpers";
+import { getOrSetSessionId } from "@/lib/cookies";
+import { z } from "zod";
 
 export const dynamic = 'force-dynamic';
 
-// Mock in-memory storage for cart data
-const cartStorage: Record<string, Cart> = {};
+const updateItemSchema = z.object({
+  qty: z.number().int().min(1).max(99),
+});
 
 export async function PATCH(
-  request: Request,
+  request: NextRequest,
   { params }: { params: Promise<{ productId: string }> }
 ) {
   try {
     const { productId } = await params;
-    const productIdNum = Number(productId);
+    const userId = await getUserId();
+    const sessionId = userId ? null : await getOrSetSessionId();
+
     const body = await request.json();
-    const { qty } = body;
+    const { qty } = updateItemSchema.parse(body);
 
-    if (!Number.isInteger(productIdNum) || !Number.isInteger(qty) || qty < 1 || qty > 99) {
-      return NextResponse.json(
-        { error: "Invalid productId or qty" },
-        { status: 400 }
-      );
+    // Validate productId is UUID
+    if (!/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(productId)) {
+      return NextResponse.json({ error: "Invalid product ID format" }, { status: 400 });
     }
 
-    const cartId = await getCartId();
-    const cart = cartStorage[cartId];
-    
+    // Get cart
+    let cart;
+    if (userId) {
+      const result = await db
+        .select()
+        .from(carts)
+        .where(eq(carts.userId, userId))
+        .limit(1);
+      cart = result[0];
+    } else {
+      if (!sessionId) {
+        return NextResponse.json({ error: "Session ID required for anonymous cart" }, { status: 400 });
+      }
+      
+      const result = await db
+        .select()
+        .from(carts)
+        .where(eq(carts.sessionId, sessionId))
+        .limit(1);
+      cart = result[0];
+    }
+
     if (!cart) {
-      return NextResponse.json(
-        { error: "Cart not found" },
-        { status: 404 }
-      );
+      return NextResponse.json({ error: "Cart not found" }, { status: 404 });
     }
 
-    // Find item in cart
-    const itemIndex = cart.items.findIndex(item => item.productId === productId);
-    
-    if (itemIndex === -1) {
-      return NextResponse.json(
-        { error: "Item not found in cart" },
-        { status: 404 }
-      );
+    // Check if item exists in cart
+    const existingItem = await db
+      .select()
+      .from(cartItems)
+      .where(and(
+        eq(cartItems.cartId, cart.id),
+        eq(cartItems.productId, productId)
+      ))
+      .limit(1);
+
+    if (!existingItem[0]) {
+      return NextResponse.json({ error: "Item not found in cart" }, { status: 404 });
+    }
+
+    // Check stock availability
+    const product = await db
+      .select({ stock: products.stock })
+      .from(products)
+      .where(eq(products.id, productId))
+      .limit(1);
+
+    if (product[0] && product[0].stock < qty) {
+      return NextResponse.json({ 
+        error: "Insufficient stock",
+        availableStock: product[0].stock 
+      }, { status: 400 });
     }
 
     // Update quantity
-    cart.items[itemIndex].qty = qty;
+    await db
+      .update(cartItems)
+      .set({ qty })
+      .where(and(
+        eq(cartItems.cartId, cart.id),
+        eq(cartItems.productId, productId)
+      ));
 
-    // Calculate totals
-    cart.totals.subtotal = cart.items.reduce((sum, item) => sum + (item.unitPrice * item.qty), 0);
-    cart.totals.shipping = 0; // Free shipping for MVP
-    cart.totals.tax = Math.round(cart.totals.subtotal * 0.19); // 19% VAT
-    cart.totals.total = cart.totals.subtotal + cart.totals.shipping + cart.totals.tax;
-    
-    // Save cart
-    cartStorage[cartId] = cart;
-    setCartIdCookie(cartId);
-    
-    return NextResponse.json(cart, { headers: { ...cacheHeaders } });
+    return NextResponse.json({ success: true });
     
   } catch (error) {
     console.error('Cart item PATCH error:', error);
+    
+    if (error instanceof z.ZodError) {
+      return NextResponse.json({ 
+        error: "Invalid request data",
+        details: error.issues 
+      }, { status: 400 });
+    }
+    
     return NextResponse.json(
       { error: "Failed to update item quantity" },
       { status: 500 }
@@ -70,44 +112,54 @@ export async function PATCH(
 }
 
 export async function DELETE(
-  request: Request,
+  request: NextRequest,
   { params }: { params: Promise<{ productId: string }> }
 ) {
   try {
     const { productId } = await params;
-    const productIdNum = Number(productId);
+    const userId = await getUserId();
+    const sessionId = userId ? null : await getOrSetSessionId();
 
-    if (!Number.isInteger(productIdNum)) {
-      return NextResponse.json(
-        { error: "Invalid productId" },
-        { status: 400 }
-      );
+    // Validate productId is UUID
+    if (!/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(productId)) {
+      return NextResponse.json({ error: "Invalid product ID format" }, { status: 400 });
     }
 
-    const cartId = await getCartId();
-    const cart = cartStorage[cartId];
-    
+    // Get cart
+    let cart;
+    if (userId) {
+      const result = await db
+        .select()
+        .from(carts)
+        .where(eq(carts.userId, userId))
+        .limit(1);
+      cart = result[0];
+    } else {
+      if (!sessionId) {
+        return NextResponse.json({ error: "Session ID required for anonymous cart" }, { status: 400 });
+      }
+      
+      const result = await db
+        .select()
+        .from(carts)
+        .where(eq(carts.sessionId, sessionId))
+        .limit(1);
+      cart = result[0];
+    }
+
     if (!cart) {
-      return NextResponse.json(
-        { error: "Cart not found" },
-        { status: 404 }
-      );
+      return NextResponse.json({ error: "Cart not found" }, { status: 404 });
     }
 
-    // Remove item from cart
-    cart.items = cart.items.filter(item => item.productId !== productId);
+    // Remove item
+    await db
+      .delete(cartItems)
+      .where(and(
+        eq(cartItems.cartId, cart.id),
+        eq(cartItems.productId, productId)
+      ));
 
-    // Calculate totals
-    cart.totals.subtotal = cart.items.reduce((sum, item) => sum + (item.unitPrice * item.qty), 0);
-    cart.totals.shipping = 0; // Free shipping for MVP
-    cart.totals.tax = Math.round(cart.totals.subtotal * 0.19); // 19% VAT
-    cart.totals.total = cart.totals.subtotal + cart.totals.shipping + cart.totals.tax;
-    
-    // Save cart
-    cartStorage[cartId] = cart;
-    setCartIdCookie(cartId);
-    
-    return NextResponse.json(cart, { headers: { ...cacheHeaders } });
+    return NextResponse.json({ success: true });
     
   } catch (error) {
     console.error('Cart item DELETE error:', error);

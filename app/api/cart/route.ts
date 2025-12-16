@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { db } from "@/db";
-import { carts, cartItems, products } from "@/db/schema/core";
+import { carts, cartItems, products, productImages } from "@/db/schema/core";
 import { eq, and, sql } from "drizzle-orm";
 import { getCurrentUser, getUserId } from "@/lib/auth-helpers";
 import { getOrSetSessionId } from "@/lib/cookies";
@@ -11,6 +11,7 @@ export async function GET(request: NextRequest) {
   try {
     const userId = await getUserId();
     const sessionId = userId ? null : await getOrSetSessionId();
+    const defaultCurrency = "RON";
 
     // Get cart
     let cart;
@@ -26,8 +27,11 @@ export async function GET(request: NextRequest) {
         return NextResponse.json({
           items: [],
           totals: {
-            subtotal_cents: 0,
-            currency: 'RON',
+            subtotal: 0,
+            shipping: 0,
+            tax: 0,
+            total: 0,
+            currency: defaultCurrency,
           }
         });
       }
@@ -44,8 +48,11 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({
         items: [],
         totals: {
-          subtotal_cents: 0,
-          currency: 'RON',
+          subtotal: 0,
+          shipping: 0,
+          tax: 0,
+          total: 0,
+          currency: defaultCurrency,
         }
       });
     }
@@ -53,8 +60,10 @@ export async function GET(request: NextRequest) {
     // Get cart items with product details
     const items = await db
       .select({
+        cart_item_id: cartItems.id,
         product_id: cartItems.productId,
         title: products.title,
+        slug: products.slug,
         price_cents: cartItems.priceCents,
         qty: cartItems.qty,
         image_url: products.imageUrl,
@@ -80,17 +89,47 @@ export async function GET(request: NextRequest) {
         ));
     }
 
+    // Get product images for each item
+    const itemsWithImages = await Promise.all(
+      activeItems.map(async (item: any) => {
+        // Get primary image from productImages
+        const images = await db
+          .select({
+            url: productImages.url,
+            alt: productImages.alt,
+          })
+          .from(productImages)
+          .where(
+            and(
+              eq(productImages.productId, item.product_id),
+              eq(productImages.isPrimary, true)
+            )
+          )
+          .limit(1);
+
+        const imageUrl = images[0]?.url || item.image_url || '/placeholder.png';
+
+        return {
+          id: item.cart_item_id,
+          productId: item.product_id,
+          productName: item.title,
+          slug: item.slug || '',
+          qty: item.qty,
+          unitPrice: item.price_cents / 100, // Convert cents to RON
+          subtotal: (item.price_cents * item.qty) / 100, // Convert cents to RON
+          imageUrl: imageUrl,
+        };
+      })
+    );
+
     return NextResponse.json({
-      items: activeItems.map((item: any) => ({
-        product_id: item.product_id,
-        title: item.title,
-        price_cents: item.price_cents,
-        qty: item.qty,
-        image_url: item.image_url,
-      })),
+      items: itemsWithImages,
       totals: {
-        subtotal_cents: subtotalCents,
-        currency: cart.currency,
+        subtotal: subtotalCents / 100, // Convert cents to RON
+        shipping: 0,
+        tax: 0,
+        total: subtotalCents / 100, // Convert cents to RON
+        currency: cart.currency || defaultCurrency,
       }
     });
 
