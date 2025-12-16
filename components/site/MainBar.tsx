@@ -22,9 +22,14 @@ interface MainBarProps {
 export function MainBar({ categories, suggestions, onMegaMenuToggle, onMiniCartToggle }: MainBarProps) {
   const [searchOpen, setSearchOpen] = useState(false);
   
-  // Fetch cart data for item count
+  // Fetch cart data for item count - disable auto-revalidation to avoid overwriting changes
   const { data: cart } = useSWR<Cart>('/api/cart', (url: string) =>
-    fetch(url).then(res => res.json())
+    fetch(url, { credentials: 'include', cache: 'no-store' }).then(res => res.json()),
+    { 
+      revalidateOnFocus: false,
+      revalidateOnReconnect: false,
+      dedupingInterval: 2000, // Avoid duplicate requests within 2s
+    }
   );
   
   const itemCount = cart?.items?.reduce((sum, item) => sum + item.qty, 0) || 0;

@@ -6,7 +6,7 @@ import { Badge } from "@/components/ui/badge";
 import { Breadcrumbs } from "@/components/ui/breadcrumbs";
 import { useToast } from "@/lib/hooks/use-toast";
 import { ShoppingCart, Plus, Minus, Trash2, ArrowLeft, ArrowRight } from "lucide-react";
-import useSWR from "swr";
+import useSWR, { mutate as globalMutate } from "swr";
 import Link from "next/link";
 import Image from "next/image";
 import type { Cart, CartItem } from "@/lib/types";
@@ -15,7 +15,11 @@ export default function CartPage() {
   const { toast } = useToast();
   const [loading, setLoading] = useState<Record<string, boolean>>({});
 
-  const fetcher = (url: string) => fetch(url, { credentials: 'include' }).then(res => res.json());
+  const fetcher = (url: string) => fetch(url, { 
+    credentials: 'include',
+    cache: 'no-store',
+    headers: { 'Cache-Control': 'no-cache' }
+  }).then(res => res.json());
   
   const { data: cart, error, isLoading, mutate: mutateCart } = useSWR<Cart>('/api/cart', fetcher);
 
@@ -45,46 +49,43 @@ export default function CartPage() {
     if (newQty < 1 || newQty > 99) return;
     if (!cart) return;
 
+    // Optimistic update - update UI immediately
+    const prevCart = cart;
+    const optimisticItems = cart.items.map((it) =>
+      it.productId === productId
+        ? { ...it, qty: newQty, subtotal: it.unitPrice * newQty }
+        : it
+    );
+    const optimisticCart: Cart = {
+      ...cart,
+      items: optimisticItems,
+      totals: recomputeTotals(optimisticItems, cart.totals),
+    };
+    
+    // Update local state immediately
+    mutateCart(optimisticCart, false);
     setLoading(prev => ({ ...prev, [productId]: true }));
     
     try {
-      await mutateCart(
-        async (current) => {
-          const response = await fetch(`/api/cart/items/${productId}`, {
-            method: "PATCH",
-            headers: { "Content-Type": "application/json" },
-            credentials: "include",
-            body: JSON.stringify({ qty: newQty }),
-          });
+      const response = await fetch(`/api/cart/items/${productId}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        credentials: "include",
+        cache: "no-store",
+        body: JSON.stringify({ qty: newQty }),
+      });
 
-          if (!response.ok) {
-            const errorData = await response.json().catch(() => ({ error: "Unknown error" }));
-            console.error("Update quantity error:", errorData);
-            throw new Error(errorData.error || "Failed to update quantity");
-          }
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({ error: "Unknown error" }));
+        console.error("Update quantity error:", errorData);
+        // Rollback on error
+        mutateCart(prevCart, false);
+        throw new Error(errorData.error || "Failed to update quantity");
+      }
 
-          // Pull fresh server truth after the mutation
-          return await fetcher("/api/cart");
-        },
-        {
-          optimisticData: (current) => {
-            const base = current ?? cart ?? emptyCart;
-            const nextItems = base.items.map((it) =>
-              it.productId === productId
-                ? { ...it, qty: newQty, subtotal: it.unitPrice * newQty }
-                : it
-            );
-            return {
-              ...base,
-              items: nextItems,
-              totals: recomputeTotals(nextItems, base.totals),
-            };
-          },
-          rollbackOnError: true,
-          populateCache: true,
-          revalidate: false,
-        }
-      );
+      // Fetch fresh data and update ALL subscribers globally
+      const freshCart = await fetcher("/api/cart");
+      await globalMutate("/api/cart", freshCart, false);
 
       toast("Cantitate actualizată", "success");
     } catch (error) {
@@ -98,39 +99,38 @@ export default function CartPage() {
 
   const removeItem = async (productId: string) => {
     if (!cart) return;
+    
+    // Optimistic update - remove from UI immediately
+    const prevCart = cart;
+    const optimisticItems = cart.items.filter((it) => it.productId !== productId);
+    const optimisticCart: Cart = {
+      ...cart,
+      items: optimisticItems,
+      totals: recomputeTotals(optimisticItems, cart.totals),
+    };
+    
+    // Update local state immediately
+    mutateCart(optimisticCart, false);
     setLoading(prev => ({ ...prev, [productId]: true }));
     
     try {
-      await mutateCart(
-        async (current) => {
-          const response = await fetch(`/api/cart/items/${productId}`, {
-            method: "DELETE",
-            credentials: "include",
-          });
+      const response = await fetch(`/api/cart/items/${productId}`, {
+        method: "DELETE",
+        credentials: "include",
+        cache: "no-store",
+      });
 
-          if (!response.ok) {
-            const errorData = await response.json().catch(() => ({ error: "Unknown error" }));
-            console.error("Remove item error:", errorData);
-            throw new Error(errorData.error || "Failed to remove item");
-          }
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({ error: "Unknown error" }));
+        console.error("Remove item error:", errorData);
+        // Rollback on error
+        mutateCart(prevCart, false);
+        throw new Error(errorData.error || "Failed to remove item");
+      }
 
-          return await fetcher("/api/cart");
-        },
-        {
-          optimisticData: (current) => {
-            const base = current ?? cart ?? emptyCart;
-            const nextItems = base.items.filter((it) => it.productId !== productId);
-            return {
-              ...base,
-              items: nextItems,
-              totals: recomputeTotals(nextItems, base.totals),
-            };
-          },
-          rollbackOnError: true,
-          populateCache: true,
-          revalidate: false,
-        }
-      );
+      // Fetch fresh data and update ALL subscribers globally
+      const freshCart = await fetcher("/api/cart");
+      await globalMutate("/api/cart", freshCart, false);
 
       toast("Produs eliminat din coș", "success");
     } catch (error) {

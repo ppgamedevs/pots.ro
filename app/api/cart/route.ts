@@ -16,6 +16,10 @@ export async function GET(request: NextRequest) {
 
     const json = (body: any, init?: { status?: number }) => {
       const res = NextResponse.json(body, init);
+      // Prevent any caching of cart data
+      res.headers.set('Cache-Control', 'no-store, no-cache, must-revalidate, proxy-revalidate');
+      res.headers.set('Pragma', 'no-cache');
+      res.headers.set('Expires', '0');
       if (!userId && session?.isNew) {
         res.cookies.set(CART_SESSION_COOKIE_NAME, session.sessionId, cartSessionCookieOptions);
       }

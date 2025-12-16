@@ -14,9 +14,14 @@ interface MiniCartProps {
 }
 
 export function MiniCart({ isOpen, onClose }: MiniCartProps) {
-  // Fetch cart data
+  // Fetch cart data - disable auto-revalidation to avoid overwriting changes
   const { data: cart, error, isLoading } = useSWR<Cart>('/api/cart', (url: string) =>
-    fetch(url).then(res => res.json())
+    fetch(url, { credentials: 'include', cache: 'no-store' }).then(res => res.json()),
+    { 
+      revalidateOnFocus: false,
+      revalidateOnReconnect: false,
+      dedupingInterval: 2000,
+    }
   );
 
   // Close on escape key

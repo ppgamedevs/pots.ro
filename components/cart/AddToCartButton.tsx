@@ -5,7 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { useToast } from "@/lib/hooks/use-toast";
 import { ShoppingCart, Plus, Minus } from "lucide-react";
-import { mutate } from "swr";
+import { mutate as globalMutate } from "swr";
 
 interface AddToCartButtonProps {
   productId: string; // Changed from number to string (UUID)
@@ -90,8 +90,13 @@ export default function AddToCartButton({
       const result = await response.json();
       console.log('Add to cart success:', result);
 
-      // Refresh cart data
-      mutate('/api/cart');
+      // Fetch fresh cart data and update all subscribers globally
+      const freshCart = await fetch('/api/cart', { 
+        credentials: 'include', 
+        cache: 'no-store',
+        headers: { 'Cache-Control': 'no-cache' }
+      }).then(res => res.json());
+      await globalMutate('/api/cart', freshCart, false);
 
       toast(`Produsul a fost adăugat în coș (${qty} bucăți).`, "success");
 

@@ -23,12 +23,16 @@ export default function MiniCart({ className = "" }: MiniCartProps) {
   const triggerRef = useRef<HTMLButtonElement>(null);
 
   const { data: cart, error, isLoading } = useSWR<Cart>('/api/cart', async (url: string) => {
-    const res = await fetch(url);
+    const res = await fetch(url, { credentials: 'include', cache: 'no-store' });
     if (!res.ok) {
       const errorData = await res.json();
       throw new Error(errorData.error || `HTTP ${res.status}`);
     }
     return res.json();
+  }, {
+    revalidateOnFocus: false,
+    revalidateOnReconnect: false,
+    dedupingInterval: 2000,
   });
 
   // Close popover when clicking outside
