@@ -3,7 +3,7 @@ import { db } from "@/db";
 import { carts, cartItems, products } from "@/db/schema/core";
 import { eq, and } from "drizzle-orm";
 import { getUserId } from "@/lib/auth-helpers";
-import { getOrSetSessionId } from "@/lib/cookies";
+import { CART_SESSION_COOKIE_NAME, cartSessionCookieOptions, getOrCreateCartSessionId } from "@/lib/cookies";
 import { z } from "zod";
 
 export const dynamic = 'force-dynamic';
@@ -19,14 +19,23 @@ export async function PATCH(
   try {
     const { productId } = await params;
     const userId = await getUserId();
-    const sessionId = userId ? null : await getOrSetSessionId();
+    const session = userId ? null : getOrCreateCartSessionId();
+    const sessionId = userId ? null : session?.sessionId;
+
+    const json = (body: any, init?: { status?: number }) => {
+      const res = NextResponse.json(body, init);
+      if (!userId && session?.isNew) {
+        res.cookies.set(CART_SESSION_COOKIE_NAME, session.sessionId, cartSessionCookieOptions);
+      }
+      return res;
+    };
 
     const body = await request.json();
     const { qty } = updateItemSchema.parse(body);
 
     // Validate productId is UUID
     if (!/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(productId)) {
-      return NextResponse.json({ error: "Invalid product ID format" }, { status: 400 });
+      return json({ error: "Invalid product ID format" }, { status: 400 });
     }
 
     // Get cart
@@ -40,7 +49,7 @@ export async function PATCH(
       cart = result[0];
     } else {
       if (!sessionId) {
-        return NextResponse.json({ error: "Session ID required for anonymous cart" }, { status: 400 });
+        return json({ error: "Session ID required for anonymous cart" }, { status: 400 });
       }
       
       const result = await db
@@ -52,7 +61,7 @@ export async function PATCH(
     }
 
     if (!cart) {
-      return NextResponse.json({ error: "Cart not found" }, { status: 404 });
+      return json({ error: "Cart not found" }, { status: 404 });
     }
 
     // Check if item exists in cart
@@ -66,7 +75,7 @@ export async function PATCH(
       .limit(1);
 
     if (!existingItem[0]) {
-      return NextResponse.json({ error: "Item not found in cart" }, { status: 404 });
+      return json({ error: "Item not found in cart" }, { status: 404 });
     }
 
     // Check stock availability
@@ -77,7 +86,7 @@ export async function PATCH(
       .limit(1);
 
     if (product[0] && product[0].stock < qty) {
-      return NextResponse.json({ 
+      return json({ 
         error: "Insufficient stock",
         availableStock: product[0].stock 
       }, { status: 400 });
@@ -92,7 +101,7 @@ export async function PATCH(
         eq(cartItems.productId, productId)
       ));
 
-    return NextResponse.json({ success: true });
+    return json({ success: true });
     
   } catch (error) {
     console.error('Cart item PATCH error:', error);
@@ -118,11 +127,20 @@ export async function DELETE(
   try {
     const { productId } = await params;
     const userId = await getUserId();
-    const sessionId = userId ? null : await getOrSetSessionId();
+    const session = userId ? null : getOrCreateCartSessionId();
+    const sessionId = userId ? null : session?.sessionId;
+
+    const json = (body: any, init?: { status?: number }) => {
+      const res = NextResponse.json(body, init);
+      if (!userId && session?.isNew) {
+        res.cookies.set(CART_SESSION_COOKIE_NAME, session.sessionId, cartSessionCookieOptions);
+      }
+      return res;
+    };
 
     // Validate productId is UUID
     if (!/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(productId)) {
-      return NextResponse.json({ error: "Invalid product ID format" }, { status: 400 });
+      return json({ error: "Invalid product ID format" }, { status: 400 });
     }
 
     // Get cart
@@ -136,7 +154,7 @@ export async function DELETE(
       cart = result[0];
     } else {
       if (!sessionId) {
-        return NextResponse.json({ error: "Session ID required for anonymous cart" }, { status: 400 });
+        return json({ error: "Session ID required for anonymous cart" }, { status: 400 });
       }
       
       const result = await db
@@ -148,7 +166,7 @@ export async function DELETE(
     }
 
     if (!cart) {
-      return NextResponse.json({ error: "Cart not found" }, { status: 404 });
+      return json({ error: "Cart not found" }, { status: 404 });
     }
 
     // Remove item
@@ -159,7 +177,7 @@ export async function DELETE(
         eq(cartItems.productId, productId)
       ));
 
-    return NextResponse.json({ success: true });
+    return json({ success: true });
     
   } catch (error) {
     console.error('Cart item DELETE error:', error);

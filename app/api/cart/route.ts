@@ -3,15 +3,24 @@ import { db } from "@/db";
 import { carts, cartItems, products, productImages } from "@/db/schema/core";
 import { eq, and, sql } from "drizzle-orm";
 import { getCurrentUser, getUserId } from "@/lib/auth-helpers";
-import { getOrSetSessionId } from "@/lib/cookies";
+import { CART_SESSION_COOKIE_NAME, cartSessionCookieOptions, getOrCreateCartSessionId } from "@/lib/cookies";
 
 export const dynamic = 'force-dynamic';
 
 export async function GET(request: NextRequest) {
   try {
     const userId = await getUserId();
-    const sessionId = userId ? null : await getOrSetSessionId();
+    const session = userId ? null : getOrCreateCartSessionId();
+    const sessionId = userId ? null : session?.sessionId;
     const defaultCurrency = "RON";
+
+    const json = (body: any, init?: { status?: number }) => {
+      const res = NextResponse.json(body, init);
+      if (!userId && session?.isNew) {
+        res.cookies.set(CART_SESSION_COOKIE_NAME, session.sessionId, cartSessionCookieOptions);
+      }
+      return res;
+    };
 
     // Get cart
     let cart;
@@ -24,7 +33,7 @@ export async function GET(request: NextRequest) {
       cart = result[0];
     } else {
       if (!sessionId) {
-        return NextResponse.json({
+        return json({
           items: [],
           totals: {
             subtotal: 0,
@@ -45,7 +54,7 @@ export async function GET(request: NextRequest) {
     }
 
     if (!cart) {
-      return NextResponse.json({
+      return json({
         items: [],
         totals: {
           subtotal: 0,
@@ -122,7 +131,7 @@ export async function GET(request: NextRequest) {
       })
     );
 
-    return NextResponse.json({
+    return json({
       items: itemsWithImages,
       totals: {
         subtotal: subtotalCents / 100, // Convert cents to RON

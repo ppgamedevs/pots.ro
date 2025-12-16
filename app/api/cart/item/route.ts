@@ -3,7 +3,7 @@ import { db } from "@/db";
 import { carts, cartItems, products } from "@/db/schema/core";
 import { eq, and } from "drizzle-orm";
 import { getCurrentUser, getUserId } from "@/lib/auth-helpers";
-import { getOrSetSessionId } from "@/lib/cookies";
+import { CART_SESSION_COOKIE_NAME, cartSessionCookieOptions, getOrCreateCartSessionId } from "@/lib/cookies";
 import { z } from "zod";
 
 export const dynamic = 'force-dynamic';
@@ -16,7 +16,16 @@ const updateItemSchema = z.object({
 export async function PATCH(request: NextRequest) {
   try {
     const userId = await getUserId();
-    const sessionId = userId ? null : await getOrSetSessionId();
+    const session = userId ? null : getOrCreateCartSessionId();
+    const sessionId = userId ? null : session?.sessionId;
+
+    const json = (body: any, init?: { status?: number }) => {
+      const res = NextResponse.json(body, init);
+      if (!userId && session?.isNew) {
+        res.cookies.set(CART_SESSION_COOKIE_NAME, session.sessionId, cartSessionCookieOptions);
+      }
+      return res;
+    };
 
     const body = await request.json();
     const { product_id, qty } = updateItemSchema.parse(body);
@@ -32,7 +41,7 @@ export async function PATCH(request: NextRequest) {
       cart = result[0];
     } else {
       if (!sessionId) {
-        return NextResponse.json({ error: "Session ID required for anonymous cart" }, { status: 400 });
+        return json({ error: "Session ID required for anonymous cart" }, { status: 400 });
       }
       
       const result = await db
@@ -44,7 +53,7 @@ export async function PATCH(request: NextRequest) {
     }
 
     if (!cart) {
-      return NextResponse.json({ error: "Cart not found" }, { status: 404 });
+      return json({ error: "Cart not found" }, { status: 404 });
     }
 
     if (qty === 0) {
@@ -66,7 +75,7 @@ export async function PATCH(request: NextRequest) {
         ));
     }
 
-    return NextResponse.json({ success: true });
+    return json({ success: true });
 
   } catch (error) {
     console.error("Update cart item error:", error);
@@ -82,7 +91,16 @@ export async function PATCH(request: NextRequest) {
 export async function DELETE(request: NextRequest) {
   try {
     const userId = await getUserId();
-    const sessionId = userId ? null : await getOrSetSessionId();
+    const session = userId ? null : getOrCreateCartSessionId();
+    const sessionId = userId ? null : session?.sessionId;
+
+    const json = (body: any, init?: { status?: number }) => {
+      const res = NextResponse.json(body, init);
+      if (!userId && session?.isNew) {
+        res.cookies.set(CART_SESSION_COOKIE_NAME, session.sessionId, cartSessionCookieOptions);
+      }
+      return res;
+    };
 
     const body = await request.json();
     const { product_id } = z.object({
@@ -100,7 +118,7 @@ export async function DELETE(request: NextRequest) {
       cart = result[0];
     } else {
       if (!sessionId) {
-        return NextResponse.json({ error: "Session ID required for anonymous cart" }, { status: 400 });
+        return json({ error: "Session ID required for anonymous cart" }, { status: 400 });
       }
       
       const result = await db
@@ -112,7 +130,7 @@ export async function DELETE(request: NextRequest) {
     }
 
     if (!cart) {
-      return NextResponse.json({ error: "Cart not found" }, { status: 404 });
+      return json({ error: "Cart not found" }, { status: 404 });
     }
 
     // Remove item
@@ -123,7 +141,7 @@ export async function DELETE(request: NextRequest) {
         eq(cartItems.productId, product_id)
       ));
 
-    return NextResponse.json({ success: true });
+    return json({ success: true });
 
   } catch (error) {
     console.error("Delete cart item error:", error);

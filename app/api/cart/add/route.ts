@@ -3,7 +3,7 @@ import { db } from "@/db";
 import { carts, cartItems, products } from "@/db/schema/core";
 import { eq, and } from "drizzle-orm";
 import { getCurrentUser, getUserId } from "@/lib/auth-helpers";
-import { getOrSetSessionId } from "@/lib/cookies";
+import { CART_SESSION_COOKIE_NAME, cartSessionCookieOptions, getOrCreateCartSessionId } from "@/lib/cookies";
 import { normalizeCurrency } from "@/lib/money";
 import { z } from "zod";
 
@@ -17,27 +17,36 @@ const addToCartSchema = z.object({
 export async function POST(request: NextRequest) {
   try {
     const userId = await getUserId();
-    const sessionId = userId ? null : await getOrSetSessionId();
+    const session = userId ? null : getOrCreateCartSessionId();
+    const sessionId = userId ? null : session?.sessionId;
+
+    const json = (body: any, init?: { status?: number }) => {
+      const res = NextResponse.json(body, init);
+      if (!userId && session?.isNew) {
+        res.cookies.set(CART_SESSION_COOKIE_NAME, session.sessionId, cartSessionCookieOptions);
+      }
+      return res;
+    };
 
     let body;
     try {
       body = await request.json();
     } catch (error) {
       console.error('Failed to parse request body:', error);
-      return NextResponse.json({ 
+      return json({ 
         error: "Invalid request body" 
       }, { status: 400 });
     }
     
     // Validate request body
     if (!body || typeof body !== 'object') {
-      return NextResponse.json({ 
+      return json({ 
         error: "Invalid request body format" 
       }, { status: 400 });
     }
 
     if (!body.product_id || !body.qty) {
-      return NextResponse.json({ 
+      return json({ 
         error: "Missing required fields: product_id and qty are required",
         received: { product_id: body.product_id, qty: body.qty }
       }, { status: 400 });
@@ -53,7 +62,7 @@ export async function POST(request: NextRequest) {
     } catch (error) {
       console.error('Schema validation error:', error);
       if (error instanceof z.ZodError) {
-        return NextResponse.json({ 
+        return json({ 
           error: "Invalid request data",
           details: error.issues 
         }, { status: 400 });
@@ -74,7 +83,7 @@ export async function POST(request: NextRequest) {
       .limit(1);
 
     if (!product[0]) {
-      return NextResponse.json({ error: "Product not found or not available" }, { status: 404 });
+      return json({ error: "Product not found or not available" }, { status: 404 });
     }
 
     const productData = product[0];
@@ -82,7 +91,7 @@ export async function POST(request: NextRequest) {
 
     // Check stock availability
     if (productData.stock < qty) {
-      return NextResponse.json({ 
+      return json({ 
         error: "Insufficient stock",
         availableStock: productData.stock 
       }, { status: 400 });
@@ -113,7 +122,7 @@ export async function POST(request: NextRequest) {
     } else {
       // Session cart
       if (!sessionId) {
-        return NextResponse.json({ error: "Session ID required for anonymous cart" }, { status: 400 });
+        return json({ error: "Session ID required for anonymous cart" }, { status: 400 });
       }
       
       const existingCart = await db
@@ -150,7 +159,7 @@ export async function POST(request: NextRequest) {
       // Update quantity - check stock again
       const newQty = Math.min(existingItem[0].qty + qty, 99);
       if (productData.stock < newQty) {
-        return NextResponse.json({ 
+        return json({ 
           error: "Insufficient stock",
           availableStock: productData.stock 
         }, { status: 400 });
@@ -172,7 +181,7 @@ export async function POST(request: NextRequest) {
         });
     }
 
-    return NextResponse.json({ success: true });
+    return json({ success: true });
 
   } catch (error) {
     console.error("Add to cart error:", error);
