@@ -21,8 +21,6 @@ import { useRouter } from "next/navigation";
 
 const fetcher = (url: string) => fetch(url).then((r) => r.json());
 
-const SHIPPING_FEE_CENTS = 2500; // 25 RON
-
 const countyOptions = [
   "Alba", "Arad", "Argeș", "Bacău", "Bihor", "Bistrița-Năsăud", "Botoșani",
   "Brăila", "Brașov", "Buzău", "Călărași", "Caraș-Severin", "Cluj", "Constanța",
@@ -33,11 +31,19 @@ const countyOptions = [
 ].map((c) => ({ value: c, label: c }));
 
 const checkoutSchema = z.object({
+  // Person type
+  personType: z.enum(["fizica", "juridica"]),
+
   // Personal info
   firstName: z.string().min(2, "Prenumele trebuie să aibă minim 2 caractere"),
   lastName: z.string().min(2, "Numele trebuie să aibă minim 2 caractere"),
   email: z.string().email("Email invalid"),
   phone: z.string().min(10, "Numărul de telefon trebuie să aibă minim 10 cifre"),
+
+  // Company info (for juridica)
+  companyName: z.string().optional(),
+  cui: z.string().optional(),
+  regCom: z.string().optional(),
 
   // Address
   address: z.string().min(10, "Adresa trebuie să aibă minim 10 caractere"),
@@ -49,7 +55,7 @@ const checkoutSchema = z.object({
   deliveryMethod: z.literal("courier"),
 
   // Payment
-  paymentMethod: z.enum(["card", "revolut_pay"]),
+  paymentMethod: z.literal("card"),
 
   // Terms
   acceptTerms: z.boolean().refine((val) => val === true, "Trebuie să accepți termenii și condițiile"),
@@ -57,6 +63,17 @@ const checkoutSchema = z.object({
 
   // Notes
   notes: z.string().max(280, "Observațiile pot avea maxim 280 caractere").optional(),
+}).refine((data) => {
+  // If juridica, company fields are required
+  if (data.personType === "juridica") {
+    return data.companyName && data.companyName.length >= 2 &&
+           data.cui && data.cui.length >= 2 &&
+           data.regCom && data.regCom.length >= 2;
+  }
+  return true;
+}, {
+  message: "Pentru persoane juridice, toate câmpurile companiei sunt obligatorii",
+  path: ["companyName"],
 });
 
 export default function CheckoutPage() {
@@ -65,12 +82,17 @@ export default function CheckoutPage() {
   const router = useRouter();
 
   const { data: cart, error: cartError, isLoading: cartLoading } = useSWR<Cart>("/api/cart", fetcher);
+  const { data: shippingFeeData } = useSWR<{ shippingFeeCents: number; shippingFeeRON: number }>("/api/settings/shipping-fee", fetcher);
 
   const form = useZodForm(checkoutSchema, {
+    personType: "fizica",
     firstName: "",
     lastName: "",
     email: "",
     phone: "",
+    companyName: "",
+    cui: "",
+    regCom: "",
     address: "",
     city: "",
     county: "",
@@ -90,6 +112,7 @@ export default function CheckoutPage() {
   } = form;
 
   const subtotalRON = cart?.totals?.subtotal ?? 0;
+  const SHIPPING_FEE_CENTS = shippingFeeData?.shippingFeeCents ?? 2500; // Default to 25 RON
   const shippingRON = SHIPPING_FEE_CENTS / 100;
   const totalRON = useMemo(() => subtotalRON + shippingRON, [subtotalRON, shippingRON]);
 
@@ -150,7 +173,7 @@ export default function CheckoutPage() {
 
   return (
     <main className="mx-auto max-w-6xl px-4 py-8">
-      <div className="flex items-center gap-4">
+      <div className="flex items-center gap-4 mb-8">
         <Link href="/cos">
           <Button variant="outline" size="sm">
             <ArrowLeft className="h-4 w-4 mr-2" />
@@ -159,24 +182,73 @@ export default function CheckoutPage() {
         </Link>
         <H1>Finalizează comanda</H1>
       </div>
-      <P className="mt-2 text-slate-600 dark:text-slate-300">
-        Totul pe o singură pagină. Completează datele și confirmă plata.
-      </P>
 
       <RHFProvider methods={form}>
         <form onSubmit={handleSubmit(onSubmit)} className="mt-8 grid gap-8 lg:grid-cols-3">
           {/* Form */}
           <div className="lg:col-span-2 space-y-6">
+            {/* Person Type Selection */}
             <Card>
               <CardHeader>
-                <CardTitle>Date personale</CardTitle>
+                <CardTitle>Tip persoană</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <Field error={errors.personType?.message as string}>
+                  <RadioGroup
+                    value={watch("personType")}
+                    onValueChange={(v) => form.setValue("personType", v as any, { shouldValidate: true })}
+                    className="grid gap-3 sm:grid-cols-2"
+                  >
+                    <label htmlFor="person-fizica" className="cursor-pointer rounded-xl border border-slate-200 dark:border-white/10 p-4 hover:bg-slate-50 dark:hover:bg-white/5 transition-micro">
+                      <div className="flex items-start gap-3">
+                        <RadioGroupItem value="fizica" id="person-fizica" className="mt-1" />
+                        <div className="flex-1">
+                          <div className="font-medium">Persoană fizică</div>
+                          <p className="text-sm text-slate-600 dark:text-slate-400 mt-1">Cumpăr pentru uz personal</p>
+                        </div>
+                      </div>
+                    </label>
+
+                    <label htmlFor="person-juridica" className="cursor-pointer rounded-xl border border-slate-200 dark:border-white/10 p-4 hover:bg-slate-50 dark:hover:bg-white/5 transition-micro">
+                      <div className="flex items-start gap-3">
+                        <RadioGroupItem value="juridica" id="person-juridica" className="mt-1" />
+                        <div className="flex-1">
+                          <div className="font-medium">Persoană juridică</div>
+                          <p className="text-sm text-slate-600 dark:text-slate-400 mt-1">Cumpăr pentru firmă</p>
+                        </div>
+                      </div>
+                    </label>
+                  </RadioGroup>
+                </Field>
+              </CardContent>
+            </Card>
+
+            {/* Personal/Company Information */}
+            <Card>
+              <CardHeader>
+                <CardTitle>{watch("personType") === "juridica" ? "Date companie" : "Date personale"}</CardTitle>
               </CardHeader>
               <CardContent className="space-y-4">
+                {watch("personType") === "juridica" && (
+                  <>
+                    <Field label="Nume companie" error={errors.companyName?.message as string}>
+                      <Input placeholder="SC Exemplu SRL" {...register("companyName")} />
+                    </Field>
+                    <div className="grid gap-4 sm:grid-cols-2">
+                      <Field label="CUI" error={errors.cui?.message as string}>
+                        <Input placeholder="RO12345678" {...register("cui")} />
+                      </Field>
+                      <Field label="Nr. Registru Comerțului" error={errors.regCom?.message as string}>
+                        <Input placeholder="J40/1234/2020" {...register("regCom")} />
+                      </Field>
+                    </div>
+                  </>
+                )}
                 <div className="grid gap-4 sm:grid-cols-2">
-                  <Field label="Prenume" error={errors.firstName?.message as string}>
+                  <Field label={watch("personType") === "juridica" ? "Prenume persoană contact" : "Prenume"} error={errors.firstName?.message as string}>
                     <Input placeholder="Ion" {...register("firstName")} />
                   </Field>
-                  <Field label="Nume" error={errors.lastName?.message as string}>
+                  <Field label={watch("personType") === "juridica" ? "Nume persoană contact" : "Nume"} error={errors.lastName?.message as string}>
                     <Input placeholder="Popescu" {...register("lastName")} />
                   </Field>
                 </div>
@@ -237,7 +309,7 @@ export default function CheckoutPage() {
                       <div className="text-sm font-semibold">{shippingRON.toFixed(2)} RON</div>
                     </div>
                     <p className="text-sm text-slate-600 dark:text-slate-400 mt-1">
-                      Curier: Cargus (la început). Livrare standard.
+                      Curier: Cargus. Livrare standard.
                     </p>
                   </div>
                 </div>
@@ -249,40 +321,25 @@ export default function CheckoutPage() {
                 <CardTitle>Plată</CardTitle>
               </CardHeader>
               <CardContent className="space-y-4">
-                <Field error={errors.paymentMethod?.message as string}>
-                  <RadioGroup
-                    value={watch("paymentMethod")}
-                    onValueChange={(v) => form.setValue("paymentMethod", v as any, { shouldValidate: true })}
-                    className="grid gap-3 sm:grid-cols-2"
-                  >
-                    <label className="cursor-pointer rounded-xl border border-slate-200 dark:border-white/10 p-4 hover:bg-slate-50 dark:hover:bg-white/5 transition-micro">
-                      <div className="flex items-start gap-3">
-                        <RadioGroupItem value="card" id="pay-card" className="mt-1" />
-                        <div className="flex-1">
-                          <div className="flex items-center gap-2 font-medium">
-                            <CreditCard className="h-4 w-4 text-slate-600 dark:text-slate-300" />
-                            Card bancar
-                          </div>
-                          <p className="text-sm text-slate-600 dark:text-slate-400 mt-1">Visa / Mastercard</p>
-                        </div>
+                <div className="rounded-xl border border-slate-200 dark:border-white/10 p-4 bg-white dark:bg-slate-900/60">
+                  <div className="flex items-start gap-3">
+                    <CreditCard className="h-5 w-5 text-slate-600 dark:text-slate-300 mt-0.5" />
+                    <div className="flex-1">
+                      <div className="flex items-center gap-2 font-medium">
+                        Card bancar
                       </div>
-                    </label>
-
-                    <label className="cursor-pointer rounded-xl border border-slate-200 dark:border-white/10 p-4 hover:bg-slate-50 dark:hover:bg-white/5 transition-micro">
-                      <div className="flex items-start gap-3">
-                        <RadioGroupItem value="revolut_pay" id="pay-revolut" className="mt-1" />
-                        <div className="flex-1">
-                          <div className="font-medium">Revolut Pay</div>
-                          <p className="text-sm text-slate-600 dark:text-slate-400 mt-1">Plată rapidă cu Revolut</p>
-                        </div>
-                      </div>
-                    </label>
-                  </RadioGroup>
-                </Field>
+                      <p className="text-sm text-slate-600 dark:text-slate-400 mt-1">Visa / Mastercard</p>
+                      <p className="text-xs text-slate-500 dark:text-slate-500 mt-2">
+                        Plată securizată prin Netopia Payments
+                      </p>
+                    </div>
+                  </div>
+                </div>
 
                 <div className="space-y-4">
-                  <label className="flex items-start gap-3 cursor-pointer select-none">
+                  <label htmlFor="accept-terms" className="flex items-start gap-3 cursor-pointer select-none">
                     <Checkbox
+                      id="accept-terms"
                       checked={watch("acceptTerms")}
                       onCheckedChange={(v) => form.setValue("acceptTerms", v === true, { shouldValidate: true })}
                     />
@@ -304,8 +361,9 @@ export default function CheckoutPage() {
                     </div>
                   </label>
 
-                  <label className="flex items-start gap-3 cursor-pointer select-none">
+                  <label htmlFor="accept-marketing" className="flex items-start gap-3 cursor-pointer select-none">
                     <Checkbox
+                      id="accept-marketing"
                       checked={watch("acceptMarketing")}
                       onCheckedChange={(v) => form.setValue("acceptMarketing", v === true)}
                     />

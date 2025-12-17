@@ -106,18 +106,6 @@ const refundMethods = [
     time: "3-5 zile lucrătoare",
     description: "Rambursarea se face automat pe cardul folosit pentru plată",
     icon: <CreditCard className="h-6 w-6" />
-  },
-  {
-    method: "PayPal",
-    time: "1-3 zile lucrătoare",
-    description: "Rambursarea rapidă în contul PayPal",
-    icon: <Shield className="h-6 w-6" />
-  },
-  {
-    method: "Revolut",
-    time: "1-2 zile lucrătoare",
-    description: "Rambursarea instantanee în contul Revolut",
-    icon: <CheckCircle className="h-6 w-6" />
   }
 ];
 

@@ -36,9 +36,7 @@ Cookie-urile sunt fișiere text mici stocate pe dispozitivul tău când vizitezi
 
 ### Servicii de plată
 - **Netopia Payments**: Pentru procesarea plăților
-- **PayPal**: Pentru plăți online
-- **Stripe**: Pentru plăți cu cardul
-- **Revolut**: Pentru plăți alternative
+- **Netopia Payments**: Pentru plăți securizate cu cardul
 
 ### Servicii de livrare
 - **Fan Courier**: Pentru tracking-ul coletelor

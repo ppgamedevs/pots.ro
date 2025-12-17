@@ -10,9 +10,8 @@ Informații despre metodele de plată acceptate, securitatea tranzacțiilor și 
 - Plăți securizate prin 3D Secure
 
 ### Plata online
-- **PayPal** pentru comenzi internaționale
-- **Revolut** pentru utilizatorii Revolut
-- **Apple Pay** și **Google Pay** pe dispozitive mobile
+- **Card bancar** prin procesator securizat Netopia Payments
+- Plăți securizate prin 3D Secure pentru protecție maximă
 
 ### Plata la livrare
 - **Numerar** la predarea coletului
@@ -74,7 +73,6 @@ Informații despre metodele de plată acceptate, securitatea tranzacțiilor și 
 
 ### Taxe de plată
 - **Carduri**: Fără taxe suplimentare
-- **PayPal**: 2% din valoarea comenzii
 - **Plata la livrare**: 5 lei suplimentar
 
 ### Taxe de retur

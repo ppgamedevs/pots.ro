@@ -37,12 +37,6 @@ export default function ParteneriPage() {
       description: 'Plăți online sigure și rapide',
       logo: '/partners/netopia.svg',
       category: 'Plăți'
-    },
-    {
-      name: 'Revolut',
-      description: 'Plăți digitale moderne și convenabile',
-      logo: '/partners/revolut.svg',
-      category: 'Plăți'
     }
   ];
 

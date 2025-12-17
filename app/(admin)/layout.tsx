@@ -19,6 +19,12 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
               <a href="/admin/products" className="text-gray-600 hover:text-gray-900">
                 Products
               </a>
+              <a href="/admin/finante" className="text-gray-600 hover:text-gray-900">
+                Finanțe
+              </a>
+              <a href="/admin/settings" className="text-gray-600 hover:text-gray-900">
+                Setări
+              </a>
               <a href="/admin" className="text-gray-600 hover:text-gray-900">
                 Dashboard
               </a>
@@ -27,7 +33,7 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
         </div>
       </nav>
       
-      <main role="main">
+      <main role="main" className="container mx-auto px-4 py-8">
         {children}
       </main>
       

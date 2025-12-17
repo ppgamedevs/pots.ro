@@ -41,7 +41,7 @@ const orderSteps = [
     icon: <CreditCard className="h-6 w-6" />,
     details: [
       "Introduceți adresa de livrare",
-      "Alegeți metoda de plată (card, PayPal, Revolut)",
+      "Alegeți metoda de plată (card bancar)",
       "Verificați totalul comenzii",
       "Confirmați comanda"
     ]
@@ -108,15 +108,9 @@ const orderStatuses = [
 const paymentMethods = [
   {
     name: "Card bancar",
-    description: "Visa, Mastercard, American Express",
+    description: "Visa, Mastercard - procesate prin Netopia Payments",
     icon: <CreditCard className="h-6 w-6" />,
-    security: "Plăți securizate SSL 256-bit"
-  },
-  {
-    name: "Revolut",
-    description: "Plăți instant prin aplicația Revolut",
-    icon: <CheckCircle className="h-6 w-6" />,
-    security: "Verificare instantanee"
+    security: "Plăți securizate SSL 256-bit și 3D Secure"
   }
 ];
 

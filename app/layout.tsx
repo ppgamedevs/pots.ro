@@ -145,7 +145,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
     }
   ];
 
-  const payments = ["Visa", "Mastercard", "Revolut"];
+  const payments = ["Visa", "Mastercard"];
   const carriers = ["Cargus"];
 
   return (

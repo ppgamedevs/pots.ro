@@ -70,17 +70,6 @@ export function SiteFooter({ columns, payments, carriers }: SiteFooterProps) {
                     className="object-contain"
                   />
                 </div>
-                
-                {/* Revolut */}
-                <div className="flex items-center justify-center w-12 h-8 bg-white border border-line rounded-md shadow-sm p-1">
-                  <Image
-                    src="/partners/payments/revolut.svg"
-                    alt="Revolut"
-                    width={32}
-                    height={20}
-                    className="object-contain"
-                  />
-                </div>
               </div>
             </div>
 
