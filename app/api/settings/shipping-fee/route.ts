@@ -32,7 +32,7 @@ export async function GET() {
 }
 
 // Helper function to update cached shipping fee (called from admin API)
-export function updateCachedShippingFee(feeCents: number) {
+function updateCachedShippingFee(feeCents: number) {
   cachedShippingFee = feeCents;
 }
 

@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { getUserFromSession } from "@/lib/auth/middleware-session";
+import { getCurrentUser } from "@/lib/auth/session";
 
 // In-memory settings store (fallback if no DB table exists)
 // In production, this should be stored in database
@@ -19,7 +19,7 @@ settingsStore.set("shipping_fee_cents", {
  */
 export async function GET(request: NextRequest) {
   try {
-    const user = await getUserFromSession();
+    const user = await getCurrentUser();
     
     if (!user || user.role !== "admin") {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
@@ -55,7 +55,7 @@ export async function GET(request: NextRequest) {
  */
 export async function POST(request: NextRequest) {
   try {
-    const user = await getUserFromSession();
+    const user = await getCurrentUser();
     
     if (!user || user.role !== "admin") {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
