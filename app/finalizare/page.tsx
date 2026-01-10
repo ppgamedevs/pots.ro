@@ -407,13 +407,24 @@ export default function CheckoutPage() {
                       {cart.items.map((item) => (
                         <div key={item.id} className="flex items-center gap-3">
                           <div className="relative h-12 w-12 overflow-hidden rounded-lg bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-white/10">
-                            <Image
-                              src={item.imageUrl || "/placeholder.png"}
-                              alt={item.productName}
-                              fill
-                              className="object-cover"
-                              sizes="48px"
-                            />
+                            {item.imageUrl ? (
+                              <Image
+                                src={item.imageUrl}
+                                alt={item.productName}
+                                fill
+                                className="object-cover"
+                                sizes="48px"
+                                onError={(e) => {
+                                  // Fallback to placeholder on error
+                                  const target = e.target as HTMLImageElement;
+                                  target.src = '/placeholder.png';
+                                }}
+                              />
+                            ) : (
+                              <div className="w-full h-full flex items-center justify-center text-xs text-slate-400">
+                                No img
+                              </div>
+                            )}
                           </div>
                           <div className="flex-1 min-w-0">
                             <p className="text-sm font-medium truncate">{item.productName}</p>

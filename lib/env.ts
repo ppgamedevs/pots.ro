@@ -26,12 +26,13 @@ export const NETOPIA_PUBLIC_CERT = process.env.NETOPIA_PUBLIC_CERT || '';
 export const SITE_URL = process.env.SITE_URL || process.env.NEXT_PUBLIC_BASE_URL || 'http://localhost:3000';
 
 // Validate required environment variables
+// Note: Using console.warn here to avoid circular dependency with logger
 if (!NETOPIA_MERCHANT_ID && process.env.NODE_ENV === 'production') {
-  console.warn('NETOPIA_MERCHANT_ID is not set');
+  console.warn('[ENV] NETOPIA_MERCHANT_ID is not set');
 }
 
 if (!NETOPIA_PRIVATE_KEY && process.env.NODE_ENV === 'production') {
-  console.warn('NETOPIA_PRIVATE_KEY is not set');
+  console.warn('[ENV] NETOPIA_PRIVATE_KEY is not set');
 }
 
 

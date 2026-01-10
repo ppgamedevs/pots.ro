@@ -117,6 +117,7 @@ const hasDatabaseUrl = process.env.DATABASE_URL && process.env.DATABASE_URL.trim
 let db: any;
 
 if (!hasDatabaseUrl) {
+  // Fallback to console to avoid circular dependency with logger
   console.warn('⚠️  No DATABASE_URL found. Running in mock mode for development.');
   console.warn('   To set up a database, create a .env.local file with:');
   console.warn('   DATABASE_URL=postgresql://username:password@host:port/database');

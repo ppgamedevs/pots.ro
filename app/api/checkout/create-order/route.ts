@@ -6,6 +6,7 @@ import { getUserId } from "@/lib/auth-helpers";
 import { getOrSetSessionId } from "@/lib/cookies";
 import { COMMISSION_PCT } from "@/lib/env";
 import { calculateCommission, calculateSellerDue } from "@/lib/money";
+import { logger } from "@/lib/logger";
 import { z } from "zod";
 
 export const dynamic = 'force-dynamic';
@@ -17,8 +18,17 @@ const createOrderSchema = z.object({
     fee_cents: z.number().int().min(0),
   }).optional(),
   address: z.object({
-    // For future use
+    firstName: z.string().optional(),
+    lastName: z.string().optional(),
+    email: z.string().email().optional(),
+    phone: z.string().optional(),
+    address: z.string().optional(),
+    city: z.string().optional(),
+    county: z.string().optional(),
+    postalCode: z.string().optional(),
+    notes: z.string().optional(),
   }).optional(),
+  paymentMethod: z.string().optional(),
 });
 
 export async function POST(request: NextRequest) {
@@ -29,7 +39,7 @@ export async function POST(request: NextRequest) {
     }
 
     const body = await request.json().catch(() => ({}));
-    const { shippingChoice } = createOrderSchema.parse(body);
+    const { shippingChoice, address } = createOrderSchema.parse(body);
 
     // Get user's cart
     const cartResult = await db
@@ -150,16 +160,28 @@ export async function POST(request: NextRequest) {
 
     const totalCents = subtotalCents + shippingFeeCents - totalDiscountCents;
 
-    // Mock shipping address for MVP
-    const shippingAddress = {
-      name: "John Doe",
-      address: "Strada Exemplu 123",
-      city: "Bucharest",
-      county: "Bucharest",
-      postalCode: "010001",
+    // Build shipping address from form data or use defaults
+    const shippingAddress = address ? {
+      firstName: address.firstName || "",
+      lastName: address.lastName || "",
+      name: `${address.firstName || ""} ${address.lastName || ""}`.trim() || "Customer",
+      address: address.address || "",
+      city: address.city || "",
+      county: address.county || "",
+      postalCode: address.postalCode || "",
       country: "Romania",
-      phone: "0712345678",
-      email: "john@example.com"
+      phone: address.phone || "",
+      email: address.email || "",
+      notes: address.notes || "",
+    } : {
+      name: "Customer",
+      address: "",
+      city: "",
+      county: "",
+      postalCode: "",
+      country: "Romania",
+      phone: "",
+      email: "",
     };
 
     // Create order and order items in a transaction
@@ -245,10 +267,22 @@ export async function POST(request: NextRequest) {
     }, { status: 201 });
 
   } catch (error) {
-    console.error("Create order error:", error);
-    if (error instanceof Error && error.name === 'ZodError') {
-      return NextResponse.json({ error: "Invalid request data" }, { status: 400 });
+    logger.error("Create order error", error instanceof Error ? error : new Error(String(error)), {
+      component: 'api',
+      endpoint: '/api/checkout/create-order',
+      method: 'POST',
+    });
+    
+    if (error instanceof z.ZodError) {
+      return NextResponse.json({ 
+        error: "Invalid request data",
+        details: error.errors,
+      }, { status: 400 });
     }
-    return NextResponse.json({ error: "Internal server error" }, { status: 500 });
+    
+    return NextResponse.json({ 
+      error: "Internal server error",
+      message: error instanceof Error ? error.message : "Unknown error",
+    }, { status: 500 });
   }
 }

@@ -1,5 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getCurrentUser } from "@/lib/auth/session";
+import { logger } from "@/lib/logger";
+import { withPerformanceMonitoring } from "@/lib/api-wrapper";
 
 // In-memory settings store (fallback if no DB table exists)
 // In production, this should be stored in database
@@ -17,7 +19,7 @@ settingsStore.set("shipping_fee_cents", {
  * GET /api/admin/settings
  * Get all settings or a specific setting by key
  */
-export async function GET(request: NextRequest) {
+export const GET = withPerformanceMonitoring(async function GET(request: NextRequest) {
   try {
     const user = await getCurrentUser();
     
@@ -44,16 +46,20 @@ export async function GET(request: NextRequest) {
 
     return NextResponse.json({ settings: allSettings });
   } catch (error) {
-    console.error("Error fetching settings:", error);
+    logger.error("Error fetching settings", error instanceof Error ? error : new Error(String(error)), {
+      component: 'api',
+      endpoint: '/api/admin/settings',
+      method: 'GET',
+    });
     return NextResponse.json({ error: "Internal server error" }, { status: 500 });
   }
-}
+}, 'GET /api/admin/settings');
 
 /**
  * POST /api/admin/settings
  * Update a setting
  */
-export async function POST(request: NextRequest) {
+export const POST = withPerformanceMonitoring(async function POST(request: NextRequest) {
   try {
     const user = await getCurrentUser();
     
@@ -89,8 +95,13 @@ export async function POST(request: NextRequest) {
       ...settingsStore.get(key)
     });
   } catch (error) {
-    console.error("Error updating setting:", error);
+    logger.error("Error updating setting", error instanceof Error ? error : new Error(String(error)), {
+      component: 'api',
+      endpoint: '/api/admin/settings',
+      method: 'POST',
+      key: body?.key,
+    });
     return NextResponse.json({ error: "Internal server error" }, { status: 500 });
   }
-}
+}, 'POST /api/admin/settings');, 'POST /api/admin/settings');
 

@@ -29,16 +29,41 @@ export default function CheckoutPayPage() {
 
         if (paymentResponse.formHtml) {
           // Auto-submit the form
+          // Create a temporary container that's hidden
           const tempDiv = document.createElement('div');
-          tempDiv.innerHTML = paymentResponse.formHtml;
-          document.body.appendChild(tempDiv);
+          tempDiv.style.display = 'none';
+          tempDiv.style.position = 'absolute';
+          tempDiv.style.visibility = 'hidden';
           
-          // Find and submit the form
-          const form = tempDiv.querySelector('form');
-          if (form) {
-            form.submit();
+          // Set innerHTML safely
+          tempDiv.innerHTML = paymentResponse.formHtml;
+          
+          // Append to body
+          if (document.body) {
+            document.body.appendChild(tempDiv);
+            
+            // Find and submit the form
+            const form = tempDiv.querySelector('form') as HTMLFormElement;
+            if (form) {
+              // Small delay to ensure form is ready
+              setTimeout(() => {
+                form.submit();
+                // Clean up after submission
+                setTimeout(() => {
+                  if (tempDiv.parentNode) {
+                    tempDiv.parentNode.removeChild(tempDiv);
+                  }
+                }, 100);
+              }, 50);
+            } else {
+              // Clean up if form not found
+              if (tempDiv.parentNode) {
+                tempDiv.parentNode.removeChild(tempDiv);
+              }
+              throw new Error('Formularul de plată nu a fost găsit');
+            }
           } else {
-            throw new Error('Formularul de plată nu a fost găsit');
+            throw new Error('Document body nu este disponibil');
           }
         } else if (paymentResponse.redirectUrl) {
           // Redirect to payment URL

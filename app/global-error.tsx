@@ -20,6 +20,17 @@ export default function Error({ error, reset }: ErrorProps) {
   useEffect(() => {
     // Log eroarea pentru debugging
     console.error('Global error caught:', error);
+    
+    // Capture error to Sentry
+    if (process.env.NODE_ENV === 'production') {
+      import('@sentry/nextjs').then((Sentry) => {
+        Sentry.captureException(error, {
+          tags: {
+            errorBoundary: 'global',
+          },
+        });
+      });
+    }
   }, [error]);
 
   return (

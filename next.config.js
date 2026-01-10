@@ -1,3 +1,6 @@
+// Injected content via Sentry wizard below
+const { withSentryConfig } = require("@sentry/nextjs");
+
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   // Image optimization
@@ -150,4 +153,27 @@ const nextConfig = {
   }
 }
 
-module.exports = nextConfig
+module.exports = withSentryConfig(
+  nextConfig,
+  {
+    // For all available options, see:
+    // https://github.com/getsentry/sentry-webpack-plugin#options
+
+    // Suppresses source map uploading logs during build
+    silent: true,
+    org: process.env.SENTRY_ORG,
+    project: process.env.SENTRY_PROJECT,
+  },
+  {
+    // For all available options, see:
+    // https://github.com/getsentry/sentry-webpack-plugin#options
+
+    // Suppresses source map uploading logs during build
+    silent: true,
+    // Automatically tree-shake Sentry logger statements to reduce bundle size
+    hideSourceMaps: true,
+    // Automatically inject the Sentry SDK into the page
+    disableClientWebpackPlugin: false,
+    disableServerWebpackPlugin: false,
+  }
+)
