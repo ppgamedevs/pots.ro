@@ -66,7 +66,7 @@ export async function GET(request: NextRequest) {
         .limit(limit)
         .offset(offset);
 
-      const orderIds = orderItemsResult.map(item => item.orderId);
+      const orderIds = orderItemsResult.map((item: { orderId: string }) => item.orderId);
       if (orderIds.length === 0) {
         return NextResponse.json({ data: [], total: 0, page, limit });
       }
