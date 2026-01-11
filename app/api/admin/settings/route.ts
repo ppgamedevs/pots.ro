@@ -60,6 +60,7 @@ export const GET = withPerformanceMonitoring(async function GET(request: NextReq
  * Update a setting
  */
 export const POST = withPerformanceMonitoring(async function POST(request: NextRequest) {
+  let body: any = null;
   try {
     const user = await getCurrentUser();
     
@@ -67,7 +68,7 @@ export const POST = withPerformanceMonitoring(async function POST(request: NextR
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    const body = await request.json();
+    body = await request.json();
     const { key, value, description } = body;
 
     if (!key || value === undefined) {
