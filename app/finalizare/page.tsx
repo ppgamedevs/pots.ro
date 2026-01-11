@@ -79,6 +79,7 @@ const checkoutSchema = z.object({
 
 export default function CheckoutPage() {
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [localPersonType, setLocalPersonType] = useState<"fizica" | "juridica">("fizica");
   const { toast } = useToast();
   const router = useRouter();
 
@@ -114,13 +115,15 @@ export default function CheckoutPage() {
     setValue,
   } = form;
 
-  // Ensure personType has a default value
+  const personType = watch("personType");
+
+  // Sync local state with form state
   useEffect(() => {
-    const currentValue = watch("personType");
-    if (!currentValue) {
-      setValue("personType", "fizica", { shouldValidate: false });
+    if (personType && personType !== localPersonType) {
+      setLocalPersonType(personType);
     }
-  }, [watch, setValue]);
+  }, [personType]);
+
 
   const subtotalRON = cart?.totals?.subtotal ?? 0;
   const SHIPPING_FEE_CENTS = shippingFeeData?.shippingFeeCents ?? 2500; // Default to 25 RON
@@ -209,16 +212,22 @@ export default function CheckoutPage() {
                     name="personType"
                     control={control}
                     render={({ field }) => {
+                      const currentValue = localPersonType;
                       return (
                         <RadioGroup
-                          value={field.value || "fizica"}
-                          onValueChange={field.onChange}
+                          value={currentValue}
+                          onValueChange={(value) => {
+                            const typedValue = value as "fizica" | "juridica";
+                            setLocalPersonType(typedValue);
+                            setValue("personType", typedValue, { shouldValidate: true, shouldDirty: true, shouldTouch: true });
+                            field.onChange(typedValue);
+                          }}
                           className="grid gap-3 sm:grid-cols-2"
                         >
                           <label
                             htmlFor="person-fizica"
                             className={`cursor-pointer rounded-xl border p-4 transition-micro ${
-                              field.value === "fizica"
+                              currentValue === "fizica"
                                 ? "border-primary bg-primary/5 dark:bg-primary/10"
                                 : "border-slate-200 dark:border-white/10 hover:bg-slate-50 dark:hover:bg-white/5"
                             }`}
@@ -235,7 +244,7 @@ export default function CheckoutPage() {
                           <label
                             htmlFor="person-juridica"
                             className={`cursor-pointer rounded-xl border p-4 transition-micro ${
-                              field.value === "juridica"
+                              currentValue === "juridica"
                                 ? "border-primary bg-primary/5 dark:bg-primary/10"
                                 : "border-slate-200 dark:border-white/10 hover:bg-slate-50 dark:hover:bg-white/5"
                             }`}
