@@ -241,8 +241,82 @@ export default function CheckoutPage() {
 
       <RHFProvider methods={form}>
         <form onSubmit={handleSubmit(onSubmit)} className="mt-8 grid gap-8 lg:grid-cols-3">
+          {/* Summary - moved to top */}
+          <div className="lg:col-span-1 order-1 lg:order-2">
+            <Card className="sticky top-24">
+              <CardHeader>
+                <CardTitle>Sumar comandă</CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                {cartLoading ? (
+                  <div className="text-sm text-slate-600 dark:text-slate-400">Se încarcă coșul…</div>
+                ) : cartError ? (
+                  <div className="text-sm text-red-600">Nu s-a putut încărca coșul.</div>
+                ) : !cart || cart.items.length === 0 ? (
+                  <div className="text-sm text-slate-600 dark:text-slate-400">
+                    Coșul este gol. <Link href="/cautare" className="text-primary hover:underline">Caută produse</Link>.
+                  </div>
+                ) : (
+                  <>
+                    <div className="space-y-3">
+                      {cart.items.map((item) => (
+                        <div key={item.id} className="flex items-center gap-3">
+                          <div className="relative h-12 w-12 overflow-hidden rounded-lg bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-white/10">
+                            {item.imageUrl ? (
+                              <Image
+                                src={item.imageUrl}
+                                alt={item.productName}
+                                fill
+                                className="object-cover"
+                                sizes="48px"
+                                onError={(e) => {
+                                  // Fallback to placeholder on error
+                                  const target = e.target as HTMLImageElement;
+                                  target.src = '/placeholder.png';
+                                }}
+                              />
+                            ) : (
+                              <div className="w-full h-full flex items-center justify-center text-xs text-slate-400">
+                                No img
+                              </div>
+                            )}
+                          </div>
+                          <div className="flex-1 min-w-0">
+                            <p className="text-sm font-medium truncate">{item.productName}</p>
+                            <p className="text-xs text-slate-500">Cantitate: {item.qty}</p>
+                          </div>
+                          <p className="text-sm font-medium">{(item.subtotal || item.unitPrice * item.qty).toFixed(2)} RON</p>
+                        </div>
+                      ))}
+                    </div>
+
+                    <div className="border-t pt-4 space-y-2">
+                      <div className="flex justify-between text-sm">
+                        <span className="text-slate-600 dark:text-slate-400">Subtotal</span>
+                        <span className="text-slate-900 dark:text-slate-100">{subtotalRON.toFixed(2)} RON</span>
+                      </div>
+                      <div className="flex justify-between text-sm">
+                        <span className="text-slate-600 dark:text-slate-400">Livrare</span>
+                        <span className="text-slate-900 dark:text-slate-100">{shippingRON.toFixed(2)} RON</span>
+                      </div>
+                      <div className="border-t pt-2">
+                        <div className="flex justify-between font-semibold text-lg">
+                          <span>Total</span>
+                          <span>{totalRON.toFixed(2)} RON</span>
+                        </div>
+                      </div>
+                      <div className="pt-2">
+                        <Badge variant="secondary">Livrare prin curier</Badge>
+                      </div>
+                    </div>
+                  </>
+                )}
+              </CardContent>
+            </Card>
+          </div>
+
           {/* Form */}
-          <div className="lg:col-span-2 space-y-6">
+          <div className="lg:col-span-2 space-y-6 order-2 lg:order-1">
             {/* Person Type Selection */}
             <Card>
               <CardHeader>
@@ -375,10 +449,12 @@ export default function CheckoutPage() {
 
                 <div className="space-y-4">
                   <label htmlFor="accept-terms" className="flex items-start gap-3 cursor-pointer select-none">
-                    <Checkbox
+                    <input
+                      type="checkbox"
                       id="accept-terms"
                       checked={watch("acceptTerms")}
-                      onCheckedChange={(v) => form.setValue("acceptTerms", v === true, { shouldValidate: true })}
+                      onChange={(e) => form.setValue("acceptTerms", e.target.checked, { shouldValidate: true })}
+                      className="mt-1 h-5 w-5 cursor-pointer accent-primary rounded border-slate-300 dark:border-slate-600 focus:ring-2 focus:ring-primary focus:ring-offset-2"
                     />
                     <div className="text-sm">
                       <p>
@@ -399,10 +475,12 @@ export default function CheckoutPage() {
                   </label>
 
                   <label htmlFor="accept-marketing" className="flex items-start gap-3 cursor-pointer select-none">
-                    <Checkbox
+                    <input
+                      type="checkbox"
                       id="accept-marketing"
                       checked={watch("acceptMarketing")}
-                      onCheckedChange={(v) => form.setValue("acceptMarketing", v === true)}
+                      onChange={(e) => form.setValue("acceptMarketing", e.target.checked)}
+                      className="mt-1 h-5 w-5 cursor-pointer accent-primary rounded border-slate-300 dark:border-slate-600 focus:ring-2 focus:ring-primary focus:ring-offset-2"
                     />
                     <div className="text-sm">
                       <p>Vreau să primesc oferte și promoții prin email</p>
@@ -412,89 +490,15 @@ export default function CheckoutPage() {
               </CardContent>
             </Card>
 
-            <div className="flex items-center justify-between">
+            <div className="flex items-center justify-between pt-4">
               <div className="flex items-center gap-2 text-xs text-slate-600 dark:text-slate-400">
                 <Shield className="h-4 w-4" />
                 <span>Plată securizată</span>
               </div>
-              <Button type="submit" disabled={isSubmitting || cartLoading || !!cartError || !cart || cart.items.length === 0}>
+              <Button type="submit" disabled={isSubmitting || cartLoading || !!cartError || !cart || cart.items.length === 0} size="lg">
                 {isSubmitting ? "Se procesează..." : "Plasează comanda"}
               </Button>
             </div>
-          </div>
-
-          {/* Summary */}
-          <div>
-            <Card className="sticky top-24">
-              <CardHeader>
-                <CardTitle>Sumar comandă</CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                {cartLoading ? (
-                  <div className="text-sm text-slate-600 dark:text-slate-400">Se încarcă coșul…</div>
-                ) : cartError ? (
-                  <div className="text-sm text-red-600">Nu s-a putut încărca coșul.</div>
-                ) : !cart || cart.items.length === 0 ? (
-                  <div className="text-sm text-slate-600 dark:text-slate-400">
-                    Coșul este gol. <Link href="/cautare" className="text-primary hover:underline">Caută produse</Link>.
-                  </div>
-                ) : (
-                  <>
-                    <div className="space-y-3">
-                      {cart.items.map((item) => (
-                        <div key={item.id} className="flex items-center gap-3">
-                          <div className="relative h-12 w-12 overflow-hidden rounded-lg bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-white/10">
-                            {item.imageUrl ? (
-                              <Image
-                                src={item.imageUrl}
-                                alt={item.productName}
-                                fill
-                                className="object-cover"
-                                sizes="48px"
-                                onError={(e) => {
-                                  // Fallback to placeholder on error
-                                  const target = e.target as HTMLImageElement;
-                                  target.src = '/placeholder.png';
-                                }}
-                              />
-                            ) : (
-                              <div className="w-full h-full flex items-center justify-center text-xs text-slate-400">
-                                No img
-                              </div>
-                            )}
-                          </div>
-                          <div className="flex-1 min-w-0">
-                            <p className="text-sm font-medium truncate">{item.productName}</p>
-                            <p className="text-xs text-slate-500">Cantitate: {item.qty}</p>
-                          </div>
-                          <p className="text-sm font-medium">{(item.subtotal || item.unitPrice * item.qty).toFixed(2)} RON</p>
-                        </div>
-                      ))}
-                    </div>
-
-                    <div className="border-t pt-4 space-y-2">
-                      <div className="flex justify-between text-sm">
-                        <span className="text-slate-600 dark:text-slate-400">Subtotal</span>
-                        <span className="text-slate-900 dark:text-slate-100">{subtotalRON.toFixed(2)} RON</span>
-                      </div>
-                      <div className="flex justify-between text-sm">
-                        <span className="text-slate-600 dark:text-slate-400">Livrare</span>
-                        <span className="text-slate-900 dark:text-slate-100">{shippingRON.toFixed(2)} RON</span>
-                      </div>
-                      <div className="border-t pt-2">
-                        <div className="flex justify-between font-semibold text-lg">
-                          <span>Total</span>
-                          <span>{totalRON.toFixed(2)} RON</span>
-                        </div>
-                      </div>
-                      <div className="pt-2">
-                        <Badge variant="secondary">Livrare prin curier</Badge>
-                      </div>
-                    </div>
-                  </>
-                )}
-              </CardContent>
-            </Card>
           </div>
         </form>
       </RHFProvider>
