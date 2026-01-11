@@ -202,36 +202,36 @@ export default function CheckoutPage() {
                     render={({ field }) => (
                       <RadioGroup
                         value={field.value || "fizica"}
-                        onValueChange={(v) => {
-                          field.onChange(v);
+                        onValueChange={(value) => {
+                          field.onChange(value);
                         }}
                         className="grid gap-3 sm:grid-cols-2"
                       >
-                        <label 
-                          htmlFor="person-fizica" 
-                          className="cursor-pointer rounded-xl border border-slate-200 dark:border-white/10 p-4 hover:bg-slate-50 dark:hover:bg-white/5 transition-micro"
-                        >
+                        <div className="rounded-xl border border-slate-200 dark:border-white/10 p-4 hover:bg-slate-50 dark:hover:bg-white/5 transition-micro">
                           <div className="flex items-start gap-3">
                             <RadioGroupItem value="fizica" id="person-fizica" className="mt-1" />
-                            <div className="flex-1">
+                            <label 
+                              htmlFor="person-fizica" 
+                              className="flex-1 cursor-pointer"
+                            >
                               <div className="font-medium">Persoană fizică</div>
                               <p className="text-sm text-slate-600 dark:text-slate-400 mt-1">Cumpăr pentru uz personal</p>
-                            </div>
+                            </label>
                           </div>
-                        </label>
+                        </div>
 
-                        <label 
-                          htmlFor="person-juridica" 
-                          className="cursor-pointer rounded-xl border border-slate-200 dark:border-white/10 p-4 hover:bg-slate-50 dark:hover:bg-white/5 transition-micro"
-                        >
+                        <div className="rounded-xl border border-slate-200 dark:border-white/10 p-4 hover:bg-slate-50 dark:hover:bg-white/5 transition-micro">
                           <div className="flex items-start gap-3">
                             <RadioGroupItem value="juridica" id="person-juridica" className="mt-1" />
-                            <div className="flex-1">
+                            <label 
+                              htmlFor="person-juridica" 
+                              className="flex-1 cursor-pointer"
+                            >
                               <div className="font-medium">Persoană juridică</div>
                               <p className="text-sm text-slate-600 dark:text-slate-400 mt-1">Cumpăr pentru firmă</p>
-                            </div>
+                            </label>
                           </div>
-                        </label>
+                        </div>
                       </RadioGroup>
                     )}
                   />
