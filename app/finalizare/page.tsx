@@ -1,5 +1,5 @@
 "use client";
-import { useMemo, useState } from "react";
+import { useMemo, useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -111,7 +111,16 @@ export default function CheckoutPage() {
     formState: { errors },
     watch,
     control,
+    setValue,
   } = form;
+
+  // Ensure personType has a default value
+  useEffect(() => {
+    const currentValue = watch("personType");
+    if (!currentValue) {
+      setValue("personType", "fizica", { shouldValidate: false });
+    }
+  }, [watch, setValue]);
 
   const subtotalRON = cart?.totals?.subtotal ?? 0;
   const SHIPPING_FEE_CENTS = shippingFeeData?.shippingFeeCents ?? 2500; // Default to 25 RON
@@ -202,36 +211,34 @@ export default function CheckoutPage() {
                     render={({ field }) => (
                       <RadioGroup
                         value={field.value || "fizica"}
-                        onValueChange={(value) => {
-                          field.onChange(value);
-                        }}
+                        onValueChange={field.onChange}
                         className="grid gap-3 sm:grid-cols-2"
                       >
-                        <div className="rounded-xl border border-slate-200 dark:border-white/10 p-4 hover:bg-slate-50 dark:hover:bg-white/5 transition-micro">
+                        <label 
+                          htmlFor="person-fizica" 
+                          className="cursor-pointer rounded-xl border border-slate-200 dark:border-white/10 p-4 hover:bg-slate-50 dark:hover:bg-white/5 transition-micro"
+                        >
                           <div className="flex items-start gap-3">
                             <RadioGroupItem value="fizica" id="person-fizica" className="mt-1" />
-                            <label 
-                              htmlFor="person-fizica" 
-                              className="flex-1 cursor-pointer"
-                            >
+                            <div className="flex-1">
                               <div className="font-medium">Persoană fizică</div>
                               <p className="text-sm text-slate-600 dark:text-slate-400 mt-1">Cumpăr pentru uz personal</p>
-                            </label>
+                            </div>
                           </div>
-                        </div>
+                        </label>
 
-                        <div className="rounded-xl border border-slate-200 dark:border-white/10 p-4 hover:bg-slate-50 dark:hover:bg-white/5 transition-micro">
+                        <label 
+                          htmlFor="person-juridica" 
+                          className="cursor-pointer rounded-xl border border-slate-200 dark:border-white/10 p-4 hover:bg-slate-50 dark:hover:bg-white/5 transition-micro"
+                        >
                           <div className="flex items-start gap-3">
                             <RadioGroupItem value="juridica" id="person-juridica" className="mt-1" />
-                            <label 
-                              htmlFor="person-juridica" 
-                              className="flex-1 cursor-pointer"
-                            >
+                            <div className="flex-1">
                               <div className="font-medium">Persoană juridică</div>
                               <p className="text-sm text-slate-600 dark:text-slate-400 mt-1">Cumpăr pentru firmă</p>
-                            </label>
+                            </div>
                           </div>
-                        </div>
+                        </label>
                       </RadioGroup>
                     )}
                   />
