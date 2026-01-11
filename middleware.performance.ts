@@ -13,7 +13,8 @@ export async function performanceMiddleware(
   handler: (request: NextRequest) => Promise<NextResponse>
 ): Promise<NextResponse> {
   const start = Date.now();
-  const { method, pathname } = request;
+  const method = request.method;
+  const pathname = request.nextUrl.pathname;
   
   // Skip performance tracking for static assets
   if (
