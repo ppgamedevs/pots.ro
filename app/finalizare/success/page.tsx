@@ -48,6 +48,10 @@ export default function CheckoutSuccessPage() {
   // Poll for order status if not paid yet
   useEffect(() => {
     if (!order || order.status === 'paid' || pollingCount >= 15) {
+      // After 15 attempts (30 seconds), stop polling and show message
+      if (pollingCount >= 15 && order && order.status !== 'paid') {
+        // Don't clear interval here, it's already stopped
+      }
       return;
     }
 
@@ -121,6 +125,7 @@ export default function CheckoutSuccessPage() {
 
   const isPaid = order.status === 'paid';
   const isProcessing = order.status === 'pending' && pollingCount < 15;
+  const pollingTimeout = pollingCount >= 15 && order.status === 'pending';
 
   return (
     <div className="min-h-screen bg-slate-50 dark:bg-slate-900 py-8">
@@ -165,9 +170,44 @@ export default function CheckoutSuccessPage() {
               <h2 className="text-lg font-semibold text-slate-900 dark:text-slate-100 mb-2">
                 Plata în procesare...
               </h2>
-              <p className="text-slate-600 dark:text-slate-400">
+              <p className="text-slate-600 dark:text-slate-400 mb-4">
                 Vă rugăm să așteptați în timp ce procesăm plata comenzii.
               </p>
+              <p className="text-sm text-slate-500 dark:text-slate-500">
+                Dacă pagina rămâne blocată, comanda ta va apărea în{" "}
+                <a href="/comenzi" className="text-primary hover:underline">Comenzile mele</a>{" "}
+                unde poți reîncerca plata.
+              </p>
+            </div>
+          ) : pollingTimeout ? (
+            <div className="text-center py-12">
+              <div className="text-yellow-600 dark:text-yellow-400 mb-4">
+                <svg className="w-12 h-12 mx-auto" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L3.732 16.5c-.77.833.192 2.5 1.732 2.5z" />
+                </svg>
+              </div>
+              <h2 className="text-lg font-semibold text-slate-900 dark:text-slate-100 mb-2">
+                Statusul plății este în verificare
+              </h2>
+              <p className="text-slate-600 dark:text-slate-400 mb-6">
+                Comanda ta a fost creată, dar nu am putut confirma plata încă. Comanda apare în{" "}
+                <strong>Comenzile mele</strong> unde poți verifica statusul și reîncerca plata dacă este necesar.
+              </p>
+              <div className="space-y-3">
+                <Button 
+                  onClick={() => window.location.href = `/comenzi`}
+                  className="w-full"
+                >
+                  Vezi comenzile mele
+                </Button>
+                <Button 
+                  variant="outline"
+                  onClick={() => window.location.href = `/finalizare/pay?order_id=${orderId}`}
+                  className="w-full"
+                >
+                  Reîncearcă plata
+                </Button>
+              </div>
             </div>
           ) : (
             <div className="text-center py-12">
@@ -180,11 +220,24 @@ export default function CheckoutSuccessPage() {
                 Statusul plății este necunoscut
               </h2>
               <p className="text-slate-600 dark:text-slate-400 mb-6">
-                Nu am putut confirma statusul plății. Vă rugăm să contactați suportul.
+                Nu am putut confirma statusul plății. Comanda ta apare în{" "}
+                <strong>Comenzile mele</strong> unde poți verifica statusul și reîncerca plata.
               </p>
-              <Button onClick={() => window.location.href = '/checkout/payment'}>
-                Reîncearcă plata
-              </Button>
+              <div className="space-y-3">
+                <Button 
+                  onClick={() => window.location.href = `/comenzi`}
+                  className="w-full"
+                >
+                  Vezi comenzile mele
+                </Button>
+                <Button 
+                  variant="outline"
+                  onClick={() => window.location.href = `/finalizare/pay?order_id=${orderId}`}
+                  className="w-full"
+                >
+                  Reîncearcă plata
+                </Button>
+              </div>
             </div>
           )}
 
