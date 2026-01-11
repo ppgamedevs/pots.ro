@@ -22,7 +22,8 @@ export function withPerformanceMonitoring(
 ) {
   return async (request: NextRequest, context?: any): Promise<NextResponse> => {
     const start = Date.now();
-    const { method, pathname } = request;
+    const method = request.method;
+    const pathname = request.nextUrl.pathname;
     const op = operation || `${method} ${pathname}`;
 
     try {
