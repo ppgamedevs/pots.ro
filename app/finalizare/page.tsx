@@ -32,31 +32,20 @@ const countyOptions = [
 ].map((c) => ({ value: c, label: c }));
 
 function PersonTypeSelector({ value, onChange, error }: { value: "fizica" | "juridica"; onChange: (value: "fizica" | "juridica") => void; error?: string }) {
-  // Use local state to prevent flickering - only initialize once
-  const [localValue, setLocalValue] = useState(() => value || "fizica");
-  
-  // Only sync if value changes from outside (not from our own onChange)
-  useEffect(() => {
-    if (value && value !== localValue) {
-      setLocalValue(value);
-    }
-  }, [value]);
-  
   const handleChange = (v: string) => {
     const typedValue = v as "fizica" | "juridica";
-    setLocalValue(typedValue);
     onChange(typedValue);
   };
   
   return (
     <Field error={error}>
       <RadioGroup
-        value={localValue}
+        value={value}
         onValueChange={handleChange}
         className="grid gap-3 sm:grid-cols-2"
       >
         <div className={`flex items-start gap-3 rounded-xl border p-4 cursor-pointer transition-micro ${
-          localValue === "fizica"
+          value === "fizica"
             ? "border-primary bg-primary/5 dark:bg-primary/10"
             : "border-slate-200 dark:border-white/10 hover:bg-slate-50 dark:hover:bg-white/5"
         }`}>
@@ -68,7 +57,7 @@ function PersonTypeSelector({ value, onChange, error }: { value: "fizica" | "jur
         </div>
 
         <div className={`flex items-start gap-3 rounded-xl border p-4 cursor-pointer transition-micro ${
-          localValue === "juridica"
+          value === "juridica"
             ? "border-primary bg-primary/5 dark:bg-primary/10"
             : "border-slate-200 dark:border-white/10 hover:bg-slate-50 dark:hover:bg-white/5"
         }`}>
@@ -131,6 +120,7 @@ const checkoutSchema = z.object({
 
 export default function CheckoutPage() {
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [personType, setPersonType] = useState<"fizica" | "juridica">("fizica");
   const { toast } = useToast();
   const router = useRouter();
 
@@ -165,9 +155,6 @@ export default function CheckoutPage() {
     control,
     setValue,
   } = form;
-
-  // Use watch to get personType from form and sync it
-  const personType = watch("personType") || "fizica";
 
 
 
@@ -256,6 +243,7 @@ export default function CheckoutPage() {
                 <PersonTypeSelector 
                   value={personType}
                   onChange={(v) => {
+                    setPersonType(v);
                     setValue("personType", v, { shouldValidate: true, shouldDirty: true, shouldTouch: true });
                   }}
                   error={errors.personType?.message as string}

@@ -13,6 +13,7 @@ import { Footer } from '@/components/footer';
 import { Breadcrumbs } from '@/components/ui/breadcrumbs';
 import { ProductCard } from '@/components/products/ProductCard';
 import { Badge } from '@/components/ui/badge';
+import { SITE_NAME } from '@/lib/constants';
 import { H1, P } from '@/components/ui/typography';
 
 interface CategoryAttributePageProps {
@@ -40,13 +41,13 @@ export async function generateMetadata({ params }: CategoryAttributePageProps): 
 
   if (!categoryData) {
     return {
-      title: 'Categorie nu a fost găsită | Pots.ro',
+      title: `Categorie nu a fost găsită | ${SITE_NAME}`,
       description: 'Categoria căutată nu a fost găsită pe Pots.ro'
     };
   }
 
   const attributeName = decodeAttributeSlug(attribute);
-  const title = `${attributeName} ${categoryData.name} la prețuri românești – Pots.ro`;
+  const title = `${attributeName} ${categoryData.name} la prețuri românești – ${SITE_NAME}`;
   const description = `Descoperă ${attributeName.toLowerCase()} ${categoryData.name.toLowerCase()} de calitate la prețuri accesibile. Livrare rapidă în toată România.`;
 
   return {
@@ -56,7 +57,7 @@ export async function generateMetadata({ params }: CategoryAttributePageProps): 
       title,
       description,
       type: 'website',
-      siteName: 'Pots.ro',
+      siteName: SITE_NAME,
       images: [
         {
           url: '/og-category-attribute.jpg',

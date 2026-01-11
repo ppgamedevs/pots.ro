@@ -1,6 +1,7 @@
 import React from "react";
 import { Metadata } from 'next';
 import { H1, P } from '@/components/ui/typography';
+import { SITE_NAME } from '@/lib/constants';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import Link from 'next/link';
@@ -53,10 +54,10 @@ export const metadata: Metadata = {
   description: 'Blog expert cu ghiduri complete pentru ghivece ceramice, plante interioare și design floral în România 2025. Sfaturi de specialiști, tendințe moderne și soluții pentru clima locală.',
   keywords: 'ghivece ceramice romania, plante interioare romania, design floral 2025, ghivece premium, îngrijire plante, tendințe florale, blog expert ghivece',
   openGraph: {
-    title: 'Blog Expert Ghivece și Plante România 2025 | Pots.ro',
+    title: `Blog Expert Ghivece și Plante România 2025 | ${SITE_NAME}`,
     description: 'Ghiduri complete pentru ghivece ceramice premium, plante interioare și design floral modern în România. Expertiza de specialiști pentru 2025.',
     type: 'website',
-    siteName: 'Pots.ro - Ghivece Premium România',
+    siteName: SITE_NAME,
     locale: 'ro_RO',
     images: ['/og-blog-expert-2025.jpg']
   },
