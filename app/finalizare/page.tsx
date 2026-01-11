@@ -31,25 +31,16 @@ const countyOptions = [
   "Teleorman", "Timiș", "Tulcea", "Vâlcea", "Vaslui", "Vrancea",
 ].map((c) => ({ value: c, label: c }));
 
-function PersonTypeSelector() {
-  const { setValue, formState: { errors } } = useFormContext<z.infer<typeof checkoutSchema>>();
-  const [localValue, setLocalValue] = useState<"fizica" | "juridica">("fizica");
-  
-  const handleChange = (value: string) => {
-    const typedValue = value as "fizica" | "juridica";
-    setLocalValue(typedValue);
-    setValue("personType", typedValue, { shouldValidate: true, shouldDirty: true, shouldTouch: true });
-  };
-  
+function PersonTypeSelector({ value, onChange, error }: { value: "fizica" | "juridica"; onChange: (value: "fizica" | "juridica") => void; error?: string }) {
   return (
-    <Field error={errors.personType?.message as string}>
+    <Field error={error}>
       <RadioGroup
-        value={localValue}
-        onValueChange={handleChange}
+        value={value}
+        onValueChange={(v) => onChange(v as "fizica" | "juridica")}
         className="grid gap-3 sm:grid-cols-2"
       >
         <div className={`flex items-start gap-3 rounded-xl border p-4 cursor-pointer transition-micro ${
-          localValue === "fizica"
+          value === "fizica"
             ? "border-primary bg-primary/5 dark:bg-primary/10"
             : "border-slate-200 dark:border-white/10 hover:bg-slate-50 dark:hover:bg-white/5"
         }`}>
@@ -61,7 +52,7 @@ function PersonTypeSelector() {
         </div>
 
         <div className={`flex items-start gap-3 rounded-xl border p-4 cursor-pointer transition-micro ${
-          localValue === "juridica"
+          value === "juridica"
             ? "border-primary bg-primary/5 dark:bg-primary/10"
             : "border-slate-200 dark:border-white/10 hover:bg-slate-50 dark:hover:bg-white/5"
         }`}>
@@ -124,6 +115,7 @@ const checkoutSchema = z.object({
 
 export default function CheckoutPage() {
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [personType, setPersonType] = useState<"fizica" | "juridica">("fizica");
   const { toast } = useToast();
   const router = useRouter();
 
@@ -243,43 +235,14 @@ export default function CheckoutPage() {
                 <CardTitle>Tip persoană</CardTitle>
               </CardHeader>
               <CardContent>
-                <Field error={errors.personType?.message as string}>
-                  <Controller
-                    name="personType"
-                    control={control}
-                    render={({ field }) => (
-                      <RadioGroup
-                        onValueChange={field.onChange}
-                        value={field.value}
-                        className="grid gap-3 sm:grid-cols-2"
-                      >
-                        <div className={`flex items-start gap-3 rounded-xl border p-4 cursor-pointer transition-micro ${
-                          field.value === "fizica"
-                            ? "border-primary bg-primary/5 dark:bg-primary/10"
-                            : "border-slate-200 dark:border-white/10 hover:bg-slate-50 dark:hover:bg-white/5"
-                        }`}>
-                          <RadioGroupItem value="fizica" id="person-fizica" className="mt-1" />
-                          <label htmlFor="person-fizica" className="flex-1 cursor-pointer">
-                            <div className="font-medium">Persoană fizică</div>
-                            <p className="text-sm text-slate-600 dark:text-slate-400 mt-1">Cumpăr pentru uz personal</p>
-                          </label>
-                        </div>
-
-                        <div className={`flex items-start gap-3 rounded-xl border p-4 cursor-pointer transition-micro ${
-                          field.value === "juridica"
-                            ? "border-primary bg-primary/5 dark:bg-primary/10"
-                            : "border-slate-200 dark:border-white/10 hover:bg-slate-50 dark:hover:bg-white/5"
-                        }`}>
-                          <RadioGroupItem value="juridica" id="person-juridica" className="mt-1" />
-                          <label htmlFor="person-juridica" className="flex-1 cursor-pointer">
-                            <div className="font-medium">Persoană juridică</div>
-                            <p className="text-sm text-slate-600 dark:text-slate-400 mt-1">Cumpăr pentru firmă</p>
-                          </label>
-                        </div>
-                      </RadioGroup>
-                    )}
-                  />
-                </Field>
+                <PersonTypeSelector 
+                  value={personType}
+                  onChange={(v) => {
+                    setPersonType(v);
+                    setValue("personType", v, { shouldValidate: true, shouldDirty: true, shouldTouch: true });
+                  }}
+                  error={errors.personType?.message as string}
+                />
               </CardContent>
             </Card>
 
