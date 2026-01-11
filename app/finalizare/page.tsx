@@ -208,39 +208,76 @@ export default function CheckoutPage() {
                   <Controller
                     name="personType"
                     control={control}
-                    render={({ field }) => (
-                      <RadioGroup
-                        value={field.value || "fizica"}
-                        onValueChange={field.onChange}
-                        className="grid gap-3 sm:grid-cols-2"
-                      >
-                        <label 
-                          htmlFor="person-fizica" 
-                          className="cursor-pointer rounded-xl border border-slate-200 dark:border-white/10 p-4 hover:bg-slate-50 dark:hover:bg-white/5 transition-micro"
+                    render={({ field }) => {
+                      const currentValue = field.value || "fizica";
+                      return (
+                        <RadioGroup
+                          value={currentValue}
+                          onValueChange={(value) => {
+                            field.onChange(value);
+                            // Force a small delay to ensure state update
+                            setTimeout(() => {
+                              // This ensures the form state is updated
+                            }, 0);
+                          }}
+                          className="grid gap-3 sm:grid-cols-2"
                         >
-                          <div className="flex items-start gap-3">
-                            <RadioGroupItem value="fizica" id="person-fizica" className="mt-1" />
-                            <div className="flex-1">
-                              <div className="font-medium">Persoană fizică</div>
-                              <p className="text-sm text-slate-600 dark:text-slate-400 mt-1">Cumpăr pentru uz personal</p>
+                          <div
+                            role="button"
+                            tabIndex={0}
+                            onClick={() => {
+                              field.onChange("fizica");
+                            }}
+                            onKeyDown={(e) => {
+                              if (e.key === "Enter" || e.key === " ") {
+                                e.preventDefault();
+                                field.onChange("fizica");
+                              }
+                            }}
+                            className={`cursor-pointer rounded-xl border p-4 transition-micro ${
+                              currentValue === "fizica"
+                                ? "border-primary bg-primary/5 dark:bg-primary/10"
+                                : "border-slate-200 dark:border-white/10 hover:bg-slate-50 dark:hover:bg-white/5"
+                            }`}
+                          >
+                            <div className="flex items-start gap-3">
+                              <RadioGroupItem value="fizica" id="person-fizica" className="mt-1" />
+                              <div className="flex-1">
+                                <div className="font-medium">Persoană fizică</div>
+                                <p className="text-sm text-slate-600 dark:text-slate-400 mt-1">Cumpăr pentru uz personal</p>
+                              </div>
                             </div>
                           </div>
-                        </label>
 
-                        <label 
-                          htmlFor="person-juridica" 
-                          className="cursor-pointer rounded-xl border border-slate-200 dark:border-white/10 p-4 hover:bg-slate-50 dark:hover:bg-white/5 transition-micro"
-                        >
-                          <div className="flex items-start gap-3">
-                            <RadioGroupItem value="juridica" id="person-juridica" className="mt-1" />
-                            <div className="flex-1">
-                              <div className="font-medium">Persoană juridică</div>
-                              <p className="text-sm text-slate-600 dark:text-slate-400 mt-1">Cumpăr pentru firmă</p>
+                          <div
+                            role="button"
+                            tabIndex={0}
+                            onClick={() => {
+                              field.onChange("juridica");
+                            }}
+                            onKeyDown={(e) => {
+                              if (e.key === "Enter" || e.key === " ") {
+                                e.preventDefault();
+                                field.onChange("juridica");
+                              }
+                            }}
+                            className={`cursor-pointer rounded-xl border p-4 transition-micro ${
+                              currentValue === "juridica"
+                                ? "border-primary bg-primary/5 dark:bg-primary/10"
+                                : "border-slate-200 dark:border-white/10 hover:bg-slate-50 dark:hover:bg-white/5"
+                            }`}
+                          >
+                            <div className="flex items-start gap-3">
+                              <RadioGroupItem value="juridica" id="person-juridica" className="mt-1" />
+                              <div className="flex-1">
+                                <div className="font-medium">Persoană juridică</div>
+                                <p className="text-sm text-slate-600 dark:text-slate-400 mt-1">Cumpăr pentru firmă</p>
+                              </div>
                             </div>
                           </div>
-                        </label>
-                      </RadioGroup>
-                    )}
+                        </RadioGroup>
+                      );
+                    }}
                   />
                 </Field>
               </CardContent>
