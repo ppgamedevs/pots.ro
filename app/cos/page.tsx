@@ -1,10 +1,12 @@
 "use client";
 
 import { useState } from "react";
+import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Breadcrumbs } from "@/components/ui/breadcrumbs";
 import { useToast } from "@/lib/hooks/use-toast";
+import { useUser } from "@/lib/hooks/useUser";
 import { ShoppingCart, Plus, Minus, Trash2, ArrowLeft, ArrowRight } from "lucide-react";
 import useSWR, { mutate as globalMutate } from "swr";
 import Link from "next/link";
@@ -13,6 +15,8 @@ import type { Cart, CartItem } from "@/lib/types";
 
 export default function CartPage() {
   const { toast } = useToast();
+  const router = useRouter();
+  const { user, loading: userLoading, isAuthenticated } = useUser();
   const [loading, setLoading] = useState<Record<string, boolean>>({});
 
   const fetcher = (url: string) => fetch(url, { 
@@ -323,12 +327,23 @@ export default function CartPage() {
                     </div>
                   </div>
 
-                  <Link href="/finalizare" className="w-full">
-                    <Button size="lg" className="w-full mb-4">
-                      <ArrowRight className="h-5 w-5 mr-2" />
-                      Continuă la checkout
-                    </Button>
-                  </Link>
+                  <Button 
+                    size="lg" 
+                    className="w-full mb-4"
+                    onClick={() => {
+                      if (!isAuthenticated) {
+                        // Redirect to login with return URL
+                        router.push(`/autentificare?next=${encodeURIComponent('/finalizare')}`);
+                      } else {
+                        // User is authenticated, proceed to checkout
+                        router.push('/finalizare');
+                      }
+                    }}
+                    disabled={userLoading}
+                  >
+                    <ArrowRight className="h-5 w-5 mr-2" />
+                    Continuă la checkout
+                  </Button>
 
                   <div className="text-center">
                     <p className="text-xs text-slate-500 dark:text-slate-400">
