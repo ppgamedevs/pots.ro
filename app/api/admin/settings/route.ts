@@ -103,5 +103,5 @@ export const POST = withPerformanceMonitoring(async function POST(request: NextR
     });
     return NextResponse.json({ error: "Internal server error" }, { status: 500 });
   }
-}, 'POST /api/admin/settings');, 'POST /api/admin/settings');
+}, 'POST /api/admin/settings');
 

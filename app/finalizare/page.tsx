@@ -195,11 +195,16 @@ export default function CheckoutPage() {
               <CardContent>
                 <Field error={errors.personType?.message as string}>
                   <RadioGroup
-                    value={watch("personType")}
-                    onValueChange={(v) => form.setValue("personType", v as any, { shouldValidate: true })}
+                    value={watch("personType") || "fizica"}
+                    onValueChange={(v) => {
+                      form.setValue("personType", v as "fizica" | "juridica", { shouldValidate: true, shouldDirty: true });
+                    }}
                     className="grid gap-3 sm:grid-cols-2"
                   >
-                    <label htmlFor="person-fizica" className="cursor-pointer rounded-xl border border-slate-200 dark:border-white/10 p-4 hover:bg-slate-50 dark:hover:bg-white/5 transition-micro">
+                    <label 
+                      htmlFor="person-fizica" 
+                      className="cursor-pointer rounded-xl border border-slate-200 dark:border-white/10 p-4 hover:bg-slate-50 dark:hover:bg-white/5 transition-micro"
+                    >
                       <div className="flex items-start gap-3">
                         <RadioGroupItem value="fizica" id="person-fizica" className="mt-1" />
                         <div className="flex-1">
@@ -209,7 +214,10 @@ export default function CheckoutPage() {
                       </div>
                     </label>
 
-                    <label htmlFor="person-juridica" className="cursor-pointer rounded-xl border border-slate-200 dark:border-white/10 p-4 hover:bg-slate-50 dark:hover:bg-white/5 transition-micro">
+                    <label 
+                      htmlFor="person-juridica" 
+                      className="cursor-pointer rounded-xl border border-slate-200 dark:border-white/10 p-4 hover:bg-slate-50 dark:hover:bg-white/5 transition-micro"
+                    >
                       <div className="flex items-start gap-3">
                         <RadioGroupItem value="juridica" id="person-juridica" className="mt-1" />
                         <div className="flex-1">
