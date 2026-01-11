@@ -209,17 +209,16 @@ export default function CheckoutPage() {
                     name="personType"
                     control={control}
                     render={({ field }) => {
-                      const currentValue = field.value || "fizica";
                       return (
                         <RadioGroup
-                          value={currentValue}
+                          value={field.value || "fizica"}
                           onValueChange={field.onChange}
                           className="grid gap-3 sm:grid-cols-2"
                         >
-                          <div
-                            onClick={() => field.onChange("fizica")}
+                          <label
+                            htmlFor="person-fizica"
                             className={`cursor-pointer rounded-xl border p-4 transition-micro ${
-                              currentValue === "fizica"
+                              field.value === "fizica"
                                 ? "border-primary bg-primary/5 dark:bg-primary/10"
                                 : "border-slate-200 dark:border-white/10 hover:bg-slate-50 dark:hover:bg-white/5"
                             }`}
@@ -231,12 +230,12 @@ export default function CheckoutPage() {
                                 <p className="text-sm text-slate-600 dark:text-slate-400 mt-1">Cumpăr pentru uz personal</p>
                               </div>
                             </div>
-                          </div>
+                          </label>
 
-                          <div
-                            onClick={() => field.onChange("juridica")}
+                          <label
+                            htmlFor="person-juridica"
                             className={`cursor-pointer rounded-xl border p-4 transition-micro ${
-                              currentValue === "juridica"
+                              field.value === "juridica"
                                 ? "border-primary bg-primary/5 dark:bg-primary/10"
                                 : "border-slate-200 dark:border-white/10 hover:bg-slate-50 dark:hover:bg-white/5"
                             }`}
@@ -248,7 +247,7 @@ export default function CheckoutPage() {
                                 <p className="text-sm text-slate-600 dark:text-slate-400 mt-1">Cumpăr pentru firmă</p>
                               </div>
                             </div>
-                          </div>
+                          </label>
                         </RadioGroup>
                       );
                     }}
