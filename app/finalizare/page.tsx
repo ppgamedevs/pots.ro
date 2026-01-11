@@ -79,7 +79,6 @@ const checkoutSchema = z.object({
 
 export default function CheckoutPage() {
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [localPersonType, setLocalPersonType] = useState<"fizica" | "juridica">("fizica");
   const { toast } = useToast();
   const router = useRouter();
 
@@ -115,14 +114,6 @@ export default function CheckoutPage() {
     setValue,
   } = form;
 
-  const personType = watch("personType");
-
-  // Sync local state with form state
-  useEffect(() => {
-    if (personType && personType !== localPersonType) {
-      setLocalPersonType(personType);
-    }
-  }, [personType]);
 
 
   const subtotalRON = cart?.totals?.subtotal ?? 0;
@@ -211,55 +202,37 @@ export default function CheckoutPage() {
                   <Controller
                     name="personType"
                     control={control}
-                    render={({ field }) => {
-                      const currentValue = localPersonType;
-                      return (
-                        <RadioGroup
-                          value={currentValue}
-                          onValueChange={(value) => {
-                            const typedValue = value as "fizica" | "juridica";
-                            setLocalPersonType(typedValue);
-                            setValue("personType", typedValue, { shouldValidate: true, shouldDirty: true, shouldTouch: true });
-                            field.onChange(typedValue);
-                          }}
-                          className="grid gap-3 sm:grid-cols-2"
-                        >
-                          <label
-                            htmlFor="person-fizica"
-                            className={`cursor-pointer rounded-xl border p-4 transition-micro ${
-                              currentValue === "fizica"
-                                ? "border-primary bg-primary/5 dark:bg-primary/10"
-                                : "border-slate-200 dark:border-white/10 hover:bg-slate-50 dark:hover:bg-white/5"
-                            }`}
-                          >
-                            <div className="flex items-start gap-3">
-                              <RadioGroupItem value="fizica" id="person-fizica" className="mt-1 flex-shrink-0" />
-                              <div className="flex-1">
-                                <div className="font-medium">Persoană fizică</div>
-                                <p className="text-sm text-slate-600 dark:text-slate-400 mt-1">Cumpăr pentru uz personal</p>
-                              </div>
-                            </div>
+                    render={({ field }) => (
+                      <RadioGroup
+                        onValueChange={field.onChange}
+                        value={field.value}
+                        className="grid gap-3 sm:grid-cols-2"
+                      >
+                        <div className={`flex items-start gap-3 rounded-xl border p-4 cursor-pointer transition-micro ${
+                          field.value === "fizica"
+                            ? "border-primary bg-primary/5 dark:bg-primary/10"
+                            : "border-slate-200 dark:border-white/10 hover:bg-slate-50 dark:hover:bg-white/5"
+                        }`}>
+                          <RadioGroupItem value="fizica" id="person-fizica" className="mt-1" />
+                          <label htmlFor="person-fizica" className="flex-1 cursor-pointer">
+                            <div className="font-medium">Persoană fizică</div>
+                            <p className="text-sm text-slate-600 dark:text-slate-400 mt-1">Cumpăr pentru uz personal</p>
                           </label>
+                        </div>
 
-                          <label
-                            htmlFor="person-juridica"
-                            className={`cursor-pointer rounded-xl border p-4 transition-micro ${
-                              currentValue === "juridica"
-                                ? "border-primary bg-primary/5 dark:bg-primary/10"
-                                : "border-slate-200 dark:border-white/10 hover:bg-slate-50 dark:hover:bg-white/5"
-                            }`}
-                          >
-                            <div className="flex items-start gap-3">
-                              <RadioGroupItem value="juridica" id="person-juridica" className="mt-1 flex-shrink-0" />
-                              <div className="flex-1">
-                                <div className="font-medium">Persoană juridică</div>
-                                <p className="text-sm text-slate-600 dark:text-slate-400 mt-1">Cumpăr pentru firmă</p>
-                              </div>
-                            </div>
+                        <div className={`flex items-start gap-3 rounded-xl border p-4 cursor-pointer transition-micro ${
+                          field.value === "juridica"
+                            ? "border-primary bg-primary/5 dark:bg-primary/10"
+                            : "border-slate-200 dark:border-white/10 hover:bg-slate-50 dark:hover:bg-white/5"
+                        }`}>
+                          <RadioGroupItem value="juridica" id="person-juridica" className="mt-1" />
+                          <label htmlFor="person-juridica" className="flex-1 cursor-pointer">
+                            <div className="font-medium">Persoană juridică</div>
+                            <p className="text-sm text-slate-600 dark:text-slate-400 mt-1">Cumpăr pentru firmă</p>
                           </label>
-                        </RadioGroup>
-                      );
-                    }}
+                        </div>
+                      </RadioGroup>
+                    )}
                   />
                 </Field>
               </CardContent>
