@@ -32,42 +32,51 @@ const countyOptions = [
 ].map((c) => ({ value: c, label: c }));
 
 function PersonTypeSelector({ value, onChange, error }: { value: "fizica" | "juridica"; onChange: (value: "fizica" | "juridica") => void; error?: string }) {
-  const handleChange = (v: string) => {
-    const typedValue = v as "fizica" | "juridica";
-    onChange(typedValue);
-  };
-  
   return (
     <Field error={error}>
-      <RadioGroup
-        value={value}
-        onValueChange={handleChange}
-        className="grid gap-3 sm:grid-cols-2"
-      >
-        <div className={`flex items-start gap-3 rounded-xl border p-4 cursor-pointer transition-micro ${
-          value === "fizica"
-            ? "border-primary bg-primary/5 dark:bg-primary/10"
-            : "border-slate-200 dark:border-white/10 hover:bg-slate-50 dark:hover:bg-white/5"
-        }`}>
-          <RadioGroupItem value="fizica" id="person-fizica" className="mt-1" />
-          <label htmlFor="person-fizica" className="flex-1 cursor-pointer">
+      <div className="grid gap-3 sm:grid-cols-2">
+        <label
+          className={`flex items-start gap-3 rounded-xl border p-4 cursor-pointer transition-micro ${
+            value === "fizica"
+              ? "border-primary bg-primary/5 dark:bg-primary/10"
+              : "border-slate-200 dark:border-white/10 hover:bg-slate-50 dark:hover:bg-white/5"
+          }`}
+        >
+          <input
+            type="radio"
+            name="personType"
+            value="fizica"
+            checked={value === "fizica"}
+            onChange={() => onChange("fizica")}
+            className="mt-1 h-4 w-4 cursor-pointer accent-primary"
+          />
+          <div className="flex-1">
             <div className="font-medium">Persoană fizică</div>
             <p className="text-sm text-slate-600 dark:text-slate-400 mt-1">Cumpăr pentru uz personal</p>
-          </label>
-        </div>
+          </div>
+        </label>
 
-        <div className={`flex items-start gap-3 rounded-xl border p-4 cursor-pointer transition-micro ${
-          value === "juridica"
-            ? "border-primary bg-primary/5 dark:bg-primary/10"
-            : "border-slate-200 dark:border-white/10 hover:bg-slate-50 dark:hover:bg-white/5"
-        }`}>
-          <RadioGroupItem value="juridica" id="person-juridica" className="mt-1" />
-          <label htmlFor="person-juridica" className="flex-1 cursor-pointer">
+        <label
+          className={`flex items-start gap-3 rounded-xl border p-4 cursor-pointer transition-micro ${
+            value === "juridica"
+              ? "border-primary bg-primary/5 dark:bg-primary/10"
+              : "border-slate-200 dark:border-white/10 hover:bg-slate-50 dark:hover:bg-white/5"
+          }`}
+        >
+          <input
+            type="radio"
+            name="personType"
+            value="juridica"
+            checked={value === "juridica"}
+            onChange={() => onChange("juridica")}
+            className="mt-1 h-4 w-4 cursor-pointer accent-primary"
+          />
+          <div className="flex-1">
             <div className="font-medium">Persoană juridică</div>
             <p className="text-sm text-slate-600 dark:text-slate-400 mt-1">Cumpăr pentru firmă</p>
-          </label>
-        </div>
-      </RadioGroup>
+          </div>
+        </label>
+      </div>
     </Field>
   );
 }
