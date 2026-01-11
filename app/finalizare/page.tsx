@@ -32,12 +32,14 @@ const countyOptions = [
 ].map((c) => ({ value: c, label: c }));
 
 function PersonTypeSelector({ value, onChange, error }: { value: "fizica" | "juridica"; onChange: (value: "fizica" | "juridica") => void; error?: string }) {
-  // Use local state to prevent flickering
-  const [localValue, setLocalValue] = useState(value);
+  // Use local state to prevent flickering - only initialize once
+  const [localValue, setLocalValue] = useState(() => value || "fizica");
   
-  // Sync with prop value when it changes from outside
+  // Only sync if value changes from outside (not from our own onChange)
   useEffect(() => {
-    setLocalValue(value);
+    if (value && value !== localValue) {
+      setLocalValue(value);
+    }
   }, [value]);
   
   const handleChange = (v: string) => {
@@ -54,7 +56,7 @@ function PersonTypeSelector({ value, onChange, error }: { value: "fizica" | "jur
         className="grid gap-3 sm:grid-cols-2"
       >
         <div className={`flex items-start gap-3 rounded-xl border p-4 cursor-pointer transition-micro ${
-          value === "fizica"
+          localValue === "fizica"
             ? "border-primary bg-primary/5 dark:bg-primary/10"
             : "border-slate-200 dark:border-white/10 hover:bg-slate-50 dark:hover:bg-white/5"
         }`}>
@@ -66,7 +68,7 @@ function PersonTypeSelector({ value, onChange, error }: { value: "fizica" | "jur
         </div>
 
         <div className={`flex items-start gap-3 rounded-xl border p-4 cursor-pointer transition-micro ${
-          value === "juridica"
+          localValue === "juridica"
             ? "border-primary bg-primary/5 dark:bg-primary/10"
             : "border-slate-200 dark:border-white/10 hover:bg-slate-50 dark:hover:bg-white/5"
         }`}>

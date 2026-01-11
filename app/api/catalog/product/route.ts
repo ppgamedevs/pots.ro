@@ -4,6 +4,8 @@ import { products, productImages, sellers, categories } from "@/db/schema/core";
 import { eq, and, ne } from "drizzle-orm";
 import type { InferSelectModel } from "drizzle-orm";
 
+export const dynamic = 'force-dynamic';
+
 export interface Product {
   id: string;
   slug: string;

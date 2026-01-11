@@ -4,6 +4,8 @@ import { db } from '@/db';
 import { sellerStatsDaily, sellers, orders } from '@/db/schema/core';
 import { eq, gte, desc, and, sql } from 'drizzle-orm';
 
+export const dynamic = 'force-dynamic';
+
 // GET /api/analytics/admin
 export async function GET(request: NextRequest) {
   try {
