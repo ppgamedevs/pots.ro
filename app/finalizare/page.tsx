@@ -8,6 +8,7 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Checkbox } from "@/components/ui/checkbox";
 import { RHFProvider, useZodForm, Field } from "@/components/ui/form-helpers";
+import { Controller } from "react-hook-form";
 import { Combobox } from "@/components/ui/combobox";
 import { useToast } from "@/lib/hooks/use-toast";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
@@ -109,6 +110,7 @@ export default function CheckoutPage() {
     handleSubmit,
     formState: { errors },
     watch,
+    control,
   } = form;
 
   const subtotalRON = cart?.totals?.subtotal ?? 0;
@@ -194,39 +196,45 @@ export default function CheckoutPage() {
               </CardHeader>
               <CardContent>
                 <Field error={errors.personType?.message as string}>
-                  <RadioGroup
-                    value={watch("personType") || "fizica"}
-                    onValueChange={(v) => {
-                      form.setValue("personType", v as "fizica" | "juridica", { shouldValidate: true, shouldDirty: true });
-                    }}
-                    className="grid gap-3 sm:grid-cols-2"
-                  >
-                    <label 
-                      htmlFor="person-fizica" 
-                      className="cursor-pointer rounded-xl border border-slate-200 dark:border-white/10 p-4 hover:bg-slate-50 dark:hover:bg-white/5 transition-micro"
-                    >
-                      <div className="flex items-start gap-3">
-                        <RadioGroupItem value="fizica" id="person-fizica" className="mt-1" />
-                        <div className="flex-1">
-                          <div className="font-medium">Persoană fizică</div>
-                          <p className="text-sm text-slate-600 dark:text-slate-400 mt-1">Cumpăr pentru uz personal</p>
-                        </div>
-                      </div>
-                    </label>
+                  <Controller
+                    name="personType"
+                    control={control}
+                    render={({ field }) => (
+                      <RadioGroup
+                        value={field.value || "fizica"}
+                        onValueChange={(v) => {
+                          field.onChange(v);
+                        }}
+                        className="grid gap-3 sm:grid-cols-2"
+                      >
+                        <label 
+                          htmlFor="person-fizica" 
+                          className="cursor-pointer rounded-xl border border-slate-200 dark:border-white/10 p-4 hover:bg-slate-50 dark:hover:bg-white/5 transition-micro"
+                        >
+                          <div className="flex items-start gap-3">
+                            <RadioGroupItem value="fizica" id="person-fizica" className="mt-1" />
+                            <div className="flex-1">
+                              <div className="font-medium">Persoană fizică</div>
+                              <p className="text-sm text-slate-600 dark:text-slate-400 mt-1">Cumpăr pentru uz personal</p>
+                            </div>
+                          </div>
+                        </label>
 
-                    <label 
-                      htmlFor="person-juridica" 
-                      className="cursor-pointer rounded-xl border border-slate-200 dark:border-white/10 p-4 hover:bg-slate-50 dark:hover:bg-white/5 transition-micro"
-                    >
-                      <div className="flex items-start gap-3">
-                        <RadioGroupItem value="juridica" id="person-juridica" className="mt-1" />
-                        <div className="flex-1">
-                          <div className="font-medium">Persoană juridică</div>
-                          <p className="text-sm text-slate-600 dark:text-slate-400 mt-1">Cumpăr pentru firmă</p>
-                        </div>
-                      </div>
-                    </label>
-                  </RadioGroup>
+                        <label 
+                          htmlFor="person-juridica" 
+                          className="cursor-pointer rounded-xl border border-slate-200 dark:border-white/10 p-4 hover:bg-slate-50 dark:hover:bg-white/5 transition-micro"
+                        >
+                          <div className="flex items-start gap-3">
+                            <RadioGroupItem value="juridica" id="person-juridica" className="mt-1" />
+                            <div className="flex-1">
+                              <div className="font-medium">Persoană juridică</div>
+                              <p className="text-sm text-slate-600 dark:text-slate-400 mt-1">Cumpăr pentru firmă</p>
+                            </div>
+                          </div>
+                        </label>
+                      </RadioGroup>
+                    )}
+                  />
                 </Field>
               </CardContent>
             </Card>
