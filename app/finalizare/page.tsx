@@ -8,7 +8,7 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Checkbox } from "@/components/ui/checkbox";
 import { RHFProvider, useZodForm, Field } from "@/components/ui/form-helpers";
-import { Controller } from "react-hook-form";
+import { Controller, useFormContext } from "react-hook-form";
 import { Combobox } from "@/components/ui/combobox";
 import { useToast } from "@/lib/hooks/use-toast";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
@@ -30,6 +30,47 @@ const countyOptions = [
   "Neamț", "Olt", "Prahova", "Sălaj", "Satu Mare", "Sibiu", "Suceava",
   "Teleorman", "Timiș", "Tulcea", "Vâlcea", "Vaslui", "Vrancea",
 ].map((c) => ({ value: c, label: c }));
+
+function PersonTypeSelector() {
+  const { setValue, watch, formState: { errors } } = useFormContext<z.infer<typeof checkoutSchema>>();
+  const personType = watch("personType") || "fizica";
+  
+  return (
+    <Field error={errors.personType?.message as string}>
+      <RadioGroup
+        value={personType}
+        onValueChange={(value) => {
+          setValue("personType", value as "fizica" | "juridica", { shouldValidate: true, shouldDirty: true });
+        }}
+        className="grid gap-3 sm:grid-cols-2"
+      >
+        <div className={`flex items-start gap-3 rounded-xl border p-4 cursor-pointer transition-micro ${
+          personType === "fizica"
+            ? "border-primary bg-primary/5 dark:bg-primary/10"
+            : "border-slate-200 dark:border-white/10 hover:bg-slate-50 dark:hover:bg-white/5"
+        }`}>
+          <RadioGroupItem value="fizica" id="person-fizica" className="mt-1" />
+          <label htmlFor="person-fizica" className="flex-1 cursor-pointer">
+            <div className="font-medium">Persoană fizică</div>
+            <p className="text-sm text-slate-600 dark:text-slate-400 mt-1">Cumpăr pentru uz personal</p>
+          </label>
+        </div>
+
+        <div className={`flex items-start gap-3 rounded-xl border p-4 cursor-pointer transition-micro ${
+          personType === "juridica"
+            ? "border-primary bg-primary/5 dark:bg-primary/10"
+            : "border-slate-200 dark:border-white/10 hover:bg-slate-50 dark:hover:bg-white/5"
+        }`}>
+          <RadioGroupItem value="juridica" id="person-juridica" className="mt-1" />
+          <label htmlFor="person-juridica" className="flex-1 cursor-pointer">
+            <div className="font-medium">Persoană juridică</div>
+            <p className="text-sm text-slate-600 dark:text-slate-400 mt-1">Cumpăr pentru firmă</p>
+          </label>
+        </div>
+      </RadioGroup>
+    </Field>
+  );
+}
 
 const checkoutSchema = z.object({
   // Person type
