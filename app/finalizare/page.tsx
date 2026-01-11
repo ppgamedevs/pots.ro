@@ -32,20 +32,24 @@ const countyOptions = [
 ].map((c) => ({ value: c, label: c }));
 
 function PersonTypeSelector() {
-  const { setValue, watch, formState: { errors } } = useFormContext<z.infer<typeof checkoutSchema>>();
-  const personType = watch("personType") || "fizica";
+  const { setValue, formState: { errors } } = useFormContext<z.infer<typeof checkoutSchema>>();
+  const [localValue, setLocalValue] = useState<"fizica" | "juridica">("fizica");
+  
+  const handleChange = (value: string) => {
+    const typedValue = value as "fizica" | "juridica";
+    setLocalValue(typedValue);
+    setValue("personType", typedValue, { shouldValidate: true, shouldDirty: true, shouldTouch: true });
+  };
   
   return (
     <Field error={errors.personType?.message as string}>
       <RadioGroup
-        value={personType}
-        onValueChange={(value) => {
-          setValue("personType", value as "fizica" | "juridica", { shouldValidate: true, shouldDirty: true });
-        }}
+        value={localValue}
+        onValueChange={handleChange}
         className="grid gap-3 sm:grid-cols-2"
       >
         <div className={`flex items-start gap-3 rounded-xl border p-4 cursor-pointer transition-micro ${
-          personType === "fizica"
+          localValue === "fizica"
             ? "border-primary bg-primary/5 dark:bg-primary/10"
             : "border-slate-200 dark:border-white/10 hover:bg-slate-50 dark:hover:bg-white/5"
         }`}>
@@ -57,7 +61,7 @@ function PersonTypeSelector() {
         </div>
 
         <div className={`flex items-start gap-3 rounded-xl border p-4 cursor-pointer transition-micro ${
-          personType === "juridica"
+          localValue === "juridica"
             ? "border-primary bg-primary/5 dark:bg-primary/10"
             : "border-slate-200 dark:border-white/10 hover:bg-slate-50 dark:hover:bg-white/5"
         }`}>
