@@ -213,27 +213,11 @@ export default function CheckoutPage() {
                       return (
                         <RadioGroup
                           value={currentValue}
-                          onValueChange={(value) => {
-                            field.onChange(value);
-                            // Force a small delay to ensure state update
-                            setTimeout(() => {
-                              // This ensures the form state is updated
-                            }, 0);
-                          }}
+                          onValueChange={field.onChange}
                           className="grid gap-3 sm:grid-cols-2"
                         >
                           <div
-                            role="button"
-                            tabIndex={0}
-                            onClick={() => {
-                              field.onChange("fizica");
-                            }}
-                            onKeyDown={(e) => {
-                              if (e.key === "Enter" || e.key === " ") {
-                                e.preventDefault();
-                                field.onChange("fizica");
-                              }
-                            }}
+                            onClick={() => field.onChange("fizica")}
                             className={`cursor-pointer rounded-xl border p-4 transition-micro ${
                               currentValue === "fizica"
                                 ? "border-primary bg-primary/5 dark:bg-primary/10"
@@ -241,7 +225,7 @@ export default function CheckoutPage() {
                             }`}
                           >
                             <div className="flex items-start gap-3">
-                              <RadioGroupItem value="fizica" id="person-fizica" className="mt-1" />
+                              <RadioGroupItem value="fizica" id="person-fizica" className="mt-1 flex-shrink-0" />
                               <div className="flex-1">
                                 <div className="font-medium">Persoană fizică</div>
                                 <p className="text-sm text-slate-600 dark:text-slate-400 mt-1">Cumpăr pentru uz personal</p>
@@ -250,17 +234,7 @@ export default function CheckoutPage() {
                           </div>
 
                           <div
-                            role="button"
-                            tabIndex={0}
-                            onClick={() => {
-                              field.onChange("juridica");
-                            }}
-                            onKeyDown={(e) => {
-                              if (e.key === "Enter" || e.key === " ") {
-                                e.preventDefault();
-                                field.onChange("juridica");
-                              }
-                            }}
+                            onClick={() => field.onChange("juridica")}
                             className={`cursor-pointer rounded-xl border p-4 transition-micro ${
                               currentValue === "juridica"
                                 ? "border-primary bg-primary/5 dark:bg-primary/10"
@@ -268,7 +242,7 @@ export default function CheckoutPage() {
                             }`}
                           >
                             <div className="flex items-start gap-3">
-                              <RadioGroupItem value="juridica" id="person-juridica" className="mt-1" />
+                              <RadioGroupItem value="juridica" id="person-juridica" className="mt-1 flex-shrink-0" />
                               <div className="flex-1">
                                 <div className="font-medium">Persoană juridică</div>
                                 <p className="text-sm text-slate-600 dark:text-slate-400 mt-1">Cumpăr pentru firmă</p>
