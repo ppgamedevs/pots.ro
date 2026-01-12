@@ -2,8 +2,11 @@ import { NextRequest, NextResponse } from "next/server";
 import { db } from "@/db";
 import { orders, orderItems, products, sellers } from "@/db/schema/core";
 import { eq, and, desc, inArray } from "drizzle-orm";
+import type { InferSelectModel } from "drizzle-orm";
 import { getUserId } from "@/lib/auth-helpers";
 import { sellerIdsForUser } from "@/lib/ownership";
+
+type Order = InferSelectModel<typeof orders>;
 
 export const dynamic = 'force-dynamic';
 
@@ -92,7 +95,7 @@ export async function GET(request: NextRequest) {
     }
 
     // Format response
-    const formattedOrders = ordersResult.map(order => ({
+    const formattedOrders = ordersResult.map((order: Order) => ({
       id: order.id,
       buyerId: order.buyerId,
       sellerId: order.sellerId,
