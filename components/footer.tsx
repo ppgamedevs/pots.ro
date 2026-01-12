@@ -132,7 +132,12 @@ export function Footer() {
               <div className="space-y-3 text-slate-600 dark:text-slate-300">
                 <div className="flex items-start gap-3">
                   <MapPin className="h-5 w-5 mt-0.5 text-slate-400" />
-                  <span>Str. Exemplu 123, București, România</span>
+                  <div>
+                    <p className="font-medium">OnlyTips SRL</p>
+                    <p>Str. Ceahlăul 16</p>
+                    <p>București, România</p>
+                    <p className="text-xs mt-1">CUI: CIF43414871 • J40/16778/2020</p>
+                  </div>
                 </div>
                 <div className="flex items-center gap-3">
                   <Mail className="h-5 w-5 text-slate-400" />
@@ -146,10 +151,10 @@ export function Footer() {
                 <div className="flex items-center gap-3">
                   <Phone className="h-5 w-5 text-slate-400" />
                   <a 
-                    href="tel:+40721123456" 
+                    href="tel:+40726801621" 
                     className="hover:text-brand transition-colors"
                   >
-                    +40 721 123 456
+                    0726.801.621
                   </a>
                 </div>
               </div>
@@ -211,7 +216,7 @@ export function Footer() {
 
         {/* ANPC section */}
         <div className="mt-8 pt-6 border-t border-slate-200 dark:border-white/10">
-          <div className="flex flex-col sm:flex-row items-center justify-between gap-4">
+          <div className="flex flex-col gap-4">
             <div className="flex items-center gap-4">
               <span className="text-sm text-slate-600 dark:text-slate-300">Soluționare online:</span>
               <a
@@ -232,6 +237,17 @@ export function Footer() {
                 </svg>
               </a>
             </div>
+            <p className="text-xs text-slate-500 dark:text-slate-400">
+              Conform O.U.G. nr. 34/2014, informăm că pentru soluționarea alternativă a litigiilor, consumatorii pot apela la{" "}
+              <a href="https://ec.europa.eu/consumers/odr" target="_blank" rel="noopener noreferrer" className="hover:text-brand transition-colors underline">
+                platforma SOL
+              </a>
+              {" "}sau la{" "}
+              <a href="https://anpc.ro" target="_blank" rel="noopener noreferrer" className="hover:text-brand transition-colors underline">
+                ANPC
+              </a>
+              .
+            </p>
           </div>
         </div>
       </div>

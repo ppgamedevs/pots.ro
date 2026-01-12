@@ -52,12 +52,26 @@ Este responsabilitatea ta să:
 3. Selectezi metoda de plată
 4. Confirmi comanda
 
-Odată confirmată, comanda este procesată automat și trimisă vânzătorului pentru livrare.
+Odată confirmată, comanda este procesată automat și trimisă vânzătorului pentru livrare.`
+    },
+    {
+      id: "cancellation",
+      title: "Politica de anulare comandă",
+      content: `Anularea comenzii înainte de confirmarea plății:
+- Poți anula oricând înainte ca vânzătorul să confirme comanda
+- Rambursarea este instantanee
+- Nu se aplică taxe de anulare
 
-Anularea comenzii:
-- Poți anula înainte de confirmarea plății
-- După confirmarea plății, anularea depinde de statusul comenzii
-- Pentru comenzi livrate, aplică politica de retur`
+Anularea comenzii după confirmarea plății:
+- Doar cu aprobarea vânzătorului
+- Vânzătorul poate refuza anularea dacă produsul a fost deja expediat
+- Costurile de anulare sunt suportate de client
+- Rambursarea se procesează în 3-5 zile lucrătoare
+
+Anularea comenzii după expediere:
+- Nu se poate anula comanda după expediere
+- Aplică politica de retur pentru produsele care nu îți convin
+- Vezi secțiunea "Retururi" pentru detalii complete`
     },
     {
       id: "payments",

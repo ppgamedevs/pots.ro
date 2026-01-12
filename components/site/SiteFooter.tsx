@@ -3,6 +3,22 @@
 import Link from "next/link";
 import Image from "next/image";
 import { Button } from "../ui/button";
+import dynamic from "next/dynamic";
+
+// Import Netopia logo component dynamically to avoid SSR issues
+// Try different import patterns based on how the package exports
+const NTPLogo = dynamic(
+  () => import('ntp-logo-react').then((mod) => {
+    // Handle different export patterns
+    if (mod.default) return mod.default;
+    if (mod.NTPLogo) return mod.NTPLogo;
+    return mod;
+  }),
+  {
+    ssr: false,
+    loading: () => <div className="w-20 h-6 bg-gray-200 rounded animate-pulse" />
+  }
+);
 
 export interface FooterColumn {
   title: string;
@@ -70,6 +86,23 @@ export function SiteFooter({ columns, payments, carriers }: SiteFooterProps) {
                     className="object-contain"
                   />
                 </div>
+                
+                {/* Netopia Logo */}
+                <div className="flex items-center justify-center h-8 bg-white border border-line rounded-md shadow-sm px-2">
+                  <a 
+                    href="https://netopia-payments.com" 
+                    target="_blank" 
+                    rel="noopener noreferrer"
+                    className="flex items-center"
+                    aria-label="Plăți securizate prin Netopia Payments"
+                  >
+                    <NTPLogo 
+                      color="#0066CC" 
+                      version="horizontal" 
+                      secret="156304" 
+                    />
+                  </a>
+                </div>
               </div>
             </div>
 
@@ -119,7 +152,7 @@ export function SiteFooter({ columns, payments, carriers }: SiteFooterProps) {
         <div className="border-t border-line pt-8">
           <div className="flex flex-col lg:flex-row items-center justify-between gap-4">
             <div className="text-sm text-ink/70">
-              © 2025 FloristMarket.ro • OnlyTips SRL • CUI: 43414871 • 
+              © 2025 FloristMarket.ro • OnlyTips SRL • CUI: CIF43414871 • J40/16778/2020 • 
               <Link href="/termeni" className="hover:text-ink transition-micro ml-1">
                 Termeni și condiții
               </Link>
@@ -129,13 +162,26 @@ export function SiteFooter({ columns, payments, carriers }: SiteFooterProps) {
               </Link>
             </div>
             
-            <div className="flex items-center gap-4">
-              <a href="https://anpc.ro" target="_blank" rel="noopener noreferrer" className="text-sm text-ink/70 hover:text-ink transition-micro">
-                ANPC
-              </a>
-              <Link href="/sol" className="text-sm text-ink/70 hover:text-ink transition-micro">
-                SOL
-              </Link>
+            <div className="flex flex-col sm:flex-row items-start sm:items-center gap-4">
+              <div className="flex items-center gap-4">
+                <a href="https://anpc.ro" target="_blank" rel="noopener noreferrer" className="text-sm text-ink/70 hover:text-ink transition-micro">
+                  ANPC
+                </a>
+                <Link href="/sol" className="text-sm text-ink/70 hover:text-ink transition-micro">
+                  SOL
+                </Link>
+              </div>
+              <div className="text-xs text-ink/60">
+                Conform O.U.G. nr. 34/2014, informăm că pentru soluționarea alternativă a litigiilor, consumatorii pot apela la{" "}
+                <a href="https://ec.europa.eu/consumers/odr" target="_blank" rel="noopener noreferrer" className="hover:text-ink transition-micro underline">
+                  platforma SOL
+                </a>
+                {" "}sau la{" "}
+                <a href="https://anpc.ro" target="_blank" rel="noopener noreferrer" className="hover:text-ink transition-micro underline">
+                  ANPC
+                </a>
+                .
+              </div>
               <div className="flex items-center gap-2">
                 <span className="text-sm text-ink/70">Social:</span>
                 <Link href="#" className="text-sm text-ink/70 hover:text-ink transition-micro">

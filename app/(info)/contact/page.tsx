@@ -153,17 +153,21 @@ export default function ContactPage() {
                 <h3 className="font-medium text-ink">Telefon</h3>
               </div>
               <div className="text-sm text-subink">
-                <p>Pentru urgențe: +40 21 XXX XXXX</p>
+                <a href="tel:+40726801621" className="text-primary hover:underline font-medium">
+                  0726.801.621
+                </a>
                 <p>Disponibil în programul de lucru</p>
               </div>
             </div>
 
             <div className="rounded-xl border border-line p-4 bg-bg-soft">
-              <h3 className="font-medium text-ink mb-2">Adresă</h3>
-              <div className="text-sm text-subink">
-                <p>FloristMarket.ro</p>
+              <h3 className="font-medium text-ink mb-2">Date companie</h3>
+              <div className="text-sm text-subink space-y-1">
+                <p className="font-medium">OnlyTips SRL</p>
+                <p>Str. Ceahlăul 16</p>
                 <p>București, România</p>
-                <p>CUI: 43414871</p>
+                <p>CUI: CIF43414871</p>
+                <p>J40/16778/2020</p>
               </div>
             </div>
           </div>
