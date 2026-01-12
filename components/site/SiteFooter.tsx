@@ -3,20 +3,6 @@
 import Link from "next/link";
 import Image from "next/image";
 import { Button } from "../ui/button";
-import dynamic from "next/dynamic";
-
-// Import Netopia logo component dynamically to avoid SSR issues
-// The package exports the component as default
-const NTPLogo = dynamic(
-  () => import('ntp-logo-react').then((mod: any) => {
-    // Handle different export patterns
-    return mod.default || mod.NTPLogo || mod;
-  }),
-  {
-    ssr: false,
-    loading: () => <div className="w-20 h-6 bg-gray-200 rounded animate-pulse" />
-  }
-) as React.ComponentType<{ color?: string; version?: string; secret?: string }>;
 
 export interface FooterColumn {
   title: string;
@@ -91,13 +77,16 @@ export function SiteFooter({ columns, payments, carriers }: SiteFooterProps) {
                     href="https://netopia-payments.com" 
                     target="_blank" 
                     rel="noopener noreferrer"
-                    className="flex items-center"
+                    className="flex items-center h-full px-2"
                     aria-label="Plăți securizate prin Netopia Payments"
                   >
-                    <NTPLogo 
-                      color="#0066CC" 
-                      version="horizontal" 
-                      secret="156304" 
+                    <Image
+                      src="/partners/payments/netopia.svg"
+                      alt="Netopia Payments"
+                      width={90}
+                      height={24}
+                      className="object-contain h-5"
+                      priority={false}
                     />
                   </a>
                 </div>
