@@ -20,19 +20,26 @@ if (!process.env.DATABASE_URL) {
 
 // Week 4 MVP: Commission and Payment Configuration
 export const COMMISSION_PCT = parseInt(process.env.COMMISSION_PCT || '1000', 10); // Default 10% (1000 basis points)
-export const NETOPIA_MERCHANT_ID = process.env.NETOPIA_MERCHANT_ID || '';
-export const NETOPIA_PRIVATE_KEY = process.env.NETOPIA_PRIVATE_KEY || '';
-export const NETOPIA_PUBLIC_CERT = process.env.NETOPIA_PUBLIC_CERT || '';
+export const NETOPIA_MERCHANT_ID = (process.env.NETOPIA_MERCHANT_ID || '').trim();
+export const NETOPIA_PRIVATE_KEY = (process.env.NETOPIA_PRIVATE_KEY || '').trim();
+export const NETOPIA_PUBLIC_CERT = (process.env.NETOPIA_PUBLIC_CERT || '').trim();
 export const SITE_URL = process.env.SITE_URL || process.env.NEXT_PUBLIC_BASE_URL || 'http://localhost:3000';
 
 // Validate required environment variables
 // Note: Using console.warn here to avoid circular dependency with logger
-if (!NETOPIA_MERCHANT_ID && process.env.NODE_ENV === 'production') {
-  console.warn('[ENV] NETOPIA_MERCHANT_ID is not set');
-}
-
-if (!NETOPIA_PRIVATE_KEY && process.env.NODE_ENV === 'production') {
-  console.warn('[ENV] NETOPIA_PRIVATE_KEY is not set');
+// Only warn in production and if variables are actually missing (not just empty strings from build time)
+if (process.env.NODE_ENV === 'production' || process.env.VERCEL) {
+  // Check if variables exist in process.env (even if empty, they were set)
+  const hasMerchantId = !!process.env.NETOPIA_MERCHANT_ID;
+  const hasPrivateKey = !!process.env.NETOPIA_PRIVATE_KEY;
+  
+  if (!hasMerchantId || !NETOPIA_MERCHANT_ID) {
+    console.warn('[ENV] NETOPIA_MERCHANT_ID is not set or is empty');
+  }
+  
+  if (!hasPrivateKey || !NETOPIA_PRIVATE_KEY) {
+    console.warn('[ENV] NETOPIA_PRIVATE_KEY is not set or is empty');
+  }
 }
 
 
