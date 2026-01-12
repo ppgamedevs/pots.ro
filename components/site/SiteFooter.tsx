@@ -6,19 +6,17 @@ import { Button } from "../ui/button";
 import dynamic from "next/dynamic";
 
 // Import Netopia logo component dynamically to avoid SSR issues
-// Try different import patterns based on how the package exports
+// The package exports the component as default
 const NTPLogo = dynamic(
-  () => import('ntp-logo-react').then((mod) => {
+  () => import('ntp-logo-react').then((mod: any) => {
     // Handle different export patterns
-    if (mod.default) return mod.default;
-    if (mod.NTPLogo) return mod.NTPLogo;
-    return mod;
+    return mod.default || mod.NTPLogo || mod;
   }),
   {
     ssr: false,
     loading: () => <div className="w-20 h-6 bg-gray-200 rounded animate-pulse" />
   }
-);
+) as React.ComponentType<{ color?: string; version?: string; secret?: string }>;
 
 export interface FooterColumn {
   title: string;
