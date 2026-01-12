@@ -12,6 +12,7 @@ import { formatCurrency } from '@/lib/money';
 interface ProductCardProps {
   product: {
     id: string;
+    slug: string;
     title: string;
     price: number;
     currency: string;

@@ -190,6 +190,7 @@ export default async function CategoryAttributePage({ params }: CategoryAttribut
                   key={product.id}
                   product={{
                     id: product.id,
+                    slug: product.slug,
                     title: product.title,
                     price: product.priceCents / 100, // Convert from cents
                     currency: product.currency || 'RON',
