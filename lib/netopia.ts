@@ -1,6 +1,9 @@
 import crypto from 'crypto';
 import { NETOPIA_MERCHANT_ID, NETOPIA_PRIVATE_KEY, NETOPIA_PUBLIC_CERT, SITE_URL } from './env';
 
+// Netopia gateway URL - can be overridden via environment variable
+const NETOPIA_GATEWAY_URL = process.env.NETOPIA_GATEWAY_URL;
+
 // Test credentials - replace with environment variables in production
 const TEST_MERCHANT_ID = '33MN-RVFE-X0J6-TUTC-4ZJB';
 const TEST_PRIVATE_KEY = `-----BEGIN PRIVATE KEY-----
@@ -43,6 +46,18 @@ yq6lLfx9BNWCPXp5RpYHnfcjRQ==
 const MERCHANT_ID = NETOPIA_MERCHANT_ID || TEST_MERCHANT_ID;
 const PRIVATE_KEY = NETOPIA_PRIVATE_KEY || TEST_PRIVATE_KEY;
 const PUBLIC_CERT = NETOPIA_PUBLIC_CERT || TEST_PUBLIC_CERT;
+
+// Helper function to escape HTML special characters
+function escapeHtml(text: string): string {
+  const map: Record<string, string> = {
+    '&': '&amp;',
+    '<': '&lt;',
+    '>': '&gt;',
+    '"': '&quot;',
+    "'": '&#039;',
+  };
+  return text.replace(/[&<>"']/g, (m) => map[m]);
+}
 
 export interface NetopiaPaymentRequest {
   orderId: string;
@@ -155,11 +170,33 @@ export function createNetopiaPaymentRequest(request: NetopiaPaymentRequest): Net
   const signature = generateNetopiaSignature(paymentData);
   paymentData.signature = signature;
 
-  // Return HTML form for auto-submission to Netopia test environment
+  // Determine Netopia gateway URL
+  // Use environment variable if set, otherwise use default based on environment
+  let gatewayUrl = NETOPIA_GATEWAY_URL;
+  
+  if (!gatewayUrl) {
+    // Default URLs - these may need to be adjusted based on Netopia documentation
+    // Common Netopia endpoints:
+    // - /payment/card (for card payments)
+    // - /payment/request (alternative endpoint)
+    // - /payment (generic endpoint)
+    const isTestEnvironment = MERCHANT_ID === TEST_MERCHANT_ID || process.env.NODE_ENV !== 'production';
+    
+    // Note: Netopia may use the same URL for test and production, differentiated by credentials
+    // If you have a separate sandbox URL, use it here for test environment
+    gatewayUrl = 'https://secure.netopia.ro/payment/card';
+    
+    // Alternative: if sandbox URL is different, uncomment below:
+    // gatewayUrl = isTestEnvironment 
+    //   ? 'https://sandbox.netopia.ro/payment/card'
+    //   : 'https://secure.netopia.ro/payment/card';
+  }
+
+  // Return HTML form for auto-submission to Netopia
   const formHtml = `
-    <form id="netopia-payment-form" method="POST" action="https://secure.netopia.ro/payment/process">
+    <form id="netopia-payment-form" method="POST" action="${gatewayUrl}">
       ${Object.entries(paymentData).map(([key, value]) => 
-        `<input type="hidden" name="${key}" value="${value}" />`
+        `<input type="hidden" name="${key}" value="${escapeHtml(value)}" />`
       ).join('')}
     </form>
     <script>
