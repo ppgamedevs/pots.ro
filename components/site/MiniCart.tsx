@@ -79,7 +79,7 @@ export function MiniCart({ isOpen, onClose }: MiniCartProps) {
             <div className="space-y-3 mb-4 max-h-64 overflow-y-auto">
               {cartItems.map((item) => (
                 <div key={item.id} className="flex items-center gap-3">
-                  <Link href={`/p/${item.productId}-${item.slug || ''}`} onClick={onClose}>
+                  <Link href={`/p/${item.slug || ''}`} onClick={onClose}>
                     <div className="relative w-12 h-12 bg-bg-soft rounded border border-line flex-shrink-0 overflow-hidden">
                       <Image
                         src={item.imageUrl || '/placeholder.png'}
@@ -91,7 +91,7 @@ export function MiniCart({ isOpen, onClose }: MiniCartProps) {
                     </div>
                   </Link>
                   <div className="flex-1 min-w-0">
-                    <Link href={`/p/${item.productId}-${item.slug || ''}`} onClick={onClose}>
+                    <Link href={`/p/${item.slug || ''}`} onClick={onClose}>
                       <p className="text-sm font-medium text-ink truncate hover:text-primary transition-micro">
                         {item.productName}
                       </p>

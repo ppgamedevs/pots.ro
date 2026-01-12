@@ -228,7 +228,7 @@ export default function CartPage() {
                         className="p-6 flex items-center gap-4"
                       >
                         {/* Product Image */}
-                        <Link href={`/p/${item.productId}-${item.slug || ''}`}>
+                        <Link href={`/p/${item.slug || ''}`}>
                           <div className="relative w-20 h-20 flex-shrink-0">
                             <Image
                               src={item.imageUrl || '/placeholder.png'}
@@ -242,7 +242,7 @@ export default function CartPage() {
 
                         {/* Product Info */}
                         <div className="flex-1 min-w-0">
-                          <Link href={`/p/${item.productId}-${item.slug || ''}`}>
+                          <Link href={`/p/${item.slug || ''}`}>
                             <h3 className="font-medium text-slate-900 dark:text-slate-100 mb-1 hover:text-primary transition-micro">
                               {item.productName}
                             </h3>

@@ -78,7 +78,7 @@ export function CommandPaletteControlled({
                     {products.map((p: any) => (
                       <Command.Item
                         key={`p-${p.id}`}
-                        onSelect={() => go(`/p/${p.id}-${p.slug}`)}
+                        onSelect={() => go(`/p/${p.slug}`)}
                         className={rowClass}
                       >
                         <div className="flex items-center gap-3">

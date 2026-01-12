@@ -34,7 +34,7 @@ export async function GET(request: NextRequest) {
     const lastmod = new Date(product.updatedAt).toISOString().split('T')[0];
     
     return `  <url>
-    <loc>https://floristmarket.ro/p/${product.id}-${slug}</loc>
+    <loc>https://floristmarket.ro/p/${slug}</loc>
     <lastmod>${lastmod}</lastmod>
     <changefreq>weekly</changefreq>
     <priority>${priority}</priority>

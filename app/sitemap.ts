@@ -93,7 +93,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
       .limit(50000) // Bing limit: 50,000 URLs per sitemap
 
     const productPages: MetadataRoute.Sitemap = productsData.map((product: InferSelectModel<typeof products>) => ({
-      url: `${baseUrl}/p/${product.id}-${product.slug}`,
+      url: `${baseUrl}/p/${product.slug}`,
       lastModified: product.updatedAt || new Date(),
       changeFrequency: 'weekly' as const,
       priority: 0.8,

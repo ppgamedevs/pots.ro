@@ -1,7 +1,7 @@
 import { Product } from "@/lib/data/products";
 
 export function buildProductLdJson(product: Product) {
-  const url = `https://www.floristmarket.ro/p/${product.id}-${product.slug}`;
+  const url = `https://www.floristmarket.ro/p/${product.slug}`;
   const image = product.images?.[0]?.url || "https://www.floristmarket.ro/og/default-product.jpg";
   const inStock = product.stock_qty > 0;
 

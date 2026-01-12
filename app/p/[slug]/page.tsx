@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { useParams } from "next/navigation";
+import { useToast } from "@/lib/hooks/use-toast";
 import { generateProductLDJSON } from "@/lib/seo/meta-catalog";
 import { PDPGallery } from "@/components/product/PDPGallery";
 import { PDPInfo } from "@/components/product/PDPInfo";
@@ -48,6 +49,7 @@ interface ProductResponse {
 export default function PDP() {
   const params = useParams();
   const slug = params.slug as string;
+  const { toast } = useToast();
   
   const [productData, setProductData] = useState<ProductResponse | null>(null);
   const [loading, setLoading] = useState(true);
@@ -77,14 +79,42 @@ export default function PDP() {
     }
   }, [slug]);
 
-  const handleAddToCart = (quantity: number) => {
-    if (productData?.product) {
-      console.log('Adding to cart:', {
-        product: productData.product.title,
-        quantity,
-        price: productData.product.price
+  const handleAddToCart = async (quantity: number) => {
+    if (!productData?.product) return;
+
+    try {
+      const response = await fetch('/api/cart/add', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        credentials: 'include',
+        body: JSON.stringify({
+          product_id: productData.product.id,
+          qty: quantity
+        }),
       });
-      // Implementare adăugare în coș
+
+      if (!response.ok) {
+        const error = await response.json().catch(() => ({ error: 'Unknown error' }));
+        console.error('Add to cart error:', error);
+        toast(error.error || "Nu s-a putut adăuga produsul în coș.", "error");
+        return;
+      }
+
+      const result = await response.json();
+      console.log('Add to cart success:', result);
+      
+      // Refresh cart data
+      await fetch('/api/cart', { 
+        credentials: 'include',
+        cache: 'no-store'
+      });
+      
+      toast(`Produsul a fost adăugat în coș (${quantity} bucăți).`, "success");
+    } catch (error) {
+      console.error('Add to cart exception:', error);
+      toast("Nu s-a putut adăuga produsul în coș.", "error");
     }
   };
 

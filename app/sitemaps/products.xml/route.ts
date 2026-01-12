@@ -44,7 +44,7 @@ export async function GET(request: NextRequest) {
     }
 
     const urls = productsResult.map((product: any) => ({
-      loc: `${baseUrl}/p/${product.id}-${product.slug}`,
+      loc: `${baseUrl}/p/${product.slug}`,
       lastmod: product.updatedAt.toISOString(),
       changefreq: 'weekly',
       priority: '0.8',

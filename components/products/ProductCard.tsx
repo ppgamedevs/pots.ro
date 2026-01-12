@@ -33,14 +33,7 @@ interface ProductCardProps {
 }
 
 export function ProductCard({ product }: ProductCardProps) {
-  const productSlug = product.title
-    .toLowerCase()
-    .replace(/[^a-z0-9\s-]/g, '')
-    .replace(/\s+/g, '-')
-    .replace(/-+/g, '-')
-    .trim();
-
-  const productUrl = `/p/${product.id}-${productSlug}`;
+  const productUrl = `/p/${product.slug}`;
   const sellerUrl = `/s/${product.seller.slug}`;
 
   return (
