@@ -175,14 +175,14 @@ export function createNetopiaPaymentRequest(request: NetopiaPaymentRequest): Net
   let gatewayUrl = NETOPIA_GATEWAY_URL;
   
   if (!gatewayUrl) {
-    // Netopia payment gateway URL
-    // The correct endpoint is /payment/request (not /payment/card)
-    // This is the standard endpoint for Netopia/MobilPay payment processing
+    // Netopia/MobilPay payment gateway URL
+    // The standard endpoint for MobilPay (now Netopia) is secure.mobilpay.ro
+    // This works for both test and production environments, differentiated by credentials
     const isTestEnvironment = MERCHANT_ID === TEST_MERCHANT_ID || process.env.NODE_ENV !== 'production';
     
-    // Netopia uses the same URL for test and production, differentiated by credentials
+    // Use the standard MobilPay endpoint (works with Netopia credentials)
     // For test environment, use test credentials (already set via MERCHANT_ID)
-    gatewayUrl = 'https://secure.netopia.ro/payment/request';
+    gatewayUrl = 'https://secure.mobilpay.ro/payment/request';
   }
 
   // Return HTML form for auto-submission to Netopia
