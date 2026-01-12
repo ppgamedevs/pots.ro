@@ -1,3 +1,6 @@
+// Suppress url.parse() deprecation warnings from dependencies (aws-sdk v2, etc.)
+import '@/lib/suppress-deprecation-warnings';
+
 import { NextRequest, NextResponse } from 'next/server';
 import { verifyMiddlewareSessionToken } from '@/lib/auth/middleware-session';
 
