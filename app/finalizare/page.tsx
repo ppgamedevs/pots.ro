@@ -218,7 +218,8 @@ export default function CheckoutPage() {
 
       const payload = await res.json();
       toast("Comanda a fost creată. Continuăm către plată.", "success");
-      router.push(`/finalizare/success?order_id=${encodeURIComponent(payload.order_id || "")}`);
+      // Redirect directly to payment page to initialize Netopia payment
+      router.push(`/finalizare/pay?order_id=${encodeURIComponent(payload.order_id || "")}`);
       
     } catch (error) {
       toast("Eroare la plasarea comenzii. Te rugăm să încerci din nou.", "error");

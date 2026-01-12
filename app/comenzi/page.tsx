@@ -2,8 +2,6 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { Metadata } from "next";
-import { requireAuth } from '@/lib/auth/session';
 import { ShoppingBag, ArrowLeft, Clock, CheckCircle, Package, Truck, AlertCircle, CreditCard } from "lucide-react";
 import Link from "next/link";
 import useSWR from "swr";
