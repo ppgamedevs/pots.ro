@@ -1,5 +1,5 @@
 import crypto from 'crypto';
-import { NETOPIA_MERCHANT_ID, NETOPIA_PRIVATE_KEY, NETOPIA_PUBLIC_CERT, SITE_URL } from './env';
+import { NETOPIA_MERCHANT_ID, NETOPIA_PRIVATE_KEY, NETOPIA_PUBLIC_CERT, NETOPIA_API_KEY, NETOPIA_POS_SIGNATURE, SITE_URL } from './env';
 
 // Netopia gateway URL - can be overridden via environment variable
 const NETOPIA_GATEWAY_URL = process.env.NETOPIA_GATEWAY_URL;
@@ -225,4 +225,107 @@ export function parseNetopiaCallback(formData: FormData): NetopiaCallbackData {
  */
 export function isNetopiaPaymentSuccess(status: string): boolean {
   return status === 'success' || status === 'paid' || status === 'confirmed';
+}
+
+/**
+ * Create Netopia v2 JSON API payment request
+ * This uses the new Netopia v2 API with JSON instead of form submission
+ */
+export async function createNetopiaV2PaymentRequest(
+  request: NetopiaPaymentRequest & {
+    billing?: {
+      email?: string;
+      phone?: string;
+      firstName?: string;
+      lastName?: string;
+      city?: string;
+      country?: string;
+      postalCode?: string;
+    };
+  }
+): Promise<NetopiaPaymentResponse> {
+  const posSignature = NETOPIA_POS_SIGNATURE || MERCHANT_ID;
+  const apiKey = NETOPIA_API_KEY;
+  const isLive = process.env.NODE_ENV === 'production' && MERCHANT_ID !== TEST_MERCHANT_ID;
+
+  if (!apiKey) {
+    throw new Error('NETOPIA_API_KEY is required for v2 API integration');
+  }
+
+  // Determine API base URL
+  const baseUrl = isLive 
+    ? 'https://secure.mobilpay.ro'
+    : 'https://secure.sandbox.netopia-payments.com';
+
+  const endpoint = `${baseUrl}/payment/card/start`;
+
+  // Prepare payment request according to Netopia v2 API
+  const configData = {
+    emailTemplate: '',
+    notifyUrl: request.confirmUrl,
+    redirectUrl: request.returnUrl,
+    language: 'RO'
+  };
+
+  const orderData = {
+    orderID: request.orderId,
+    amount: request.amount,
+    currency: request.currency,
+    description: request.description,
+    billing: request.billing || {
+      email: '',
+      phone: '',
+      firstName: '',
+      lastName: '',
+      city: '',
+      country: '642', // Romania
+      postalCode: ''
+    }
+  };
+
+  // Make API request
+  try {
+    const response = await fetch(endpoint, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${apiKey}`,
+        'X-POS-Signature': posSignature
+      },
+      body: JSON.stringify({
+        configData,
+        orderData
+      })
+    });
+
+    if (!response.ok) {
+      const errorData = await response.json().catch(() => ({ message: 'Unknown error' }));
+      throw new Error(`Netopia API error: ${response.status} - ${errorData.message || 'Unknown error'}`);
+    }
+
+    const responseData = await response.json();
+
+    // Handle response according to Netopia v2 API
+    if (responseData.data?.error?.code === '100' && 
+        responseData.data?.payment?.status === 15) {
+      // Redirect to 3D Secure authentication
+      const authUrl = responseData.data.customerAction?.url;
+      return {
+        gateway: 'netopia',
+        redirectUrl: authUrl
+      };
+    } else if (responseData.data?.error?.code === '0' && 
+               responseData.data?.payment?.status === 3) {
+      // Payment successful (no 3D Secure required)
+      return {
+        gateway: 'netopia',
+        redirectUrl: request.returnUrl
+      };
+    } else {
+      throw new Error(`Payment failed: ${responseData.data?.error?.message || 'Unknown error'}`);
+    }
+  } catch (error) {
+    console.error('Netopia v2 API error:', error);
+    throw error;
+  }
 }

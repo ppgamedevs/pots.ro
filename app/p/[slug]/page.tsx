@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import { useParams } from "next/navigation";
 import { useToast } from "@/lib/hooks/use-toast";
+import { mutate as globalMutate } from "swr";
 import { generateProductLDJSON } from "@/lib/seo/meta-catalog";
 import { PDPGallery } from "@/components/product/PDPGallery";
 import { PDPInfo } from "@/components/product/PDPInfo";
@@ -105,11 +106,13 @@ export default function PDP() {
       const result = await response.json();
       console.log('Add to cart success:', result);
       
-      // Refresh cart data
-      await fetch('/api/cart', { 
-        credentials: 'include',
-        cache: 'no-store'
-      });
+      // Fetch fresh cart data and update all subscribers globally
+      const freshCart = await fetch('/api/cart', { 
+        credentials: 'include', 
+        cache: 'no-store',
+        headers: { 'Cache-Control': 'no-cache' }
+      }).then(res => res.json());
+      await globalMutate('/api/cart', freshCart, false);
       
       toast(`Produsul a fost adăugat în coș (${quantity} bucăți).`, "success");
     } catch (error) {

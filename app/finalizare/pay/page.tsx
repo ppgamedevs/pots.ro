@@ -27,7 +27,12 @@ export default function CheckoutPayPage() {
         // Initialize Netopia payment
         const paymentResponse = await initNetopia(orderId);
 
-        if (paymentResponse.formHtml) {
+        // Handle v2 API redirect (preferred)
+        if (paymentResponse.redirectUrl) {
+          // Redirect to payment URL (v2 API returns redirectUrl)
+          window.location.replace(paymentResponse.redirectUrl);
+        } else if (paymentResponse.formHtml) {
+          // Fallback to v1 form submission
           // Auto-submit the form
           // Create a temporary container that's hidden
           const tempDiv = document.createElement('div');
@@ -65,9 +70,6 @@ export default function CheckoutPayPage() {
           } else {
             throw new Error('Document body nu este disponibil');
           }
-        } else if (paymentResponse.redirectUrl) {
-          // Redirect to payment URL
-          window.location.replace(paymentResponse.redirectUrl);
         } else {
           throw new Error('Răspuns invalid de la serviciul de plată');
         }

@@ -3,7 +3,7 @@ import { db } from "@/db";
 import { orders } from "@/db/schema/core";
 import { eq } from "drizzle-orm";
 import { getUserId } from "@/lib/auth-helpers";
-import { createNetopiaPaymentRequest, NetopiaPaymentRequest } from "@/lib/netopia";
+import { createNetopiaPaymentRequest, createNetopiaV2PaymentRequest, NetopiaPaymentRequest } from "@/lib/netopia";
 import { SITE_URL } from "@/lib/env";
 import { z } from "zod";
 
@@ -44,17 +44,41 @@ export async function POST(request: NextRequest) {
     }
 
     // Create Netopia payment request
+    // Try v2 API first (JSON API), fallback to v1 (form submission) if API key not available
     const paymentRequest: NetopiaPaymentRequest = {
       orderId: order.id,
       amount: order.totalCents / 100, // Convert cents to RON
       currency: order.currency,
       description: `Order ${order.id} - Pots.ro`,
-      returnUrl: `${SITE_URL}/checkout/return?order=${order.id}`,
+      returnUrl: `${SITE_URL}/finalizare/success?order=${order.id}`,
       confirmUrl: `${SITE_URL}/api/payments/netopia/callback`,
     };
 
-    const paymentResponse = createNetopiaPaymentRequest(paymentRequest);
+    // Try v2 API if API key is available
+    if (process.env.NETOPIA_API_KEY) {
+      try {
+        const paymentResponse = await createNetopiaV2PaymentRequest({
+          ...paymentRequest,
+          billing: {
+            // Add billing info from order if available
+            email: '', // TODO: Get from order/user
+            phone: '',
+            firstName: '',
+            lastName: '',
+            city: '',
+            country: '642', // Romania
+            postalCode: ''
+          }
+        });
+        return NextResponse.json(paymentResponse);
+      } catch (error) {
+        console.error('Netopia v2 API failed, falling back to v1:', error);
+        // Fall through to v1
+      }
+    }
 
+    // Fallback to v1 (form submission)
+    const paymentResponse = createNetopiaPaymentRequest(paymentRequest);
     return NextResponse.json(paymentResponse);
 
   } catch (error) {
