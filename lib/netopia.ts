@@ -245,7 +245,12 @@ export async function createNetopiaV2PaymentRequest(
     };
   }
 ): Promise<NetopiaPaymentResponse> {
+  // POS Signature = Merchant ID (identifică punctul de vânzare)
+  // Aceasta este "Semnătura" din panoul Netopia
   const posSignature = NETOPIA_POS_SIGNATURE || MERCHANT_ID;
+  
+  // API Key = cheie separată generată din Profil -> Securitate în panoul Netopia
+  // NU este același lucru cu "Semnătura"!
   const apiKey = NETOPIA_API_KEY;
   const isLive = process.env.NODE_ENV === 'production' && MERCHANT_ID !== TEST_MERCHANT_ID;
 
