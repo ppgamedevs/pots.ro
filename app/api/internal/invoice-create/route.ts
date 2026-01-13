@@ -77,7 +77,7 @@ export async function POST(request: NextRequest) {
     if (invoiceType === 'commission') {
       // Emite doar factura de comision
       const totalCommissionCents = orderItemsResult.reduce(
-        (sum, item) => sum + item.orderItem.commissionAmountCents,
+        (sum: number, item) => sum + Number(item.orderItem.commissionAmountCents),
         0
       );
 
