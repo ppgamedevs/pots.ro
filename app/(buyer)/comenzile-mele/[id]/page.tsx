@@ -145,9 +145,10 @@ export default function OrderDetailPage({ params }: { params: Promise<{ id: stri
       try {
         setLoading(true);
         const resolvedParams = await params;
-        const orderNumber = resolvedParams.id; // orderNumber din URL
+        const orderIdentifier = resolvedParams.id; // Poate fi orderNumber sau UUID
         
-        const response = await fetch(`/api/orders/${orderNumber}`);
+        // Endpoint-ul acceptă atât orderNumber cât și UUID
+        const response = await fetch(`/api/orders/${orderIdentifier}`);
         
         if (!response.ok) {
           if (response.status === 404) {

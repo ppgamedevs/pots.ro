@@ -1,42 +1,62 @@
 import { NextRequest, NextResponse } from "next/server";
 import { db } from "@/db";
-import { orders, orderItems, products, sellers } from "@/db/schema/core";
-import { eq, and, inArray } from "drizzle-orm";
-import { getUserId } from "@/lib/auth-helpers";
+import { orders, orderItems, products, sellers, users, invoices } from "@/db/schema/core";
+import { eq, and, inArray, or } from "drizzle-orm";
+import { getUserId, getCurrentUser } from "@/lib/auth-helpers";
 import { sellerIdsForUser } from "@/lib/ownership";
 
-export async function GET(request: NextRequest, { params }: { params: { id: string } }) {
+export async function GET(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {
-    const userId = await getUserId();
-    if (!userId) {
-      return NextResponse.json({ error: "Authentication required" }, { status: 401 });
-    }
-
-    const orderId = params.id;
-
-    // Get order
+    const { id } = await params;
+    const user = await getCurrentUser();
+    
+    // Parametrul 'id' poate fi fie UUID, fie orderNumber
+    // Detectăm dacă este orderNumber (format: ORD-YYYYMMDD-XXXXX)
+    const isOrderNumber = /^ORD-\d{8}-[A-Z0-9]{5}$/.test(id);
+    
+    // Get order - încercăm mai întâi după orderNumber, apoi după UUID
     const orderResult = await db
-      .select()
+      .select({
+        order: orders,
+        buyer: users,
+      })
       .from(orders)
-      .where(eq(orders.id, orderId))
+      .innerJoin(users, eq(orders.buyerId, users.id))
+      .where(
+        isOrderNumber 
+          ? eq(orders.orderNumber, id)
+          : eq(orders.id, id)
+      )
       .limit(1);
 
-    const order = orderResult[0];
-    if (!order) {
+    if (orderResult.length === 0) {
       return NextResponse.json({ error: "Order not found" }, { status: 404 });
     }
 
-    // Check access permissions
-    const userSellerIds = await sellerIdsForUser(userId);
-    const isBuyer = order.buyerId === userId;
-    const isSeller = userSellerIds.length > 0;
-    const isAdmin = false; // TODO: implement admin check
+    const { order, buyer } = orderResult[0];
 
-    if (!isBuyer && !isSeller && !isAdmin) {
-      return NextResponse.json({ error: "Access denied" }, { status: 403 });
+    // Check access permissions
+    if (user) {
+      const userSellerIds = await sellerIdsForUser(user.id);
+      const isBuyer = order.buyerId === user.id;
+      const isSeller = userSellerIds.length > 0;
+      const isAdmin = user.role === 'admin';
+
+      if (!isBuyer && !isSeller && !isAdmin) {
+        return NextResponse.json({ error: "Access denied" }, { status: 403 });
+      }
+    } else {
+      // Pentru endpoint-ul public (dacă e nevoie), verificăm doar dacă există comanda
+      // În mod normal, ar trebui să fie autentificat
+      return NextResponse.json({ error: "Authentication required" }, { status: 401 });
     }
 
     // Get order items
+    const userSellerIds = user ? await sellerIdsForUser(user.id) : [];
+    const isBuyer = user && order.buyerId === user.id;
+    const isSeller = userSellerIds.length > 0;
+    const isAdmin = user?.role === 'admin';
+    
     let orderItemsResult;
     if (isSeller && !isBuyer && !isAdmin) {
       // If user is seller, only show their items
@@ -83,50 +103,73 @@ export async function GET(request: NextRequest, { params }: { params: { id: stri
         .where(eq(orderItems.orderId, orderId));
     }
 
-    // Build response
-    const response = {
+    // Obține facturile asociate
+    const invoicesResult = await db
+      .select()
+      .from(invoices)
+      .where(eq(invoices.orderId, order.id));
+
+    // Formatează răspunsul pentru pagina de comandă
+    const shippingAddress = order.shippingAddress as any;
+
+    return NextResponse.json({
       id: order.id,
-      buyer_id: order.buyerId,
+      orderNumber: order.orderNumber,
       status: order.status,
       currency: order.currency,
-      subtotal_cents: order.subtotalCents,
-      shipping_fee_cents: order.shippingFeeCents,
-      total_cents: order.totalCents,
-      payment_ref: order.paymentRef,
-      shipping_address: order.shippingAddress,
-      awb_number: order.awbNumber,
-      awb_label_url: order.awbLabelUrl,
-      carrier_meta: order.carrierMeta,
-      delivered_at: order.deliveredAt,
-      canceled_reason: order.canceledReason,
-      delivery_status: order.deliveryStatus,
-      created_at: order.createdAt,
-      updated_at: order.updatedAt,
+      createdAt: order.createdAt,
+      updatedAt: order.updatedAt,
+      paidAt: order.paidAt,
+      packedAt: order.packedAt,
+      shippedAt: order.shippedAt,
+      deliveredAt: order.deliveredAt,
+      totals: {
+        subtotal_cents: order.subtotalCents,
+        shipping_fee_cents: order.shippingFeeCents,
+        total_discount_cents: order.totalDiscountCents,
+        total_cents: order.totalCents,
+        currency: order.currency,
+      },
+      shippingAddress: {
+        name: shippingAddress?.name || shippingAddress?.firstName + ' ' + shippingAddress?.lastName || buyer.name,
+        email: shippingAddress?.email || buyer.email,
+        phone: shippingAddress?.phone,
+        address: shippingAddress?.address,
+        city: shippingAddress?.city,
+        county: shippingAddress?.county,
+        postalCode: shippingAddress?.postalCode,
+        country: shippingAddress?.country || 'România',
+        notes: shippingAddress?.notes,
+      },
       items: orderItemsResult.map((item: any) => ({
         id: item.id,
-        product_id: item.productId,
-        seller_id: item.sellerId,
+        productId: item.product.id,
+        productName: item.product.title,
+        productSlug: item.product.slug,
+        sellerName: item.seller.brandName || item.seller.company,
         qty: item.qty,
-        unit_price_cents: item.unitPriceCents,
-        subtotal_cents: item.subtotalCents,
-        commission_pct: item.commissionPct,
-        commission_amount_cents: item.commissionAmountCents,
-        seller_due_cents: item.sellerDueCents,
-        product: {
-          id: item.product.id,
-          title: item.product.title,
-          slug: item.product.slug,
-          image_url: item.product.imageUrl,
-        },
-        seller: {
-          id: item.seller.id,
-          slug: item.seller.slug,
-          brand_name: item.seller.brandName,
-        },
+        unitPriceCents: item.unitPriceCents,
+        subtotalCents: item.subtotalCents,
       })),
-    };
-
-    return NextResponse.json(response);
+      tracking: {
+        awbNumber: order.awbNumber,
+        carrier: (order.carrierMeta as any)?.carrier,
+        trackingUrl: (order.carrierMeta as any)?.trackingUrl,
+      },
+      invoices: invoicesResult.map((inv) => ({
+        id: inv.id,
+        type: inv.type,
+        series: inv.series,
+        number: inv.number,
+        pdfUrl: inv.pdfUrl,
+        total: Number(inv.total),
+        currency: inv.currency,
+        issuer: inv.issuer,
+        status: inv.status,
+        sellerInvoiceNumber: inv.sellerInvoiceNumber,
+        createdAt: inv.createdAt,
+      })),
+    });
 
   } catch (error) {
     console.error("Get order error:", error);

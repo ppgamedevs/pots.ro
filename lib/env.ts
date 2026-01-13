@@ -25,6 +25,8 @@ export const NETOPIA_PRIVATE_KEY = (process.env.NETOPIA_PRIVATE_KEY || '').trim(
 export const NETOPIA_PUBLIC_CERT = (process.env.NETOPIA_PUBLIC_CERT || '').trim();
 export const NETOPIA_API_KEY = (process.env.NETOPIA_API_KEY || '').trim();
 export const NETOPIA_POS_SIGNATURE = (process.env.NETOPIA_POS_SIGNATURE || process.env.NETOPIA_MERCHANT_ID || '').trim();
+// ID-ul punctului de vânzare pentru logo Netopia (din panou -> Identitate vizuală)
+export const NETOPIA_POS_ID = (process.env.NETOPIA_POS_ID || '156304').trim();
 export const SITE_URL = process.env.SITE_URL || process.env.NEXT_PUBLIC_BASE_URL || 'http://localhost:3000';
 
 // Validate required environment variables

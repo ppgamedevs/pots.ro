@@ -5,6 +5,11 @@ import Image from "next/image";
 import Script from "next/script";
 import { Button } from "../ui/button";
 
+// ID-ul punctului de vânzare pentru logo Netopia
+// Obține-l din panoul Netopia -> Identitate vizuală -> copiază codul generat
+// ID-ul se găsește în parametrul ?p=XXXXX din URL-ul script-ului
+const NETOPIA_POS_ID = process.env.NEXT_PUBLIC_NETOPIA_POS_ID || '156304';
+
 export interface FooterColumn {
   title: string;
   links: {
@@ -73,6 +78,11 @@ export function SiteFooter({ columns, payments, carriers }: SiteFooterProps) {
                 </div>
                 
                 {/* Netopia Logo */}
+                {/* 
+                  IMPORTANT: Actualizează ID-ul punctului de vânzare (p=XXXXX) 
+                  cu ID-ul corect din panoul Netopia -> Identitate vizuală
+                  ID-ul se găsește în URL-ul script-ului generat: ?p=XXXXX
+                */}
                 <div className="flex items-center justify-center h-8 bg-white border border-line rounded-md shadow-sm px-2">
                   <a 
                     href="https://netopia-payments.com" 
@@ -86,11 +96,12 @@ export function SiteFooter({ columns, payments, carriers }: SiteFooterProps) {
                   </a>
                 </div>
                 <Script
-                  src="https://mny.ro/npId.js?p=156304"
+                  src={`https://mny.ro/npId.js?p=${NETOPIA_POS_ID}`}
                   type="text/javascript"
                   strategy="afterInteractive"
                   data-version="horizontal"
                   data-contrast-color="#ffffff"
+                  id="netopia-logo-script"
                 />
               </div>
             </div>
