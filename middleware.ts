@@ -1,7 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { verifyMiddlewareSessionToken } from '@/lib/auth/middleware-session';
-// Suppress url.parse() deprecation warnings from dependencies
-import '@/lib/suppress-deprecation-warnings';
 
 export async function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;
