@@ -89,7 +89,7 @@ export function Footer() {
                   rel="nofollow noopener"
                   className="hover:text-brand transition-colors"
                 >
-                  ANPC – soluționare online
+                  ANPC - soluționare online
                 </a>
               </li>
             </ul>
@@ -256,7 +256,7 @@ export function Footer() {
       <div className="border-t border-slate-200 dark:border-white/10 bg-white dark:bg-slate-800">
         <div className="max-w-7xl mx-auto px-4 py-4">
           <p className="text-center text-sm text-slate-500 dark:text-slate-400">
-            © {currentYear} FloristMarket.ro – Toate drepturile rezervate.
+            © {currentYear} FloristMarket.ro - Toate drepturile rezervate.
           </p>
         </div>
       </div>

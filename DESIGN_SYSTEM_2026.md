@@ -73,7 +73,7 @@ Ordinea secțiunilor:
 ### ⚡ Performanță & Accesibilitate
 
 #### Micro-interacțiuni
-- Fade/slide 120–180ms pe hover/enter
+- Fade/slide 120-180ms pe hover/enter
 - Fără animații grele
 - Transition-micro class pentru consistență
 
@@ -92,14 +92,14 @@ Ordinea secțiunilor:
 ### 🔧 API Endpoints (MVP)
 
 - `GET /api/promotions/home` - Structura sloturilor
-- `GET /api/categories/top` - 3–6 categorii
-- `GET /api/products/featured` - 8–12 produse
+- `GET /api/categories/top` - 3-6 categorii
+- `GET /api/products/featured` - 8-12 produse
 - `GET /api/blog/teasers` - 3 postări
 
 ### 📈 SEO & Metadata
 
 #### Metadata
-- Titlu: "FloristMarket – Marketplace de floristică: flori, ambalaje, cutii, accesorii"
+- Titlu: "FloristMarket - Marketplace de floristică: flori, ambalaje, cutii, accesorii"
 - Canonical /
 - OG/Twitter minimal (1200×630)
 
@@ -123,13 +123,13 @@ Ordinea secțiunilor:
 - -% verde închis
 
 #### Mini-cart
-- Listă 2–3 iteme + total
+- Listă 2-3 iteme + total
 - Butoane "Vezi coșul" / "Finalizează"
 
 ### 🎨 Art Direction Guidelines
 
 - Fotografie luminoasă, fonduri neutre, focus produs
-- Text pe imagini: max 15–20 caractere pe două rânduri
+- Text pe imagini: max 15-20 caractere pe două rânduri
 - Contrast AA pentru text pe imagini
 - Nicio gradientă grea; folosește spațiu alb ca instrument de design
 - Un singur accent vizual per ecran

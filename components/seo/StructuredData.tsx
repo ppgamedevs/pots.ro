@@ -44,7 +44,7 @@ export function StructuredData() {
         "@type": "WebPage",
         "@id": `${SITE_URL}/#webpage`,
         "url": SITE_URL,
-        "name": `${SITE_NAME} – Marketplace-ul profesioniștilor din floristică`,
+        "name": `${SITE_NAME} - Marketplace-ul profesioniștilor din floristică`,
         "isPartOf": {
           "@id": `${SITE_URL}/#website`
         },

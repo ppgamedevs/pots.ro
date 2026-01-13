@@ -202,7 +202,7 @@ async function handleSellerResponse(ticket: any, messageText: string, sellerPhon
     if (!eta || !validateETA(eta)) {
       // Invalid ETA format, ask for clarification
       await sendWhatsAppMessage(sellerPhone, 
-        "Formatul nu este recunoscut. Te rugăm să răspunzi cu: 'azi până la HH:MM' / 'mâine HH–HH' / '3–5 zile'"
+        "Formatul nu este recunoscut. Te rugăm să răspunzi cu: 'azi până la HH:MM' / 'mâine HH-HH' / '3-5 zile'"
       );
       return;
     }

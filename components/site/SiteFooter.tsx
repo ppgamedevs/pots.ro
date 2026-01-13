@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import Image from "next/image";
+import Script from "next/script";
 import { Button } from "../ui/button";
 
 export interface FooterColumn {
@@ -79,17 +80,18 @@ export function SiteFooter({ columns, payments, carriers }: SiteFooterProps) {
                     rel="noopener noreferrer"
                     className="flex items-center h-full px-2"
                     aria-label="Plăți securizate prin Netopia Payments"
+                    id="netopia-logo-container"
                   >
-                    <Image
-                      src="/partners/payments/netopia.svg"
-                      alt="Netopia Payments"
-                      width={90}
-                      height={24}
-                      className="object-contain h-5"
-                      priority={false}
-                    />
+                    {/* Logo will be injected by Netopia script */}
                   </a>
                 </div>
+                <Script
+                  src="https://mny.ro/npId.js?p=156304"
+                  type="text/javascript"
+                  strategy="afterInteractive"
+                  data-version="horizontal"
+                  data-contrast-color="#ffffff"
+                />
               </div>
             </div>
 

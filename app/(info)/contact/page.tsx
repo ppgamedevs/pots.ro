@@ -47,7 +47,7 @@ export default function ContactPage() {
       <div className="mb-8">
         <h1 className="text-3xl font-semibold text-ink">Contact</h1>
         <p className="text-subink mt-2">
-          Răspundem în 24–48h lucrătoare. Pentru urgențe, folosește email-urile directe.
+          Răspundem în 24-48h lucrătoare. Pentru urgențe, folosește email-urile directe.
         </p>
       </div>
 

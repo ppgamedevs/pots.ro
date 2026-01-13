@@ -95,7 +95,7 @@ npm run db:migrate
 ## Message Templates
 
 ### To Customer
-- Order found with ETA: "Comanda #1234: livrare estimată mâine 14:00–18:00"
+- Order found with ETA: "Comanda #1234: livrare estimată mâine 14:00-18:00"
 - Order not found: "Nu găsesc comanda #1234. Îmi dai emailul sau telefonul?"
 - Waiting for seller: "Întrebăm vânzătorul și revenim imediat"
 

@@ -638,7 +638,7 @@ export const createTriggersAndIndexes = sql`
   CREATE TABLE IF NOT EXISTS orders_extended (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     order_id UUID NOT NULL REFERENCES orders(id) ON DELETE CASCADE,
-    eta_text TEXT, -- "mâine 14:00–18:00", "3-5 zile", etc.
+    eta_text TEXT, -- "mâine 14:00-18:00", "3-5 zile", etc.
     tracking TEXT,
     created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW() NOT NULL,
     updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW() NOT NULL

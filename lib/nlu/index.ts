@@ -297,16 +297,16 @@ export function parseRomanianETA(text: string): string | null {
       }
     }
     if (lowerText.includes('între') || lowerText.includes('intre')) {
-      const timeMatch = lowerText.match(/(\d{1,2})\s*[-–]\s*(\d{1,2})/);
+      const timeMatch = lowerText.match(/(\d{1,2})\s*[-]\s*(\d{1,2})/);
       if (timeMatch) {
-        return `mâine ${timeMatch[1]}:00–${timeMatch[2]}:00`;
+        return `mâine ${timeMatch[1]}:00-${timeMatch[2]}:00`;
       }
     }
     return 'mâine';
   }
   
   // Day patterns
-  const dayMatch = lowerText.match(/(\d{1,2})\s*[-–]\s*(\d{1,2})\s*zile/);
+  const dayMatch = lowerText.match(/(\d{1,2})\s*[-]\s*(\d{1,2})\s*zile/);
   if (dayMatch) {
     return `${dayMatch[1]}-${dayMatch[2]} zile`;
   }

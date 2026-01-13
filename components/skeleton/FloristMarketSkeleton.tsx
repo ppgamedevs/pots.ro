@@ -405,7 +405,7 @@ export function PDPSample() {
         <div>
           <PDPInfo title="Ghiveci ceramic alb M" seller={{ name: "Atelier Verde", href: "/s/atelier-verde" }} price={89.9} oldPrice={99.9} stockLabel="În stoc" badges={["nou"]} />
           <PDPActions />
-          <PDPShipping carriers={["Cargus","DPD"]} eta="1–3 zile" />
+          <PDPShipping carriers={["Cargus","DPD"]} eta="1-3 zile" />
         </div>
       </main>
       <section className="mx-auto max-w-7xl px-4">

@@ -120,17 +120,48 @@ Urmărirea comenzii se face prin AWB trimis pe email.`
 - Produsul trebuie să fie în starea originală
 - Ambalația originală trebuie păstrată
 
-Procesul de retur:
-1. Soliciți returul prin contul personal
-2. Așteptați aprobarea vânzătorului
-3. Trimiteți produsul conform instrucțiunilor
-4. Primiți rambursarea după verificare
+Termenul estimativ de retur:
+- Procesarea cererii de retur: 1-2 zile lucrătoare de la solicitare
+- Aprobarea returului: 1-3 zile lucrătoare (în funcție de vânzător)
+- Livrarea produsului înapoi: 2-5 zile lucrătoare (după expediere)
+- Verificarea produsului returnat: 2-3 zile lucrătoare
+- Procesarea rambursării: 3-5 zile lucrătoare după verificare
+- Total estimativ: 9-18 zile lucrătoare de la solicitarea returului până la rambursare
+
+Modul de retur al produselor:
+1. Solicitare retur:
+   - Accesează secțiunea "Comenzi" din contul personal
+   - Selectează comanda pentru care dorești retur
+   - Completează formularul de retur cu motivul returului
+   - Alege metoda de retur (ridicare de la domiciliu sau depunere la curier)
+
+2. Aprobare și instrucțiuni:
+   - Vânzătorul va verifica cererea în termen de 1-3 zile lucrătoare
+   - Vei primi instrucțiuni detaliate pentru ambalare și expediere
+   - Vei primi eticheta AWB pentru retur (dacă este necesar)
+
+3. Ambalare și expediere:
+   - Ambală produsul în ambalația originală sau echivalentă
+   - Include toate accesoriile și documentația
+   - Atașează eticheta AWB primită (dacă este cazul)
+   - Depune pachetul la curier sau așteaptă ridicarea de la domiciliu
+
+4. Verificare și rambursare:
+   - Vânzătorul verifică produsul returnat
+   - Dacă produsul este în stare corespunzătoare, se procesează rambursarea
+   - Rambursarea se face în aceeași modalitate de plată folosită la comandă
+   - Vei primi notificare pe email când rambursarea este procesată
 
 Costurile de retur:
-- Pentru produse defecte: suportate de vânzător
-- Pentru schimbarea de părere: suportate de cumpărător
+- Pentru produse defecte sau neconforme: suportate de vânzător
+- Pentru schimbarea de părere: suportate de cumpărător (15-25 RON, în funcție de curier)
+- Pentru produse deteriorate de cumpărător: returul poate fi refuzat
 
-Rambursarea se face în aceeași modalitate de plată folosită la comandă.`
+Produse care nu pot fi returnate:
+- Produse personalizate sau făcute la comandă
+- Produse perisabile sau cu termen de valabilitate scurt
+- Produse deteriorate din cauza utilizării incorecte
+- Produse desigilate care nu pot fi revândute din motive de igienă sau siguranță`
     },
     {
       id: "liability",

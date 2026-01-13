@@ -30,7 +30,7 @@ Week 9 implementează funcționalități esențiale pentru MVP: import CSV produ
 
 #### 4. Meta dinamice & canonical
 - **Produse**: `${title} | ${seller.brandName} | Pots.ro`
-- **Categorii**: `${categoryName} la prețuri românești – Pots.ro`
+- **Categorii**: `${categoryName} la prețuri românești - Pots.ro`
 - **OG Tags**: Complete cu imagini și descrieri
 - **Twitter Cards**: Summary large image
 

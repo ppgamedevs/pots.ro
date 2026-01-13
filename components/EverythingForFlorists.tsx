@@ -4,7 +4,7 @@ import Link from "next/link";
 const items = [
   {
     title: "Ghivece & suporturi moderne",
-    desc: "Ceramică, beton, metal — stil curat pentru vitrine și amenajări.",
+    desc: "Ceramică, beton, metal - stil curat pentru vitrine și amenajări.",
     href: "/c/ghivece",
     img: "/banners/for-florists/pots.jpg",
     alt: "Ghivece și suporturi moderne",
@@ -17,7 +17,7 @@ const items = [
     alt: "Panglici și decorațiuni premium",
   },
   {
-    title: "Cutiile rotunde din catifea — bestseller 2025",
+    title: "Cutiile rotunde din catifea - bestseller 2025",
     desc: "Seturi pe mărimi, fără capac, peste 20 de culori disponibile.",
     href: "/c/cutii-rotunde",
     img: "/banners/for-florists/velvet-round-boxes.jpg",
@@ -25,7 +25,7 @@ const items = [
   },
   {
     title: "Accesorii esențiale pentru atelierul tău",
-    desc: "Bureți florali, folii, benzi, instrumente — totul într-un singur loc.",
+    desc: "Bureți florali, folii, benzi, instrumente - totul într-un singur loc.",
     href: "/c/accesorii",
     img: "/banners/for-florists/tools.jpg",
     alt: "Accesorii esențiale pentru atelier",

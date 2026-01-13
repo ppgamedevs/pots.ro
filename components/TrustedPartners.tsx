@@ -31,7 +31,7 @@ export default function TrustedPartners() {
             </p>
           </header>
 
-          {/* bare logo row – fără casete */}
+          {/* bare logo row - fără casete */}
           <div className="flex flex-wrap items-center justify-center gap-x-8 gap-y-6 md:gap-x-14 md:justify-start">
             {partners.map((p) => {
               const img = (

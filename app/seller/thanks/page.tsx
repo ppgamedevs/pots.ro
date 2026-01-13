@@ -12,7 +12,7 @@ export default function SellerThanksPage() {
         Aplicație trimisă
       </h1>
       <p className="text-ink/70 mt-2">
-        Îți mulțumim! Verificăm datele și revenim pe e-mail în 1–2 zile lucrătoare.
+        Îți mulțumim! Verificăm datele și revenim pe e-mail în 1-2 zile lucrătoare.
       </p>
       
       <div className="mt-6">

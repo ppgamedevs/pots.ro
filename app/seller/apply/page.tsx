@@ -17,7 +17,7 @@ export default function SellerApplyPage() {
         Aplică pentru cont de vânzător
       </h1>
       <p className="text-ink/70 mt-2">
-        Completează formularul. Îți răspundem în 1–2 zile lucrătoare.
+        Completează formularul. Îți răspundem în 1-2 zile lucrătoare.
       </p>
       
       <ApplyForm />

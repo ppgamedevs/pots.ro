@@ -81,7 +81,7 @@ export const POST_CONTENT: Record<string, string> = {
     <h2>2️⃣ Cum alegi dimensiunea potrivită</h2>
     
     <h3>🌱 Regula generală: +2 cm diametru față de ghiveciul anterior</h3>
-    <p>La repicare, alege un vas cu diametru mai mare cu 2–3 cm și o adâncime adaptată sistemului radicular.</p>
+    <p>La repicare, alege un vas cu diametru mai mare cu 2-3 cm și o adâncime adaptată sistemului radicular.</p>
     
     <ul>
       <li><strong>Plante cu rădăcini adânci</strong> (ficus, palmieri): ghivece cilindrice.</li>
@@ -89,7 +89,7 @@ export const POST_CONTENT: Record<string, string> = {
     </ul>
     
     <h3>📏 Proporția vizuală</h3>
-    <p>Un ghiveci prea mic face planta să pară disproporționată, iar unul prea mare menține solul ud prea mult timp. Raportul ideal: 1/3 ghiveci – 2/3 plantă.</p>
+    <p>Un ghiveci prea mic face planta să pară disproporționată, iar unul prea mare menține solul ud prea mult timp. Raportul ideal: 1/3 ghiveci - 2/3 plantă.</p>
     
     <h2>3️⃣ Drenajul - secretul unei plante sănătoase</h2>
     <p>Fiecare ghiveci ceramic ar trebui să aibă:</p>
@@ -138,7 +138,7 @@ export const POST_CONTENT: Record<string, string> = {
     
     <p>Anul 2026 aduce o nouă filosofie: <em>„natura ca act de reumanizare"</em>. Nu contează câți metri pătrați ai - contează <strong>unde respiri verde</strong>.</p>
     
-    <h2>1. Începe cu lumina – prima floare invizibilă</h2>
+    <h2>1. Începe cu lumina - prima floare invizibilă</h2>
     <p>Betonul rece, geamurile mici și lumina fluorescentă sunt inamicii oricărui aranjament floral. Primul pas nu este floarea, ci <strong>felul în care vezi floarea</strong>.</p>
     
     <blockquote>„Nicio plantă nu salvează o cameră care nu respiră lumină."<br />- <em>Ioana Stanciu, designer floral</em></blockquote>
@@ -185,7 +185,7 @@ export const POST_CONTENT: Record<string, string> = {
       </figcaption>
     </figure>
     
-    <h2>4. Pervazul – scena tăcută a florilor</h2>
+    <h2>4. Pervazul - scena tăcută a florilor</h2>
     <p>Pervazul este locul unde se întâlnesc exteriorul și interiorul. Nu-l trata ca pe un depozit. Fă-l altarul zilnic al luminii.</p>
     
     <ul>
@@ -196,7 +196,7 @@ export const POST_CONTENT: Record<string, string> = {
     
     <blockquote>„Un pervaz cu flori e ca o fereastră spre tine."<br />- <em>Andreea Toma, arhitect de interior</em></blockquote>
     
-    <h2>5. Mirosul – arhitectura invizibilă</h2>
+    <h2>5. Mirosul - arhitectura invizibilă</h2>
     <p>În spații mici, aroma e mai importantă decât imaginea. O floare parfumată poate schimba întreaga percepție a camerei.</p>
     
     <ul>
@@ -205,7 +205,7 @@ export const POST_CONTENT: Record<string, string> = {
       <li>Bucătărie: rozmarin, cimbru, oregano</li>
     </ul>
     
-    <p>Mirosul creează <strong>identitate emoțională</strong> – o formă subtilă de design senzorial.</p>
+    <p>Mirosul creează <strong>identitate emoțională</strong> - o formă subtilă de design senzorial.</p>
     
     <h2>6. Refuză plasticul</h2>
     <p>Florile artificiale nu aduc viață, ci doar imitație. Dacă bugetul e limitat, alege <strong>flori uscate sau stabilizate</strong>, dar reale. O crenguță de salcie valorează mai mult decât un buchet de plastic.</p>
@@ -305,8 +305,8 @@ export const POST_CONTENT: Record<string, string> = {
     <h3>Lumina artificială:</h3>
     <p>Folosește benzi LED horticole cu spectru complet și control automat al duratei.</p>
     <ul>
-      <li><strong>Primăvara</strong> – 14h/zi</li>
-      <li><strong>Iarna</strong> – 10h/zi</li>
+      <li><strong>Primăvara</strong> - 14h/zi</li>
+      <li><strong>Iarna</strong> - 10h/zi</li>
     </ul>
     <p>Evită becurile clasice, care produc căldură excesivă și uscă solul.</p>
     
@@ -315,13 +315,13 @@ export const POST_CONTENT: Record<string, string> = {
     
     <h3>Umiditate ideală:</h3>
     <ul>
-      <li><strong>Iarnă:</strong> 45–55%</li>
-      <li><strong>Vară:</strong> 50–65%</li>
+      <li><strong>Iarnă:</strong> 45-55%</li>
+      <li><strong>Vară:</strong> 50-65%</li>
     </ul>
     <p>Pulverizează apa doar dimineața, evitând frunzele lucioase expuse direct la soare.</p>
     
     <h3>Irigare prin greutate:</h3>
-    <p>Udă doar când ghiveciul pierde 25–35% din greutatea saturată (poți cântări periodic pentru precizie).</p>
+    <p>Udă doar când ghiveciul pierde 25-35% din greutatea saturată (poți cântări periodic pentru precizie).</p>
     <p>Pentru colecțiile mari, instalează sisteme automate de irigare cu senzori care ajustează debitul în funcție de temperatură și nivelul de evaporare.</p>
     
     <h2>🐛 Prevenție dăunători</h2>
@@ -329,14 +329,14 @@ export const POST_CONTENT: Record<string, string> = {
     
     <ul>
       <li><strong>Carantină de 14 zile</strong> pentru fiecare plantă nouă adusă acasă.</li>
-      <li><strong>Tratamente preventive:</strong> pulverizări cu ulei de neem 0.5% o dată la 21–28 de zile.</li>
+      <li><strong>Tratamente preventive:</strong> pulverizări cu ulei de neem 0.5% o dată la 21-28 de zile.</li>
       <li>Evită solurile reutilizate sau ghivecele nesterilizate - acestea pot ascunde ouă de trips sau musculițe negre.</li>
     </ul>
     
     <p><strong>🧪 Truc expert:</strong> adaugă un strat subțire de nisip cuarțos peste substrat - împiedică insectele să depună ouă la suprafață.</p>
     
     <h2>🌱 Adaptare la climat și design interior</h2>
-    <p>În apartamentele din România, spațiul și lumina variază mult. Arhitecții de interior recomandă „ecosisteme controlate" – colțuri verzi cu plante compatibile, aranjate estetic în funcție de microclimatul camerei.</p>
+    <p>În apartamentele din România, spațiul și lumina variază mult. Arhitecții de interior recomandă „ecosisteme controlate" - colțuri verzi cu plante compatibile, aranjate estetic în funcție de microclimatul camerei.</p>
     
     <ul>
       <li><strong>Zonele calde</strong> (bucătărie, living sudic): suculente și ficuși.</li>

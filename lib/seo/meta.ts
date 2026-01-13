@@ -83,7 +83,7 @@ export function generateProductMetadata(product: ProductMetaData): Metadata {
 
 // Generează meta tags pentru categorii
 export function generateCategoryMetadata(category: CategoryMetaData): Metadata {
-  const title = `${category.name} la prețuri românești – ${SITE_NAME}`;
+  const title = `${category.name} la prețuri românești - ${SITE_NAME}`;
   const description = category.description || 
     `Descoperă ${category.name.toLowerCase()} de calitate la prețuri accesibile. ${category.productCount ? `${category.productCount} produse disponibile. ` : ''}Livrare rapidă în toată România.`;
   const canonical = `${SITE_URL}/c/${category.slug}`;
@@ -122,7 +122,7 @@ export function generateCategoryMetadata(category: CategoryMetaData): Metadata {
 
 // Generează meta tags pentru vânzători
 export function generateSellerMetadata(seller: SellerMetaData): Metadata {
-  const title = `${seller.brandName} – Vânzător verificat | ${SITE_NAME}`;
+  const title = `${seller.brandName} - Vânzător verificat | ${SITE_NAME}`;
   const description = seller.description || 
     `Descoperă produse de calitate de la ${seller.brandName}. ${seller.productCount ? `${seller.productCount} produse disponibile. ` : ''}Vânzător verificat cu livrare rapidă.`;
   const canonical = `${SITE_URL}/s/${seller.slug}`;

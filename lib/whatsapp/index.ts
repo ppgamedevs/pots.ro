@@ -282,7 +282,7 @@ export const WHATSAPP_TEMPLATES = {
   ORDER_ETA_REQUEST: {
     name: 'order_eta_request',
     toSeller: (sellerName: string, orderId: string) => 
-      `Salut ${sellerName}, clientul întreabă ETA pentru comanda #${orderId}. Te rugăm răspunde aici (ex: "azi până la 18:00" sau "mâine 14–18").`,
+      `Salut ${sellerName}, clientul întreabă ETA pentru comanda #${orderId}. Te rugăm răspunde aici (ex: "azi până la 18:00" sau "mâine 14-18").`,
     
     toCustomer: (orderId: string) => 
       `Întrebăm vânzătorul pentru ETA-ul comenzii #${orderId} și revenim imediat ce primim răspunsul.`

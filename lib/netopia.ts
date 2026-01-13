@@ -262,26 +262,28 @@ export async function createNetopiaV2PaymentRequest(
   const endpoint = `${baseUrl}/payment/card/start`;
 
   // Prepare payment request according to Netopia v2 API
-  const configData = {
-    emailTemplate: '',
-    notifyUrl: request.confirmUrl,
-    redirectUrl: request.returnUrl,
-    language: 'RO'
-  };
-
-  const orderData = {
-    orderID: request.orderId,
-    amount: request.amount,
-    currency: request.currency,
-    description: request.description,
-    billing: request.billing || {
-      email: '',
-      phone: '',
-      firstName: '',
-      lastName: '',
-      city: '',
-      country: '642', // Romania
-      postalCode: ''
+  // Based on Netopia v2 documentation structure
+  const requestBody = {
+    configData: {
+      emailTemplate: '',
+      notifyUrl: request.confirmUrl,
+      redirectUrl: request.returnUrl,
+      language: 'RO'
+    },
+    orderData: {
+      orderID: request.orderId,
+      amount: request.amount,
+      currency: request.currency,
+      description: request.description,
+      billing: request.billing || {
+        email: '',
+        phone: '',
+        firstName: '',
+        lastName: '',
+        city: '',
+        country: '642', // Romania
+        postalCode: ''
+      }
     }
   };
 
@@ -294,10 +296,7 @@ export async function createNetopiaV2PaymentRequest(
         'Authorization': `Bearer ${apiKey}`,
         'X-POS-Signature': posSignature
       },
-      body: JSON.stringify({
-        configData,
-        orderData
-      })
+      body: JSON.stringify(requestBody)
     });
 
     if (!response.ok) {

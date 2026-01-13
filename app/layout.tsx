@@ -34,7 +34,7 @@ const merriweather = Merriweather({
 export const metadata = {
   metadataBase: new URL(SITE_URL),
   title: {
-    default: `${SITE_NAME} – Marketplace-ul profesioniștilor din floristică`,
+    default: `${SITE_NAME} - Marketplace-ul profesioniștilor din floristică`,
     template: `%s | ${SITE_NAME}`
   },
   icons: {
@@ -56,21 +56,21 @@ export const metadata = {
     locale: "ro_RO",
     url: SITE_URL,
     siteName: SITE_NAME,
-    title: `${SITE_NAME} – Marketplace-ul profesioniștilor din floristică`,
+    title: `${SITE_NAME} - Marketplace-ul profesioniștilor din floristică`,
     description: "Totul pentru florăria ta: cutii din catifea, ghivece ceramice, panglici și accesorii florale, direct de la producători români.",
     images: [
       {
         url: OG_IMAGE_DEFAULT,
         width: 1200,
         height: 630,
-        alt: "FloristMarket – Marketplace de accesorii florale premium",
+        alt: "FloristMarket - Marketplace de accesorii florale premium",
         type: "image/jpeg",
       },
     ],
   },
   twitter: {
     card: "summary_large_image",
-    title: `${SITE_NAME} – Marketplace-ul profesioniștilor din floristică`,
+    title: `${SITE_NAME} - Marketplace-ul profesioniștilor din floristică`,
     description: "Conectăm florăriile din România cu furnizorii de accesorii și ambalaje florale premium.",
     images: [OG_IMAGE_DEFAULT],
     creator: TWITTER_HANDLE,

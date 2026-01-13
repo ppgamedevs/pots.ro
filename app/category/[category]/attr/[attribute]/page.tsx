@@ -47,7 +47,7 @@ export async function generateMetadata({ params }: CategoryAttributePageProps): 
   }
 
   const attributeName = decodeAttributeSlug(attribute);
-  const title = `${attributeName} ${categoryData.name} la prețuri românești – ${SITE_NAME}`;
+  const title = `${attributeName} ${categoryData.name} la prețuri românești - ${SITE_NAME}`;
   const description = `Descoperă ${attributeName.toLowerCase()} ${categoryData.name.toLowerCase()} de calitate la prețuri accesibile. Livrare rapidă în toată România.`;
 
   return {

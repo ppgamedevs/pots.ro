@@ -30,7 +30,7 @@ export function FullHeightFilters({
   onReset,
   className,
 }: FullHeightFiltersProps) {
-  // local working copy – nu stricăm instant filtrele din URL/UI până la "Aplică"
+  // local working copy - nu stricăm instant filtrele din URL/UI până la "Aplică"
   const [state, setState] = useState<FiltersState>(initial);
   const [isMobile, setIsMobile] = useState(false);
   const dragStartY = useRef(0);
