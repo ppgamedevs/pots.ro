@@ -288,20 +288,38 @@ export async function createNetopiaV2PaymentRequest(
   };
 
   // Make API request
+  // Netopia v2 API uses API Key directly in Authorization header (not Bearer token)
   try {
     const response = await fetch(endpoint, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
-        'Authorization': `Bearer ${apiKey}`,
+        'Authorization': apiKey, // Netopia uses API key directly, not Bearer token
         'X-POS-Signature': posSignature
       },
       body: JSON.stringify(requestBody)
     });
 
     if (!response.ok) {
-      const errorData = await response.json().catch(() => ({ message: 'Unknown error' }));
-      throw new Error(`Netopia API error: ${response.status} - ${errorData.message || 'Unknown error'}`);
+      // Try to get detailed error information
+      let errorMessage = `Netopia API error: ${response.status}`;
+      try {
+        const errorData = await response.json();
+        errorMessage += ` - ${JSON.stringify(errorData)}`;
+        console.error('Netopia API error details:', {
+          status: response.status,
+          statusText: response.statusText,
+          error: errorData,
+          endpoint,
+          hasApiKey: !!apiKey,
+          apiKeyPrefix: apiKey?.substring(0, 10) + '...'
+        });
+      } catch (e) {
+        const errorText = await response.text().catch(() => '');
+        errorMessage += ` - ${errorText || 'Unknown error'}`;
+        console.error('Netopia API error response (text):', errorText);
+      }
+      throw new Error(errorMessage);
     }
 
     const responseData = await response.json();
