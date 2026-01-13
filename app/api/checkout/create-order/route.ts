@@ -193,10 +193,29 @@ export async function POST(request: NextRequest) {
       // In a real system, you might want to group by seller and create multiple orders
       const primarySellerId = uniqueSellerIds[0];
       
+      // Generate unique order number
+      const { generateOrderNumber } = await import('@/lib/slug');
+      let orderNumber = generateOrderNumber();
+      
+      // Ensure uniqueness (retry if collision)
+      let attempts = 0;
+      while (attempts < 10) {
+        const existing = await tx
+          .select()
+          .from(orders)
+          .where(eq(orders.orderNumber, orderNumber))
+          .limit(1);
+        
+        if (existing.length === 0) break;
+        orderNumber = generateOrderNumber();
+        attempts++;
+      }
+
       // Insert order
       const orderResult = await tx
         .insert(orders)
         .values({
+          orderNumber,
           buyerId: userId,
           sellerId: primarySellerId,
           status: 'pending',

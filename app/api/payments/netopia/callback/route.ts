@@ -121,7 +121,55 @@ export async function POST(request: NextRequest) {
           // Don't fail the callback if inventory update fails
         }
         
-        // TODO: Generate invoice
+        // Emite factura de comision (doar pentru comision, nu factura principală)
+        try {
+          const invoiceResponse = await fetch(`${process.env.SITE_URL || 'http://localhost:3000'}/api/internal/invoice-create`, {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+              orderId: callbackData.orderId,
+              invoiceType: 'commission', // Emite doar factura de comision
+            }),
+          });
+
+          if (invoiceResponse.ok) {
+            console.log('Commission invoice created for order:', callbackData.orderId);
+          } else {
+            console.error('Failed to create commission invoice:', await invoiceResponse.text());
+          }
+        } catch (invoiceError) {
+          console.error('Error creating commission invoice:', invoiceError);
+          // Don't fail the callback if invoice creation fails
+        }
+
+        // Verifică dacă există produse ale platformei și emite factura pentru ele
+        try {
+          const invoiceResponse = await fetch(`${process.env.SITE_URL || 'http://localhost:3000'}/api/internal/invoice-create`, {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+              orderId: callbackData.orderId,
+              invoiceType: 'platform', // Emite factura pentru produsele platformei
+            }),
+          });
+
+          if (invoiceResponse.ok) {
+            console.log('Platform invoice created for order:', callbackData.orderId);
+          } else {
+            // Nu este o eroare dacă nu există produse ale platformei
+            const errorText = await invoiceResponse.text();
+            if (!errorText.includes('No platform products')) {
+              console.error('Failed to create platform invoice:', errorText);
+            }
+          }
+        } catch (invoiceError) {
+          console.error('Error creating platform invoice:', invoiceError);
+          // Don't fail the callback if invoice creation fails
+        }
       } catch (dbError) {
         console.error('Error updating order status:', dbError);
         // Still return success to Netopia to avoid retries

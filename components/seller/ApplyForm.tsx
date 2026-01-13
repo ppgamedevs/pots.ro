@@ -13,6 +13,7 @@ interface SelectProps {
   label: string;
   name: string;
   children: React.ReactNode;
+  disabled?: boolean;
 }
 
 function Field({ label, name, type = "text", required = false }: FieldProps) {
@@ -33,7 +34,7 @@ function Field({ label, name, type = "text", required = false }: FieldProps) {
   );
 }
 
-function Select({ label, name, children }: SelectProps) {
+function Select({ label, name, children, disabled = false }: SelectProps) {
   return (
     <div>
       <label className="block text-sm text-ink mb-1" htmlFor={name}>
@@ -41,8 +42,11 @@ function Select({ label, name, children }: SelectProps) {
       </label>
       <select 
         id={name} 
-        name={name} 
-        className="w-full border border-line rounded-lg px-3 py-2 bg-white outline-none focus:border-primary transition-micro"
+        name={name}
+        disabled={disabled}
+        className={`w-full border border-line rounded-lg px-3 py-2 bg-white outline-none focus:border-primary transition-micro ${
+          disabled ? 'bg-gray-100 text-gray-500 cursor-not-allowed opacity-60' : ''
+        }`}
       >
         {children}
       </select>
@@ -106,12 +110,14 @@ export function ApplyForm() {
       </div>
       
       <div className="grid md:grid-cols-2 gap-4">
-        <Select label="Curier preferat" name="carrier">
-          <option value="">Selectează curierul</option>
-          <option value="cargus">Cargus</option>
-          <option value="dpd">DPD</option>
-          <option value="fan">FAN Courier</option>
-        </Select>
+        <div>
+          <Select label="Curier preferat" name="carrier" disabled>
+            <option value="cargus" selected>Cargus</option>
+          </Select>
+          <p className="text-xs text-gray-500 mt-1">
+            Momentan doar Cargus este disponibil. Alți curieri vor fi adăugați în curând.
+          </p>
+        </div>
         <Select label="Politică de retur" name="return_policy">
           <option value="">Selectează politica</option>
           <option value="14zile">14 zile</option>

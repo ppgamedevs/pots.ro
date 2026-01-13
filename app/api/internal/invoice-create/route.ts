@@ -1,32 +1,39 @@
 import { NextRequest, NextResponse } from "next/server";
 import { db } from "@/db";
-import { orders, orderItems, invoices, webhookLogs } from "@/db/schema/core";
-import { eq } from "drizzle-orm";
+import { orders, orderItems, invoices, webhookLogs, products, sellers } from "@/db/schema/core";
+import { eq, and } from "drizzle-orm";
 import { getInvoiceProvider } from "@/lib/invoicing";
+import { createCommissionInvoice } from "@/lib/invoicing/commission";
 import { z } from "zod";
 
 const createInvoiceSchema = z.object({
   orderId: z.string().min(1, "Order ID is required"),
+  invoiceType: z.enum(['commission', 'platform']).optional().default('commission'), // 'commission' = factura de comision, 'platform' = factura pentru produsele platformei
 });
 
 export async function POST(request: NextRequest) {
   try {
     // Parse and validate request body
     const body = await request.json();
-    const { orderId } = createInvoiceSchema.parse(body);
+    const { orderId, invoiceType } = createInvoiceSchema.parse(body);
 
-    // Check if invoice already exists (idempotency)
+    // Check if invoice of this type already exists (idempotency)
     const existingInvoice = await db
       .select()
       .from(invoices)
-      .where(eq(invoices.orderId, orderId))
+      .where(
+        and(
+          eq(invoices.orderId, orderId),
+          eq(invoices.type, invoiceType)
+        )
+      )
       .limit(1);
 
     if (existingInvoice.length > 0) {
       return NextResponse.json({
         ok: true,
         invoiceId: existingInvoice[0].id,
-        message: "Invoice already exists",
+        message: `Invoice of type ${invoiceType} already exists`,
       });
     }
 
@@ -42,43 +49,91 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ ok: false, error: "Order not found" }, { status: 404 });
     }
 
-    // Get order items
+    // Get order items with product and seller info
     const orderItemsResult = await db
-      .select()
+      .select({
+        orderItem: orderItems,
+        product: products,
+        seller: sellers,
+      })
       .from(orderItems)
+      .innerJoin(products, eq(orderItems.productId, products.id))
+      .innerJoin(sellers, eq(products.sellerId, sellers.id))
       .where(eq(orderItems.orderId, orderId));
 
     if (orderItemsResult.length === 0) {
       return NextResponse.json({ ok: false, error: "Order has no items" }, { status: 400 });
     }
 
-    // Prepare invoice input
     const shippingAddress = order.shippingAddress as any;
-    const invoiceInput = {
-      orderId,
-      buyer: {
-        name: shippingAddress?.name || 'Unknown',
-        email: shippingAddress?.email,
-        address: shippingAddress,
-      },
-      items: orderItemsResult.map((item: any) => ({
-        name: `Product ${item.productId}`, // In real implementation, join with products table
-        qty: item.qty,
-        unitPrice: item.unitPriceCents / 100,
-        vatRate: parseFloat(process.env.INVOICE_DEFAULT_VAT || '19'),
-      })),
-      currency: order.currency as 'RON' | 'EUR',
+    const buyer = {
+      name: shippingAddress?.name || 'Unknown',
+      email: shippingAddress?.email,
+      address: shippingAddress,
     };
 
-    // Create invoice using provider
-    const invoiceProvider = getInvoiceProvider();
-    const invoiceResult = await invoiceProvider.createInvoice(invoiceInput);
+    let invoiceResult;
+
+    if (invoiceType === 'commission') {
+      // Emite doar factura de comision
+      const totalCommissionCents = orderItemsResult.reduce(
+        (sum, item) => sum + item.orderItem.commissionAmountCents,
+        0
+      );
+
+      if (totalCommissionCents === 0) {
+        return NextResponse.json({ 
+          ok: false, 
+          error: "No commission to invoice" 
+        }, { status: 400 });
+      }
+
+      invoiceResult = await createCommissionInvoice(
+        orderId,
+        totalCommissionCents,
+        order.currency,
+        buyer
+      );
+    } else if (invoiceType === 'platform') {
+      // Emite factura pentru produsele proprii ale platformei
+      // Filtrează doar produsele care aparțin platformei (seller.isPlatform = true)
+      const platformItems = orderItemsResult.filter(item => item.seller.isPlatform);
+
+      if (platformItems.length === 0) {
+        return NextResponse.json({ 
+          ok: false, 
+          error: "No platform products in this order" 
+        }, { status: 400 });
+      }
+
+      const invoiceProvider = getInvoiceProvider();
+      const invoiceInput = {
+        orderId,
+        buyer,
+        items: platformItems.map((item) => ({
+          name: item.product.title,
+          qty: item.orderItem.qty,
+          unitPrice: item.orderItem.unitPriceCents / 100,
+          vatRate: parseFloat(process.env.INVOICE_DEFAULT_VAT || '19'),
+        })),
+        currency: order.currency as 'RON' | 'EUR',
+        series: 'PO', // Serie pentru produsele platformei
+      };
+
+      invoiceResult = await invoiceProvider.createInvoice(invoiceInput);
+    } else {
+      return NextResponse.json({ 
+        ok: false, 
+        error: "Invalid invoice type" 
+      }, { status: 400 });
+    }
 
     // Save invoice to database
     const newInvoice = await db
       .insert(invoices)
       .values({
         orderId,
+        type: invoiceType,
         series: invoiceResult.series,
         number: invoiceResult.number,
         pdfUrl: invoiceResult.pdfUrl,

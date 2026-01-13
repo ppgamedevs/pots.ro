@@ -102,8 +102,9 @@ const statusConfig = {
 };
 
 export default function OrderDetailPage({ params }: { params: Promise<{ id: string }> }) {
-  const [order, setOrder] = useState(mockOrder);
-  const [loading, setLoading] = useState(false);
+  const [order, setOrder] = useState<any>(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
   
   const statusInfo = statusConfig[order.status as keyof typeof statusConfig];
   const StatusIcon = statusInfo?.icon || Clock;
@@ -126,8 +127,8 @@ export default function OrderDetailPage({ params }: { params: Promise<{ id: stri
   };
   
   const handleTrackPackage = () => {
-    if (order.carrierMeta?.trackingUrl) {
-      window.open(order.carrierMeta.trackingUrl, '_blank');
+    if (order.tracking?.trackingUrl) {
+      window.open(order.tracking.trackingUrl, '_blank');
     } else {
       toast.error('Link-ul de tracking nu este disponibil');
     }
@@ -137,6 +138,63 @@ export default function OrderDetailPage({ params }: { params: Promise<{ id: stri
     toast.success('Redirecționare către pagina de recenzii...');
     // Aici ar fi navigarea către pagina de recenzii
   };
+
+  // Încarcă datele reale ale comenzii
+  useEffect(() => {
+    async function loadOrder() {
+      try {
+        setLoading(true);
+        const resolvedParams = await params;
+        const orderNumber = resolvedParams.id; // orderNumber din URL
+        
+        const response = await fetch(`/api/orders/${orderNumber}`);
+        
+        if (!response.ok) {
+          if (response.status === 404) {
+            setError('Comanda nu a fost găsită');
+          } else {
+            setError('Eroare la încărcarea comenzii');
+          }
+          return;
+        }
+
+        const orderData = await response.json();
+        setOrder(orderData);
+      } catch (err) {
+        console.error('Error loading order:', err);
+        setError('Eroare la încărcarea comenzii');
+      } finally {
+        setLoading(false);
+      }
+    }
+
+    loadOrder();
+  }, [params]);
+
+  if (loading) {
+    return (
+      <div className="container mx-auto px-4 py-8">
+        <div className="max-w-4xl mx-auto">
+          <div className="text-center py-12">
+            <p className="text-gray-600 dark:text-gray-400">Se încarcă...</p>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  if (error || !order) {
+    return (
+      <div className="container mx-auto px-4 py-8">
+        <div className="max-w-4xl mx-auto">
+          <div className="text-center py-12">
+            <AlertCircle className="h-12 w-12 mx-auto text-red-500 mb-4" />
+            <p className="text-gray-600 dark:text-gray-400">{error || 'Comanda nu a fost găsită'}</p>
+          </div>
+        </div>
+      </div>
+    );
+  }
   
   return (
     <div className="container mx-auto px-4 py-8">
@@ -145,7 +203,7 @@ export default function OrderDetailPage({ params }: { params: Promise<{ id: stri
         <div className="flex items-center justify-between">
           <div>
             <h1 className="text-3xl font-bold text-gray-900 dark:text-gray-100">
-              Comanda #{order.id.slice(-8).toUpperCase()}
+              Comanda #{order.orderNumber || order.id.slice(-8).toUpperCase()}
             </h1>
             <p className="text-gray-600 dark:text-gray-400 mt-1">
               Plasată pe {formatDate(order.createdAt)}
@@ -190,16 +248,16 @@ export default function OrderDetailPage({ params }: { params: Promise<{ id: stri
                     </CardHeader>
                     <CardContent>
                       <div className="space-y-4">
-                        {order.items.map((item) => (
+                        {order.items.map((item: any) => (
                           <div key={item.id} className="flex items-center justify-between py-3 border-b last:border-b-0">
                             <div className="flex-1">
                               <h4 className="font-medium">{item.productName}</h4>
                               <p className="text-sm text-gray-600 dark:text-gray-400">
-                                Cantitate: {item.qty} × {formatPrice(item.unitPrice, order.currency)}
+                                Cantitate: {item.qty} × {formatPrice(item.unitPriceCents, order.currency)}
                               </p>
                             </div>
                             <div className="text-right">
-                              <p className="font-medium">{formatPrice(item.subtotal, order.currency)}</p>
+                              <p className="font-medium">{formatPrice(item.subtotalCents, order.currency)}</p>
                             </div>
                           </div>
                         ))}
@@ -210,19 +268,21 @@ export default function OrderDetailPage({ params }: { params: Promise<{ id: stri
                         <div className="space-y-2">
                           <div className="flex justify-between">
                             <span>Subtotal:</span>
-                            <span>{formatPrice(order.totals.subtotal, order.currency)}</span>
+                            <span>{formatPrice(order.totals.subtotal_cents, order.currency)}</span>
                           </div>
+                          {order.totals.total_discount_cents > 0 && (
+                            <div className="flex justify-between text-green-600">
+                              <span>Reducere:</span>
+                              <span>-{formatPrice(order.totals.total_discount_cents, order.currency)}</span>
+                            </div>
+                          )}
                           <div className="flex justify-between">
                             <span>Livrare:</span>
-                            <span>{formatPrice(order.totals.shipping, order.currency)}</span>
+                            <span>{formatPrice(order.totals.shipping_fee_cents, order.currency)}</span>
                           </div>
-                          <div className="flex justify-between">
-                            <span>TVA:</span>
-                            <span>{formatPrice(order.totals.tax, order.currency)}</span>
-                          </div>
-                          <div className="flex justify-between font-bold text-lg">
+                          <div className="flex justify-between font-bold text-lg border-t pt-2">
                             <span>Total:</span>
-                            <span>{formatPrice(order.totals.total, order.currency)}</span>
+                            <span>{formatPrice(order.totals.total_cents, order.currency)}</span>
                           </div>
                         </div>
                       </div>
@@ -237,7 +297,7 @@ export default function OrderDetailPage({ params }: { params: Promise<{ id: stri
               content: (
                 <InvoicePanel 
                   orderId={order.id} 
-                  invoice={order.invoice} 
+                  invoices={order.invoices}
                 />
               )
             },
@@ -246,7 +306,7 @@ export default function OrderDetailPage({ params }: { params: Promise<{ id: stri
               label: 'Urmărire',
               content: (
                 <div className="space-y-6">
-                  {order.awbNumber ? (
+                  {order.tracking?.awbNumber ? (
                     <Card>
                       <CardHeader>
                         <CardTitle className="flex items-center gap-2">
@@ -260,17 +320,17 @@ export default function OrderDetailPage({ params }: { params: Promise<{ id: stri
                             <label className="text-sm font-medium text-gray-600 dark:text-gray-400">
                               Număr AWB
                             </label>
-                            <p className="font-mono text-lg">{order.awbNumber}</p>
+                            <p className="font-mono text-lg">{order.tracking.awbNumber}</p>
                           </div>
                           <div>
                             <label className="text-sm font-medium text-gray-600 dark:text-gray-400">
                               Curier
                             </label>
-                            <p className="text-lg">{order.carrierMeta?.carrier || 'Necunoscut'}</p>
+                            <p className="text-lg">{order.tracking.carrier || 'Necunoscut'}</p>
                           </div>
                         </div>
                         
-                        {order.carrierMeta?.trackingUrl && (
+                        {order.tracking.trackingUrl && (
                           <Button 
                             onClick={handleTrackPackage}
                             className="w-full"
