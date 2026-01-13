@@ -97,7 +97,7 @@ export async function POST(request: NextRequest) {
     } else if (invoiceType === 'platform') {
       // Emite factura pentru produsele proprii ale platformei
       // Filtrează doar produsele care aparțin platformei (seller.isPlatform = true)
-      const platformItems = orderItemsResult.filter(item => item.seller.isPlatform);
+      const platformItems = orderItemsResult.filter((item: typeof orderItemsResult[0]) => item.seller.isPlatform);
 
       if (platformItems.length === 0) {
         return NextResponse.json({ 
