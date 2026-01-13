@@ -176,15 +176,15 @@ export function createNetopiaPaymentRequest(request: NetopiaPaymentRequest): Net
   
   if (!gatewayUrl) {
     // Netopia/MobilPay payment gateway URL
-    // The correct endpoint format is /pay/payment/card/start for production
-    // For sandbox, use https://secure.sandbox.netopia-payments.com/payment/card/start
+    // For form-based submission (classic MobilPay), use the standard endpoint
+    // The v2 API endpoints require JSON API, but we're using form submission
     const isTestEnvironment = MERCHANT_ID === TEST_MERCHANT_ID || process.env.NODE_ENV !== 'production';
     
     if (isTestEnvironment) {
-      // Sandbox/test environment
-      gatewayUrl = 'https://secure.sandbox.netopia-payments.com/payment/card/start';
+      // Sandbox/test environment - use classic MobilPay endpoint for form submission
+      gatewayUrl = 'https://sandboxsecure.mobilpay.ro/pay/payment/card/start';
     } else {
-      // Production environment
+      // Production environment - use classic MobilPay endpoint for form submission
       gatewayUrl = 'https://secure.mobilpay.ro/pay/payment/card/start';
     }
   }
