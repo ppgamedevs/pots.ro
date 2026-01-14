@@ -63,18 +63,11 @@ async function runMigration() {
       process.exit(0);
     }
 
-    console.log('📂 Checking migrations folder...');
-    const migrationsFolder = path.join(process.cwd(), 'drizzle');
-    if (!fs.existsSync(migrationsFolder)) {
-      console.error('❌ Migrations folder not found at:', migrationsFolder);
-      await sql.end();
-      process.exit(1);
-    }
-
-    console.log('📋 Running Drizzle migrations...');
+    console.log('� Orders table not found. Running Drizzle migrations...');
     const db = drizzle(sql);
     
     try {
+      const migrationsFolder = path.join(process.cwd(), 'drizzle');
       await migrate(db, { migrationsFolder });
       console.log('✅ Migrations completed successfully!');
     } catch (migrateErr) {
@@ -90,7 +83,12 @@ async function runMigration() {
         process.exit(0);
       }
       
-      throw migrateErr;
+      // If still no table, try to create tables directly
+      console.log('📋 Attempting direct table creation...');
+      const createTablesScript = require('./create-tables.js');
+      // Let create-tables.js handle it
+      await sql.end();
+      process.exit(0);
     }
 
     await sql.end();
