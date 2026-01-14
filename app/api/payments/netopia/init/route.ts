@@ -8,7 +8,7 @@ import { SITE_URL } from "@/lib/env";
 import { z } from "zod";
 
 const initPaymentSchema = z.object({
-  order_id: z.string().uuid(),
+  order_id: z.string().min(1), // Can be UUID or orderNumber (ORD-YYYYMMDD-XXXXX)
 });
 
 export async function POST(request: NextRequest) {
@@ -20,12 +20,19 @@ export async function POST(request: NextRequest) {
 
     const body = await request.json();
     const { order_id } = initPaymentSchema.parse(body);
+    
+    // Detect if it's an orderNumber (format: ORD-YYYYMMDD-XXXXX) or UUID
+    const isOrderNumber = /^ORD-\d{8}-[A-Z0-9]{5}$/.test(order_id);
 
-    // Get order and validate ownership
+    // Get order and validate ownership - lookup by orderNumber or UUID
     const orderResult = await db
       .select()
       .from(orders)
-      .where(eq(orders.id, order_id))
+      .where(
+        isOrderNumber 
+          ? eq(orders.orderNumber, order_id)
+          : eq(orders.id, order_id)
+      )
       .limit(1);
 
     const order = orderResult[0];
@@ -45,12 +52,13 @@ export async function POST(request: NextRequest) {
 
     // Create Netopia payment request
     // Netopia v2 requires JSON API - form submission is no longer supported
+    // Use orderNumber for friendly URLs
     const paymentRequest: NetopiaPaymentRequest = {
       orderId: order.id,
       amount: order.totalCents / 100, // Convert cents to RON
       currency: order.currency,
-      description: `Order ${order.id} - Pots.ro`,
-      returnUrl: `${SITE_URL}/finalizare/success?order=${order.id}`,
+      description: `Comanda ${order.orderNumber} - FloristMarket`,
+      returnUrl: `${SITE_URL}/finalizare/success?order_id=${order.orderNumber}`,
       confirmUrl: `${SITE_URL}/api/payments/netopia/callback`,
     };
 

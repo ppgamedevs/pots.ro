@@ -336,61 +336,86 @@ export async function createNetopiaV2PaymentRequest(
   // Make API request
   // Netopia v2 API uses API Key directly in Authorization header (not Bearer token)
   try {
+    console.log('[Netopia v2] Making request to:', endpoint);
+    console.log('[Netopia v2] Request body:', JSON.stringify(requestBody, null, 2));
+
     const response = await fetch(endpoint, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
         'Authorization': apiKey, // Netopia uses API key directly, not Bearer token
-        'X-POS-Signature': posSignature
       },
       body: JSON.stringify(requestBody)
     });
 
-    if (!response.ok) {
-      // Try to get detailed error information
-      let errorMessage = `Netopia API error: ${response.status}`;
-      try {
-        const errorData = await response.json();
-        errorMessage += ` - ${JSON.stringify(errorData)}`;
-        console.error('Netopia API error details:', {
-          status: response.status,
-          statusText: response.statusText,
-          error: errorData,
-          endpoint,
-          hasApiKey: !!apiKey,
-          apiKeyPrefix: apiKey?.substring(0, 10) + '...'
-        });
-      } catch (e) {
-        const errorText = await response.text().catch(() => '');
-        errorMessage += ` - ${errorText || 'Unknown error'}`;
-        console.error('Netopia API error response (text):', errorText);
-      }
-      throw new Error(errorMessage);
+    // Always try to parse the response body first
+    const responseText = await response.text();
+    console.log('[Netopia v2] Response status:', response.status);
+    console.log('[Netopia v2] Response body:', responseText);
+
+    let responseData;
+    try {
+      responseData = JSON.parse(responseText);
+    } catch (e) {
+      console.error('[Netopia v2] Failed to parse response as JSON:', responseText);
+      throw new Error(`Netopia API returned invalid JSON: ${responseText.substring(0, 200)}`);
     }
 
-    const responseData = await response.json();
+    // Check for API-level errors (can occur even with 200 status)
+    if (responseData.error) {
+      console.error('[Netopia v2] API error:', responseData.error);
+      throw new Error(`Netopia API error: ${JSON.stringify(responseData.error)}`);
+    }
+
+    if (!response.ok) {
+      console.error('[Netopia v2] HTTP error:', {
+        status: response.status,
+        statusText: response.statusText,
+        body: responseData
+      });
+      throw new Error(`Netopia API error ${response.status}: ${JSON.stringify(responseData)}`);
+    }
 
     // Handle response according to Netopia v2 API
-    if (responseData.data?.error?.code === '100' && 
-        responseData.data?.payment?.status === 15) {
+    // Check for 3D Secure redirect (code 100, status 15)
+    const errorCode = responseData.data?.error?.code || responseData.error?.code;
+    const paymentStatus = responseData.data?.payment?.status || responseData.payment?.status;
+    
+    console.log('[Netopia v2] Error code:', errorCode, 'Payment status:', paymentStatus);
+
+    if (errorCode === '100' && paymentStatus === 15) {
       // Redirect to 3D Secure authentication
-      const authUrl = responseData.data.customerAction?.url;
+      const authUrl = responseData.data?.customerAction?.url || responseData.customerAction?.url;
+      console.log('[Netopia v2] 3D Secure redirect URL:', authUrl);
+      if (!authUrl) {
+        throw new Error('Netopia returned 3D Secure status but no redirect URL');
+      }
       return {
         gateway: 'netopia',
         redirectUrl: authUrl
       };
-    } else if (responseData.data?.error?.code === '0' && 
-               responseData.data?.payment?.status === 3) {
+    } else if (errorCode === '0' && paymentStatus === 3) {
       // Payment successful (no 3D Secure required)
+      console.log('[Netopia v2] Payment successful without 3D Secure');
       return {
         gateway: 'netopia',
         redirectUrl: request.returnUrl
       };
+    } else if (responseData.data?.customerAction?.url || responseData.customerAction?.url) {
+      // Some cases might have customerAction without standard codes
+      const authUrl = responseData.data?.customerAction?.url || responseData.customerAction?.url;
+      console.log('[Netopia v2] Redirect URL from customerAction:', authUrl);
+      return {
+        gateway: 'netopia',
+        redirectUrl: authUrl
+      };
     } else {
-      throw new Error(`Payment failed: ${responseData.data?.error?.message || 'Unknown error'}`);
+      const errorMsg = responseData.data?.error?.message || responseData.error?.message || 'Unknown error';
+      console.error('[Netopia v2] Payment failed:', errorMsg, 'Full response:', responseData);
+      throw new Error(`Payment failed: ${errorMsg}`);
     }
   } catch (error) {
-    console.error('Netopia v2 API error:', error);
+    console.error('[Netopia v2] Error:', error);
     throw error;
   }
 }

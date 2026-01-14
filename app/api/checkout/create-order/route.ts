@@ -268,6 +268,7 @@ export async function POST(request: NextRequest) {
 
     return NextResponse.json({
       order_id: newOrder.id,
+      order_number: newOrder.orderNumber, // Friendly order number for URLs
       totals: {
         subtotal_cents: newOrder.subtotalCents,
         shipping_fee_cents: newOrder.shippingFeeCents,
