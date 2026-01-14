@@ -66,7 +66,11 @@ export async function GET(req: NextRequest) {
 
       // Transform to match expected format
       const items = await Promise.all(
-        result.map(async ({ product, seller, category }) => {
+        result.map(async ({ product, seller, category }: {
+          product: InferSelectModel<typeof products>;
+          seller: InferSelectModel<typeof sellers>;
+          category: InferSelectModel<typeof categories> | null;
+        }) => {
           // Get primary image
           const images = await db
             .select()
