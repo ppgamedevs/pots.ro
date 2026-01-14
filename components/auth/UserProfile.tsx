@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Alert, AlertDescription } from "@/components/ui/alert";
@@ -23,11 +23,25 @@ export function UserProfile() {
   const [nameValue, setNameValue] = useState('');
   const [nameLoading, setNameLoading] = useState(false);
 
+  // Use ref to prevent duplicate fetches on re-renders caused by browser extensions
+  const hasFetchedRef = useRef(false);
+
   // Fetch current user
   useEffect(() => {
+    // Guard: Only fetch once per mount
+    if (hasFetchedRef.current) return;
+    hasFetchedRef.current = true;
+
+    let isMounted = true;
+
     const fetchUser = async () => {
       try {
-        const response = await fetch('/api/auth/me');
+        const response = await fetch('/api/auth/me', {
+          cache: 'no-store',
+        });
+        
+        if (!isMounted) return;
+        
         const data = await response.json();
         
         if (response.ok) {
@@ -37,14 +51,22 @@ export function UserProfile() {
           setError('Eroare la încărcarea profilului');
         }
       } catch (error) {
-        setError('Eroare de conexiune');
+        if (isMounted) {
+          setError('Eroare de conexiune');
+        }
       } finally {
-        setLoading(false);
+        if (isMounted) {
+          setLoading(false);
+        }
       }
     };
 
     fetchUser();
-  }, []);
+
+    return () => {
+      isMounted = false;
+    };
+  }, []); // Empty deps: only fetch on mount
 
   // Handle name update
   const handleNameUpdate = async () => {

@@ -1,4 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
+import { db } from "@/db";
+import { products, productImages, sellers, categories } from "@/db/schema/core";
+import { eq, and, desc, asc, ilike, or, sql } from "drizzle-orm";
+import type { InferSelectModel } from "drizzle-orm";
 
 const ELASTIC_URL = process.env.ELASTIC_URL!;
 const ELASTIC_API_KEY = process.env.ELASTIC_API_KEY!;
@@ -11,6 +15,92 @@ export async function GET(req: NextRequest) {
     const from = Number(searchParams.get("from") || "0");
     const size = Number(searchParams.get("size") || "24");
     const sort = searchParams.get("sort") || "relevance";
+
+    // If Elasticsearch is not configured, use database search
+    if (!ELASTIC_URL || !ELASTIC_API_KEY) {
+      // Build search conditions
+      const conditions = [eq(products.status, 'active')];
+      
+      if (q) {
+        conditions.push(
+          or(
+            ilike(products.title, `%${q}%`),
+            ilike(products.description, `%${q}%`)
+          )!
+        );
+      }
+
+      // Build order by clause
+      let orderByClause;
+      if (sort === "price_asc") {
+        orderByClause = asc(products.priceCents);
+      } else if (sort === "price_desc") {
+        orderByClause = desc(products.priceCents);
+      } else if (sort === "recent") {
+        orderByClause = desc(products.createdAt);
+      } else {
+        orderByClause = desc(products.createdAt);
+      }
+
+      // Get total count
+      const totalResult = await db
+        .select({ count: sql<number>`count(*)` })
+        .from(products)
+        .where(and(...conditions));
+      const total = Number(totalResult[0]?.count || 0);
+
+      // Fetch products
+      const result = await db
+        .select({
+          product: products,
+          seller: sellers,
+          category: categories,
+        })
+        .from(products)
+        .innerJoin(sellers, eq(products.sellerId, sellers.id))
+        .leftJoin(categories, eq(products.categoryId, categories.id))
+        .where(and(...conditions))
+        .orderBy(orderByClause)
+        .limit(size)
+        .offset(from);
+
+      // Transform to match expected format
+      const items = await Promise.all(
+        result.map(async ({ product, seller, category }) => {
+          // Get primary image
+          const images = await db
+            .select()
+            .from(productImages)
+            .where(
+              and(
+                eq(productImages.productId, product.id),
+                eq(productImages.isPrimary, true)
+              )
+            )
+            .limit(1);
+
+          const rawImageUrl = images[0]?.url || product.imageUrl;
+          const imageUrl = rawImageUrl && rawImageUrl !== '/placeholder.png' ? rawImageUrl : '/placeholder.svg';
+          const imageAlt = images[0]?.alt || product.title;
+
+          return {
+            id: product.id,
+            title: product.title,
+            price: product.priceCents / 100, // Convert cents to RON
+            image: {
+              src: imageUrl,
+              alt: imageAlt,
+            },
+            seller: seller.brandName,
+            category: category?.name || '',
+            slug: product.slug,
+            badge: product.stock < 5 ? 'stoc redus' : undefined,
+          };
+        })
+      );
+
+      return NextResponse.json({ items, total });
+    }
 
     const sortClause =
       sort === "price_asc" ? [{ price: "asc" }] :
@@ -39,26 +129,6 @@ export async function GET(req: NextRequest) {
           size,
           _source: ["id", "title", "price", "image", "seller", "category", "slug", "oldPrice", "badge"],
         };
-
-    // For MVP, return mock data if Elasticsearch is not configured
-    if (!ELASTIC_URL || !ELASTIC_API_KEY) {
-      const mockProducts = Array.from({ length: size }, (_, i) => ({
-        id: `mock-${from + i}`,
-        title: q ? `Produs ${i + 1} pentru "${q}"` : `Produs ${i + 1}`,
-        price: Math.floor(Math.random() * 500) + 50,
-        image: { src: "/placeholder.png", alt: `Produs ${i + 1}` },
-        seller: `Vânzător ${i % 3 + 1}`,
-        category: ["Ghivece", "Cutii", "Ambalaje"][i % 3],
-        slug: `produs-${i + 1}`,
-        oldPrice: Math.random() > 0.7 ? Math.floor(Math.random() * 600) + 100 : undefined,
-        badge: Math.random() > 0.8 ? "Reducere" : undefined,
-      }));
-
-      return NextResponse.json({ 
-        items: mockProducts, 
-        total: q ? 12 : 100 
-      });
-    }
 
     const response = await fetch(`${ELASTIC_URL}/${INDEX}/_search`, {
       method: "POST",

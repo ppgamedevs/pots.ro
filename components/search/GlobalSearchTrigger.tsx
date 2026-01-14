@@ -48,26 +48,65 @@ export default function GlobalSearchTrigger() {
     };
   }, [open]);
 
+  // Use ref to track abort controller and prevent duplicate requests
+  const abortControllerRef = useRef<AbortController | null>(null);
+
   useEffect(() => {
-    const id = setTimeout(async () => {
+    // Clear any pending timeout/request
+    const timeoutId = setTimeout(async () => {
       if (!q.trim()) {
         setSuggestions([]);
+        setLoading(false);
         return;
       }
       
+      // Cancel previous request if still pending
+      if (abortControllerRef.current) {
+        abortControllerRef.current.abort();
+      }
+      
+      // Create new abort controller for this request
+      const abortController = new AbortController();
+      abortControllerRef.current = abortController;
+      
       setLoading(true);
       try {
-        const r = await fetch(`/api/search/suggest?q=${encodeURIComponent(q)}`);
+        const r = await fetch(`/api/search/suggest?q=${encodeURIComponent(q)}`, {
+          signal: abortController.signal,
+          cache: 'no-store',
+        });
+        
+        // Check if request was aborted
+        if (abortController.signal.aborted) {
+          return;
+        }
+        
         const { suggestions: sugs } = await r.json();
         setSuggestions(sugs || []);
       } catch (error) {
+        // Ignore abort errors (request was cancelled by newer request)
+        if (error instanceof Error && error.name === 'AbortError') {
+          return;
+        }
         console.error("Search suggestions error:", error);
         setSuggestions([]);
       } finally {
-        setLoading(false);
+        // Only update loading state if this request wasn't aborted
+        if (!abortController.signal.aborted) {
+          setLoading(false);
+        }
+        abortControllerRef.current = null;
       }
     }, 200);
-    return () => clearTimeout(id);
+    
+    return () => {
+      clearTimeout(timeoutId);
+      // Cancel pending request on cleanup
+      if (abortControllerRef.current) {
+        abortControllerRef.current.abort();
+        abortControllerRef.current = null;
+      }
+    };
   }, [q]);
 
   const handleSubmit = (e: React.FormEvent) => {

@@ -57,28 +57,60 @@ export default function PDP() {
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
+    // Guard: Prevent fetch if slug is empty
+    if (!slug) return;
+
+    let isMounted = true; // Track if component is still mounted
+    let abortController: AbortController | null = null;
+
     const fetchProduct = async () => {
       try {
         setLoading(true);
-        const response = await fetch(`/api/catalog/product?slug=${slug}`);
+        setError(null);
+        
+        // Create abort controller to cancel request if component unmounts
+        abortController = new AbortController();
+        
+        const response = await fetch(`/api/catalog/product?slug=${slug}`, {
+          signal: abortController.signal,
+          cache: 'no-store',
+        });
+        
+        if (!isMounted) return; // Don't update state if unmounted
         
         if (!response.ok) {
           throw new Error('Produsul nu a fost găsit');
         }
         
         const data = await response.json();
-        setProductData(data);
+        if (isMounted) {
+          setProductData(data);
+        }
       } catch (err) {
-        setError(err instanceof Error ? err.message : 'Eroare la încărcarea produsului');
+        // Ignore abort errors (component unmounted or new request started)
+        if (err instanceof Error && err.name === 'AbortError') {
+          return;
+        }
+        if (isMounted) {
+          setError(err instanceof Error ? err.message : 'Eroare la încărcarea produsului');
+        }
       } finally {
-        setLoading(false);
+        if (isMounted) {
+          setLoading(false);
+        }
       }
     };
 
-    if (slug) {
-      fetchProduct();
-    }
-  }, [slug]);
+    fetchProduct();
+
+    // Cleanup: Cancel request and mark as unmounted
+    return () => {
+      isMounted = false;
+      if (abortController) {
+        abortController.abort();
+      }
+    };
+  }, [slug]); // Only re-fetch when slug actually changes
 
   const handleAddToCart = async (quantity: number) => {
     if (!productData?.product) return;

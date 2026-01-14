@@ -2,9 +2,8 @@
 
 import Link from "next/link";
 import Image from "next/image";
-import { Button } from "../ui/button";
 import { Badge } from "../ui/badge";
-import { ShoppingCart } from "lucide-react";
+import AddToCartButton from "../cart/AddToCartButton";
 
 export interface ProductCardProps {
   id: string;
@@ -18,22 +17,25 @@ export interface ProductCardProps {
   oldPrice?: number;
   badge?: 'nou' | 'reducere' | 'stoc redus';
   href: string;
+  stockQty?: number; // Stock quantity for AddToCartButton
 }
 
 export function ProductCard({ 
+  id,
   image, 
   title, 
   seller, 
   price, 
   oldPrice, 
   badge, 
-  href 
+  href,
+  stockQty = 10 // Default stock if not provided
 }: ProductCardProps) {
   const discount = oldPrice ? Math.round(((oldPrice - price) / oldPrice) * 100) : 0;
 
   return (
-    <div className="group bg-bg border border-line rounded-lg overflow-hidden transition-micro hover:shadow-card">
-      <Link href={href} className="block">
+    <div className="group bg-bg border border-line rounded-lg overflow-hidden transition-micro hover:shadow-card flex flex-col h-full">
+      <Link href={href} className="block flex-1 flex flex-col">
         {/* Image Container */}
         <div className="relative aspect-square overflow-hidden">
           <Image
@@ -60,7 +62,7 @@ export function ProductCard({
         </div>
 
         {/* Content */}
-        <div className="p-4">
+        <div className="p-4 flex-1 flex flex-col">
           <h3 className="text-sm font-medium text-ink mb-1 line-clamp-2 group-hover:text-primary transition-micro">
             {title}
           </h3>
@@ -69,7 +71,7 @@ export function ProductCard({
             de {seller}
           </p>
           
-          <div className="flex items-center justify-between mb-3">
+          <div className="flex items-center justify-between mt-auto">
             <div className="flex items-center gap-2">
               <span className="text-lg font-semibold text-ink">
                 {price.toLocaleString('ro-RO')} lei
@@ -86,20 +88,20 @@ export function ProductCard({
       </Link>
       
       {/* Add to Cart Button */}
-      <div className="px-4 pb-4">
-        <Button 
-          size="sm" 
+      <div
+        className="px-4 pb-4"
+        onClick={(e) => {
+          // Nu navigăm la PDP când dăm click pe buton
+          e.preventDefault();
+          e.stopPropagation();
+        }}
+      >
+        <AddToCartButton
+          productId={id}
+          stockQty={stockQty}
+          size="sm"
           className="w-full transition-micro"
-          onClick={(e) => {
-            e.preventDefault();
-            e.stopPropagation();
-            // Handle add to cart
-            console.log('Add to cart:', title);
-          }}
-        >
-          <ShoppingCart className="w-4 h-4 mr-2" />
-          Adaugă în coș
-        </Button>
+        />
       </div>
     </div>
   );
@@ -107,7 +109,7 @@ export function ProductCard({
 
 export function ProductGrid({ items }: { items: ProductCardProps[] }) {
   return (
-    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6 items-stretch">
       {items.map((item) => (
         <ProductCard
           key={item.id}

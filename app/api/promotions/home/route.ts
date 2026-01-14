@@ -108,7 +108,7 @@ export async function GET() {
         type: 'partner',
         title: 'Parteneri de încredere',
         image: {
-          src: '/placeholder.png',
+          src: '/placeholder.svg',
           alt: 'Parteneri de încredere'
         },
         href: '/partners'

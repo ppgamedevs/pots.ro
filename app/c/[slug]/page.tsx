@@ -82,7 +82,7 @@ export default function Category() {
       'ghivece': {
         title: 'Ghivece',
         subtitle: 'Descoperă o gamă variată de ghivece pentru plante, de la modele moderne la clasice, perfecte pentru orice stil de decor.',
-        image: '/placeholder.png'
+        image: '/placeholder.svg'
       },
       'cutii': {
         title: 'Cutii',
@@ -92,12 +92,12 @@ export default function Category() {
       'accesorii': {
         title: 'Accesorii',
         subtitle: 'Toate accesoriile necesare pentru grădinărit și aranjamente florale. Unelte, panglici și multe altele.',
-        image: '/placeholder.png'
+        image: '/placeholder.svg'
       },
       'ambalaje': {
         title: 'Ambalaje',
         subtitle: 'Ambalaje eco-friendly pentru flori și cadouri. Materiale reciclabile și designuri moderne.',
-        image: '/placeholder.png'
+        image: '/placeholder.svg'
       }
     };
     
@@ -107,20 +107,26 @@ export default function Category() {
     };
   };
 
+  // Extract stable values from searchParams to prevent infinite loops
+  // Browser extensions (e.g., SetIcon) can cause DOM mutations that trigger React re-renders,
+  // which creates a new searchParams object reference even if values haven't changed.
+  const pageParam = searchParams.get('page') || '1';
+  const sortParam = searchParams.get('sort') || 'relevance';
+  const filtersParam = searchParams.get('filters') || '{}';
+
   useEffect(() => {
+    // Guard: Prevent fetch if already loading or if slug is empty
+    if (!categorySlug) return;
+
     const fetchCategoryData = async () => {
       try {
         setLoading(true);
         
-        const page = searchParams.get('page') || '1';
-        const sort = searchParams.get('sort') || 'relevance';
-        const filters = searchParams.get('filters') || '{}';
-        
-        setSortBy(sort);
-        setSelectedFilters(JSON.parse(filters));
+        setSortBy(sortParam);
+        setSelectedFilters(JSON.parse(filtersParam));
         
         const response = await fetch(
-          `/api/catalog/category?slug=${categorySlug}&page=${page}&sort=${sort}&filters=${encodeURIComponent(filters)}`
+          `/api/catalog/category?slug=${categorySlug}&page=${pageParam}&sort=${sortParam}&filters=${encodeURIComponent(filtersParam)}`
         );
         
         if (!response.ok) {
@@ -136,10 +142,11 @@ export default function Category() {
       }
     };
 
-    if (categorySlug) {
-      fetchCategoryData();
-    }
-  }, [categorySlug, searchParams]);
+    fetchCategoryData();
+    // Dependencies: Use stable primitive values instead of searchParams object
+    // This prevents re-fetching when browser extensions cause DOM mutations
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [categorySlug, pageParam, sortParam, filtersParam]);
 
   const handleFilterChange = (filters: Record<string, string[]>) => {
     setSelectedFilters(filters);
@@ -250,7 +257,8 @@ export default function Category() {
                 price: item.price,
                 oldPrice: item.oldPrice,
                 badge: item.badges?.[0] as 'nou' | 'reducere' | 'stoc redus' | undefined,
-                href: `/p/${item.slug}`
+                href: `/p/${item.slug}`,
+                stockQty: item.stock ?? 10 // Use real stock or default to 10
               }))} />
               
               {/* Pagination */}

@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 
 export interface User {
   id: string;
@@ -15,10 +15,21 @@ export function useUser() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
+  // Use ref to track if fetch is in progress and prevent duplicate calls
+  const isFetchingRef = useRef(false);
+
   const fetchUser = async () => {
+    // Guard: Prevent concurrent fetches
+    if (isFetchingRef.current) {
+      return;
+    }
+    
+    isFetchingRef.current = true;
+    
     try {
       const response = await fetch('/api/auth/me', {
         credentials: 'include',
+        cache: 'no-store',
       });
       
       if (response.ok) {
@@ -31,19 +42,26 @@ export function useUser() {
         setError('Eroare la încărcarea utilizatorului');
       }
     } catch (error) {
+      // Ignore abort errors
+      if (error instanceof Error && error.name === 'AbortError') {
+        return;
+      }
       console.error('Error fetching user:', error);
       setError('Eroare de conexiune');
     } finally {
       setLoading(false);
+      isFetchingRef.current = false;
     }
   };
 
   useEffect(() => {
     fetchUser();
 
-    // Listen for profile updates
+    // Listen for profile updates (only fetch once per event)
     const handleProfileUpdate = () => {
-      fetchUser();
+      if (!isFetchingRef.current) {
+        fetchUser();
+      }
     };
 
     window.addEventListener('userProfileUpdated', handleProfileUpdate);
@@ -51,7 +69,7 @@ export function useUser() {
     return () => {
       window.removeEventListener('userProfileUpdated', handleProfileUpdate);
     };
-  }, []);
+  }, []); // Empty deps: only run on mount
 
   const logout = async () => {
     try {

@@ -52,7 +52,8 @@ export async function GET() {
           )
           .limit(1);
 
-        const imageUrl = images[0]?.url || product.imageUrl || '/placeholder.png';
+        const rawImageUrl = images[0]?.url || product.imageUrl;
+        const imageUrl = rawImageUrl && rawImageUrl !== '/placeholder.png' ? rawImageUrl : '/placeholder.svg';
         const imageAlt = images[0]?.alt || product.title;
 
         return {

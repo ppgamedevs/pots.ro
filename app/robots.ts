@@ -14,13 +14,6 @@ export default function robots(): MetadataRoute.Robots {
           '/finalizare',
           '/cart',
           '/cos',
-          '/seller-dashboard/',
-          '/admin-demo/',
-          '/dashboard-demo/',
-          '/ui-demo/',
-          '/forms-demo/',
-          '/demo-form/',
-          '/components-demo/',
         ],
       },
       // Allow Bingbot to crawl CSS and JavaScript files (Bing recommendation)

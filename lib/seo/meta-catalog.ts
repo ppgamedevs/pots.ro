@@ -48,7 +48,7 @@ export async function generateProductMetadata(product: Product): Promise<Metadat
       description,
       images: [
         {
-          url: product.images[0]?.src || '/placeholder.png',
+          url: product.images[0]?.src || '/placeholder.svg',
           width: 800,
           height: 600,
           alt: product.title,
@@ -59,7 +59,7 @@ export async function generateProductMetadata(product: Product): Promise<Metadat
       card: "summary_large_image",
       title,
       description,
-      images: [product.images[0]?.src || '/placeholder.png'],
+      images: [product.images[0]?.src || '/placeholder.svg'],
     },
     alternates: {
       canonical: `https://floristmarket.ro/p/${product.slug}`,

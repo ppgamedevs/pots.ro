@@ -120,7 +120,8 @@ export async function GET(request: NextRequest) {
           )
           .limit(1);
 
-        const imageUrl = images[0]?.url || item.image_url || '/placeholder.png';
+        const rawImageUrl = images[0]?.url || item.image_url;
+        const imageUrl = rawImageUrl && rawImageUrl !== '/placeholder.png' ? rawImageUrl : '/placeholder.svg';
 
         return {
           id: item.cart_item_id,

@@ -1,10 +1,10 @@
 import "./globals.css";
 import { Inter_Tight, Merriweather } from "next/font/google";
+import Script from "next/script";
 import { ThemeProvider } from "@/components/theme-provider";
 import { ConfirmProvider } from "@/components/ui/use-confirm";
 import { Toaster } from "@/components/ui/toast";
 import { PerformanceMonitor } from "@/components/ui/performance-monitor";
-import { Toaster as SonnerToaster } from "sonner";
 import { CommandPalette } from "@/components/search/command-palette";
 import { CookieConsent } from "@/components/cookie-consent";
 import { SpeedInsights } from "@vercel/speed-insights/next";
@@ -150,9 +150,11 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
 
   return (
     <html lang="ro" className={`${interTight.variable} ${merriweather.variable}`} suppressHydrationWarning>
-      <head>
+      <body className="font-sans antialiased text-[#1A1A1A] bg-[#FAFAF8] min-h-screen">
         {/* Google Tag Manager */}
-        <script
+        <Script
+          id="gtm-init"
+          strategy="afterInteractive"
           dangerouslySetInnerHTML={{
             __html: `
               (function(w,d,s,l,i){w[l]=w[l]||[];w[l].push({'gtm.start':
@@ -163,11 +165,15 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
             `,
           }}
         />
-        {/* End Google Tag Manager */}
         
-        {/* Google tag (gtag.js) */}
-        <script async src="https://www.googletagmanager.com/gtag/js?id=G-EEMSRXZBG7"></script>
-        <script
+        {/* Google Analytics */}
+        <Script
+          src="https://www.googletagmanager.com/gtag/js?id=G-EEMSRXZBG7"
+          strategy="afterInteractive"
+        />
+        <Script
+          id="gtag-init"
+          strategy="afterInteractive"
           dangerouslySetInnerHTML={{
             __html: `
               window.dataLayer = window.dataLayer || [];
@@ -177,11 +183,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
             `,
           }}
         />
-        {/* Preconnect to external domains for performance */}
-        <link rel="preconnect" href="https://www.googletagmanager.com" />
-        <link rel="dns-prefetch" href="https://www.googletagmanager.com" />
-      </head>
-      <body className="font-sans antialiased text-[#1A1A1A] bg-[#FAFAF8] min-h-screen">
+        
         {/* Google Tag Manager (noscript) */}
         <noscript>
           <iframe
@@ -191,7 +193,86 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
             style={{ display: 'none', visibility: 'hidden' }}
           />
         </noscript>
-        {/* End Google Tag Manager (noscript) */}
+        
+        {/* Fetch Monitor Script - Development Only - Temporarily disabled due to syntax error */}
+        {/* {process.env.NODE_ENV !== 'production' && (
+          <Script
+            id="fetch-monitor"
+            strategy="afterInteractive"
+            dangerouslySetInnerHTML={{
+              __html: `
+                (function() {
+                  if (typeof window === 'undefined') return;
+                  if (window.__FETCH_MONITOR_INITIALIZED__) return;
+                  window.__FETCH_MONITOR_INITIALIZED__ = true;
+                  const originalFetch = window.fetch;
+                  const logs = [];
+                  const maxLogs = 100;
+                  const activeRequests = new Map();
+                  window.fetch = function(...args) {
+                    const [url, options] = args;
+                    const urlString = typeof url === 'string' ? url : url.toString();
+                    const method = options?.method || 'GET';
+                    if (urlString.startsWith('chrome-extension://') || urlString.startsWith('moz-extension://') || urlString.startsWith('safari-extension://')) {
+                      return originalFetch.apply(this, args);
+                    }
+                    const startTime = Date.now();
+                    const requestKey = method + ':' + urlString;
+                    const logEntry = { url: urlString, method: method, timestamp: startTime, time: new Date().toISOString() };
+                    activeRequests.set(requestKey, startTime);
+                    return originalFetch.apply(this, args).then(response => {
+                      logEntry.duration = Date.now() - startTime;
+                      logEntry.status = response.status;
+                      activeRequests.delete(requestKey);
+                      logs.push(logEntry);
+                      if (logs.length > maxLogs) logs.shift();
+                      const now = Date.now();
+                      const recentLogs = logs.filter(log => now - log.timestamp < 5000);
+                      const urlCounts = {};
+                      recentLogs.forEach(log => { urlCounts[log.url] = (urlCounts[log.url] || 0) + 1; });
+                      Object.keys(urlCounts).forEach(url => {
+                        if (urlCounts[url] > 5) {
+                          console.warn('Continuous fetch detected:', url, 'called', urlCounts[url], 'times in last 5 seconds');
+                        }
+                      });
+                      return response;
+                    }).catch(error => {
+                      logEntry.duration = Date.now() - startTime;
+                      logEntry.error = error.message;
+                      activeRequests.delete(requestKey);
+                      logs.push(logEntry);
+                      throw error;
+                    });
+                  };
+                  setInterval(() => {
+                    const now = Date.now();
+                    const recentLogs = logs.filter(log => now - log.timestamp < 10000);
+                    if (recentLogs.length === 0) return;
+                    const urlStats = {};
+                    recentLogs.forEach(log => {
+                      if (!urlStats[log.url]) {
+                        urlStats[log.url] = { count: 0, totalDuration: 0, methods: new Set() };
+                      }
+                      urlStats[log.url].count++;
+                      if (log.duration) urlStats[log.url].totalDuration += log.duration;
+                      urlStats[log.url].methods.add(log.method);
+                    });
+                    console.group('Fetch Summary (last 10 seconds)');
+                    Object.keys(urlStats).forEach(url => {
+                      const stats = urlStats[url];
+                      const avgDuration = stats.totalDuration ? (stats.totalDuration / stats.count).toFixed(0) : 'N/A';
+                      const methods = Array.from(stats.methods).join(', ');
+                      console.log(url + ' - ' + stats.count + ' calls (' + methods + ') - avg ' + avgDuration + 'ms');
+                    });
+                    console.groupEnd();
+                  }, 10000);
+                  console.log('Fetch monitoring enabled');
+                })();
+              `,
+            }}
+          />
+        )} */}
+        
         <ThemeProvider>
           <ConfirmProvider>
             <ErrorBoundary>
@@ -218,7 +299,6 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
               <ChatWidget />
             </ErrorBoundary>
             <Toaster />
-            <SonnerToaster richColors position="top-center" closeButton />
             <PerformanceMonitor />
             <CommandPalette />
             <CookieBanner />
