@@ -82,49 +82,27 @@ export function SiteFooter({ columns, payments, carriers }: SiteFooterProps) {
                   IMPORTANT: Actualizează ID-ul punctului de vânzare (p=XXXXX) 
                   cu ID-ul corect din panoul Netopia -> Identitate vizuală
                   ID-ul se găsește în parametrul ?p=XXXXX din URL-ul script-ului
+                  
+                  Logo-ul va fi injectat automat de script-ul Netopia în container-ul de mai jos.
+                  NU folosi logo-uri statice - doar logo-ul oficial generat de Netopia este permis.
                 */}
                 <div className="flex items-center justify-center h-8 bg-white border border-line rounded-md shadow-sm px-2">
-                  <a 
-                    href="https://netopia-payments.com" 
-                    target="_blank" 
-                    rel="noopener noreferrer"
-                    className="flex items-center justify-center h-full px-2"
-                    aria-label="Plăți securizate prin Netopia Payments"
+                  <div 
                     id="netopia-logo-container"
+                    className="flex items-center justify-center h-full w-full min-w-[80px] min-h-[32px]"
+                    aria-label="Plăți securizate prin Netopia Payments"
                   >
-                    {/* Fallback logo static dacă script-ul Netopia nu funcționează */}
-                    <Image
-                      src="/partners/payments/netopia.svg"
-                      alt="Netopia Payments"
-                      width={60}
-                      height={20}
-                      className="object-contain"
-                      id="netopia-fallback-logo"
-                    />
-                  </a>
+                    {/* Logo-ul va fi injectat aici de script-ul Netopia */}
+                  </div>
                 </div>
                 <Script
                   src={`https://mny.ro/npId.js?p=${NETOPIA_POS_ID}`}
                   type="text/javascript"
                   strategy="afterInteractive"
+                  data-container="netopia-logo-container"
                   data-version="horizontal"
                   data-contrast-color="#ffffff"
                   id="netopia-logo-script"
-                  onLoad={() => {
-                    // Verifică dacă logo-ul a fost injectat după 1.5 secunde
-                    setTimeout(() => {
-                      const container = document.getElementById('netopia-logo-container');
-                      const fallback = document.getElementById('netopia-fallback-logo');
-                      if (container && fallback) {
-                        // Dacă script-ul Netopia a injectat conținut, ascunde fallback-ul
-                        const hasInjectedContent = container.children.length > 1 || 
-                          (container.innerHTML && !container.innerHTML.includes('netopia-fallback-logo'));
-                        if (hasInjectedContent && fallback) {
-                          fallback.style.display = 'none';
-                        }
-                      }
-                    }, 1500);
-                  }}
                 />
               </div>
             </div>
@@ -173,46 +151,121 @@ export function SiteFooter({ columns, payments, carriers }: SiteFooterProps) {
 
         {/* Bottom Bar */}
         <div className="border-t border-line pt-8">
-          <div className="flex flex-col lg:flex-row items-center justify-between gap-4">
-            <div className="text-sm text-ink/70">
-              © 2025 FloristMarket.ro • OnlyTips SRL • CUI: CIF43414871 • J40/16778/2020 • 
-              <Link href="/termeni" className="hover:text-ink transition-micro ml-1">
+          <div className="flex flex-col gap-6">
+            {/* Copyright and Legal Links */}
+            <div className="flex flex-col sm:flex-row items-center justify-center gap-2 text-sm text-ink/70">
+              <span>© 2025 FloristMarket.ro</span>
+              <span className="hidden sm:inline">•</span>
+              <span>OnlyTips SRL</span>
+              <span className="hidden sm:inline">•</span>
+              <span>CUI: CIF43414871</span>
+              <span className="hidden sm:inline">•</span>
+              <span>J40/16778/2020</span>
+              <span className="hidden sm:inline">•</span>
+              <Link href="/termeni" className="hover:text-ink transition-micro">
                 Termeni și condiții
               </Link>
-              {" • "}
+              <span className="hidden sm:inline">•</span>
               <Link href="/confidentialitate" className="hover:text-ink transition-micro">
                 Politica de confidențialitate
               </Link>
             </div>
-            
-            <div className="flex flex-col sm:flex-row items-start sm:items-center gap-4">
-              <div className="flex items-center gap-4">
-                <a href="https://anpc.ro" target="_blank" rel="noopener noreferrer" className="text-sm text-ink/70 hover:text-ink transition-micro">
-                  ANPC
+
+            {/* ANPC, SOL, and Social Media */}
+            <div className="flex flex-col items-center gap-6">
+              {/* ANPC and SOL Logos */}
+              <div className="flex flex-col sm:flex-row items-center gap-6">
+                <a 
+                  href="https://anpc.ro" 
+                  target="_blank" 
+                  rel="noopener noreferrer"
+                  className="flex items-center justify-center h-10 px-4 bg-white border border-line rounded-lg shadow-sm hover:shadow-md transition-all hover:scale-105"
+                  aria-label="ANPC - Autoritatea Națională pentru Protecția Consumatorilor"
+                >
+                  <Image
+                    src="/partners/anpc.svg"
+                    alt="ANPC"
+                    width={80}
+                    height={30}
+                    className="object-contain"
+                  />
                 </a>
-                <Link href="/sol" className="text-sm text-ink/70 hover:text-ink transition-micro">
-                  SOL
-                </Link>
+                
+                <a 
+                  href="https://ec.europa.eu/consumers/odr" 
+                  target="_blank" 
+                  rel="noopener noreferrer"
+                  className="flex items-center justify-center h-10 px-4 bg-white border border-line rounded-lg shadow-sm hover:shadow-md transition-all hover:scale-105"
+                  aria-label="SOL - Platforma Online pentru Soluționarea Litigiilor"
+                >
+                  <Image
+                    src="/partners/sol.svg"
+                    alt="SOL"
+                    width={60}
+                    height={30}
+                    className="object-contain"
+                  />
+                </a>
               </div>
-              <div className="text-xs text-ink/60">
+
+              {/* Legal Notice */}
+              <p className="text-xs text-ink/60 text-center max-w-2xl">
                 Conform O.U.G. nr. 34/2014, informăm că pentru soluționarea alternativă a litigiilor, consumatorii pot apela la{" "}
-                <a href="https://ec.europa.eu/consumers/odr" target="_blank" rel="noopener noreferrer" className="hover:text-ink transition-micro underline">
+                <a 
+                  href="https://ec.europa.eu/consumers/odr" 
+                  target="_blank" 
+                  rel="noopener noreferrer" 
+                  className="text-primary hover:underline font-medium"
+                >
                   platforma SOL
                 </a>
                 {" "}sau la{" "}
-                <a href="https://anpc.ro" target="_blank" rel="noopener noreferrer" className="hover:text-ink transition-micro underline">
+                <a 
+                  href="https://anpc.ro" 
+                  target="_blank" 
+                  rel="noopener noreferrer" 
+                  className="text-primary hover:underline font-medium"
+                >
                   ANPC
                 </a>
                 .
-              </div>
-              <div className="flex items-center gap-2">
-                <span className="text-sm text-ink/70">Social:</span>
-                <Link href="#" className="text-sm text-ink/70 hover:text-ink transition-micro">
-                  Facebook
-                </Link>
-                <Link href="#" className="text-sm text-ink/70 hover:text-ink transition-micro">
-                  Instagram
-                </Link>
+              </p>
+
+              {/* Social Media */}
+              <div className="flex items-center gap-4">
+                <span className="text-sm font-medium text-ink/70">Social:</span>
+                <div className="flex items-center gap-3">
+                  <a
+                    href="https://facebook.com"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="flex items-center justify-center w-10 h-10 bg-white border border-line rounded-lg shadow-sm hover:shadow-md hover:bg-primary/5 transition-all hover:scale-110"
+                    aria-label="Facebook"
+                  >
+                    <Image
+                      src="/partners/facebook.svg"
+                      alt="Facebook"
+                      width={20}
+                      height={20}
+                      className="object-contain text-ink/70"
+                    />
+                  </a>
+                  <a
+                    href="https://instagram.com"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="flex items-center justify-center w-10 h-10 bg-white border border-line rounded-lg shadow-sm hover:shadow-md hover:bg-primary/5 transition-all hover:scale-110"
+                    aria-label="Instagram"
+                  >
+                    <Image
+                      src="/partners/instagram.svg"
+                      alt="Instagram"
+                      width={20}
+                      height={20}
+                      className="object-contain text-ink/70"
+                    />
+                  </a>
+                </div>
               </div>
             </div>
           </div>
