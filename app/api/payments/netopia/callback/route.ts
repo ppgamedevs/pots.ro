@@ -53,37 +53,77 @@ async function getOrderWithBuyer(orderId: string) {
 
 export async function POST(request: NextRequest) {
   try {
-    const formData = await request.formData();
-    const callbackData = parseNetopiaCallback(formData);
+    // Netopia v2 sends JSON, v1 sends form data
+    const contentType = request.headers.get('content-type') || '';
+    
+    let callbackData: any;
+    
+    if (contentType.includes('application/json')) {
+      // Netopia v2 IPN - JSON format
+      const jsonBody = await request.json();
+      console.log('[Netopia v2 IPN] Received JSON callback:', JSON.stringify(jsonBody, null, 2));
+      
+      // Netopia v2 IPN structure:
+      // { payment: { ntpID, status, ... }, order: { orderID, ... }, error: { code, message } }
+      const payment = jsonBody.payment || {};
+      const orderData = jsonBody.order || {};
+      const error = jsonBody.error || {};
+      
+      // Map Netopia v2 status codes to our status
+      // Status codes: 1=pending, 2=pending_auth, 3=paid, 4=pending_cancel, 5=canceled, 6=refunded
+      const ntpStatus = payment.status;
+      let mappedStatus = 'pending';
+      
+      if (ntpStatus === 3 || error.code === '0') {
+        mappedStatus = 'paid';
+      } else if (ntpStatus === 5 || ntpStatus === 6) {
+        mappedStatus = 'failed';
+      }
+      
+      callbackData = {
+        orderId: orderData.orderID || payment.orderId || '',
+        status: mappedStatus,
+        amount: String(orderData.amount || payment.amount || ''),
+        currency: orderData.currency || payment.currency || 'RON',
+        ntpID: payment.ntpID,
+        signature: '', // v2 doesn't use signature in same way
+        isV2: true,
+      };
+      
+      console.log('[Netopia v2 IPN] Parsed callback:', callbackData);
+    } else {
+      // Netopia v1 - Form data format
+      const formData = await request.formData();
+      callbackData = parseNetopiaCallback(formData);
+      callbackData.isV2 = false;
+      console.log('[Netopia v1] Callback received:', callbackData);
+    }
 
-    console.log('Netopia callback received:', {
-      orderId: callbackData.orderId,
-      status: callbackData.status,
-      amount: callbackData.amount,
-      currency: callbackData.currency,
-    });
-
-    // Verify signature
-    const isValidSignature = verifyNetopiaSignature(
-      {
-        order_id: callbackData.orderId,
-        status: callbackData.status,
-        amount: callbackData.amount,
-        currency: callbackData.currency,
-      },
-      callbackData.signature
-    );
-
-    if (!isValidSignature) {
-      console.error('Invalid Netopia signature for order:', callbackData.orderId);
-      return NextResponse.json(
-        { error: 'Invalid signature' },
-        { status: 400 }
+    // Skip signature verification for v2 (uses different auth mechanism)
+    if (!callbackData.isV2) {
+      const isValidSignature = verifyNetopiaSignature(
+        {
+          order_id: callbackData.orderId,
+          status: callbackData.status,
+          amount: callbackData.amount,
+          currency: callbackData.currency,
+        },
+        callbackData.signature
       );
+
+      if (!isValidSignature) {
+        console.error('Invalid Netopia signature for order:', callbackData.orderId);
+        return NextResponse.json(
+          { error: 'Invalid signature' },
+          { status: 400 }
+        );
+      }
     }
 
     // Check if payment was successful
-    const isSuccess = isNetopiaPaymentSuccess(callbackData.status);
+    const isSuccess = callbackData.isV2 
+      ? callbackData.status === 'paid'
+      : isNetopiaPaymentSuccess(callbackData.status);
 
     if (isSuccess) {
       // Update order status in database

@@ -106,9 +106,6 @@ export default function OrderDetailPage({ params }: { params: Promise<{ id: stri
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   
-  const statusInfo = statusConfig[order.status as keyof typeof statusConfig];
-  const StatusIcon = statusInfo?.icon || Clock;
-  
   const formatDate = (dateString: string) => {
     return new Intl.DateTimeFormat('ro-RO', {
       year: 'numeric',
@@ -127,7 +124,7 @@ export default function OrderDetailPage({ params }: { params: Promise<{ id: stri
   };
   
   const handleTrackPackage = () => {
-    if (order.tracking?.trackingUrl) {
+    if (order?.tracking?.trackingUrl) {
       window.open(order.tracking.trackingUrl, '_blank');
     } else {
       toast.error('Link-ul de tracking nu este disponibil');
@@ -196,6 +193,10 @@ export default function OrderDetailPage({ params }: { params: Promise<{ id: stri
       </div>
     );
   }
+
+  // Compute status info after order is confirmed to exist
+  const statusInfo = statusConfig[order.status as keyof typeof statusConfig] || statusConfig.pending;
+  const StatusIcon = statusInfo?.icon || Clock;
   
   return (
     <div className="container mx-auto px-4 py-8">
