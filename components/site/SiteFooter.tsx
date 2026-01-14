@@ -84,13 +84,24 @@ export function SiteFooter({ columns, payments, carriers }: SiteFooterProps) {
                   ID-ul se găsește în parametrul ?p=XXXXX din URL-ul script-ului
                 */}
                 <div className="flex items-center justify-center h-8 bg-white border border-line rounded-md shadow-sm px-2">
-                  <div 
+                  <a 
+                    href="https://netopia-payments.com" 
+                    target="_blank" 
+                    rel="noopener noreferrer"
+                    className="flex items-center justify-center h-full px-2"
+                    aria-label="Plăți securizate prin Netopia Payments"
                     id="netopia-logo-container"
-                    className="flex items-center justify-center h-full w-full"
-                    style={{ minWidth: '80px', minHeight: '32px' }}
                   >
-                    {/* Logo will be injected by Netopia script */}
-                  </div>
+                    {/* Fallback logo static dacă script-ul Netopia nu funcționează */}
+                    <Image
+                      src="/partners/payments/netopia.svg"
+                      alt="Netopia Payments"
+                      width={60}
+                      height={20}
+                      className="object-contain"
+                      id="netopia-fallback-logo"
+                    />
+                  </a>
                 </div>
                 <Script
                   src={`https://mny.ro/npId.js?p=${NETOPIA_POS_ID}`}
@@ -99,6 +110,21 @@ export function SiteFooter({ columns, payments, carriers }: SiteFooterProps) {
                   data-version="horizontal"
                   data-contrast-color="#ffffff"
                   id="netopia-logo-script"
+                  onLoad={() => {
+                    // Verifică dacă logo-ul a fost injectat după 1.5 secunde
+                    setTimeout(() => {
+                      const container = document.getElementById('netopia-logo-container');
+                      const fallback = document.getElementById('netopia-fallback-logo');
+                      if (container && fallback) {
+                        // Dacă script-ul Netopia a injectat conținut, ascunde fallback-ul
+                        const hasInjectedContent = container.children.length > 1 || 
+                          (container.innerHTML && !container.innerHTML.includes('netopia-fallback-logo'));
+                        if (hasInjectedContent && fallback) {
+                          fallback.style.display = 'none';
+                        }
+                      }
+                    }, 1500);
+                  }}
                 />
               </div>
             </div>
