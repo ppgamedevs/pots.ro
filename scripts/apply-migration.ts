@@ -17,6 +17,7 @@ async function applyMigration() {
 
   if (!DATABASE_URL) {
     console.error("❌ No DATABASE_URL found in environment");
+    console.error("Available env vars:", Object.keys(process.env).filter(k => k.includes('POSTGRES') || k.includes('DATABASE')));
     process.exit(1);
   }
 
@@ -24,8 +25,10 @@ async function applyMigration() {
   const sql = postgres(DATABASE_URL, { max: 1 });
 
   try {
-    // Check if migration has already been applied
-    const result = await sql`
+    // Check if migration has already been applied by checking for orders table and order_status enum
+    console.log("🔍 Checking if migration is needed...");
+    
+    const tableCheck = await sql`
       SELECT EXISTS (
         SELECT 1 FROM information_schema.tables 
         WHERE table_schema = 'public' 
@@ -33,21 +36,17 @@ async function applyMigration() {
       ) as table_exists
     `;
 
-    if (result[0].table_exists) {
-      console.log("✅ Orders table already exists. Migration may have been applied.");
-      console.log("🔍 Checking for order_status enum...");
-      
-      const enumCheck = await sql`
-        SELECT EXISTS (
-          SELECT 1 FROM pg_type 
-          WHERE typname = 'order_status'
-        ) as enum_exists
-      `;
-      
-      if (enumCheck[0].enum_exists) {
-        console.log("✅ Migration already applied. Skipping.");
-        process.exit(0);
-      }
+    const enumCheck = await sql`
+      SELECT EXISTS (
+        SELECT 1 FROM pg_type 
+        WHERE typname = 'order_status'
+      ) as enum_exists
+    `;
+
+    if (tableCheck[0].table_exists && enumCheck[0].enum_exists) {
+      console.log("✅ Migration already applied (orders table and order_status enum exist). Skipping.");
+      await sql.end();
+      process.exit(0);
     }
 
     console.log("📄 Reading migration file...");
@@ -62,21 +61,32 @@ async function applyMigration() {
       .map(s => s.trim())
       .filter(s => s.length > 0);
 
-    for (const statement of statements) {
-      await sql.unsafe(statement);
-    }
+    console.log(`📊 Found ${statements.length} statements to execute`);
 
-    // Update drizzle migrations table
-    await sql`
-      INSERT INTO drizzle.__drizzle_migrations (hash, created_at)
-      VALUES ('0008_dark_lyja', ${Date.now()})
-      ON CONFLICT (hash) DO NOTHING
-    `;
+    for (let i = 0; i < statements.length; i++) {
+      const statement = statements[i];
+      try {
+        await sql.unsafe(statement);
+        if (i % 10 === 0) {
+          console.log(`   Executed ${i + 1}/${statements.length} statements...`);
+        }
+      } catch (err: any) {
+        // Continue on errors like "already exists"
+        if (err.message?.includes('already exists')) {
+          console.log(`   Skipping statement ${i + 1} (already exists)`);
+          continue;
+        }
+        throw err;
+      }
+    }
 
     console.log("✅ Migration applied successfully!");
 
-  } catch (error) {
-    console.error("❌ Migration failed:", error);
+  } catch (error: any) {
+    console.error("❌ Migration failed:", error.message || error);
+    if (error.stack) {
+      console.error("Stack:", error.stack);
+    }
     process.exit(1);
   } finally {
     await sql.end();
