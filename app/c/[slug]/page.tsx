@@ -27,6 +27,7 @@ interface Product {
     href: string;
   };
   stockLabel: string;
+  stock?: number; // Stock quantity
   badges?: string[];
   rating?: number;
   reviewCount?: number;
