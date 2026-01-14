@@ -354,7 +354,7 @@ export async function GET(request: NextRequest) {
       }
     ];
 
-    // Simulare filtrare și sortare
+    // Use mock data (database query failed, so we're in fallback mode)
     let filteredProducts = [...mockProducts];
     
     // Aplicare filtre (simplificat)
