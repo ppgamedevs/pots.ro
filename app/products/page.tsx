@@ -1,6 +1,7 @@
 import ProductGrid from "@/components/product/ProductGrid";
 import SearchInline from "@/components/search/SearchInline";
 import Link from "next/link";
+import { headers } from "next/headers";
 
 export const dynamic = "force-dynamic";
 
@@ -19,17 +20,12 @@ interface Product {
   badge?: string;
 }
 
-async function fetchProducts(q: string, page: number, sort: string) {
+async function fetchProducts(baseUrl: string, q: string, page: number, sort: string) {
   const size = 24;
   const from = (page - 1) * size;
   
   try {
-    // In Server Components, we need absolute URLs for fetch
-    // Use localhost:3000 as default for development
-    const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || process.env.NEXT_PUBLIC_SITE_URL || 'http://localhost:3000';
-    // Replace port 3001 with 3000 if needed (fallback fix)
-    const normalizedBaseUrl = baseUrl.replace(':3001', ':3000');
-    const apiUrl = `${normalizedBaseUrl}/api/search?q=${encodeURIComponent(q)}&from=${from}&size=${size}&sort=${encodeURIComponent(sort)}`;
+    const apiUrl = `${baseUrl}/api/search?q=${encodeURIComponent(q)}&from=${from}&size=${size}&sort=${encodeURIComponent(sort)}`;
     
     console.log(`[ProductsPage] Fetching from: ${apiUrl}`);
 
@@ -130,7 +126,13 @@ export default async function ProductsPage({
   const page = Number(searchParams.page || "1");
   const sort = searchParams.sort || "relevance";
   
-  const { items = [], total = 0 } = await fetchProducts(q, page, sort);
+  // Get base URL from request headers
+  const headersList = headers();
+  const protocol = headersList.get('x-forwarded-proto') || (process.env.NODE_ENV === 'production' ? 'https' : 'http');
+  const host = headersList.get('host') || 'localhost:3000';
+  const baseUrl = `${protocol}://${host}`;
+  
+  const { items = [], total = 0 } = await fetchProducts(baseUrl, q, page, sort);
   const totalPages = Math.ceil(total / 24);
 
   return (
