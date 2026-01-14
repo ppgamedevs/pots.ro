@@ -4,6 +4,21 @@ import Link from "next/link";
 import Image from "next/image";
 import Script from "next/script";
 import { Button } from "../ui/button";
+import dynamic from "next/dynamic";
+
+// Import Netopia Logo component dynamically to avoid SSR issues
+// Componenta trebuie să fie client-side only pentru că folosește DOM APIs
+const NTPIdentity = dynamic(
+  () => import('ntp-logo-react'),
+  { 
+    ssr: false,
+    loading: () => (
+      <div className="flex items-center justify-center w-20 h-8 bg-white border border-line rounded-md">
+        <span className="text-xs text-ink/50">Loading...</span>
+      </div>
+    )
+  }
+);
 
 // ID-ul punctului de vânzare pentru logo Netopia
 // Obține-l din panoul Netopia -> Identitate vizuală -> copiază codul generat
@@ -77,33 +92,20 @@ export function SiteFooter({ columns, payments, carriers }: SiteFooterProps) {
                   />
                 </div>
                 
-                {/* Netopia Logo */}
+                {/* Netopia Logo - React Component */}
                 {/* 
-                  IMPORTANT: Actualizează ID-ul punctului de vânzare (p=XXXXX) 
-                  cu ID-ul corect din panoul Netopia -> Identitate vizuală
-                  ID-ul se găsește în parametrul ?p=XXXXX din URL-ul script-ului
-                  
-                  Logo-ul va fi injectat automat de script-ul Netopia în container-ul de mai jos.
-                  NU folosi logo-uri statice - doar logo-ul oficial generat de Netopia este permis.
+                  IMPORTANT: Folosim componenta React oficială de la Netopia
+                  secret="156304" este ID-ul punctului de vânzare (POS ID)
+                  Obține-l din panoul Netopia -> Identitate vizuală
+                  version="orizontal" = horizontal, "vertical" = vertical
                 */}
-                <div className="flex items-center justify-center h-8 bg-white border border-line rounded-md shadow-sm px-2">
-                  <div 
-                    id="netopia-logo-container"
-                    className="flex items-center justify-center h-full w-full min-w-[80px] min-h-[32px]"
-                    aria-label="Plăți securizate prin Netopia Payments"
-                  >
-                    {/* Logo-ul va fi injectat aici de script-ul Netopia */}
-                  </div>
+                <div className="flex items-center justify-center h-8 bg-white border border-line rounded-md shadow-sm px-2 min-w-[100px]">
+                  <NTPIdentity 
+                    color="#ffffff" 
+                    version="orizontal" 
+                    secret={NETOPIA_POS_ID}
+                  />
                 </div>
-                <Script
-                  src={`https://mny.ro/npId.js?p=${NETOPIA_POS_ID}`}
-                  type="text/javascript"
-                  strategy="afterInteractive"
-                  data-container="netopia-logo-container"
-                  data-version="horizontal"
-                  data-contrast-color="#ffffff"
-                  id="netopia-logo-script"
-                />
               </div>
             </div>
 
