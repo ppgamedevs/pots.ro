@@ -81,19 +81,16 @@ export function SiteFooter({ columns, payments, carriers }: SiteFooterProps) {
                 {/* 
                   IMPORTANT: Actualizează ID-ul punctului de vânzare (p=XXXXX) 
                   cu ID-ul corect din panoul Netopia -> Identitate vizuală
-                  ID-ul se găsește în URL-ul script-ului generat: ?p=XXXXX
+                  ID-ul se găsește în parametrul ?p=XXXXX din URL-ul script-ului
                 */}
                 <div className="flex items-center justify-center h-8 bg-white border border-line rounded-md shadow-sm px-2">
-                  <a 
-                    href="https://netopia-payments.com" 
-                    target="_blank" 
-                    rel="noopener noreferrer"
-                    className="flex items-center h-full px-2"
-                    aria-label="Plăți securizate prin Netopia Payments"
+                  <div 
                     id="netopia-logo-container"
+                    className="flex items-center justify-center h-full w-full"
+                    style={{ minWidth: '80px', minHeight: '32px' }}
                   >
                     {/* Logo will be injected by Netopia script */}
-                  </a>
+                  </div>
                 </div>
                 <Script
                   src={`https://mny.ro/npId.js?p=${NETOPIA_POS_ID}`}
