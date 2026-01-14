@@ -78,7 +78,7 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
         .innerJoin(products, eq(orderItems.productId, products.id))
         .innerJoin(sellers, eq(orderItems.sellerId, sellers.id))
         .where(and(
-          eq(orderItems.orderId, orderId),
+          eq(orderItems.orderId, order.id),
           inArray(orderItems.sellerId, userSellerIds)
         ));
     } else {
@@ -100,7 +100,7 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
         .from(orderItems)
         .innerJoin(products, eq(orderItems.productId, products.id))
         .innerJoin(sellers, eq(orderItems.sellerId, sellers.id))
-        .where(eq(orderItems.orderId, orderId));
+        .where(eq(orderItems.orderId, order.id));
     }
 
     // Obține facturile asociate
