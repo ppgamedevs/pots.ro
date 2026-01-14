@@ -70,34 +70,13 @@ export function SiteFooter({ columns, payments, carriers }: SiteFooterProps) {
             <div className="flex items-center gap-4">
               <span className="text-sm font-medium text-ink">Metode de plată:</span>
               <div className="flex items-center gap-3">
-                {/* Visa */}
-                <div className="flex items-center justify-center w-12 h-8 bg-white border border-line rounded-md shadow-sm p-1">
-                  <Image
-                    src="/partners/payments/visa.svg"
-                    alt="Visa"
-                    width={32}
-                    height={20}
-                    className="object-contain"
-                  />
-                </div>
-                
-                {/* Mastercard */}
-                <div className="flex items-center justify-center w-12 h-8 bg-white border border-line rounded-md shadow-sm p-1">
-                  <Image
-                    src="/partners/payments/mastercard.svg"
-                    alt="Mastercard"
-                    width={32}
-                    height={20}
-                    className="object-contain"
-                  />
-                </div>
-                
                 {/* Netopia Logo - React Component */}
                 {/* 
                   IMPORTANT: Folosim componenta React oficială de la Netopia
                   secret="156304" este ID-ul punctului de vânzare (POS ID)
                   Obține-l din panoul Netopia -> Identitate vizuală
                   version="orizontal" = horizontal, "vertical" = vertical
+                  Logo-ul Netopia include deja Visa și Mastercard, deci nu mai afișăm logo-uri separate
                 */}
                 <div className="flex items-center justify-center h-8 bg-white border border-line rounded-md shadow-sm px-2 min-w-[100px]">
                   <NTPIdentity 
@@ -173,38 +152,22 @@ export function SiteFooter({ columns, payments, carriers }: SiteFooterProps) {
               </Link>
             </div>
 
-            {/* ANPC, SOL, and Social Media */}
+            {/* ANPC and Social Media */}
             <div className="flex flex-col items-center gap-6">
-              {/* ANPC and SOL Logos */}
-              <div className="flex flex-col sm:flex-row items-center gap-6">
+              {/* ANPC Logo */}
+              <div className="flex items-center justify-center">
                 <a 
                   href="https://anpc.ro" 
                   target="_blank" 
                   rel="noopener noreferrer"
-                  className="flex items-center justify-center h-10 px-4 bg-white border border-line rounded-lg shadow-sm hover:shadow-md transition-all hover:scale-105"
+                  className="flex items-center justify-center h-12 px-4 bg-white border border-line rounded-lg shadow-sm hover:shadow-md transition-all hover:scale-105"
                   aria-label="ANPC - Autoritatea Națională pentru Protecția Consumatorilor"
                 >
                   <Image
                     src="/partners/anpc.svg"
                     alt="ANPC"
-                    width={80}
-                    height={30}
-                    className="object-contain"
-                  />
-                </a>
-                
-                <a 
-                  href="https://ec.europa.eu/consumers/odr" 
-                  target="_blank" 
-                  rel="noopener noreferrer"
-                  className="flex items-center justify-center h-10 px-4 bg-white border border-line rounded-lg shadow-sm hover:shadow-md transition-all hover:scale-105"
-                  aria-label="SOL - Platforma Online pentru Soluționarea Litigiilor"
-                >
-                  <Image
-                    src="/partners/sol.svg"
-                    alt="SOL"
-                    width={60}
-                    height={30}
+                    width={100}
+                    height={40}
                     className="object-contain"
                   />
                 </a>
@@ -214,21 +177,12 @@ export function SiteFooter({ columns, payments, carriers }: SiteFooterProps) {
               <p className="text-xs text-ink/60 text-center max-w-2xl">
                 Conform O.U.G. nr. 34/2014, informăm că pentru soluționarea alternativă a litigiilor, consumatorii pot apela la{" "}
                 <a 
-                  href="https://ec.europa.eu/consumers/odr" 
-                  target="_blank" 
-                  rel="noopener noreferrer" 
-                  className="text-primary hover:underline font-medium"
-                >
-                  platforma SOL
-                </a>
-                {" "}sau la{" "}
-                <a 
                   href="https://anpc.ro" 
                   target="_blank" 
                   rel="noopener noreferrer" 
                   className="text-primary hover:underline font-medium"
                 >
-                  ANPC
+                  ANPC - Autoritatea Națională pentru Protecția Consumatorilor
                 </a>
                 .
               </p>
@@ -241,7 +195,7 @@ export function SiteFooter({ columns, payments, carriers }: SiteFooterProps) {
                     href="https://facebook.com"
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="flex items-center justify-center w-10 h-10 bg-white border border-line rounded-lg shadow-sm hover:shadow-md hover:bg-primary/5 transition-all hover:scale-110"
+                    className="flex items-center justify-center w-10 h-10 bg-white border border-line rounded-lg shadow-sm hover:shadow-md hover:bg-blue-50 transition-all hover:scale-110"
                     aria-label="Facebook"
                   >
                     <Image
@@ -249,14 +203,14 @@ export function SiteFooter({ columns, payments, carriers }: SiteFooterProps) {
                       alt="Facebook"
                       width={20}
                       height={20}
-                      className="object-contain text-ink/70"
+                      className="object-contain"
                     />
                   </a>
                   <a
                     href="https://instagram.com"
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="flex items-center justify-center w-10 h-10 bg-white border border-line rounded-lg shadow-sm hover:shadow-md hover:bg-primary/5 transition-all hover:scale-110"
+                    className="flex items-center justify-center w-10 h-10 bg-white border border-line rounded-lg shadow-sm hover:shadow-md hover:bg-pink-50 transition-all hover:scale-110"
                     aria-label="Instagram"
                   >
                     <Image
@@ -264,7 +218,7 @@ export function SiteFooter({ columns, payments, carriers }: SiteFooterProps) {
                       alt="Instagram"
                       width={20}
                       height={20}
-                      className="object-contain text-ink/70"
+                      className="object-contain"
                     />
                   </a>
                 </div>
