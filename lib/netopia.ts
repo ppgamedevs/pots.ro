@@ -275,23 +275,61 @@ export async function createNetopiaV2PaymentRequest(
       redirectUrl: request.returnUrl,
       language: 'ro'  // Netopia requires lowercase 2-letter code
     },
+    payment: {
+      options: {
+        installments: 0,
+        bonus: 0
+      },
+      instrument: {
+        type: 'card',
+        account: '',
+        expMonth: 0,
+        expYear: 0,
+        secretCode: '',
+        token: ''
+      },
+      data: {}
+    },
     order: {
-      ntpID: request.orderId.substring(0, 32), // Netopia max 32 chars
       posSignature: posSignature,
       dateTime: new Date().toISOString(),
-      description: request.description.substring(0, 100), // Limit description length
+      description: (request.description || 'Order payment').substring(0, 100),
       orderID: request.orderId,
-      amount: request.amount,
-      currency: request.currency || 'RON', // Ensure currency is set (3 chars required)
+      amount: Number(request.amount.toFixed(2)),
+      currency: 'RON', // Force RON currency
       billing: {
-        email: request.billing?.email || 'customer@example.com',
+        email: request.billing?.email || 'customer@pots.ro',
         phone: request.billing?.phone || '0700000000',
         firstName: request.billing?.firstName || 'Customer',
         lastName: request.billing?.lastName || 'Name',
         city: request.billing?.city || 'Bucharest',
-        country: parseInt(request.billing?.country || '642'), // Romania country code as number
-        postalCode: request.billing?.postalCode || '000000'
-      }
+        country: 642, // Romania country code as number
+        countryName: 'Romania',
+        postalCode: request.billing?.postalCode || '010000',
+        state: 'Bucharest',
+        address: 'Address'
+      },
+      shipping: {
+        email: request.billing?.email || 'customer@pots.ro',
+        phone: request.billing?.phone || '0700000000',
+        firstName: request.billing?.firstName || 'Customer',
+        lastName: request.billing?.lastName || 'Name',
+        city: request.billing?.city || 'Bucharest',
+        country: 642,
+        countryName: 'Romania',
+        postalCode: request.billing?.postalCode || '010000',
+        state: 'Bucharest',
+        address: 'Address'
+      },
+      products: [
+        {
+          name: request.description || 'Order',
+          code: request.orderId.substring(0, 20),
+          category: 'General',
+          price: Number(request.amount.toFixed(2)),
+          vat: 19
+        }
+      ]
     }
   };
 
