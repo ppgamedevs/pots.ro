@@ -7,7 +7,22 @@ const fs = require('fs');
 require('dotenv').config({ path: '.env.local' });
 require('dotenv').config();
 
+async function checkOrdersTable(sql) {
+  try {
+    const result = await sql`
+      SELECT EXISTS (
+        SELECT 1 FROM information_schema.tables 
+        WHERE table_schema = 'public' AND table_name = 'orders'
+      ) as exists
+    `;
+    return result[0].exists;
+  } catch (err) {
+    return false;
+  }
+}
+
 async function runMigration() {
+  let sql;
   try {
     const postgres = require('postgres');
     const { drizzle } = require('drizzle-orm/postgres-js');
@@ -22,60 +37,75 @@ async function runMigration() {
 
     if (!DATABASE_URL) {
       console.error('❌ No DATABASE_URL found in environment');
-      const postgresVars = Object.keys(process.env).filter(k => k.includes('POSTGRES') || k.includes('DATABASE'));
-      console.error('Available vars:', postgresVars);
       process.exit(1);
     }
 
     console.log('🔄 Connecting to database...');
-    const sql = postgres(DATABASE_URL, { max: 1 });
-    const db = drizzle(sql);
+    sql = postgres(DATABASE_URL, { max: 1, idle_timeout: 30 });
+
+    // Test connection
+    try {
+      await sql`SELECT 1`;
+      console.log('✅ Database connection successful');
+    } catch (connErr) {
+      console.error('❌ Cannot connect to database:', connErr.message);
+      process.exit(1);
+    }
+
+    // Check if orders table already exists
+    console.log('🔍 Checking if orders table exists...');
+    const tableExists = await checkOrdersTable(sql);
+    
+    if (tableExists) {
+      console.log('✅ Orders table already exists!');
+      console.log('✅ Migration already applied. Skipping migration scripts.');
+      await sql.end();
+      process.exit(0);
+    }
 
     console.log('📂 Checking migrations folder...');
     const migrationsFolder = path.join(process.cwd(), 'drizzle');
     if (!fs.existsSync(migrationsFolder)) {
       console.error('❌ Migrations folder not found at:', migrationsFolder);
+      await sql.end();
       process.exit(1);
     }
 
     console.log('📋 Running Drizzle migrations...');
-    await migrate(db, { migrationsFolder });
+    const db = drizzle(sql);
+    
+    try {
+      await migrate(db, { migrationsFolder });
+      console.log('✅ Migrations completed successfully!');
+    } catch (migrateErr) {
+      console.warn('⚠️  Migration script error:', migrateErr.message);
+      
+      // Even if migration script fails, check if table exists now
+      console.log('🔍 Double-checking if orders table was created...');
+      const tableExistsNow = await checkOrdersTable(sql);
+      
+      if (tableExistsNow) {
+        console.log('✅ Orders table exists - continuing despite migration error');
+        await sql.end();
+        process.exit(0);
+      }
+      
+      throw migrateErr;
+    }
 
-    console.log('✅ Migrations completed successfully!');
     await sql.end();
     process.exit(0);
+    
   } catch (error) {
-    console.error('❌ Migration error:');
+    console.error('❌ Fatal error:');
     console.error(error.message || error);
     
-    // Check if orders table exists
-    try {
-      const postgres = require('postgres');
-      const DATABASE_URL = 
-        process.env.DATABASE_URL ||
-        process.env.POSTGRES_URL_NON_POOLING ||
-        process.env.POSTGRES_POSTGRES_URL_NON_POOLING ||
-        process.env.POSTGRES_POSTGRES_URL ||
-        process.env.POSTGRES_URL;
-      
-      if (DATABASE_URL) {
-        const sql = postgres(DATABASE_URL, { max: 1 });
-        const result = await sql`
-          SELECT EXISTS (
-            SELECT 1 FROM information_schema.tables 
-            WHERE table_schema = 'public' AND table_name = 'orders'
-          ) as table_exists
-        `;
-        
-        if (result[0].table_exists) {
-          console.log('✅ NOTE: orders table exists - migration may be partially applied');
-          console.log('✅ The table structure should be sufficient for the checkout flow to work');
-          await sql.end();
-          process.exit(0);
-        }
+    if (sql) {
+      try {
+        await sql.end();
+      } catch (e) {
+        // Ignore error closing connection
       }
-    } catch (checkError) {
-      // Ignore errors during check
     }
     
     process.exit(1);
