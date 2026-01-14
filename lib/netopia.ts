@@ -361,12 +361,6 @@ export async function createNetopiaV2PaymentRequest(
       throw new Error(`Netopia API returned invalid JSON: ${responseText.substring(0, 200)}`);
     }
 
-    // Check for API-level errors (can occur even with 200 status)
-    if (responseData.error) {
-      console.error('[Netopia v2] API error:', responseData.error);
-      throw new Error(`Netopia API error: ${JSON.stringify(responseData.error)}`);
-    }
-
     if (!response.ok) {
       console.error('[Netopia v2] HTTP error:', {
         status: response.status,
@@ -377,14 +371,27 @@ export async function createNetopiaV2PaymentRequest(
     }
 
     // Handle response according to Netopia v2 API
-    // Check for 3D Secure redirect (code 100, status 15)
+    // Netopia uses "error" codes that aren't actually errors:
+    // - code "0" = success
+    // - code "100" = 3D Secure redirect needed  
+    // - code "101" = redirect user to payment page (this is the normal flow!)
     const errorCode = responseData.data?.error?.code || responseData.error?.code;
     const paymentStatus = responseData.data?.payment?.status || responseData.payment?.status;
+    const paymentUrl = responseData.data?.payment?.paymentURL || responseData.payment?.paymentURL;
     
-    console.log('[Netopia v2] Error code:', errorCode, 'Payment status:', paymentStatus);
+    console.log('[Netopia v2] Code:', errorCode, 'Payment status:', paymentStatus, 'PaymentURL:', paymentUrl);
 
+    // Code 101 = "Redirect user to payment page" - this is the expected flow!
+    if (errorCode === '101' && paymentUrl) {
+      console.log('[Netopia v2] Redirecting to payment page:', paymentUrl);
+      return {
+        gateway: 'netopia',
+        redirectUrl: paymentUrl
+      };
+    }
+
+    // Code 100 with status 15 = 3D Secure authentication needed
     if (errorCode === '100' && paymentStatus === 15) {
-      // Redirect to 3D Secure authentication
       const authUrl = responseData.data?.customerAction?.url || responseData.customerAction?.url;
       console.log('[Netopia v2] 3D Secure redirect URL:', authUrl);
       if (!authUrl) {
@@ -394,26 +401,40 @@ export async function createNetopiaV2PaymentRequest(
         gateway: 'netopia',
         redirectUrl: authUrl
       };
-    } else if (errorCode === '0' && paymentStatus === 3) {
-      // Payment successful (no 3D Secure required)
+    }
+    
+    // Code 0 with status 3 = Payment successful (no redirect needed)
+    if (errorCode === '0' && paymentStatus === 3) {
       console.log('[Netopia v2] Payment successful without 3D Secure');
       return {
         gateway: 'netopia',
         redirectUrl: request.returnUrl
       };
-    } else if (responseData.data?.customerAction?.url || responseData.customerAction?.url) {
-      // Some cases might have customerAction without standard codes
+    }
+    
+    // Check for customerAction URL as fallback
+    if (responseData.data?.customerAction?.url || responseData.customerAction?.url) {
       const authUrl = responseData.data?.customerAction?.url || responseData.customerAction?.url;
       console.log('[Netopia v2] Redirect URL from customerAction:', authUrl);
       return {
         gateway: 'netopia',
         redirectUrl: authUrl
       };
-    } else {
-      const errorMsg = responseData.data?.error?.message || responseData.error?.message || 'Unknown error';
-      console.error('[Netopia v2] Payment failed:', errorMsg, 'Full response:', responseData);
-      throw new Error(`Payment failed: ${errorMsg}`);
     }
+    
+    // Check for paymentURL as another fallback
+    if (paymentUrl) {
+      console.log('[Netopia v2] Using paymentURL from response:', paymentUrl);
+      return {
+        gateway: 'netopia',
+        redirectUrl: paymentUrl
+      };
+    }
+
+    // Only treat as error if we couldn't find any redirect URL
+    const errorMsg = responseData.data?.error?.message || responseData.error?.message || 'Unknown error';
+    console.error('[Netopia v2] Payment failed - no redirect URL found:', errorMsg, 'Full response:', responseData);
+    throw new Error(`Payment failed: ${errorMsg}`);
   } catch (error) {
     console.error('[Netopia v2] Error:', error);
     throw error;
