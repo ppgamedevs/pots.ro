@@ -27,7 +27,28 @@ export const NETOPIA_API_KEY = (process.env.NETOPIA_API_KEY || '').trim();
 export const NETOPIA_POS_SIGNATURE = (process.env.NETOPIA_POS_SIGNATURE || process.env.NETOPIA_MERCHANT_ID || '').trim();
 // ID-ul punctului de vânzare pentru logo Netopia (din panou -> Identitate vizuală)
 export const NETOPIA_POS_ID = (process.env.NETOPIA_POS_ID || '156304').trim();
-export const SITE_URL = process.env.SITE_URL || process.env.NEXT_PUBLIC_BASE_URL || 'http://localhost:3000';
+
+// Site URL for callbacks - prioritize explicit SITE_URL, then Vercel automatic URL
+function getSiteUrl(): string {
+  // Explicit configuration takes priority
+  if (process.env.SITE_URL) return process.env.SITE_URL;
+  if (process.env.NEXT_PUBLIC_BASE_URL) return process.env.NEXT_PUBLIC_BASE_URL;
+  
+  // Vercel provides VERCEL_URL automatically (without protocol)
+  if (process.env.VERCEL_URL) {
+    return `https://${process.env.VERCEL_URL}`;
+  }
+  
+  // Vercel also provides VERCEL_PROJECT_PRODUCTION_URL for the main domain
+  if (process.env.VERCEL_PROJECT_PRODUCTION_URL) {
+    return `https://${process.env.VERCEL_PROJECT_PRODUCTION_URL}`;
+  }
+  
+  // Fallback for local development
+  return 'http://localhost:3000';
+}
+
+export const SITE_URL = getSiteUrl();
 
 // Validate required environment variables
 // Note: Using console.warn here to avoid circular dependency with logger

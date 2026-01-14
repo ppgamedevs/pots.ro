@@ -53,6 +53,8 @@ export async function POST(request: NextRequest) {
     // Create Netopia payment request
     // Netopia v2 requires JSON API - form submission is no longer supported
     // Use orderNumber for friendly URLs
+    console.log('[Netopia] Using SITE_URL:', SITE_URL);
+    
     const paymentRequest: NetopiaPaymentRequest = {
       orderId: order.id,
       amount: order.totalCents / 100, // Convert cents to RON
