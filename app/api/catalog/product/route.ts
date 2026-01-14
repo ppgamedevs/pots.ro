@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { db } from "@/db";
 import { products, productImages, sellers, categories } from "@/db/schema/core";
-import { eq, and, ne } from "drizzle-orm";
+import { eq, and, ne, asc } from "drizzle-orm";
 import type { InferSelectModel } from "drizzle-orm";
 
 export const dynamic = 'force-dynamic';
@@ -109,7 +109,7 @@ export async function GET(request: NextRequest) {
       .select()
       .from(productImages)
       .where(eq(productImages.productId, product.id))
-      .orderBy(productImages.position);
+      .orderBy(asc(productImages.position));
 
     // Format product response
     const formattedProduct: Product = {
@@ -120,9 +120,9 @@ export async function GET(request: NextRequest) {
       price: product.priceCents / 100,
       images: images.length > 0 
         ? images.map((img: { url: string; alt: string | null }) => ({ src: img.url, alt: img.alt || product.title }))
-        : product.imageUrl 
+        : product.imageUrl && product.imageUrl !== '/placeholder.png'
           ? [{ src: product.imageUrl, alt: product.title }]
-          : [{ src: '/placeholder.png', alt: product.title }],
+          : [{ src: '/placeholder.svg', alt: product.title }],
       seller: {
         name: seller.brandName,
         href: `/s/${seller.slug}`,
@@ -183,9 +183,9 @@ export async function GET(request: NextRequest) {
           price: similarProduct.priceCents / 100,
           images: similarImages.length > 0
             ? [{ src: similarImages[0].url, alt: similarImages[0].alt || similarProduct.title }]
-            : similarProduct.imageUrl
+            : similarProduct.imageUrl && similarProduct.imageUrl !== '/placeholder.png'
               ? [{ src: similarProduct.imageUrl, alt: similarProduct.title }]
-              : [{ src: '/placeholder.png', alt: similarProduct.title }],
+              : [{ src: '/placeholder.svg', alt: similarProduct.title }],
           seller: {
             name: similarSeller.brandName,
             href: `/s/${similarSeller.slug}`,
@@ -206,8 +206,16 @@ export async function GET(request: NextRequest) {
     return NextResponse.json(response);
   } catch (error) {
     console.error('Error fetching product:', error);
+    console.error('Error details:', {
+      message: error instanceof Error ? error.message : String(error),
+      stack: error instanceof Error ? error.stack : undefined,
+      name: error instanceof Error ? error.name : undefined
+    });
     return NextResponse.json(
-      { error: 'Failed to fetch product' },
+      { 
+        error: 'Failed to fetch product',
+        details: error instanceof Error ? error.message : String(error)
+      },
       { status: 500 }
     );
   }

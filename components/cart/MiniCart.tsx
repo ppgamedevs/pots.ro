@@ -3,7 +3,6 @@
 import { useState, useEffect, useRef } from "react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { useToast } from "@/lib/hooks/use-toast";
 import { ShoppingCart, X, Plus, Minus, Trash2, ArrowRight } from "lucide-react";
 import { mutate } from "swr";
 import useSWR from "swr";
@@ -16,7 +15,6 @@ interface MiniCartProps {
 }
 
 export default function MiniCart({ className = "" }: MiniCartProps) {
-  const { toast } = useToast();
   const [isOpen, setIsOpen] = useState(false);
   const [loading, setLoading] = useState<Record<number, boolean>>({});
   const popoverRef = useRef<HTMLDivElement>(null);
@@ -96,10 +94,8 @@ export default function MiniCart({ className = "" }: MiniCartProps) {
 
       // Refresh cart data
       mutate('/api/cart');
-
-      toast("Cantitate actualizată", "success");
     } catch (error) {
-      toast("Nu s-a putut actualiza cantitatea.", "error");
+      console.error('Failed to update quantity:', error);
     } finally {
       setLoading(prev => ({ ...prev, [productId]: false }));
     }
@@ -119,10 +115,8 @@ export default function MiniCart({ className = "" }: MiniCartProps) {
 
       // Refresh cart data
       mutate('/api/cart');
-
-      toast("Produsul a fost eliminat din coș.", "success");
     } catch (error) {
-      toast("Nu s-a putut elimina produsul.", "error");
+      console.error('Failed to remove item:', error);
     } finally {
       setLoading(prev => ({ ...prev, [productId]: false }));
     }

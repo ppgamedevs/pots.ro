@@ -60,6 +60,7 @@
     "@vercel/postgres": "^0.10.0",
     "@vercel/speed-insights": "^1.2.0",
     "aws-sdk": "^2.1692.0",
+    "baseline-browser-mapping": "^2.9.14",
     "bcrypt": "^5.1.1",
     "bcryptjs": "^3.0.2",
     "class-variance-authority": "^0.7.0",

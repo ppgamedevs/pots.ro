@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -43,8 +43,20 @@ export function OrderFiltersComponent({ role, onFiltersChange }: OrderFiltersPro
     page: parseInt(searchParams.get('page') || '1'),
   });
 
+  // Use useRef to track previous filters and prevent unnecessary calls
+  // Browser extensions can cause re-renders that would trigger this effect unnecessarily
+  const prevFiltersRef = useRef<OrderFilters>(filters);
+  
   useEffect(() => {
-    onFiltersChange(filters);
+    // Only call onFiltersChange if filters actually changed (deep comparison)
+    const filtersChanged = JSON.stringify(prevFiltersRef.current) !== JSON.stringify(filters);
+    
+    if (filtersChanged) {
+      prevFiltersRef.current = filters;
+      onFiltersChange(filters);
+    }
+    // Note: onFiltersChange is expected to be stable (useCallback in parent)
+    // If it's not stable, this could still cause issues, but it's better than calling on every render
   }, [filters, onFiltersChange]);
 
   const updateFilters = (newFilters: Partial<OrderFilters>) => {

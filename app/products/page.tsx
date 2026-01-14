@@ -24,13 +24,16 @@ async function fetchProducts(q: string, page: number, sort: string) {
   const from = (page - 1) * size;
   
   try {
-    const url = new URL("/api/search", process.env.NEXT_PUBLIC_SITE_URL || "http://localhost:3000");
-    url.searchParams.set("q", q);
-    url.searchParams.set("from", from.toString());
-    url.searchParams.set("size", size.toString());
-    url.searchParams.set("sort", sort);
+    // In Server Components, we need absolute URLs for fetch
+    // Use localhost:3000 as default for development
+    const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || process.env.NEXT_PUBLIC_SITE_URL || 'http://localhost:3000';
+    // Replace port 3001 with 3000 if needed (fallback fix)
+    const normalizedBaseUrl = baseUrl.replace(':3001', ':3000');
+    const apiUrl = `${normalizedBaseUrl}/api/search?q=${encodeURIComponent(q)}&from=${from}&size=${size}&sort=${encodeURIComponent(sort)}`;
+    
+    console.log(`[ProductsPage] Fetching from: ${apiUrl}`);
 
-    const response = await fetch(url.toString(), { 
+    const response = await fetch(apiUrl, { 
       cache: "no-store",
       headers: {
         "Content-Type": "application/json",
@@ -38,12 +41,15 @@ async function fetchProducts(q: string, page: number, sort: string) {
     });
 
     if (!response.ok) {
+      console.error(`[ProductsPage] Search API error: ${response.status} ${response.statusText}`);
       throw new Error(`Search failed: ${response.status}`);
     }
 
-    return await response.json();
+    const data = await response.json();
+    console.log(`[ProductsPage] ✅ Fetched ${data.items?.length || 0} items (total: ${data.total || 0})`);
+    return data;
   } catch (error) {
-    console.error("Error fetching products:", error);
+    console.error("[ProductsPage] ❌ Error fetching products:", error);
     return { items: [], total: 0 };
   }
 }

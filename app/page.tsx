@@ -50,15 +50,16 @@ export default function Home() {
   const [blogPosts, setBlogPosts] = useState<BlogPost[]>([]);
   const [loading, setLoading] = useState(true);
 
-  // Fetch data
   useEffect(() => {
+    const abortController = new AbortController();
+
     const fetchData = async () => {
       try {
         const [promotionsRes, categoriesRes, productsRes, blogRes] = await Promise.all([
-          fetch('/api/promotions/home'),
-          fetch('/api/categories/top'),
-          fetch('/api/products/featured'),
-          fetch('/api/blog/teasers')
+          fetch('/api/promotions/home', { signal: abortController.signal, cache: 'no-store' }),
+          fetch('/api/categories/top', { signal: abortController.signal, cache: 'no-store' }),
+          fetch('/api/products/featured', { signal: abortController.signal, cache: 'no-store' }),
+          fetch('/api/blog/teasers', { signal: abortController.signal, cache: 'no-store' })
         ]);
 
         const [promotionsData, categoriesData, productsData, blogData] = await Promise.all([
@@ -72,15 +73,23 @@ export default function Home() {
         setCategories(categoriesData);
         setFeaturedProducts(productsData);
         setBlogPosts(blogData);
+        setLoading(false);
       } catch (error) {
-        console.error('Error fetching data:', error);
-      } finally {
+        // Ignore abort errors (component unmounted or React Strict Mode double-mount)
+        if (error instanceof Error && error.name === 'AbortError') {
+          return;
+        }
+        console.error('[Homepage] Error fetching data:', error);
         setLoading(false);
       }
     };
 
     fetchData();
-  }, []);
+
+    return () => {
+      abortController.abort();
+    };
+  }, []); // Empty deps: fetch only on mount
 
   if (loading) {
     return (
@@ -175,7 +184,7 @@ export default function Home() {
                       ? '/images/ghiveci-gri.jpg' 
                       : cat.id === 'accesorii'
                         ? '/banners/for-florists/ribbons.jpg'
-                        : '/placeholder.png',
+                        : '/placeholder.svg',
                 alt: cat.name 
               },
               href: cat.href,

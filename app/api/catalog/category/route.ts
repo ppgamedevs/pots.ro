@@ -1,4 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
+import { db } from "@/db";
+import { products, productImages, sellers, categories } from "@/db/schema/core";
+import { eq, and, desc, asc, ilike, or, sql } from "drizzle-orm";
+import type { InferSelectModel } from "drizzle-orm";
 
 export const dynamic = 'force-dynamic';
 
@@ -18,6 +22,7 @@ export interface Product {
     href: string;
   };
   stockLabel: string;
+  stock?: number; // Stock quantity
   badges?: string[];
   rating?: number;
   reviewCount?: number;
@@ -56,7 +61,163 @@ export async function GET(request: NextRequest) {
     const sort = searchParams.get('sort') || 'relevance';
     const filters = searchParams.get('filters') || '{}';
 
-    // Mock data pentru categorii
+    // Try to fetch real products from database first
+    try {
+      // Find category by slug
+      const categoryResult = await db
+        .select()
+        .from(categories)
+        .where(eq(categories.slug, slug))
+        .limit(1);
+
+      const category = categoryResult[0];
+
+      // Build conditions
+      const conditions = [eq(products.status, 'active')];
+      
+      if (category) {
+        conditions.push(eq(products.categoryId, category.id));
+      }
+
+      // Apply filters (simplified - can be extended)
+      const parsedFilters = JSON.parse(filters);
+      if (parsedFilters.brand && parsedFilters.brand.length > 0) {
+        // Filter by seller brand name would require additional join logic
+        // For now, we'll skip this filter when using real data
+      }
+
+      // Build order by clause
+      let orderByClause;
+      if (sort === "price_asc") {
+        orderByClause = asc(products.priceCents);
+      } else if (sort === "price_desc") {
+        orderByClause = desc(products.priceCents);
+      } else if (sort === "newest" || sort === "recent") {
+        orderByClause = desc(products.createdAt);
+      } else {
+        orderByClause = desc(products.createdAt);
+      }
+
+      // Get total count
+      const totalResult = await db
+        .select({ count: sql<number>`count(*)` })
+        .from(products)
+        .where(and(...conditions));
+      const total = Number(totalResult[0]?.count || 0);
+
+      // Pagination
+      const itemsPerPage = 24;
+      const totalPages = Math.ceil(total / itemsPerPage);
+      const startIndex = (page - 1) * itemsPerPage;
+
+      // Fetch products
+      const result = await db
+        .select({
+          product: products,
+          seller: sellers,
+          category: categories,
+        })
+        .from(products)
+        .innerJoin(sellers, eq(products.sellerId, sellers.id))
+        .leftJoin(categories, eq(products.categoryId, categories.id))
+        .where(and(...conditions))
+        .orderBy(orderByClause)
+        .limit(itemsPerPage)
+        .offset(startIndex);
+
+      // Transform to match expected format
+      const dbProducts: Product[] = await Promise.all(
+        result.map(async ({ product, seller, category: cat }) => {
+          // Get primary image
+          const images = await db
+            .select()
+            .from(productImages)
+            .where(
+              and(
+                eq(productImages.productId, product.id),
+                eq(productImages.isPrimary, true)
+              )
+            )
+            .limit(1);
+
+          const rawImageUrl = images[0]?.url || product.imageUrl;
+          const imageUrl = rawImageUrl && rawImageUrl !== '/placeholder.png' ? rawImageUrl : '/placeholder.svg';
+          const imageAlt = images[0]?.alt || product.title;
+
+          // Determine stock label and badges
+          const stockLabel = product.stock > 10 ? 'În stoc' : product.stock > 0 ? 'Stoc redus' : 'Stoc epuizat';
+          const badges: string[] = [];
+          if (product.stock < 5 && product.stock > 0) {
+            badges.push('stoc redus');
+          }
+
+          return {
+            id: product.id,
+            slug: product.slug,
+            title: product.title,
+            description: product.description || '',
+            price: product.priceCents / 100,
+            images: [
+              { src: imageUrl, alt: imageAlt }
+            ],
+            seller: {
+              name: seller.brandName,
+              href: `/s/${seller.slug}`
+            },
+            stockLabel,
+            stock: product.stock, // Add stock quantity
+            badges: badges.length > 0 ? badges : undefined,
+            rating: undefined,
+            reviewCount: undefined,
+            attributes: Object.entries(product.attributes as Record<string, any> || {}).map(([key, value]) => ({
+              label: key.charAt(0).toUpperCase() + key.slice(1).replace(/_/g, ' '),
+              value: String(value),
+            })),
+            category: cat?.slug || '',
+            tags: [],
+          };
+        })
+      );
+
+      // Mock facets (can be replaced with real facets later)
+      const mockFacets: Facet[] = [
+        {
+          key: 'price',
+          label: 'Preț',
+          type: 'range',
+          options: [
+            { value: '0-50', label: 'Sub 50 lei', count: 0 },
+            { value: '50-100', label: '50-100 lei', count: 0 },
+            { value: '100-200', label: '100-200 lei', count: 0 },
+            { value: '200+', label: 'Peste 200 lei', count: 0 }
+          ]
+        },
+        {
+          key: 'availability',
+          label: 'Disponibilitate',
+          type: 'checkbox',
+          options: [
+            { value: 'in-stock', label: 'În stoc', count: 0 },
+            { value: 'low-stock', label: 'Stoc redus', count: 0 }
+          ]
+        }
+      ];
+
+      const response: CategoryResponse = {
+        items: dbProducts,
+        total,
+        facets: mockFacets,
+        currentPage: page,
+        totalPages
+      };
+
+      return NextResponse.json(response);
+    } catch (dbError) {
+      console.error('Database query error, falling back to mock data:', dbError);
+      // Fall through to mock data if database query fails
+    }
+
+    // Fallback to mock data if database query fails
     const mockProducts: Product[] = [
       {
         id: '1',
@@ -66,9 +227,9 @@ export async function GET(request: NextRequest) {
         price: 45,
         oldPrice: 60,
         images: [
-          { src: '/placeholder.png', alt: 'Ghiveci ceramic alb - vedere frontală' },
-          { src: '/placeholder.png', alt: 'Ghiveci ceramic alb - vedere laterală' },
-          { src: '/placeholder.png', alt: 'Ghiveci ceramic alb - detalii' }
+          { src: '/placeholder.svg', alt: 'Ghiveci ceramic alb - vedere frontală' },
+          { src: '/placeholder.svg', alt: 'Ghiveci ceramic alb - vedere laterală' },
+          { src: '/placeholder.svg', alt: 'Ghiveci ceramic alb - detalii' }
         ],
         seller: {
           name: 'FloralDesign',
@@ -94,8 +255,8 @@ export async function GET(request: NextRequest) {
         description: 'Cutie elegantă din lemn de stejar, perfectă pentru aranjamente florale sau ca element decorativ.',
         price: 89,
         images: [
-          { src: '/placeholder.png', alt: 'Cutie lemn stejar - vedere de sus' },
-          { src: '/placeholder.png', alt: 'Cutie lemn stejar - vedere laterală' }
+          { src: '/placeholder.svg', alt: 'Cutie lemn stejar - vedere de sus' },
+          { src: '/placeholder.svg', alt: 'Cutie lemn stejar - vedere laterală' }
         ],
         seller: {
           name: 'WoodCraft',
@@ -122,8 +283,8 @@ export async function GET(request: NextRequest) {
         price: 125,
         oldPrice: 150,
         images: [
-          { src: '/placeholder.png', alt: 'Set unelte grădinărit' },
-          { src: '/placeholder.png', alt: 'Detalii unelte' }
+          { src: '/placeholder.svg', alt: 'Set unelte grădinărit' },
+          { src: '/placeholder.svg', alt: 'Detalii unelte' }
         ],
         seller: {
           name: 'GardenPro',
