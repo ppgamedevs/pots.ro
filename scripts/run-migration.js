@@ -29,10 +29,12 @@ async function runMigration() {
     const { migrate } = require('drizzle-orm/postgres-js/migrator');
 
     const DATABASE_URL = 
+      process.env.POSTGRES_DATABASE_URL ||
+      process.env.POSTGRES_DATABASE_URL_UNPOOLED ||
+      process.env.POSTGRES_POSTGRES_URL ||
+      process.env.POSTGRES_POSTGRES_URL_NON_POOLING ||
       process.env.DATABASE_URL ||
       process.env.POSTGRES_URL_NON_POOLING ||
-      process.env.POSTGRES_POSTGRES_URL_NON_POOLING ||
-      process.env.POSTGRES_POSTGRES_URL ||
       process.env.POSTGRES_URL;
 
     if (!DATABASE_URL) {
