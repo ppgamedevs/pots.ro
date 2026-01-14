@@ -156,7 +156,7 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
         carrier: (order.carrierMeta as any)?.carrier,
         trackingUrl: (order.carrierMeta as any)?.trackingUrl,
       },
-      invoices: invoicesResult.map((inv) => ({
+      invoices: invoicesResult.map((inv: typeof invoicesResult[0]) => ({
         id: inv.id,
         type: inv.type,
         series: inv.series,
