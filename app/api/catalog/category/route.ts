@@ -354,8 +354,8 @@ export async function GET(request: NextRequest) {
       }
     ];
 
-    // Use database products if available, otherwise use mock data
-    let filteredProducts = dbProducts.length > 0 ? [...dbProducts] : [...mockProducts];
+    // Use mock data (database query failed, so we're in fallback mode)
+    let filteredProducts = [...mockProducts];
     
     // Aplicare filtre (simplificat)
     const parsedFilters = JSON.parse(filters);
