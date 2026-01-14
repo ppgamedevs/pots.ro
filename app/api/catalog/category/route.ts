@@ -1,4 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
+import { db } from "@/db";
+import { products, productImages, sellers, categories } from "@/db/schema/core";
+import { eq, and } from "drizzle-orm";
+import type { InferSelectModel } from "drizzle-orm";
 
 export const dynamic = 'force-dynamic';
 
@@ -56,7 +60,90 @@ export async function GET(request: NextRequest) {
     const sort = searchParams.get('sort') || 'relevance';
     const filters = searchParams.get('filters') || '{}';
 
-    // Mock data pentru categorii
+    // Fetch products from database if category slug is provided
+    let result: Array<{
+      product: InferSelectModel<typeof products>;
+      seller: InferSelectModel<typeof sellers>;
+      category: InferSelectModel<typeof categories> | null;
+    }> = [];
+
+    if (slug) {
+      // Find category by slug
+      const categoryData = await db
+        .select()
+        .from(categories)
+        .where(eq(categories.slug, slug))
+        .limit(1);
+
+      if (categoryData.length > 0) {
+        const categoryId = categoryData[0].id;
+        
+        // Fetch products for this category
+        result = await db
+          .select({
+            product: products,
+            seller: sellers,
+            category: categories,
+          })
+          .from(products)
+          .innerJoin(sellers, eq(products.sellerId, sellers.id))
+          .leftJoin(categories, eq(products.categoryId, categories.id))
+          .where(
+            and(
+              eq(products.categoryId, categoryId),
+              eq(products.status, 'active')
+            )
+          );
+      }
+    }
+
+    // Transform to match expected format
+    const dbProducts: Product[] = await Promise.all(
+      result.map(async ({ product, seller, category: cat }: {
+        product: InferSelectModel<typeof products>;
+        seller: InferSelectModel<typeof sellers>;
+        category: InferSelectModel<typeof categories> | null;
+      }) => {
+        // Get primary image
+        const images = await db
+          .select()
+          .from(productImages)
+          .where(
+            and(
+              eq(productImages.productId, product.id),
+              eq(productImages.isPrimary, true)
+            )
+          )
+          .limit(1);
+
+        const imageUrl = images[0]?.url || product.imageUrl || '/placeholder.png';
+        const imageAlt = images[0]?.alt || product.title;
+
+        return {
+          id: product.id,
+          slug: product.slug,
+          title: product.title,
+          description: product.description || '',
+          price: product.priceCents / 100,
+          oldPrice: undefined,
+          images: [{ src: imageUrl, alt: imageAlt }],
+          seller: {
+            name: seller.brandName,
+            href: `/s/${seller.slug}`,
+          },
+          stockLabel: product.stock > 10 ? 'În stoc' : product.stock > 0 ? 'Stoc redus' : 'Stoc epuizat',
+          badges: product.stock < 5 ? ['Stoc redus'] : [],
+          attributes: Object.entries(product.attributes as Record<string, any> || {}).map(([key, value]) => ({
+            label: key.charAt(0).toUpperCase() + key.slice(1).replace(/_/g, ' '),
+            value: String(value),
+          })),
+          category: cat?.slug || 'uncategorized',
+          tags: [],
+        };
+      })
+    );
+
+    // Mock data pentru categorii (fallback if no database results)
     const mockProducts: Product[] = [
       {
         id: '1',
@@ -189,8 +276,8 @@ export async function GET(request: NextRequest) {
       }
     ];
 
-    // Simulare filtrare și sortare
-    let filteredProducts = [...mockProducts];
+    // Use database products if available, otherwise use mock data
+    let filteredProducts = dbProducts.length > 0 ? [...dbProducts] : [...mockProducts];
     
     // Aplicare filtre (simplificat)
     const parsedFilters = JSON.parse(filters);
