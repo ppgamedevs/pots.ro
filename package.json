@@ -23,7 +23,7 @@
     "test:attributes": "node scripts/test-attributes-implementation.js",
     "backup:db": "tsx scripts/backup-db.ts",
     "restore:db": "tsx scripts/restore-db.ts",
-    "apply-migration": "tsx scripts/apply-migration.ts"
+    "apply-migration": "node scripts/run-migration.js"
   },
   "dependencies": {
     "@dnd-kit/core": "^6.3.1",
