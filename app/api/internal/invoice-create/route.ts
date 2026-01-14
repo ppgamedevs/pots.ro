@@ -110,7 +110,7 @@ export async function POST(request: NextRequest) {
       const invoiceInput = {
         orderId,
         buyer,
-        items: platformItems.map((item) => ({
+        items: platformItems.map((item: typeof orderItemsResult[0]) => ({
           name: item.product.title,
           qty: item.orderItem.qty,
           unitPrice: item.orderItem.unitPriceCents / 100,
