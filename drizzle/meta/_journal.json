@@ -57,6 +57,13 @@
       "when": 1760776854440,
       "tag": "0007_opposite_magma",
       "breakpoints": true
+    },
+    {
+      "idx": 8,
+      "version": "7",
+      "when": 1768404006223,
+      "tag": "0008_dark_lyja",
+      "breakpoints": true
     }
   ]
 }
