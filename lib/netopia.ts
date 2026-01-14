@@ -269,25 +269,28 @@ export async function createNetopiaV2PaymentRequest(
   // Prepare payment request according to Netopia v2 API
   // Based on Netopia v2 documentation structure
   const requestBody = {
-    configData: {
+    config: {
       emailTemplate: '',
       notifyUrl: request.confirmUrl,
       redirectUrl: request.returnUrl,
-      language: 'RO'
+      language: 'ro'  // Netopia requires lowercase 2-letter code
     },
-    orderData: {
+    order: {
+      ntpID: request.orderId.substring(0, 32), // Netopia max 32 chars
+      posSignature: posSignature,
+      dateTime: new Date().toISOString(),
+      description: request.description.substring(0, 100), // Limit description length
       orderID: request.orderId,
       amount: request.amount,
-      currency: request.currency,
-      description: request.description,
-      billing: request.billing || {
-        email: '',
-        phone: '',
-        firstName: '',
-        lastName: '',
-        city: '',
-        country: '642', // Romania
-        postalCode: ''
+      currency: request.currency || 'RON', // Ensure currency is set (3 chars required)
+      billing: {
+        email: request.billing?.email || 'customer@example.com',
+        phone: request.billing?.phone || '0700000000',
+        firstName: request.billing?.firstName || 'Customer',
+        lastName: request.billing?.lastName || 'Name',
+        city: request.billing?.city || 'Bucharest',
+        country: parseInt(request.billing?.country || '642'), // Romania country code as number
+        postalCode: request.billing?.postalCode || '000000'
       }
     }
   };
