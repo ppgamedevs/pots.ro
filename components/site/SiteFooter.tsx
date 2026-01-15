@@ -204,7 +204,6 @@ export function SiteFooter({ columns, payments, carriers }: SiteFooterProps) {
                 </a>
                 .
               </p>
-              </p>
 
               {/* Social Media */}
               <div className="flex items-center gap-4">
