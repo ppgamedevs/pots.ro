@@ -135,7 +135,7 @@ export function SiteFooter({ columns, payments, carriers }: SiteFooterProps) {
           <div className="flex flex-col gap-6">
             {/* Copyright and Legal Links */}
             <div className="flex flex-col sm:flex-row items-center justify-center gap-2 text-sm text-ink/70">
-              <span>© 2025 FloristMarket.ro</span>
+              <span>© 2026 FloristMarket.ro</span>
               <span className="hidden sm:inline">•</span>
               <span>OnlyTips SRL</span>
               <span className="hidden sm:inline">•</span>
