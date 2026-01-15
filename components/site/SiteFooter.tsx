@@ -154,20 +154,38 @@ export function SiteFooter({ columns, payments, carriers }: SiteFooterProps) {
 
             {/* ANPC and Social Media */}
             <div className="flex flex-col items-center gap-6">
-              {/* ANPC Logo */}
-              <div className="flex items-center justify-center">
+              {/* ANPC Badges - Like eMAG */}
+              <div className="flex flex-wrap items-center justify-center gap-4">
+                {/* SAL - Soluționarea Alternativă a Litigiilor */}
                 <a 
-                  href="https://anpc.ro" 
+                  href="https://anpc.ro/ce-spun-444/pentru-consumatori/solutionarea-alternativa-a-litigiilor-sal/" 
                   target="_blank" 
                   rel="noopener noreferrer"
-                  className="flex items-center justify-center h-12 px-4 bg-white border border-line rounded-lg shadow-sm hover:shadow-md transition-all hover:scale-105"
-                  aria-label="ANPC - Autoritatea Națională pentru Protecția Consumatorilor"
+                  className="hover:shadow-lg transition-shadow rounded-lg"
+                  aria-label="ANPC - Soluționarea Alternativă a Litigiilor"
                 >
                   <Image
-                    src="/partners/anpc.svg"
-                    alt="ANPC"
-                    width={100}
-                    height={40}
+                    src="/partners/anpc-sal.svg"
+                    alt="ANPC - Soluționarea Alternativă a Litigiilor"
+                    width={200}
+                    height={50}
+                    className="object-contain"
+                  />
+                </a>
+                
+                {/* SOL - Soluționarea Online a Litigiilor */}
+                <a 
+                  href="https://ec.europa.eu/consumers/odr" 
+                  target="_blank" 
+                  rel="noopener noreferrer"
+                  className="hover:shadow-lg transition-shadow rounded-lg"
+                  aria-label="SOL - Soluționarea Online a Litigiilor"
+                >
+                  <Image
+                    src="/partners/anpc-sol.svg"
+                    alt="SOL - Soluționarea Online a Litigiilor"
+                    width={200}
+                    height={50}
                     className="object-contain"
                   />
                 </a>
@@ -185,6 +203,7 @@ export function SiteFooter({ columns, payments, carriers }: SiteFooterProps) {
                   ANPC - Autoritatea Națională pentru Protecția Consumatorilor
                 </a>
                 .
+              </p>
               </p>
 
               {/* Social Media */}
