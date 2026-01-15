@@ -217,24 +217,51 @@ export function Footer() {
         {/* ANPC section */}
         <div className="mt-8 pt-6 border-t border-slate-200 dark:border-white/10">
           <div className="flex flex-col gap-4">
-            <div className="flex items-center gap-4">
-              <span className="text-sm text-slate-600 dark:text-slate-300">Soluționare online:</span>
+            <div className="flex flex-wrap items-center gap-4">
+              {/* ANPC - Soluționarea Alternativă a Litigiilor */}
               <a
-                href="https://anpc.ro"
+                href="https://anpc.ro/ce-ستى-spun-444/i/sistemul-alternativ-de-solutionare-a-litigiilor-sal/"
                 target="_blank"
                 rel="nofollow noopener"
-                className="flex items-center gap-2 hover:opacity-80 transition-opacity"
-                aria-label="ANPC - Autoritatea Națională pentru Protecția Consumatorilor"
+                className="flex items-center bg-white dark:bg-slate-700 rounded-lg px-3 py-2 shadow-sm border border-slate-200 dark:border-slate-600 hover:shadow-md transition-shadow"
+                aria-label="ANPC - Soluționarea Alternativă a Litigiilor"
               >
-                <svg
-                  width="60"
-                  height="20"
-                  viewBox="0 0 60 20"
-                  className="text-slate-600 dark:text-slate-300"
-                  fill="currentColor"
-                >
-                  <text x="0" y="15" fontSize="12" fontWeight="bold">ANPC</text>
-                </svg>
+                <div className="flex items-center gap-2">
+                  <div className="bg-[#003399] text-white px-2 py-1 rounded text-xs font-bold flex items-center gap-1">
+                    <svg viewBox="0 0 24 24" className="w-4 h-4" fill="currentColor">
+                      <path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"/>
+                    </svg>
+                    ANPC
+                  </div>
+                  <div className="text-left">
+                    <div className="text-[10px] text-slate-500 dark:text-slate-400 uppercase tracking-wide">Soluționarea Alternativă</div>
+                    <div className="text-[10px] text-slate-500 dark:text-slate-400 uppercase tracking-wide">a Litigiilor</div>
+                    <div className="text-[10px] text-orange-500 font-medium">DETALII</div>
+                  </div>
+                </div>
+              </a>
+
+              {/* SOL - Soluționarea Online a Litigiilor */}
+              <a
+                href="https://ec.europa.eu/consumers/odr"
+                target="_blank"
+                rel="nofollow noopener"
+                className="flex items-center bg-white dark:bg-slate-700 rounded-lg px-3 py-2 shadow-sm border border-slate-200 dark:border-slate-600 hover:shadow-md transition-shadow"
+                aria-label="SOL - Soluționarea Online a Litigiilor"
+              >
+                <div className="flex items-center gap-2">
+                  <div className="bg-[#003399] text-white p-1.5 rounded">
+                    <svg viewBox="0 0 24 24" className="w-5 h-5" fill="none" stroke="currentColor" strokeWidth="2">
+                      <rect x="2" y="3" width="20" height="14" rx="2"/>
+                      <path d="M8 21h8M12 17v4"/>
+                    </svg>
+                  </div>
+                  <div className="text-left">
+                    <div className="text-[10px] text-slate-500 dark:text-slate-400 uppercase tracking-wide font-medium">Soluționarea Online</div>
+                    <div className="text-[10px] text-slate-500 dark:text-slate-400 uppercase tracking-wide font-medium">a Litigiilor</div>
+                    <div className="text-[10px] text-orange-500 font-medium">DETALII</div>
+                  </div>
+                </div>
               </a>
             </div>
             <p className="text-xs text-slate-500 dark:text-slate-400">
