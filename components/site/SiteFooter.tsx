@@ -158,7 +158,7 @@ export function SiteFooter({ columns, payments, carriers }: SiteFooterProps) {
               <div className="flex flex-wrap items-center justify-center gap-4">
                 {/* SAL - Soluționarea Alternativă a Litigiilor */}
                 <a 
-                  href="https://anpc.ro/ce-spun-444/pentru-consumatori/solutionarea-alternativa-a-litigiilor-sal/" 
+                  href="https://anpc.ro" 
                   target="_blank" 
                   rel="noopener noreferrer"
                   className="hover:shadow-lg transition-shadow rounded-lg"
@@ -167,15 +167,15 @@ export function SiteFooter({ columns, payments, carriers }: SiteFooterProps) {
                   <Image
                     src="/partners/anpc-sal.svg"
                     alt="ANPC - Soluționarea Alternativă a Litigiilor"
-                    width={200}
-                    height={50}
+                    width={250}
+                    height={60}
                     className="object-contain"
                   />
                 </a>
                 
                 {/* SOL - Soluționarea Online a Litigiilor */}
                 <a 
-                  href="https://ec.europa.eu/consumers/odr" 
+                  href="https://anpc.ro" 
                   target="_blank" 
                   rel="noopener noreferrer"
                   className="hover:shadow-lg transition-shadow rounded-lg"
@@ -184,8 +184,8 @@ export function SiteFooter({ columns, payments, carriers }: SiteFooterProps) {
                   <Image
                     src="/partners/anpc-sol.svg"
                     alt="SOL - Soluționarea Online a Litigiilor"
-                    width={200}
-                    height={50}
+                    width={250}
+                    height={60}
                     className="object-contain"
                   />
                 </a>
