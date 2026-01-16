@@ -1,8 +1,10 @@
 import { NextRequest, NextResponse } from "next/server";
 import { db } from "@/db";
 import { savedPaymentCards } from "@/db/schema/core";
-import { eq, and } from "drizzle-orm";
+import { eq, and, InferSelectModel } from "drizzle-orm";
 import { getUserId } from "@/lib/auth-helpers";
+
+type SavedPaymentCard = InferSelectModel<typeof savedPaymentCards>;
 
 export const dynamic = 'force-dynamic';
 
@@ -28,7 +30,7 @@ export async function GET(request: NextRequest) {
       .orderBy(savedPaymentCards.createdAt);
 
     // Remove sensitive data - only return safe card info
-    const safeCards = cards.map(card => ({
+    const safeCards = cards.map((card: SavedPaymentCard) => ({
       id: card.id,
       last4Digits: card.last4Digits,
       brand: card.brand,
