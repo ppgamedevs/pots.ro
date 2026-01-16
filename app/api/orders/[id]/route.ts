@@ -104,10 +104,57 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
     }
 
     // Obține facturile asociate
-    const invoicesResult = await db
-      .select()
-      .from(invoices)
-      .where(eq(invoices.orderId, order.id));
+    // Try to get invoices, but handle case where schema might not match database
+    let invoicesResult: any[] = [];
+    try {
+      invoicesResult = await db
+        .select({
+          id: invoices.id,
+          orderId: invoices.orderId,
+          series: invoices.series,
+          number: invoices.number,
+          pdfUrl: invoices.pdfUrl,
+          total: invoices.total,
+          currency: invoices.currency,
+          issuer: invoices.issuer,
+          status: invoices.status,
+          sellerInvoiceNumber: invoices.sellerInvoiceNumber,
+          uploadedBy: invoices.uploadedBy,
+          uploadedAt: invoices.uploadedAt,
+          createdAt: invoices.createdAt,
+          // Try to select type if it exists, otherwise it will be undefined
+          ...(invoices.type ? { type: invoices.type } : {}),
+        })
+        .from(invoices)
+        .where(eq(invoices.orderId, order.id));
+    } catch (invoiceError: any) {
+      // If query fails (e.g., column doesn't exist), try without type
+      console.warn('Invoices query with type failed, trying without type:', invoiceError?.message);
+      try {
+        invoicesResult = await db
+          .select({
+            id: invoices.id,
+            orderId: invoices.orderId,
+            series: invoices.series,
+            number: invoices.number,
+            pdfUrl: invoices.pdfUrl,
+            total: invoices.total,
+            currency: invoices.currency,
+            issuer: invoices.issuer,
+            status: invoices.status,
+            sellerInvoiceNumber: invoices.sellerInvoiceNumber,
+            uploadedBy: invoices.uploadedBy,
+            uploadedAt: invoices.uploadedAt,
+            createdAt: invoices.createdAt,
+          })
+          .from(invoices)
+          .where(eq(invoices.orderId, order.id));
+      } catch (fallbackError) {
+        console.error('Invoices query failed even without type:', fallbackError);
+        // Return empty array if invoices can't be loaded
+        invoicesResult = [];
+      }
+    }
 
     // Formatează răspunsul pentru pagina de comandă
     const shippingAddress = order.shippingAddress as any;
@@ -156,9 +203,9 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
         carrier: (order.carrierMeta as any)?.carrier,
         trackingUrl: (order.carrierMeta as any)?.trackingUrl,
       },
-      invoices: invoicesResult.map((inv: typeof invoicesResult[0]) => ({
+      invoices: invoicesResult.map((inv: any) => ({
         id: inv.id,
-        type: inv.type,
+        type: inv.type || 'commission', // Default to 'commission' if type doesn't exist
         series: inv.series,
         number: inv.number,
         pdfUrl: inv.pdfUrl,
