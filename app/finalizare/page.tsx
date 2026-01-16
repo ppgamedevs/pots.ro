@@ -305,7 +305,7 @@ export default function CheckoutPage() {
         } catch (cardError) {
           console.error('Error saving card:', cardError);
           // Don't block checkout if card saving fails
-          toast("Cardul nu a putut fi salvat, dar comanda va continua.", "warning");
+          toast("Cardul nu a putut fi salvat, dar comanda va continua.", "info");
         }
       }
 
