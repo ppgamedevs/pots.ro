@@ -1,6 +1,7 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
+import { useRouter, useSearchParams } from 'next/navigation';
 import { ProductCard } from '@/lib/types';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -87,20 +88,55 @@ const mockSearchResults: ProductCard[] = [
 ];
 
 export default function SearchPage() {
-  const [searchQuery, setSearchQuery] = useState('');
-  const [filteredResults, setFilteredResults] = useState(mockSearchResults);
+  const router = useRouter();
+  const searchParams = useSearchParams();
+  const qParam = searchParams.get('q') || '';
+  
+  const [searchQuery, setSearchQuery] = useState(qParam);
+  const [filteredResults, setFilteredResults] = useState<any[]>([]);
+  const [loading, setLoading] = useState(false);
+  const [total, setTotal] = useState(0);
 
-  const handleSearch = (query: string) => {
-    setSearchQuery(query);
-    if (query.trim() === '') {
-      setFilteredResults(mockSearchResults);
+  // Load search results when q param changes
+  useEffect(() => {
+    const loadResults = async () => {
+      if (!qParam.trim()) {
+        setFilteredResults([]);
+        setTotal(0);
+        return;
+      }
+
+      setLoading(true);
+      try {
+        const response = await fetch(`/api/search?q=${encodeURIComponent(qParam)}&size=24`);
+        if (response.ok) {
+          const data = await response.json();
+          setFilteredResults(data.items || []);
+          setTotal(data.total || 0);
+        } else {
+          console.error('Search API error:', response.status);
+          setFilteredResults([]);
+          setTotal(0);
+        }
+      } catch (error) {
+        console.error('Error fetching search results:', error);
+        setFilteredResults([]);
+        setTotal(0);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    loadResults();
+  }, [qParam]);
+
+  const handleSearch = (e: React.FormEvent) => {
+    e.preventDefault();
+    const query = searchQuery.trim();
+    if (query) {
+      router.push(`/cautare?q=${encodeURIComponent(query)}`);
     } else {
-      const filtered = mockSearchResults.filter(product =>
-        product.title.toLowerCase().includes(query.toLowerCase()) ||
-        product.seller.name.toLowerCase().includes(query.toLowerCase()) ||
-        product.category.name.toLowerCase().includes(query.toLowerCase())
-      );
-      setFilteredResults(filtered);
+      router.push('/cautare');
     }
   };
 
@@ -120,21 +156,25 @@ export default function SearchPage() {
             Caută produse
           </h1>
           
-          <div className="relative">
-            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-5 w-5" />
-            <Input
-              type="text"
-              placeholder="Caută produse, vânzători sau categorii..."
-              value={searchQuery}
-              onChange={(e) => handleSearch(e.target.value)}
-              className="pl-10 pr-4 py-3 text-lg"
-            />
-          </div>
+          <form onSubmit={handleSearch}>
+            <div className="relative">
+              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-5 w-5" />
+              <Input
+                type="text"
+                placeholder="Caută produse, vânzători sau categorii..."
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                className="pl-10 pr-4 py-3 text-lg"
+              />
+            </div>
+          </form>
           
           <div className="mt-4 flex items-center gap-4">
-            <Badge variant="outline" className="px-3 py-1">
-              {filteredResults.length} produse găsite
-            </Badge>
+            {qParam && (
+              <Badge variant="outline" className="px-3 py-1">
+                {loading ? 'Se caută...' : `${total} produse găsite`}
+              </Badge>
+            )}
             <Button variant="outline" size="sm">
               <Filter className="h-4 w-4 mr-2" />
               Filtrează
@@ -142,71 +182,83 @@ export default function SearchPage() {
           </div>
         </div>
 
+        {/* Loading State */}
+        {loading && (
+          <div className="text-center py-12">
+            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
+            <p className="text-gray-600 dark:text-gray-400">Se caută produse...</p>
+          </div>
+        )}
+
         {/* Search Results */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {filteredResults.map((product) => (
-            <Card key={product.id} className="group hover:shadow-lg transition-shadow">
-              <CardContent className="p-0">
-                <Link href={`/p/${product.id}`}>
-                  <div className="relative aspect-square overflow-hidden rounded-t-lg">
-                    <Image
-                      src={product.images[0] || "/placeholder.png"}
-                      alt={product.title}
-                      fill
-                      className="object-cover group-hover:scale-105 transition-transform duration-300"
-                    />
-                  </div>
-                  
-                  <div className="p-4">
-                    <div className="mb-2">
-                      <h3 className="font-semibold text-gray-900 dark:text-gray-100 line-clamp-2 group-hover:text-blue-600 dark:group-hover:text-blue-400 transition-colors">
-                        {product.title}
-                      </h3>
-                      <p className="text-sm text-gray-600 dark:text-gray-400 mt-1">
-                        de <span className="font-medium">{product.seller.name}</span>
-                      </p>
+        {!loading && filteredResults.length > 0 && (
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            {filteredResults.map((product: any) => (
+              <Card key={product.id} className="group hover:shadow-lg transition-shadow">
+                <CardContent className="p-0">
+                  <Link href={`/p/${product.slug || product.id}`}>
+                    <div className="relative aspect-square overflow-hidden rounded-t-lg">
+                      <Image
+                        src={product.image?.src || product.images?.[0] || "/placeholder.png"}
+                        alt={product.image?.alt || product.title}
+                        fill
+                        className="object-cover group-hover:scale-105 transition-transform duration-300"
+                      />
                     </div>
                     
-                    <div className="flex items-center justify-between">
-                      <div>
-                        <p className="text-lg font-bold text-gray-900 dark:text-gray-100">
-                          {formatPrice(product.price, product.currency)}
-                        </p>
-                        <Badge variant="secondary" className="text-xs">
-                          {product.category.name}
-                        </Badge>
+                    <div className="p-4">
+                      <div className="mb-2">
+                        <h3 className="font-semibold text-gray-900 dark:text-gray-100 line-clamp-2 group-hover:text-blue-600 dark:group-hover:text-blue-400 transition-colors">
+                          {product.title}
+                        </h3>
+                        {product.seller && (
+                          <p className="text-sm text-gray-600 dark:text-gray-400 mt-1">
+                            de <span className="font-medium">{typeof product.seller === 'string' ? product.seller : product.seller.name}</span>
+                          </p>
+                        )}
                       </div>
                       
-                      <div className="flex items-center gap-1">
-                        <Star className="h-4 w-4 fill-yellow-400 text-yellow-400" />
-                        <span className="text-sm text-gray-600 dark:text-gray-400">4.8</span>
+                      <div className="flex items-center justify-between">
+                        <div>
+                          <p className="text-lg font-bold text-gray-900 dark:text-gray-100">
+                            {formatPrice(product.price, product.currency || 'RON')}
+                          </p>
+                          {product.category && (
+                            <Badge variant="secondary" className="text-xs">
+                              {typeof product.category === 'string' ? product.category : product.category.name}
+                            </Badge>
+                          )}
+                        </div>
                       </div>
                     </div>
-                  </div>
-                </Link>
-              </CardContent>
-            </Card>
-          ))}
-        </div>
+                  </Link>
+                </CardContent>
+              </Card>
+            ))}
+          </div>
+        )}
 
         {/* No Results */}
-        {filteredResults.length === 0 && searchQuery && (
+        {!loading && filteredResults.length === 0 && qParam && (
           <div className="text-center py-12">
             <Search className="h-12 w-12 mx-auto text-gray-400 mb-4" />
             <h3 className="text-lg font-medium text-gray-900 dark:text-gray-100 mb-2">
-              Nu am găsit produse
+              Nu am găsit produse pentru "{qParam}"
             </h3>
             <p className="text-gray-600 dark:text-gray-400 mb-4">
               Încearcă să modifici termenii de căutare sau să folosești filtrele.
             </p>
-            <Button onClick={() => handleSearch('')}>
-              Vezi toate produsele
+            <Button onClick={() => {
+              setSearchQuery('');
+              router.push('/cautare');
+            }}>
+              Șterge căutarea
             </Button>
           </div>
         )}
 
         {/* Empty State */}
-        {filteredResults.length === 0 && !searchQuery && (
+        {!loading && filteredResults.length === 0 && !qParam && (
           <div className="text-center py-12">
             <Search className="h-12 w-12 mx-auto text-gray-400 mb-4" />
             <h3 className="text-lg font-medium text-gray-900 dark:text-gray-100 mb-2">
