@@ -59,14 +59,14 @@ async function migrateGdprPreferences() {
       console.log('[migration] Found user_id column, migrating to email...');
 
       // Check if email column exists
-      const emailColumnCheck = await db.execute(sql`
+      const emailColumnCheck = await sql`
         SELECT EXISTS (
           SELECT 1 
           FROM information_schema.columns 
           WHERE table_name = 'gdpr_preferences' 
           AND column_name = 'email'
         ) as has_email
-      `);
+      `;
 
       const hasEmail = (emailColumnCheck.rows[0] as any)?.has_email;
       console.log('[migration] Has email column:', hasEmail);
