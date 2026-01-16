@@ -37,6 +37,7 @@ export function UserProfile() {
     const fetchUser = async () => {
       try {
         const response = await fetch('/api/auth/me', {
+          credentials: 'include',
           cache: 'no-store',
         });
         
@@ -45,14 +46,23 @@ export function UserProfile() {
         const data = await response.json();
         
         if (response.ok) {
-          setUser(data.user);
-          setNameValue(data.user.name || '');
+          if (data.user) {
+            setUser(data.user);
+            setNameValue(data.user.name || '');
+          } else {
+            // User not authenticated even though response is ok
+            setUser(null);
+            setError('');
+          }
         } else {
-          setError('Eroare la încărcarea profilului');
+          setError(data.error || 'Eroare la încărcarea profilului');
+          setUser(null);
         }
       } catch (error) {
+        console.error('Error fetching user:', error);
         if (isMounted) {
           setError('Eroare de conexiune');
+          setUser(null);
         }
       } finally {
         if (isMounted) {

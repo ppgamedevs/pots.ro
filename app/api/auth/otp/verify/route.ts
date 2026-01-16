@@ -62,6 +62,8 @@ export async function POST(request: NextRequest) {
     // Sync cart from session to user (if user had items in cart before login)
     await syncCartFromSessionToUser(userData.id);
     
+    // Note: GDPR preferences sync happens client-side after login
+    
     // Create response with session
     const response = NextResponse.json({ 
       success: true, 
