@@ -286,16 +286,16 @@ export async function GET(request: NextRequest) {
 
       // Calculate price range counts (excluding price filter)
       const priceRanges = {
-        '0-50': productsForPriceFacets.filter(p => p.priceCents / 100 <= 50).length, // Including 50
-        '50-100': productsForPriceFacets.filter(p => {
+        '0-50': productsForPriceFacets.filter((p: { priceCents: number; stock: number }) => p.priceCents / 100 <= 50).length, // Including 50
+        '50-100': productsForPriceFacets.filter((p: { priceCents: number; stock: number }) => {
           const price = p.priceCents / 100;
           return price >= 50 && price < 100;
         }).length,
-        '100-200': productsForPriceFacets.filter(p => {
+        '100-200': productsForPriceFacets.filter((p: { priceCents: number; stock: number }) => {
           const price = p.priceCents / 100;
           return price >= 100 && price < 200;
         }).length,
-        '200+': productsForPriceFacets.filter(p => p.priceCents / 100 >= 200).length,
+        '200+': productsForPriceFacets.filter((p: { priceCents: number; stock: number }) => p.priceCents / 100 >= 200).length,
       };
 
       // Get products for availability facet calculation (excluding availability filter, but including price if set)
@@ -334,8 +334,8 @@ export async function GET(request: NextRequest) {
         .where(and(...availabilityFacetConditions));
 
       // Calculate availability counts (excluding availability filter)
-      const inStockCount = productsForAvailabilityFacets.filter(p => p.stock > 10).length;
-      const lowStockCount = productsForAvailabilityFacets.filter(p => p.stock > 0 && p.stock <= 10).length;
+      const inStockCount = productsForAvailabilityFacets.filter((p: { priceCents: number; stock: number }) => p.stock > 10).length;
+      const lowStockCount = productsForAvailabilityFacets.filter((p: { priceCents: number; stock: number }) => p.stock > 0 && p.stock <= 10).length;
 
       const facets: Facet[] = [
         {
