@@ -58,7 +58,7 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
     const isAdmin = user?.role === 'admin';
     
     let orderItemsResult;
-    if (isSeller && !isBuyer && !isAdmin) {
+    if (isSeller && !isBuyer && !isAdmin && userSellerIds.length > 0) {
       // If user is seller, only show their items
       orderItemsResult = await db
         .select({
@@ -141,12 +141,12 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
         country: shippingAddress?.country || 'România',
         notes: shippingAddress?.notes,
       },
-      items: orderItemsResult.map((item: any) => ({
+      items: (orderItemsResult || []).map((item: any) => ({
         id: item.id,
-        productId: item.product.id,
-        productName: item.product.title,
-        productSlug: item.product.slug,
-        sellerName: item.seller.brandName || item.seller.company,
+        productId: item.product?.id || item.productId,
+        productName: item.product?.title || 'Produs indisponibil',
+        productSlug: item.product?.slug || null,
+        sellerName: item.seller?.brandName || item.seller?.company || 'Vânzător necunoscut',
         qty: item.qty,
         unitPriceCents: item.unitPriceCents,
         subtotalCents: item.subtotalCents,
@@ -173,6 +173,14 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
 
   } catch (error) {
     console.error("Get order error:", error);
-    return NextResponse.json({ error: "Internal server error" }, { status: 500 });
+    console.error("Error details:", {
+      message: error instanceof Error ? error.message : String(error),
+      stack: error instanceof Error ? error.stack : undefined,
+      name: error instanceof Error ? error.name : undefined,
+    });
+    return NextResponse.json({ 
+      error: "Internal server error",
+      details: process.env.NODE_ENV === 'development' ? (error instanceof Error ? error.message : String(error)) : undefined
+    }, { status: 500 });
   }
 }
