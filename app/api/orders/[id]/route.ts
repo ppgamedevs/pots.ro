@@ -104,7 +104,7 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
     }
 
     // Obține facturile asociate
-    // Try to get invoices, but handle case where schema might not match database
+    // Note: Select only columns that exist in database (type column may not exist)
     let invoicesResult: any[] = [];
     try {
       invoicesResult = await db
@@ -122,38 +122,13 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
           uploadedBy: invoices.uploadedBy,
           uploadedAt: invoices.uploadedAt,
           createdAt: invoices.createdAt,
-          // Try to select type if it exists, otherwise it will be undefined
-          ...(invoices.type ? { type: invoices.type } : {}),
         })
         .from(invoices)
         .where(eq(invoices.orderId, order.id));
     } catch (invoiceError: any) {
-      // If query fails (e.g., column doesn't exist), try without type
-      console.warn('Invoices query with type failed, trying without type:', invoiceError?.message);
-      try {
-        invoicesResult = await db
-          .select({
-            id: invoices.id,
-            orderId: invoices.orderId,
-            series: invoices.series,
-            number: invoices.number,
-            pdfUrl: invoices.pdfUrl,
-            total: invoices.total,
-            currency: invoices.currency,
-            issuer: invoices.issuer,
-            status: invoices.status,
-            sellerInvoiceNumber: invoices.sellerInvoiceNumber,
-            uploadedBy: invoices.uploadedBy,
-            uploadedAt: invoices.uploadedAt,
-            createdAt: invoices.createdAt,
-          })
-          .from(invoices)
-          .where(eq(invoices.orderId, order.id));
-      } catch (fallbackError) {
-        console.error('Invoices query failed even without type:', fallbackError);
-        // Return empty array if invoices can't be loaded
-        invoicesResult = [];
-      }
+      console.warn('Failed to load invoices:', invoiceError?.message);
+      // Return empty array if invoices can't be loaded
+      invoicesResult = [];
     }
 
     // Formatează răspunsul pentru pagina de comandă
