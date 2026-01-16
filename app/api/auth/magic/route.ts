@@ -17,6 +17,7 @@ import {
 } from '@/lib/auth/session';
 import { sendWelcomeEmail } from '@/lib/auth/email';
 import { generateUniqueDisplayId } from '@/lib/utils/displayId';
+import { syncCartFromSessionToUser } from '@/lib/cart-sync';
 
 /**
  * GET /api/auth/magic?t=token&e=email
@@ -208,6 +209,9 @@ export async function GET(request: NextRequest) {
     // Create session
     const { sessionToken, session } = await createSession(user, request);
     console.log('[magic] session created', session.id);
+    
+    // Sync cart from session to user (if user had items in cart before login)
+    await syncCartFromSessionToUser(user.id);
     
     // Log successful verification
     await logAuthEvent('otp_verify', normalizedEmail, user.id, ip, userAgent, {

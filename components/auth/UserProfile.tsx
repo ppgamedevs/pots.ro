@@ -112,8 +112,8 @@ export function UserProfile() {
       });
 
       if (response.ok) {
-        // Redirect to login page
-        window.location.href = '/autentificare';
+        // Redirect to homepage - use replace to avoid history entry
+        window.location.replace('/');
       } else {
         const data = await response.json();
         setError(data.error || 'Eroare la logout');

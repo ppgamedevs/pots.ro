@@ -4,6 +4,31 @@ import { verifyMiddlewareSessionToken } from '@/lib/auth/middleware-session';
 export async function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;
   
+  // Handle non-existent icon requests immediately to prevent repeated requests
+  // These are typically PWA icon requests from browser extensions (32.png, 64.png, 128.png, etc.)
+  // Check for exact matches and pattern matches for icon sizes
+  const iconPattern = /^\/(16|32|48|64|96|128|144|192|256|384|512)\.png$/;
+  if (
+    pathname === '/32.png' ||
+    pathname === '/64.png' ||
+    pathname === '/128.png' ||
+    pathname === '/192.png' ||
+    pathname === '/512.png' ||
+    pathname === '/icon.png' ||
+    pathname === '/icon' ||
+    iconPattern.test(pathname)
+  ) {
+    return new NextResponse('', {
+      status: 404,
+      headers: {
+        'Cache-Control': 'public, max-age=31536000, immutable, must-revalidate, stale-while-revalidate=86400',
+        'Content-Type': 'text/plain; charset=utf-8',
+        'X-Content-Type-Options': 'nosniff',
+        'Expires': new Date(Date.now() + 31536000000).toUTCString(), // 1 year from now
+      },
+    });
+  }
+  
   // Skip middleware for static files and API routes that don't need auth
   if (
     pathname.startsWith('/_next') ||
@@ -26,6 +51,7 @@ export async function middleware(request: NextRequest) {
     '/cariere',
     '/presa',
     '/confidentialitate',
+    '/privacy',
     '/termeni',
     '/cookies',
     '/faq',

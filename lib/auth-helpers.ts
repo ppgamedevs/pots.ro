@@ -35,7 +35,8 @@ export async function logout(): Promise<void> {
     });
     
     if (response.ok) {
-      window.location.href = '/autentificare';
+      // Use replace to avoid history entry and prevent middleware interception
+      window.location.replace('/');
     } else {
       console.error('Logout failed:', response.statusText);
     }

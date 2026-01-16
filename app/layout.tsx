@@ -194,6 +194,41 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
           />
         </noscript>
         
+        {/* Block repeated icon requests from browser extensions */}
+        <Script
+          id="block-icon-requests"
+          strategy="afterInteractive"
+          dangerouslySetInnerHTML={{
+            __html: `
+              (function() {
+                if (typeof window === 'undefined') return;
+                const blockedPaths = ['/32.png', '/64.png', '/128.png', '/192.png', '/512.png', '/icon.png', '/icon'];
+                const originalFetch = window.fetch;
+                let requestCount = {};
+                
+                window.fetch = function(...args) {
+                  const url = args[0];
+                  const urlString = typeof url === 'string' ? url : url.toString();
+                  
+                  // Check if this is a blocked icon request
+                  const blockedPath = blockedPaths.find(path => urlString.includes(path));
+                  if (blockedPath) {
+                    requestCount[blockedPath] = (requestCount[blockedPath] || 0) + 1;
+                    // Only log first few requests to avoid spam
+                    if (requestCount[blockedPath] <= 3) {
+                      console.warn('Blocked icon request from extension:', blockedPath);
+                    }
+                    // Return a rejected promise to stop the request
+                    return Promise.reject(new Error('Icon file not found'));
+                  }
+                  
+                  return originalFetch.apply(this, args);
+                };
+              })();
+            `,
+          }}
+        />
+        
         {/* Fetch Monitor Script - Development Only - Temporarily disabled due to syntax error */}
         {/* {process.env.NODE_ENV !== 'production' && (
           <Script

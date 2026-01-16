@@ -80,7 +80,8 @@ export function useUser() {
       
       if (response.ok) {
         setUser(null);
-        window.location.href = '/autentificare';
+        // Use replace to avoid history entry and prevent middleware interception
+        window.location.replace('/');
       } else {
         setError('Eroare la logout');
       }

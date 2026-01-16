@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { db } from "@/db";
 import { products, productImages, sellers, categories } from "@/db/schema/core";
-import { eq, and, desc, asc, ilike, or, sql } from "drizzle-orm";
+import { eq, and, desc, asc, ilike, or, sql, gte, lte, gt } from "drizzle-orm";
 import type { InferSelectModel } from "drizzle-orm";
 
 export const dynamic = 'force-dynamic';
@@ -72,19 +72,79 @@ export async function GET(request: NextRequest) {
 
       const category = categoryResult[0];
 
-      // Build conditions
-      const conditions = [eq(products.status, 'active')];
+      // Build base conditions (always applied)
+      const baseConditions = [eq(products.status, 'active')];
       
       if (category) {
-        conditions.push(eq(products.categoryId, category.id));
+        baseConditions.push(eq(products.categoryId, category.id));
       }
 
-      // Apply filters (simplified - can be extended)
+      // Apply filters
       const parsedFilters = JSON.parse(filters);
+      
+      // Build conditions for product filtering (with all filters)
+      const productConditions = [...baseConditions];
+      
+      // Price filter - multiple ranges can be selected (OR logic within price)
+      if (parsedFilters.price && Array.isArray(parsedFilters.price) && parsedFilters.price.length > 0) {
+        const priceConditions = parsedFilters.price.map((range: string) => {
+          if (range === '0-50') {
+            // Sub 50 lei (including 50)
+            return lte(products.priceCents, 50 * 100);
+          } else if (range === '50-100') {
+            // 50-100 lei
+            return and(
+              gte(products.priceCents, 50 * 100),
+              lte(products.priceCents, 100 * 100)
+            );
+          } else if (range === '100-200') {
+            // 100-200 lei
+            return and(
+              gte(products.priceCents, 100 * 100),
+              lte(products.priceCents, 200 * 100)
+            );
+          } else if (range === '200+') {
+            // Peste 200 lei
+            return gte(products.priceCents, 200 * 100);
+          }
+          return null;
+        }).filter((cond: any) => cond !== null);
+        
+        if (priceConditions.length > 0) {
+          // OR logic: product matches any selected price range
+          productConditions.push(or(...priceConditions) as any);
+        }
+      }
+
+      // Availability filter - multiple options can be selected (OR logic within availability)
+      if (parsedFilters.availability && Array.isArray(parsedFilters.availability) && parsedFilters.availability.length > 0) {
+        const availabilityConditions = parsedFilters.availability.map((avail: string) => {
+          if (avail === 'in-stock') {
+            // În stoc: stock > 10
+            return gt(products.stock, 10);
+          } else if (avail === 'low-stock') {
+            // Stoc redus: stock > 0 AND stock <= 10
+            return and(
+              gt(products.stock, 0),
+              lte(products.stock, 10)
+            );
+          }
+          return null;
+        }).filter((cond: any) => cond !== null);
+        
+        if (availabilityConditions.length > 0) {
+          // OR logic: product matches any selected availability option
+          productConditions.push(or(...availabilityConditions) as any);
+        }
+      }
+      
       if (parsedFilters.brand && parsedFilters.brand.length > 0) {
         // Filter by seller brand name would require additional join logic
         // For now, we'll skip this filter when using real data
       }
+
+      // Use productConditions for filtering products
+      const conditions = productConditions;
 
       // Build order by clause
       let orderByClause;
@@ -183,17 +243,110 @@ export async function GET(request: NextRequest) {
         })
       );
 
-      // Mock facets (can be replaced with real facets later)
-      const mockFacets: Facet[] = [
+      // Calculate real facets based on products in database
+      // For facets, we need to calculate counts excluding the current facet filter
+      // This way counts are always shown regardless of whether the filter is active
+      
+      // Base conditions for facets (without price and availability filters)
+      const facetBaseConditions = [...baseConditions];
+      
+      // Add other filters (but not price/availability) to facet conditions
+      // This ensures counts reflect products that match other active filters
+      if (parsedFilters.brand && parsedFilters.brand.length > 0) {
+        // Brand filter logic would go here if implemented
+      }
+      
+      // Get products for price facet calculation (excluding price filter, but including availability if set)
+      const priceFacetConditions = [...facetBaseConditions];
+      if (parsedFilters.availability && Array.isArray(parsedFilters.availability) && parsedFilters.availability.length > 0) {
+        const availabilityConditions = parsedFilters.availability.map((avail: string) => {
+          if (avail === 'in-stock') {
+            return gt(products.stock, 10);
+          } else if (avail === 'low-stock') {
+            return and(
+              gt(products.stock, 0),
+              lte(products.stock, 10)
+            );
+          }
+          return null;
+        }).filter((cond: any) => cond !== null);
+        
+        if (availabilityConditions.length > 0) {
+          priceFacetConditions.push(or(...availabilityConditions) as any);
+        }
+      }
+      
+      const productsForPriceFacets = await db
+        .select({
+          priceCents: products.priceCents,
+          stock: products.stock,
+        })
+        .from(products)
+        .where(and(...priceFacetConditions));
+
+      // Calculate price range counts (excluding price filter)
+      const priceRanges = {
+        '0-50': productsForPriceFacets.filter(p => p.priceCents / 100 <= 50).length, // Including 50
+        '50-100': productsForPriceFacets.filter(p => {
+          const price = p.priceCents / 100;
+          return price >= 50 && price < 100;
+        }).length,
+        '100-200': productsForPriceFacets.filter(p => {
+          const price = p.priceCents / 100;
+          return price >= 100 && price < 200;
+        }).length,
+        '200+': productsForPriceFacets.filter(p => p.priceCents / 100 >= 200).length,
+      };
+
+      // Get products for availability facet calculation (excluding availability filter, but including price if set)
+      const availabilityFacetConditions = [...facetBaseConditions];
+      if (parsedFilters.price && Array.isArray(parsedFilters.price) && parsedFilters.price.length > 0) {
+        const priceConditions = parsedFilters.price.map((range: string) => {
+          if (range === '0-50') {
+            return lte(products.priceCents, 50 * 100);
+          } else if (range === '50-100') {
+            return and(
+              gte(products.priceCents, 50 * 100),
+              lte(products.priceCents, 100 * 100)
+            );
+          } else if (range === '100-200') {
+            return and(
+              gte(products.priceCents, 100 * 100),
+              lte(products.priceCents, 200 * 100)
+            );
+          } else if (range === '200+') {
+            return gte(products.priceCents, 200 * 100);
+          }
+          return null;
+        }).filter((cond: any) => cond !== null);
+        
+        if (priceConditions.length > 0) {
+          availabilityFacetConditions.push(or(...priceConditions) as any);
+        }
+      }
+      
+      const productsForAvailabilityFacets = await db
+        .select({
+          priceCents: products.priceCents,
+          stock: products.stock,
+        })
+        .from(products)
+        .where(and(...availabilityFacetConditions));
+
+      // Calculate availability counts (excluding availability filter)
+      const inStockCount = productsForAvailabilityFacets.filter(p => p.stock > 10).length;
+      const lowStockCount = productsForAvailabilityFacets.filter(p => p.stock > 0 && p.stock <= 10).length;
+
+      const facets: Facet[] = [
         {
           key: 'price',
           label: 'Preț',
           type: 'range',
           options: [
-            { value: '0-50', label: 'Sub 50 lei', count: 0 },
-            { value: '50-100', label: '50-100 lei', count: 0 },
-            { value: '100-200', label: '100-200 lei', count: 0 },
-            { value: '200+', label: 'Peste 200 lei', count: 0 }
+            { value: '0-50', label: 'Sub 50 lei', count: priceRanges['0-50'] },
+            { value: '50-100', label: '50-100 lei', count: priceRanges['50-100'] },
+            { value: '100-200', label: '100-200 lei', count: priceRanges['100-200'] },
+            { value: '200+', label: 'Peste 200 lei', count: priceRanges['200+'] }
           ]
         },
         {
@@ -201,8 +354,8 @@ export async function GET(request: NextRequest) {
           label: 'Disponibilitate',
           type: 'checkbox',
           options: [
-            { value: 'in-stock', label: 'În stoc', count: 0 },
-            { value: 'low-stock', label: 'Stoc redus', count: 0 }
+            { value: 'in-stock', label: 'În stoc', count: inStockCount },
+            { value: 'low-stock', label: 'Stoc redus', count: lowStockCount }
           ]
         }
       ];
@@ -210,7 +363,7 @@ export async function GET(request: NextRequest) {
       const response: CategoryResponse = {
         items: dbProducts,
         total,
-        facets: mockFacets,
+        facets: facets,
         currentPage: page,
         totalPages
       };
@@ -357,8 +510,48 @@ export async function GET(request: NextRequest) {
     // Use mock data (database query failed, so we're in fallback mode)
     let filteredProducts = [...mockProducts];
     
-    // Aplicare filtre (simplificat)
+    // Apply filters
     const parsedFilters = JSON.parse(filters);
+    
+    // Price filter - multiple ranges can be selected (OR logic within price)
+    if (parsedFilters.price && Array.isArray(parsedFilters.price) && parsedFilters.price.length > 0) {
+      filteredProducts = filteredProducts.filter(product => {
+        return parsedFilters.price.some((range: string) => {
+          if (range === '0-50') {
+            // Sub 50 lei (including 50)
+            return product.price <= 50;
+          } else if (range === '50-100') {
+            // 50-100 lei
+            return product.price >= 50 && product.price < 100;
+          } else if (range === '100-200') {
+            // 100-200 lei
+            return product.price >= 100 && product.price < 200;
+          } else if (range === '200+') {
+            // Peste 200 lei
+            return product.price >= 200;
+          }
+          return false;
+        });
+      });
+    }
+
+    // Availability filter - multiple options can be selected (OR logic within availability)
+    if (parsedFilters.availability && Array.isArray(parsedFilters.availability) && parsedFilters.availability.length > 0) {
+      filteredProducts = filteredProducts.filter(product => {
+        const stockLabel = product.stockLabel?.toLowerCase() || '';
+        return parsedFilters.availability.some((avail: string) => {
+          if (avail === 'in-stock') {
+            // În stoc: stockLabel contains "în stoc" but not "stoc redus" or "epuizat"
+            return stockLabel.includes('în stoc') && !stockLabel.includes('reduc') && !stockLabel.includes('epuizat');
+          } else if (avail === 'low-stock') {
+            // Stoc redus
+            return stockLabel.includes('stoc redus');
+          }
+          return false;
+        });
+      });
+    }
+    
     if (parsedFilters.brand && parsedFilters.brand.length > 0) {
       filteredProducts = filteredProducts.filter(product => 
         parsedFilters.brand.includes(product.seller.name.toLowerCase().replace(' ', '-'))

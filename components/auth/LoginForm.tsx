@@ -27,6 +27,10 @@ export function LoginForm({ onSuccess, redirectTo }: LoginFormProps) {
   const getRedirectUrl = () => {
     const next = searchParams.get('next');
     if (next) {
+      // If user came from checkout, redirect to cart after login
+      if (next.startsWith('/finalizare') || next.startsWith('/checkout')) {
+        return '/cos';
+      }
       // Convert English URLs to Romanian
       if (next === '/register') return '/creare-cont';
       return next;
@@ -114,9 +118,7 @@ export function LoginForm({ onSuccess, redirectTo }: LoginFormProps) {
         onSuccess(data.user);
       } else {
         // Use window.location.replace for better cookie handling
-        const redirectUrl = data.redirect || getRedirectUrl();
-        console.log('Redirecting to:', redirectUrl);
-        console.log('Current cookies before redirect:', document.cookie);
+        const redirectUrl = getRedirectUrl();
         window.location.replace(redirectUrl);
       }
 
