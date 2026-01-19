@@ -1,10 +1,24 @@
 import React from "react";
+import { db } from "@/db";
+import { sellerApplications } from "@/db/schema/core";
+import { eq } from "drizzle-orm";
 
 async function fetchApps(status?: string) {
-  const url = status ? `/api/seller/applications?status=${status}` : `/api/seller/applications`;
-  const res = await fetch(url, { cache: 'no-store' });
-  if (!res.ok) return { items: [] };
-  return res.json();
+  try {
+    if (status) {
+      const items = await db
+        .select()
+        .from(sellerApplications)
+        .where(eq(sellerApplications.status, status as any));
+      return { items };
+    } else {
+      const items = await db.select().from(sellerApplications);
+      return { items };
+    }
+  } catch (error) {
+    console.error('Error fetching seller applications:', error);
+    return { items: [] };
+  }
 }
 
 export default async function AdminSellerApplicationsPage({ searchParams }: { searchParams: { status?: string } }) {
