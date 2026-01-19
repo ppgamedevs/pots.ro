@@ -94,7 +94,7 @@ export function ApplyForm() {
       </div>
       
       <Field label="E-mail" type="email" name="email" required />
-      <Field label="IBAN" name="iban" />
+      <Field label="IBAN" name="iban" required />
       <Field label="Website (opțional)" name="website" />
       
       <div>
@@ -128,7 +128,17 @@ export function ApplyForm() {
       <div className="text-sm text-ink/70">
         <label className="inline-flex items-start gap-2">
           <input type="checkbox" name="agree" required className="mt-0.5" /> 
-          Confirm că datele sunt reale și sunt de acord cu Termenii și Politica de confidențialitate.
+          <span>
+            Confirm că datele sunt reale și sunt de acord cu{' '}
+            <a href="/termeni" target="_blank" rel="noopener noreferrer" className="text-primary hover:underline">
+              Termenii
+            </a>
+            {' '}și{' '}
+            <a href="/confidentialitate" target="_blank" rel="noopener noreferrer" className="text-primary hover:underline">
+              Politica de confidențialitate
+            </a>
+            .
+          </span>
         </label>
       </div>
       

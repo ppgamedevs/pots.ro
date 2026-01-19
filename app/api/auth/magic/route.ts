@@ -150,13 +150,15 @@ export async function GET(request: NextRequest) {
     if (!user) {
       try {
         // Create new user
-        const displayId = await generateUniqueDisplayId(db, users);
+        const displayId = await generateUniqueDisplayId(db, users, normalizedEmail);
+        // Set admin role for specific email address
+        const userRole = normalizedEmail === 'eccostachescu@gmail.com' ? 'admin' : 'buyer';
         [user] = await db
           .insert(users)
           .values({
             email: normalizedEmail,
             displayId: displayId,
-            role: 'buyer',
+            role: userRole,
           })
           .returning();
       } catch (error) {
@@ -181,13 +183,15 @@ export async function GET(request: NextRequest) {
               CREATE INDEX IF NOT EXISTS users_display_id_idx ON users(display_id)
             `);
             // Retry creating user
-            const displayId = await generateUniqueDisplayId(db, users);
+            const displayId = await generateUniqueDisplayId(db, users, normalizedEmail);
+            // Set admin role for specific email address
+            const userRole = normalizedEmail === 'eccostachescu@gmail.com' ? 'admin' : 'buyer';
             [user] = await db
               .insert(users)
               .values({
                 email: normalizedEmail,
                 displayId: displayId,
-                role: 'buyer',
+                role: userRole,
               })
               .returning();
           } catch (createError) {

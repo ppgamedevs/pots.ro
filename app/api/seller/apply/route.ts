@@ -14,7 +14,7 @@ function isValidCUI(cui?: string) {
 }
 
 function isValidIBAN(iban?: string) {
-  if (!iban) return true; // optional
+  if (!iban) return false; // required
   return /^[A-Z]{2}[0-9A-Z]{13,30}$/i.test(iban.replace(/\s+/g, ''));
 }
 

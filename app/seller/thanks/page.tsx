@@ -12,13 +12,13 @@ export default function SellerThanksPage() {
         Aplicație trimisă
       </h1>
       <p className="text-ink/70 mt-2">
-        Îți mulțumim! Verificăm datele și revenim pe e-mail în 1-2 zile lucrătoare.
+        Îți mulțumim! Verificăm datele și te contactăm în 1-3 zile lucrătoare.
       </p>
       
-      <div className="mt-6">
+      <div className="mt-8">
         <Link 
           href="/" 
-          className="inline-flex px-5 py-3 border border-line rounded-lg hover:bg-bg-soft transition-micro"
+          className="inline-flex px-6 py-3 bg-primary text-white rounded-lg hover:bg-primary/90 transition-micro font-medium"
         >
           Înapoi la homepage
         </Link>

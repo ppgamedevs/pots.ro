@@ -1,59 +1,58 @@
 import { eq } from 'drizzle-orm';
 
 /**
- * Generate a unique display ID for users
- * Format: [adjective][noun][number]
- * Examples: "happycat123", "bravewolf456", "cleverfox789"
+ * Generate a display ID from email
+ * Extracts the username part before @ and adds a number if needed for uniqueness
+ * Examples: "john.doe@example.com" -> "johndoe" or "johndoe2" if taken
  */
-
-const adjectives = [
-  'happy', 'brave', 'clever', 'bright', 'swift', 'gentle', 'bold', 'wise',
-  'calm', 'lively', 'kind', 'strong', 'quick', 'sharp', 'smooth', 'wild',
-  'quiet', 'loud', 'soft', 'hard', 'warm', 'cool', 'fresh', 'sweet',
-  'bitter', 'sour', 'salty', 'spicy', 'mild', 'hot', 'cold', 'dry',
-  'wet', 'damp', 'moist', 'rough', 'fine', 'coarse', 'thick', 'thin',
-  'wide', 'narrow', 'deep', 'shallow', 'high', 'low', 'long', 'short',
-  'big', 'small', 'huge', 'tiny', 'massive', 'mini', 'giant', 'micro'
-];
-
-const nouns = [
-  'cat', 'dog', 'fox', 'wolf', 'bear', 'lion', 'tiger', 'eagle', 'hawk',
-  'owl', 'raven', 'crow', 'swan', 'duck', 'goose', 'fish', 'shark',
-  'whale', 'dolphin', 'seal', 'otter', 'beaver', 'rabbit', 'mouse',
-  'hamster', 'squirrel', 'chipmunk', 'deer', 'elk', 'moose', 'horse',
-  'cow', 'sheep', 'goat', 'pig', 'chicken', 'rooster', 'turkey',
-  'elephant', 'giraffe', 'zebra', 'rhino', 'hippo', 'panda', 'koala',
-  'kangaroo', 'monkey', 'ape', 'gorilla', 'sloth', 'armadillo', 'hedgehog',
-  'porcupine', 'skunk', 'raccoon', 'possum', 'bat', 'snake', 'lizard',
-  'frog', 'toad', 'turtle', 'tortoise', 'crab', 'lobster', 'shrimp',
-  'octopus', 'squid', 'jellyfish', 'starfish', 'seahorse', 'penguin',
-  'flamingo', 'peacock', 'parrot', 'canary', 'finch', 'sparrow', 'robin',
-  'bluebird', 'cardinal', 'hummingbird', 'woodpecker', 'kingfisher'
-];
 
 /**
- * Generate a random display ID
+ * Clean and format email username for display ID
  */
-export function generateDisplayId(): string {
-  const adjective = adjectives[Math.floor(Math.random() * adjectives.length)];
-  const noun = nouns[Math.floor(Math.random() * nouns.length)];
-  const number = Math.floor(Math.random() * 1000) + 1;
+function formatEmailUsername(email: string): string {
+  // Extract part before @
+  const username = email.split('@')[0];
   
-  return `${adjective}${noun}${number}`;
+  // Remove special characters, keep only letters and numbers
+  const cleaned = username.replace(/[^a-zA-Z0-9]/g, '').toLowerCase();
+  
+  // Ensure it's not empty and has reasonable length
+  if (!cleaned || cleaned.length < 2) {
+    return 'user';
+  }
+  
+  // Limit to 20 characters
+  return cleaned.substring(0, 20);
 }
 
 /**
- * Generate a unique display ID that doesn't exist in the database
+ * Generate a unique display ID from email that doesn't exist in the database
  */
-export async function generateUniqueDisplayId(db: any, users: any): Promise<string> {
+export async function generateUniqueDisplayId(db: any, users: any, email?: string): Promise<string> {
   let displayId: string;
   let attempts = 0;
-  const maxAttempts = 10;
+  const maxAttempts = 100;
+  
+  // Get base username from email
+  const baseUsername = email ? formatEmailUsername(email) : 'user';
   
   try {
+    // First, try without any number
+    displayId = baseUsername;
+    const firstCheck = await db
+      .select({ id: users.id })
+      .from(users)
+      .where(eq(users.displayId, displayId))
+      .limit(1);
+    
+    if (firstCheck.length === 0) {
+      return displayId; // Username is available without number
+    }
+    
+    // If taken, try with numbers
     do {
-      displayId = generateDisplayId();
       attempts++;
+      displayId = `${baseUsername}${attempts}`;
       
       if (attempts > maxAttempts) {
         // Fallback to timestamp-based ID if we can't generate a unique one
@@ -75,7 +74,7 @@ export async function generateUniqueDisplayId(db: any, users: any): Promise<stri
   } catch (error) {
     console.error('Error generating unique display ID:', error);
     // Fallback to timestamp-based ID if database query fails
-    displayId = `user${Date.now()}`;
+    displayId = `${baseUsername}${Date.now()}`;
   }
   
   return displayId;

@@ -41,7 +41,7 @@ export async function POST(request: NextRequest) {
     
     if (!user.length) {
       // Create new user
-      const displayId = await generateUniqueDisplayId(db, users);
+      const displayId = await generateUniqueDisplayId(db, users, email);
       const newUser = await db
         .insert(users)
         .values({

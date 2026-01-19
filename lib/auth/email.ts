@@ -132,19 +132,37 @@ function generateOtpEmailHtml(code: string, magicUrl: string): string {
       color: #6B6B6B;
       margin-top: 8px;
     }
+    .button-container {
+      text-align: center;
+      margin: 24px 0;
+    }
     .button {
       display: inline-block;
       background-color: #1C6B5A;
-      color: #FFFFFF;
+      color: #FFFFFF !important;
       text-decoration: none;
       padding: 16px 32px;
       border-radius: 12px;
       font-weight: 600;
-      margin: 24px 0;
-      transition: background-color 0.2s;
+      font-size: 16px;
+      line-height: 1.5;
+      mso-padding-alt: 0;
+      -webkit-text-size-adjust: none;
     }
     .button:hover {
-      background-color: #155A4A;
+      background-color: #155A4A !important;
+    }
+    /* Gmail-specific button fix */
+    .button-table {
+      margin: 24px auto;
+      border-collapse: separate !important;
+      border-radius: 12px;
+      background-color: #1C6B5A;
+    }
+    .button-td {
+      border-radius: 12px;
+      background-color: #1C6B5A;
+      text-align: center;
     }
     .footer {
       padding: 24px 32px;
@@ -199,7 +217,21 @@ function generateOtpEmailHtml(code: string, magicUrl: string): string {
       <p>Introdu acest cod în aplicație sau apasă butonul de mai jos pentru a te autentifica instant:</p>
       
       <div style="text-align: center;">
-        <a href="${magicUrl}" class="button">Intră instant</a>
+        <!--[if mso]>
+        <v:roundrect xmlns:v="urn:schemas-microsoft-com:vml" xmlns:w="urn:schemas-microsoft-com:office:word" href="${magicUrl}" style="height:52px;v-text-anchor:middle;width:200px;" arcsize="23%" stroke="f" fillcolor="#1C6B5A">
+          <w:anchorlock/>
+          <center style="color:#ffffff;font-family:sans-serif;font-size:16px;font-weight:600;">Intră instant</center>
+        </v:roundrect>
+        <![endif]-->
+        <!--[if !mso]><!-->
+        <table class="button-table" role="presentation" cellspacing="0" cellpadding="0" border="0" align="center">
+          <tr>
+            <td class="button-td" style="border-radius:12px;background-color:#1C6B5A;">
+              <a href="${magicUrl}" target="_blank" style="background-color:#1C6B5A;border-radius:12px;color:#FFFFFF;display:inline-block;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;font-size:16px;font-weight:600;line-height:52px;text-align:center;text-decoration:none;width:200px;-webkit-text-size-adjust:none;mso-hide:all;">Intră instant</a>
+            </td>
+          </tr>
+        </table>
+        <!--<![endif]-->
       </div>
       
       <div class="warning">

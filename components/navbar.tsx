@@ -7,10 +7,13 @@ import { Button } from "./ui/button";
 import { ThemeToggle } from "./theme-toggle";
 import { CommandPaletteControlled } from "./search/command-palette-controlled";
 import MiniCart from "./cart/MiniCart";
+import { useUser } from "@/lib/hooks/useUser";
 
 export function Navbar() {
   const pathname = usePathname();
   const [searchOpen, setSearchOpen] = useState(false);
+  const { user, loading } = useUser();
+  
   const nav = [
     { href: "/c/ghivece", label: "Ghivece" },
     { href: "/c/cutii", label: "Cutii" },
@@ -52,6 +55,19 @@ export function Navbar() {
           >
             Căutare ⌘K
           </Button>
+          {/* Admin button - only visible to admin users */}
+          {!loading && user?.role === 'admin' && (
+            <Link href="/admin/seller-applications">
+              <Button 
+                variant="outline" 
+                size="sm" 
+                className="border-red-600 text-red-600 hover:bg-red-50 dark:hover:bg-red-950"
+                aria-label="Go to admin panel"
+              >
+                Admin Panel
+              </Button>
+            </Link>
+          )}
           <Link 
             href="/components-demo" 
             className="text-sm hover:text-brand focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand focus-visible:ring-offset-2 rounded-md px-1"
