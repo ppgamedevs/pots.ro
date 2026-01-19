@@ -57,7 +57,7 @@ export function Navbar() {
           </Button>
           {/* Admin button - only visible to admin users */}
           {!loading && user?.role === 'admin' && (
-            <Link href="/admin/seller-applications">
+            <Link href="/admin">
               <Button 
                 variant="outline" 
                 size="sm" 
