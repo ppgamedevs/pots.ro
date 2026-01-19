@@ -30,6 +30,19 @@ export async function PATCH(request: NextRequest) {
     const body = await request.json();
     const validatedData = updateProfileSchema.parse(body);
 
+    // Block reserved names for non-admin users
+    if (validatedData.name) {
+      const nameLower = validatedData.name.toLowerCase().trim();
+      const reservedNames = ['admin', 'administrator', 'support', 'suport', 'moderator', 'mod', 'floristmarket', 'staff', 'echipa'];
+      
+      if (reservedNames.includes(nameLower) && user.role !== 'admin') {
+        return NextResponse.json(
+          { error: 'Acest nume este rezervat. Te rugăm să alegi un alt nume.' },
+          { status: 400 }
+        );
+      }
+    }
+
     // Check if displayId is unique (if provided)
     if (validatedData.displayId) {
       const existingUser = await db

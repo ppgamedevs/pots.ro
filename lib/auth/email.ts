@@ -418,7 +418,21 @@ function generateWelcomeEmailHtml(name?: string): string {
       </ul>
       
       <div style="text-align: center;">
-        <a href="${SITE_URL}" class="button">Începe să explorezi</a>
+        <!--[if mso]>
+        <v:roundrect xmlns:v="urn:schemas-microsoft-com:vml" xmlns:w="urn:schemas-microsoft-com:office:word" href="${SITE_URL}" style="height:52px;v-text-anchor:middle;width:200px;" arcsize="23%" stroke="f" fillcolor="#1C6B5A">
+          <w:anchorlock/>
+          <center style="color:#ffffff;font-family:sans-serif;font-size:16px;font-weight:600;">Începe să explorezi</center>
+        </v:roundrect>
+        <![endif]-->
+        <!--[if !mso]><!-->
+        <table class="button-table" role="presentation" cellspacing="0" cellpadding="0" border="0" align="center">
+          <tr>
+            <td class="button-td" style="border-radius:12px;background-color:#1C6B5A;">
+              <a href="${SITE_URL}" target="_blank" style="background-color:#1C6B5A;border-radius:12px;color:#FFFFFF;display:inline-block;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;font-size:16px;font-weight:600;line-height:52px;text-align:center;text-decoration:none;width:200px;-webkit-text-size-adjust:none;mso-hide:all;">Începe să explorezi</a>
+            </td>
+          </tr>
+        </table>
+        <!--<![endif]-->
       </div>
       
       <p>Dacă ai întrebări, ne poți contacta la <a href="mailto:support@floristmarket.ro">support@floristmarket.ro</a></p>

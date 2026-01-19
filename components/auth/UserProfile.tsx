@@ -202,7 +202,9 @@ export function UserProfile() {
                 <User className="h-5 w-5 text-muted" />
                 <div>
                   <p className="text-sm font-medium text-ink">Rol</p>
-                  <p className="text-sm text-muted capitalize">{user.role}</p>
+                  <p className="text-sm text-muted">
+                    {user.role === 'admin' ? 'Administrator' : user.role === 'seller' ? 'Vânzător' : 'Cumpărător'}
+                  </p>
                 </div>
               </div>
 
