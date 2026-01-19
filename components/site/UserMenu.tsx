@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect, useRef } from "react";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { User, LogOut, Settings, Heart, ShoppingBag } from "lucide-react";
@@ -9,6 +9,24 @@ import { useUser } from "@/lib/hooks/useUser";
 export function UserMenu() {
   const { user, loading, logout } = useUser();
   const [isOpen, setIsOpen] = useState(false);
+  const menuRef = useRef<HTMLDivElement>(null);
+
+  // Close menu when clicking outside
+  useEffect(() => {
+    if (!user || !isOpen) return;
+
+    const handleClickOutside = (event: MouseEvent) => {
+      if (menuRef.current && !menuRef.current.contains(event.target as Node)) {
+        setIsOpen(false);
+      }
+    };
+
+    document.addEventListener('mousedown', handleClickOutside);
+
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+    };
+  }, [isOpen, user]);
 
   if (loading) {
     return (
@@ -34,7 +52,7 @@ export function UserMenu() {
   }
 
   return (
-    <div className="relative">
+    <div className="relative" ref={menuRef}>
       <button
         onClick={() => setIsOpen(!isOpen)}
         className="inline-flex items-center gap-2 px-3 py-2 rounded-lg hover:bg-bg-soft text-ink text-sm transition-micro"

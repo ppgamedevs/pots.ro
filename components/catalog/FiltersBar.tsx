@@ -85,53 +85,93 @@ export function FiltersBar({ facets, selected, onChange }: FiltersBarProps) {
 
         {/* Desktop Filters */}
         <div className={`${isOpen ? 'block' : 'hidden'} lg:block py-4`}>
-          <div className="flex flex-wrap items-center gap-4">
-            {/* Clear Filters */}
-            {hasActiveFilters && (
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={clearAllFilters}
-                className="text-muted hover:text-ink"
-              >
-                <X className="w-4 h-4 mr-1" />
-                Șterge filtrele
-              </Button>
-            )}
+          <div className="flex flex-wrap items-center gap-4 justify-between">
+            <div className="flex flex-wrap items-center gap-4">
+              {/* Clear Filters */}
+              {hasActiveFilters && (
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={clearAllFilters}
+                  className="text-muted hover:text-ink"
+                >
+                  <X className="w-4 h-4 mr-1" />
+                  Șterge filtrele
+                </Button>
+              )}
 
-            {/* Filter Facets */}
-            {facets.map((facet) => (
-              <div key={facet.key} className="flex items-center gap-2">
-                <span className="text-sm font-medium text-ink whitespace-nowrap">
-                  {facet.label}:
-                </span>
-                
-                <div className="flex flex-wrap gap-2">
-                  {facet.options?.map((option) => {
-                    const isSelected = localFilters[facet.key]?.includes(option.value) || false;
+              {/* Filter Facets */}
+              {facets.map((facet) => {
+                // Align "Disponibilitate" (availability) facet to the right
+                if (facet.key === 'availability') {
+                  return null; // Will be rendered separately
+                }
+                return (
+                  <div key={facet.key} className="flex items-center gap-2">
+                    <span className="text-sm font-medium text-ink whitespace-nowrap">
+                      {facet.label}:
+                    </span>
                     
-                    return (
-                      <button
-                        key={option.value}
-                        onClick={() => handleFilterChange(facet.key, option.value, !isSelected)}
-                        className={`px-3 py-1 text-sm rounded-full border transition-micro ${
-                          isSelected
-                            ? 'bg-primary text-white border-primary'
-                            : 'bg-bg text-muted border-line hover:border-muted'
-                        }`}
-                      >
-                        {option.label}
-                        {option.count && (
-                          <span className="ml-1 text-xs opacity-75">
-                            ({option.count})
+                    <div className="flex flex-wrap gap-2">
+                      {facet.options?.map((option) => {
+                        const isSelected = localFilters[facet.key]?.includes(option.value) || false;
+                        
+                        return (
+                          <button
+                            key={option.value}
+                            onClick={() => handleFilterChange(facet.key, option.value, !isSelected)}
+                            className={`px-3 py-1 text-sm rounded-full border transition-micro ${
+                              isSelected
+                                ? 'bg-primary text-white border-primary'
+                                : 'bg-bg text-muted border-line hover:border-muted'
+                            }`}
+                          >
+                            {option.label}
+                            <span className="ml-2 text-xs opacity-75">
+                              ({option.count ?? 0})
+                            </span>
+                          </button>
+                        );
+                      })}
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+
+            {/* Availability filter aligned to the right */}
+            {facets
+              .filter((facet) => facet.key === 'availability')
+              .map((facet) => (
+                <div key={facet.key} className="flex items-center gap-2 ml-auto">
+                  <span className="text-sm font-medium text-ink whitespace-nowrap">
+                    {facet.label}:
+                  </span>
+                  
+                  <div className="flex flex-wrap gap-2">
+                    {facet.options?.map((option) => {
+                      const isSelected = localFilters[facet.key]?.includes(option.value) || false;
+                      
+                      return (
+                        <button
+                          key={option.value}
+                          onClick={() => handleFilterChange(facet.key, option.value, !isSelected)}
+                          className={`px-3 py-1 text-sm rounded-full border transition-micro ${
+                            isSelected
+                              ? 'bg-primary text-white border-primary'
+                              : 'bg-bg text-muted border-line hover:border-muted'
+                          }`}
+                        >
+                          {option.label}
+                          <span className="ml-2 text-xs opacity-75">
+                            ({option.count ?? 0})
                           </span>
-                        )}
-                      </button>
-                    );
-                  })}
+                        </button>
+                      );
+                    })}
+                  </div>
                 </div>
-              </div>
-            ))}
+              ))}
           </div>
         </div>
       </div>

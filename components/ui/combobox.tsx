@@ -45,16 +45,22 @@ export function Combobox({
 
   React.useEffect(() => {
     // keep query in sync with selected label when closed
-    if (!open) setQuery(selected?.label ?? "");
+    if (!open) {
+      setQuery(selected?.label ?? "");
+    }
   }, [open, selected?.label]);
 
   React.useEffect(() => {
     const onDocMouseDown = (e: MouseEvent) => {
       if (!containerRef.current) return;
-      if (!containerRef.current.contains(e.target as Node)) setOpen(false);
+      if (!containerRef.current.contains(e.target as Node)) {
+        setOpen(false);
+      }
     };
     document.addEventListener("mousedown", onDocMouseDown);
-    return () => document.removeEventListener("mousedown", onDocMouseDown);
+    return () => {
+      document.removeEventListener("mousedown", onDocMouseDown);
+    };
   }, []);
 
   const clear = () => {
@@ -64,6 +70,12 @@ export function Combobox({
     requestAnimationFrame(() => inputRef.current?.focus());
   };
 
+  // Filter valid options
+  const validOptions = React.useMemo(
+    () => options.filter((opt) => opt && opt.value && opt.label),
+    [options]
+  );
+
   return (
     <div ref={containerRef} className={cn("relative", className)}>
       <Command
@@ -72,8 +84,10 @@ export function Combobox({
           disabled && "opacity-60 pointer-events-none"
         )}
         filter={(value, search) => {
-          if (!search) return 1;
-          return value.toLowerCase().includes(search.toLowerCase()) ? 1 : 0;
+          if (!search || !value) return 1;
+          const valueStr = String(value).toLowerCase();
+          const searchStr = String(search).toLowerCase();
+          return valueStr.includes(searchStr) ? 1 : 0;
         }}
       >
         <div className="flex items-center gap-2 px-3">
@@ -104,36 +118,36 @@ export function Combobox({
           ) : null}
         </div>
 
-        {open && (
-          <Command.List className="absolute z-50 mt-1 w-full overflow-hidden rounded-lg border border-line bg-white shadow-elev">
-            <div className="max-h-56 overflow-auto p-1">
-              <Command.Empty className="px-3 py-2 text-sm text-muted">
-                {emptyText}
-              </Command.Empty>
-
-              {options.map((opt) => (
-                <Command.Item
-                  key={opt.value}
-                  value={`${opt.label} ${opt.value}`}
-                  onSelect={() => {
-                    onValueChange(opt.value);
-                    setOpen(false);
-                    setQuery(opt.label);
-                  }}
-                  className={cn(
-                    "flex cursor-pointer select-none items-center justify-between rounded-md px-3 py-2 text-sm text-ink",
-                    "aria-selected:bg-bg-soft",
-                    "hover:bg-bg-soft"
-                  )}
-                >
-                  <span className="truncate">{opt.label}</span>
-                  {value === opt.value ? (
-                    <Check className="h-4 w-4 text-primary" />
-                  ) : null}
-                </Command.Item>
-              ))}
-            </div>
+        {open && validOptions.length > 0 && (
+          <Command.List className="absolute z-50 mt-1 max-h-56 w-full overflow-auto rounded-lg border border-line bg-white p-1 shadow-elev">
+            {validOptions.map((opt) => (
+              <Command.Item
+                key={opt.value}
+                value={opt.label}
+                onSelect={() => {
+                  onValueChange(opt.value);
+                  setOpen(false);
+                  setQuery(opt.label);
+                }}
+                className={cn(
+                  "flex cursor-pointer select-none items-center justify-between rounded-md px-3 py-2 text-sm text-ink",
+                  "aria-selected:bg-bg-soft",
+                  "hover:bg-bg-soft"
+                )}
+              >
+                <span className="truncate">{opt.label}</span>
+                {value === opt.value && (
+                  <Check className="h-4 w-4 shrink-0 text-primary" />
+                )}
+              </Command.Item>
+            ))}
           </Command.List>
+        )}
+
+        {open && validOptions.length === 0 && (
+          <div className="absolute z-50 mt-1 max-h-56 w-full overflow-auto rounded-lg border border-line bg-white p-1 shadow-elev">
+            <div className="px-3 py-2 text-sm text-muted">{emptyText}</div>
+          </div>
         )}
       </Command>
     </div>

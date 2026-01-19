@@ -5,6 +5,7 @@ import { db } from '@/db';
 import { users } from '@/db/schema/core';
 import { eq } from 'drizzle-orm';
 import { generateUniqueDisplayId } from '@/lib/utils/displayId';
+import { syncCartFromSessionToUser } from '@/lib/cart-sync';
 
 // Simple validation schema
 const otpVerifySchema = z.object({
@@ -57,6 +58,11 @@ export async function POST(request: NextRequest) {
     
     const userData = user[0];
     console.log('[otp.verify] User data:', userData);
+    
+    // Sync cart from session to user (if user had items in cart before login)
+    await syncCartFromSessionToUser(userData.id);
+    
+    // Note: GDPR preferences sync happens client-side after login
     
     // Create response with session
     const response = NextResponse.json({ 

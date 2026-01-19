@@ -1,6 +1,8 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+import Link from 'next/link';
+import { useRouter } from 'next/navigation';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -12,7 +14,8 @@ import {
   Clock, 
   AlertCircle,
   FileText,
-  MessageSquare
+  MessageSquare,
+  ArrowLeft
 } from 'lucide-react';
 import { InvoicePanel } from '@/components/invoices/InvoicePanel';
 import { toast } from 'sonner';
@@ -102,6 +105,7 @@ const statusConfig = {
 };
 
 export default function OrderDetailPage({ params }: { params: Promise<{ id: string }> }) {
+  const router = useRouter();
   const [order, setOrder] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -145,7 +149,9 @@ export default function OrderDetailPage({ params }: { params: Promise<{ id: stri
         const orderIdentifier = resolvedParams.id; // Poate fi orderNumber sau UUID
         
         // Endpoint-ul acceptă atât orderNumber cât și UUID
-        const response = await fetch(`/api/orders/${orderIdentifier}`);
+        const response = await fetch(`/api/orders/${orderIdentifier}`, {
+          credentials: 'include',
+        });
         
         if (!response.ok) {
           if (response.status === 404) {
@@ -203,13 +209,21 @@ export default function OrderDetailPage({ params }: { params: Promise<{ id: stri
       <div className="max-w-4xl mx-auto space-y-6">
         {/* Header */}
         <div className="flex items-center justify-between">
-          <div>
-            <h1 className="text-3xl font-bold text-gray-900 dark:text-gray-100">
-              Comanda #{order.orderNumber || order.id.slice(-8).toUpperCase()}
-            </h1>
-            <p className="text-gray-600 dark:text-gray-400 mt-1">
-              Plasată pe {formatDate(order.createdAt)}
-            </p>
+          <div className="flex items-center gap-4">
+            <Link href="/comenzi">
+              <Button variant="outline" size="sm">
+                <ArrowLeft className="h-4 w-4 mr-2" />
+                Înapoi la comenzi
+              </Button>
+            </Link>
+            <div>
+              <h1 className="text-3xl font-bold text-gray-900 dark:text-gray-100">
+                Comanda #{order.orderNumber || order.id.slice(-8).toUpperCase()}
+              </h1>
+              <p className="text-gray-600 dark:text-gray-400 mt-1">
+                Plasată pe {formatDate(order.createdAt)}
+              </p>
+            </div>
           </div>
           <Badge className={`${statusInfo?.color} px-3 py-1`}>
             <StatusIcon className="h-4 w-4 mr-1" />

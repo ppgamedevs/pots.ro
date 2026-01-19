@@ -4,6 +4,7 @@ import Link from "next/link";
 import Image from "next/image";
 import Script from "next/script";
 import { Button } from "../ui/button";
+import { useState, useEffect } from "react";
 import dynamic from "next/dynamic";
 
 // Import Netopia Logo component dynamically to avoid SSR issues
@@ -11,12 +12,7 @@ import dynamic from "next/dynamic";
 const NTPIdentity = dynamic(
   () => import('ntp-logo-react'),
   { 
-    ssr: false,
-    loading: () => (
-      <div className="flex items-center justify-center w-20 h-8 bg-white border border-line rounded-md">
-        <span className="text-xs text-ink/50">Loading...</span>
-      </div>
-    )
+    ssr: false
   }
 );
 
@@ -40,6 +36,13 @@ export interface SiteFooterProps {
 }
 
 export function SiteFooter({ columns, payments, carriers }: SiteFooterProps) {
+  // Render Netopia component only on client to avoid hydration mismatch
+  const [isClient, setIsClient] = useState(false);
+
+  useEffect(() => {
+    setIsClient(true);
+  }, []);
+
   return (
     <footer className="bg-bg-soft border-t border-line">
       <div className="max-w-7xl mx-auto px-4 py-12">
@@ -79,11 +82,15 @@ export function SiteFooter({ columns, payments, carriers }: SiteFooterProps) {
                   Logo-ul Netopia include deja Visa și Mastercard, deci nu mai afișăm logo-uri separate
                 */}
                 <div className="flex items-center justify-center h-8 bg-white border border-line rounded-md shadow-sm px-2 min-w-[100px]">
-                  <NTPIdentity 
-                    color="#ffffff" 
-                    version="orizontal" 
-                    secret={NETOPIA_POS_ID}
-                  />
+                  {isClient ? (
+                    <NTPIdentity 
+                      color="#ffffff" 
+                      version="orizontal" 
+                      secret={NETOPIA_POS_ID}
+                    />
+                  ) : (
+                    <div className="w-20 h-6 bg-gray-100 animate-pulse rounded" />
+                  )}
                 </div>
               </div>
             </div>

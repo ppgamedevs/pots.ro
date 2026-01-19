@@ -174,6 +174,35 @@ export const carts = pgTable("carts", {
   cartsSessionUnique: uniqueIndex("carts_session_unique").on(table.sessionId).where(sql`session_id IS NOT NULL`),
 }));
 
+// GDPR preferences table
+export const gdprPreferences = pgTable("gdpr_preferences", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  email: text("email").notNull().unique(), // Email-ul utilizatorului
+  consentType: text("consent_type").notNull().$type<"necessary" | "all">(), // "necessary" or "all"
+  createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
+  updatedAt: timestamp("updated_at", { withTimezone: true }).defaultNow().notNull(),
+}, (table) => ({
+  gdprPreferencesEmailIdx: index("gdpr_preferences_email_idx").on(table.email),
+}));
+
+// Saved payment cards table
+export const savedPaymentCards = pgTable("saved_payment_cards", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  userId: uuid("user_id").notNull().references(() => users.id, { onDelete: "cascade" }),
+  last4Digits: text("last_4_digits").notNull(), // Last 4 digits of card number
+  brand: text("brand").notNull(), // "visa", "mastercard", etc.
+  expiryMonth: integer("expiry_month").notNull(), // 1-12
+  expiryYear: integer("expiry_year").notNull(), // YYYY
+  cardholderName: text("cardholder_name"),
+  providerToken: text("provider_token"), // Token from payment provider (Netopia) if available
+  isDefault: boolean("is_default").default(false).notNull(),
+  createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
+  updatedAt: timestamp("updated_at", { withTimezone: true }).defaultNow().notNull(),
+}, (table) => ({
+  savedCardsUserIdx: index("saved_cards_user_idx").on(table.userId),
+  savedCardsDefaultIdx: index("saved_cards_default_idx").on(table.userId, table.isDefault),
+}));
+
 export const cartItems = pgTable("cart_items", {
   id: uuid("id").primaryKey().defaultRandom(),
   cartId: uuid("cart_id").notNull().references(() => carts.id, { onDelete: "cascade" }),

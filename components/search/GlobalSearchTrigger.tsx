@@ -112,7 +112,7 @@ export default function GlobalSearchTrigger() {
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (q.trim()) {
-      window.location.href = `/products?q=${encodeURIComponent(q)}`;
+      window.location.href = `/cautare?q=${encodeURIComponent(q)}`;
     }
   };
 
@@ -182,7 +182,7 @@ export default function GlobalSearchTrigger() {
               
               {q.trim() && (
                 <Link 
-                  href={`/products?q=${encodeURIComponent(q)}`} 
+                  href={`/cautare?q=${encodeURIComponent(q)}`} 
                   className="block px-3 py-2 text-primary hover:bg-bg-soft rounded-lg transition-micro"
                   onClick={() => setOpen(false)}
                 >

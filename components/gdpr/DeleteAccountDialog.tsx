@@ -51,9 +51,25 @@ export function DeleteAccountDialog({ userId, userEmail }: DeleteAccountDialogPr
         setEmailSent(true);
         toast.success('Cererea de ștergere a fost trimisă');
         
-        // Redirecționează către logout după 3 secunde
-        setTimeout(() => {
-          window.location.href = '/api/auth/logout';
+        // Face logout și redirecționează către homepage după 3 secunde
+        setTimeout(async () => {
+          try {
+            const logoutResponse = await fetch('/api/auth/logout', {
+              method: 'POST',
+              credentials: 'include',
+            });
+            
+            if (logoutResponse.ok) {
+              // Redirect to homepage after logout - use replace to avoid history entry
+              window.location.replace('/');
+            } else {
+              // Even if logout fails, redirect to homepage
+              window.location.replace('/');
+            }
+          } catch (error) {
+            // On error, still redirect to homepage
+            window.location.replace('/');
+          }
         }, 3000);
       } else {
         const error = await response.json();

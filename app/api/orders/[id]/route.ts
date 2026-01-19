@@ -58,7 +58,7 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
     const isAdmin = user?.role === 'admin';
     
     let orderItemsResult;
-    if (isSeller && !isBuyer && !isAdmin) {
+    if (isSeller && !isBuyer && !isAdmin && userSellerIds.length > 0) {
       // If user is seller, only show their items
       orderItemsResult = await db
         .select({
@@ -104,10 +104,32 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
     }
 
     // Obține facturile asociate
-    const invoicesResult = await db
-      .select()
-      .from(invoices)
-      .where(eq(invoices.orderId, order.id));
+    // Note: Select only columns that exist in database (type column may not exist)
+    let invoicesResult: any[] = [];
+    try {
+      invoicesResult = await db
+        .select({
+          id: invoices.id,
+          orderId: invoices.orderId,
+          series: invoices.series,
+          number: invoices.number,
+          pdfUrl: invoices.pdfUrl,
+          total: invoices.total,
+          currency: invoices.currency,
+          issuer: invoices.issuer,
+          status: invoices.status,
+          sellerInvoiceNumber: invoices.sellerInvoiceNumber,
+          uploadedBy: invoices.uploadedBy,
+          uploadedAt: invoices.uploadedAt,
+          createdAt: invoices.createdAt,
+        })
+        .from(invoices)
+        .where(eq(invoices.orderId, order.id));
+    } catch (invoiceError: any) {
+      console.warn('Failed to load invoices:', invoiceError?.message);
+      // Return empty array if invoices can't be loaded
+      invoicesResult = [];
+    }
 
     // Formatează răspunsul pentru pagina de comandă
     const shippingAddress = order.shippingAddress as any;
@@ -141,12 +163,12 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
         country: shippingAddress?.country || 'România',
         notes: shippingAddress?.notes,
       },
-      items: orderItemsResult.map((item: any) => ({
+      items: (orderItemsResult || []).map((item: any) => ({
         id: item.id,
-        productId: item.product.id,
-        productName: item.product.title,
-        productSlug: item.product.slug,
-        sellerName: item.seller.brandName || item.seller.company,
+        productId: item.product?.id || item.productId,
+        productName: item.product?.title || 'Produs indisponibil',
+        productSlug: item.product?.slug || null,
+        sellerName: item.seller?.brandName || item.seller?.company || 'Vânzător necunoscut',
         qty: item.qty,
         unitPriceCents: item.unitPriceCents,
         subtotalCents: item.subtotalCents,
@@ -156,9 +178,9 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
         carrier: (order.carrierMeta as any)?.carrier,
         trackingUrl: (order.carrierMeta as any)?.trackingUrl,
       },
-      invoices: invoicesResult.map((inv: typeof invoicesResult[0]) => ({
+      invoices: invoicesResult.map((inv: any) => ({
         id: inv.id,
-        type: inv.type,
+        type: inv.type || 'commission', // Default to 'commission' if type doesn't exist
         series: inv.series,
         number: inv.number,
         pdfUrl: inv.pdfUrl,
@@ -173,6 +195,14 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
 
   } catch (error) {
     console.error("Get order error:", error);
-    return NextResponse.json({ error: "Internal server error" }, { status: 500 });
+    console.error("Error details:", {
+      message: error instanceof Error ? error.message : String(error),
+      stack: error instanceof Error ? error.stack : undefined,
+      name: error instanceof Error ? error.name : undefined,
+    });
+    return NextResponse.json({ 
+      error: "Internal server error",
+      details: process.env.NODE_ENV === 'development' ? (error instanceof Error ? error.message : String(error)) : undefined
+    }, { status: 500 });
   }
 }

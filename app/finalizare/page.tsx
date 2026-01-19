@@ -107,6 +107,13 @@ const checkoutSchema = z.object({
 
   // Payment
   paymentMethod: z.literal("card"),
+  // Card details (optional - required only if no saved card is selected)
+  cardNumber: z.string().optional(),
+  cardExpiry: z.string().optional(),
+  cardCvv: z.string().optional(),
+  cardholderName: z.string().optional(),
+  saveCard: z.enum(["save", "no-save"]).optional(),
+  savedCardId: z.string().optional(), // ID of saved card to use
 
   // Terms
   acceptTerms: z.boolean().refine((val) => val === true, "Trebuie să accepți termenii și condițiile"),
@@ -125,16 +132,51 @@ const checkoutSchema = z.object({
 }, {
   message: "Pentru persoane juridice, toate câmpurile companiei sunt obligatorii",
   path: ["companyName"],
+}).refine((data) => {
+  // Card validation: either savedCardId is set, OR all card fields are provided
+  // Only validate if user has started filling card fields (at least one field has value)
+  const hasSavedCard = data.savedCardId && data.savedCardId.length > 0;
+  const cardNumber = data.cardNumber?.replace(/\s/g, '') || '';
+  const hasAnyCardField = cardNumber.length > 0 || data.cardExpiry || data.cardCvv || data.cardholderName;
+  
+  // If no saved card and user hasn't started filling card fields, don't validate yet
+  if (!hasSavedCard && !hasAnyCardField) {
+    return true; // Allow empty state until user starts filling
+  }
+  
+  // If user started filling, validate all fields
+  const hasCardNumber = cardNumber.length >= 13;
+  const hasCardExpiry = data.cardExpiry && /^\d{2}\/\d{2}$/.test(data.cardExpiry);
+  const hasCardCvv = data.cardCvv && data.cardCvv.length >= 3;
+  const hasCardholderName = data.cardholderName && data.cardholderName.length >= 2;
+  
+  const hasAllCardFields = hasCardNumber && hasCardExpiry && hasCardCvv && hasCardholderName;
+  
+  return hasSavedCard || hasAllCardFields;
+}, {
+  message: "Completează toate câmpurile cardului bancar sau selectează un card salvat",
+  path: ["cardNumber"],
 });
 
 export default function CheckoutPage() {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [personType, setPersonType] = useState<"fizica" | "juridica">("fizica");
+  const [showCardForm, setShowCardForm] = useState(false);
+  const [savedCardId, setSavedCardId] = useState<string | null>(null);
   const { toast } = useToast();
   const router = useRouter();
 
   const { data: cart, error: cartError, isLoading: cartLoading } = useSWR<Cart>("/api/cart", fetcher);
   const { data: shippingFeeData } = useSWR<{ shippingFeeCents: number; shippingFeeRON: number }>("/api/settings/shipping-fee", fetcher);
+  const { data: savedCardsData, mutate: mutateSavedCards } = useSWR<{ cards: Array<{
+    id: string;
+    last4Digits: string;
+    brand: string;
+    expiryMonth: number;
+    expiryYear: number;
+    cardholderName: string | null;
+    isDefault: boolean;
+  }> }>("/api/payment-cards", fetcher);
 
   const form = useZodForm(checkoutSchema, {
     personType: "fizica",
@@ -151,6 +193,12 @@ export default function CheckoutPage() {
     postalCode: "",
     deliveryMethod: "courier",
     paymentMethod: "card",
+    cardNumber: "",
+    cardExpiry: "",
+    cardCvv: "",
+    cardholderName: "",
+    saveCard: "no-save",
+    savedCardId: undefined,
     acceptTerms: false,
     acceptMarketing: false,
     notes: "",
@@ -165,6 +213,17 @@ export default function CheckoutPage() {
     setValue,
   } = form;
 
+  // Set default saved card if available
+  useEffect(() => {
+    if (savedCardsData?.cards && savedCardsData.cards.length > 0 && !savedCardId) {
+      const defaultCard = savedCardsData.cards.find(c => c.isDefault) || savedCardsData.cards[0];
+      if (defaultCard) {
+        setSavedCardId(defaultCard.id);
+        setValue("savedCardId", defaultCard.id);
+      }
+    }
+  }, [savedCardsData, savedCardId, setValue]);
+
 
 
   const subtotalRON = cart?.totals?.subtotal ?? 0;
@@ -172,13 +231,82 @@ export default function CheckoutPage() {
   const shippingRON = SHIPPING_FEE_CENTS / 100;
   const totalRON = useMemo(() => subtotalRON + shippingRON, [subtotalRON, shippingRON]);
 
+  // Helper function to detect card brand from number
+  const detectCardBrand = (cardNumber: string): string => {
+    const cleaned = cardNumber.replace(/\s/g, '');
+    if (/^4/.test(cleaned)) return 'visa';
+    if (/^5[1-5]/.test(cleaned)) return 'mastercard';
+    if (/^3[47]/.test(cleaned)) return 'amex';
+    return 'unknown';
+  };
+
   const onSubmit = async (data: z.infer<typeof checkoutSchema>) => {
+    // Validate card before submitting
+    const hasSavedCard = savedCardId || data.savedCardId;
+    const hasCardNumber = data.cardNumber && data.cardNumber.replace(/\s/g, '').length >= 13;
+    const hasCardExpiry = data.cardExpiry && /^\d{2}\/\d{2}$/.test(data.cardExpiry);
+    const hasCardCvv = data.cardCvv && data.cardCvv.length >= 3;
+    const hasCardholderName = data.cardholderName && data.cardholderName.length >= 2;
+    const hasAllCardFields = hasCardNumber && hasCardExpiry && hasCardCvv && hasCardholderName;
+    
+    if (!hasSavedCard && !hasAllCardFields) {
+      toast("Completează toate câmpurile cardului bancar sau selectează un card salvat.", "error");
+      setIsSubmitting(false);
+      return;
+    }
+
     setIsSubmitting(true);
     
     try {
       if (!cart || cart.items.length === 0) {
         toast("Coșul este gol. Adaugă produse înainte să finalizezi comanda.", "error");
+        setIsSubmitting(false);
         return;
+      }
+
+      // Save card if user selected "save" and provided card details
+      if (data.saveCard === "save" && data.cardNumber && !savedCardId) {
+        try {
+          const cardNumber = data.cardNumber.replace(/\s/g, '');
+          const last4Digits = cardNumber.slice(-4);
+          const brand = detectCardBrand(cardNumber);
+          const [expiryMonth, expiryYear] = (data.cardExpiry || '').split('/').map(v => parseInt(v, 10));
+          
+          // Add 2000 to year if it's 2 digits (e.g., 25 -> 2025)
+          const fullYear = expiryYear < 100 ? 2000 + expiryYear : expiryYear;
+
+          const isFirstCard = !savedCardsData?.cards || savedCardsData.cards.length === 0;
+          await fetch("/api/payment-cards", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            credentials: "include",
+            body: JSON.stringify({
+              last4Digits,
+              brand,
+              expiryMonth,
+              expiryYear: fullYear,
+              cardholderName: data.cardholderName || null,
+              isDefault: isFirstCard, // Set as default only if it's the first card
+            }),
+          });
+          
+          // Refresh saved cards list and close form
+          const refreshedData = await mutateSavedCards();
+          setShowCardForm(false);
+          
+          // Find the newly saved card and set it as selected
+          if (refreshedData?.cards && refreshedData.cards.length > 0) {
+            const newCard = refreshedData.cards.find((c: any) => c.last4Digits === last4Digits);
+            if (newCard) {
+              setSavedCardId(newCard.id);
+              setValue("savedCardId", newCard.id);
+            }
+          }
+        } catch (cardError) {
+          console.error('Error saving card:', cardError);
+          // Don't block checkout if card saving fails
+          toast("Cardul nu a putut fi salvat, dar comanda va continua.", "info");
+        }
       }
 
       const res = await fetch("/api/checkout/create-order", {
@@ -203,6 +331,7 @@ export default function CheckoutPage() {
             notes: data.notes,
           },
           paymentMethod: data.paymentMethod,
+          savedCardId: savedCardId || data.savedCardId || undefined,
         }),
       });
 
@@ -358,18 +487,18 @@ export default function CheckoutPage() {
                   </>
                 )}
                 <div className="grid gap-4 sm:grid-cols-2">
-                  <Field label={watch("personType") === "juridica" ? "Prenume persoană contact" : "Prenume"} error={errors.firstName?.message as string}>
+                  <Field label={`${watch("personType") === "juridica" ? "Prenume persoană contact" : "Prenume"} *`} error={errors.firstName?.message as string}>
                     <Input placeholder="Ion" {...register("firstName")} />
                   </Field>
-                  <Field label={watch("personType") === "juridica" ? "Nume persoană contact" : "Nume"} error={errors.lastName?.message as string}>
+                  <Field label={`${watch("personType") === "juridica" ? "Nume persoană contact" : "Nume"} *`} error={errors.lastName?.message as string}>
                     <Input placeholder="Popescu" {...register("lastName")} />
                   </Field>
                 </div>
                 <div className="grid gap-4 sm:grid-cols-2">
-                  <Field label="Email" error={errors.email?.message as string}>
+                  <Field label="Email *" error={errors.email?.message as string}>
                     <Input type="email" placeholder="ion.popescu@email.com" {...register("email")} />
                   </Field>
-                  <Field label="Telefon" error={errors.phone?.message as string}>
+                  <Field label="Telefon *" error={errors.phone?.message as string}>
                     <Input placeholder="0712345678" {...register("phone")} />
                   </Field>
                 </div>
@@ -381,14 +510,14 @@ export default function CheckoutPage() {
                 <CardTitle>Adresă de livrare</CardTitle>
               </CardHeader>
               <CardContent className="space-y-4">
-                <Field label="Adresă completă" error={errors.address?.message as string}>
+                <Field label="Adresă completă *" error={errors.address?.message as string}>
                   <Input placeholder="Strada Exemplu, nr. 123" {...register("address")} />
                 </Field>
                 <div className="grid gap-4 sm:grid-cols-3">
-                  <Field label="Oraș" error={errors.city?.message as string}>
+                  <Field label="Oraș *" error={errors.city?.message as string}>
                     <Input placeholder="București" {...register("city")} />
                   </Field>
-                  <Field label="Județ" error={errors.county?.message as string}>
+                  <Field label="Județ *" error={errors.county?.message as string}>
                     <Combobox
                       value={watch("county")}
                       onValueChange={(v) => form.setValue("county", v, { shouldValidate: true })}
@@ -397,7 +526,7 @@ export default function CheckoutPage() {
                       emptyText="Nu am găsit județul"
                     />
                   </Field>
-                  <Field label="Cod poștal" error={errors.postalCode?.message as string}>
+                  <Field label="Cod poștal *" error={errors.postalCode?.message as string}>
                     <Input placeholder="010001" {...register("postalCode")} />
                   </Field>
                 </div>
@@ -434,20 +563,272 @@ export default function CheckoutPage() {
                 <CardTitle>Plată</CardTitle>
               </CardHeader>
               <CardContent className="space-y-4">
-                <div className="rounded-xl border border-slate-200 dark:border-white/10 p-4 bg-white dark:bg-slate-900/60">
-                  <div className="flex items-start gap-3">
-                    <CreditCard className="h-5 w-5 text-slate-600 dark:text-slate-300 mt-0.5" />
-                    <div className="flex-1">
-                      <div className="flex items-center gap-2 font-medium">
-                        Card bancar
+                {/* Saved Card Display or Add Card Button */}
+                {savedCardsData?.cards && savedCardsData.cards.length > 0 && !showCardForm ? (
+                  <div className="space-y-3">
+                    {savedCardsData.cards.map((card) => (
+                      <div
+                        key={card.id}
+                        onClick={() => {
+                          setSavedCardId(card.id);
+                          setValue("savedCardId", card.id, { shouldValidate: true });
+                          setValue("cardNumber", "", { shouldValidate: true });
+                          setValue("cardExpiry", "", { shouldValidate: true });
+                          setValue("cardCvv", "", { shouldValidate: true });
+                          setValue("cardholderName", "", { shouldValidate: true });
+                          setShowCardForm(false);
+                        }}
+                        className={`rounded-xl border p-4 bg-white dark:bg-slate-900/60 cursor-pointer transition-micro ${
+                          savedCardId === card.id
+                            ? 'border-primary bg-primary/5 dark:bg-primary/10'
+                            : 'border-slate-200 dark:border-white/10 hover:bg-slate-50 dark:hover:bg-white/5'
+                        }`}
+                      >
+                        <div className="flex items-start gap-3">
+                          <CreditCard className={`h-5 w-5 mt-0.5 ${
+                            savedCardId === card.id ? 'text-primary' : 'text-slate-600 dark:text-slate-300'
+                          }`} />
+                          <div className="flex-1">
+                            <div className="flex items-center gap-2 font-medium">
+                              <span className="capitalize">{card.brand}</span>
+                              <span className="text-sm text-slate-500">•••• •••• •••• {card.last4Digits}</span>
+                              {card.isDefault && (
+                                <Badge variant="outline" className="text-xs">Implicit</Badge>
+                              )}
+                            </div>
+                            <p className="text-sm text-slate-600 dark:text-slate-400 mt-1">
+                              Expiră {String(card.expiryMonth).padStart(2, '0')}/{card.expiryYear}
+                              {card.cardholderName && ` • ${card.cardholderName}`}
+                            </p>
+                          </div>
+                        </div>
                       </div>
-                      <p className="text-sm text-slate-600 dark:text-slate-400 mt-1">Visa / Mastercard</p>
-                      <p className="text-xs text-slate-500 dark:text-slate-500 mt-2">
-                        Plată securizată prin Netopia Payments
-                      </p>
+                    ))}
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setShowCardForm(true);
+                        setSavedCardId(null);
+                        setValue("savedCardId", undefined, { shouldValidate: true });
+                      }}
+                      className="w-full rounded-xl border border-slate-200 dark:border-white/10 p-4 bg-white dark:bg-slate-900/60 hover:bg-slate-50 dark:hover:bg-white/5 transition-micro text-left"
+                    >
+                      <div className="flex items-start gap-3">
+                        <CreditCard className="h-5 w-5 text-slate-600 dark:text-slate-300 mt-0.5" />
+                        <div className="flex-1">
+                          <div className="font-medium text-slate-900 dark:text-slate-100">
+                            Adaugă un card nou
+                          </div>
+                          <p className="text-sm text-slate-600 dark:text-slate-400 mt-1">
+                            Visa / Mastercard
+                          </p>
+                        </div>
+                      </div>
+                    </button>
+                  </div>
+                ) : !showCardForm ? (
+                  <button
+                    type="button"
+                      onClick={() => {
+                        setShowCardForm(true);
+                        setSavedCardId(null);
+                        setValue("savedCardId", undefined, { shouldValidate: true });
+                      }}
+                      className="w-full rounded-xl border border-slate-200 dark:border-white/10 p-4 bg-white dark:bg-slate-900/60 hover:bg-slate-50 dark:hover:bg-white/5 transition-micro text-left"
+                    >
+                    <div className="flex items-start gap-3">
+                      <CreditCard className="h-5 w-5 text-slate-600 dark:text-slate-300 mt-0.5" />
+                      <div className="flex-1">
+                        <div className="flex items-center gap-2 font-medium">
+                          Card bancar
+                        </div>
+                        <p className="text-sm text-slate-600 dark:text-slate-400 mt-1">Visa / Mastercard</p>
+                        <p className="text-xs text-slate-500 dark:text-slate-500 mt-2">
+                          Plată securizată prin Netopia Payments
+                        </p>
+                      </div>
+                    </div>
+                  </button>
+                ) : null}
+
+                {/* Card Form */}
+                {showCardForm && (
+                  <div className="space-y-4 rounded-xl border border-slate-200 dark:border-white/10 p-4 bg-slate-50 dark:bg-slate-900/30">
+                    <div className="flex items-center justify-between">
+                      <h4 className="font-medium text-slate-900 dark:text-slate-100">Detalii card bancar</h4>
+                      {savedCardsData?.cards && savedCardsData.cards.length > 0 && (
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setShowCardForm(false);
+                            setSavedCardId(null);
+                            setValue("cardNumber", "", { shouldValidate: true });
+                            setValue("cardExpiry", "", { shouldValidate: true });
+                            setValue("cardCvv", "", { shouldValidate: true });
+                            setValue("cardholderName", "", { shouldValidate: true });
+                            setValue("saveCard", "no-save");
+                            setValue("savedCardId", undefined, { shouldValidate: true });
+                          }}
+                          className="text-sm text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-100"
+                        >
+                          Anulează
+                        </button>
+                      )}
+                    </div>
+
+                    <Field label="Număr card *" error={errors.cardNumber?.message as string}>
+                      <Input
+                        placeholder="1234 5678 9012 3456"
+                        {...register("cardNumber", {
+                          validate: (value) => {
+                            // Only validate if user has started typing (value exists)
+                            if (!value || value.trim().length === 0) {
+                              // Check if savedCardId is set - if yes, this field is not required
+                              const currentSavedCardId = watch("savedCardId");
+                              if (currentSavedCardId) return true;
+                              // If no saved card and user hasn't typed anything, don't show error yet
+                              return undefined; // Let refine handle the general error
+                            }
+                            // If user typed something, validate format
+                            const cleaned = value.replace(/\s/g, '');
+                            if (cleaned.length < 13) {
+                              return "Numărul cardului trebuie să aibă minim 13 cifre";
+                            }
+                            return true;
+                          }
+                        })}
+                        maxLength={19}
+                        onChange={(e) => {
+                          // Format card number with spaces
+                          let value = e.target.value.replace(/\s/g, '');
+                          value = value.replace(/(.{4})/g, '$1 ').trim();
+                          if (value.length <= 19) {
+                            setValue("cardNumber", value, { shouldValidate: true });
+                          }
+                        }}
+                      />
+                    </Field>
+
+                    <div className="grid grid-cols-2 gap-4">
+                      <Field label="Data expirării *" error={errors.cardExpiry?.message as string}>
+                        <Input
+                          placeholder="MM/YY"
+                          {...register("cardExpiry", {
+                            validate: (value) => {
+                              // Only validate if user has started typing
+                              if (!value || value.trim().length === 0) {
+                                const currentSavedCardId = watch("savedCardId");
+                                if (currentSavedCardId) return true;
+                                return undefined; // Let refine handle
+                              }
+                              // Validate format if user typed something
+                              if (!/^\d{2}\/\d{2}$/.test(value)) {
+                                return "Format invalid. Folosește MM/YY";
+                              }
+                              const [month, year] = value.split('/').map(Number);
+                              if (month < 1 || month > 12) {
+                                return "Luna trebuie să fie între 01 și 12";
+                              }
+                              return true;
+                            }
+                          })}
+                          maxLength={5}
+                          onChange={(e) => {
+                            let value = e.target.value.replace(/\D/g, '');
+                            if (value.length >= 2) {
+                              value = value.slice(0, 2) + '/' + value.slice(2, 4);
+                            }
+                            if (value.length <= 5) {
+                              setValue("cardExpiry", value, { shouldValidate: true });
+                            }
+                          }}
+                        />
+                      </Field>
+
+                      <Field label="CVV *" error={errors.cardCvv?.message as string}>
+                        <Input
+                          placeholder="123"
+                          type="password"
+                          {...register("cardCvv", {
+                            validate: (value) => {
+                              // Only validate if user has started typing
+                              if (!value || value.trim().length === 0) {
+                                const currentSavedCardId = watch("savedCardId");
+                                if (currentSavedCardId) return true;
+                                return undefined; // Let refine handle
+                              }
+                              // Validate if user typed something
+                              if (value.length < 3) {
+                                return "CVV-ul trebuie să aibă minim 3 cifre";
+                              }
+                              return true;
+                            }
+                          })}
+                          maxLength={4}
+                        />
+                      </Field>
+                    </div>
+
+                    <Field label="Nume titular card *" error={errors.cardholderName?.message as string}>
+                      <Input
+                        placeholder="Ion Popescu"
+                        {...register("cardholderName", {
+                          validate: (value) => {
+                            // Only validate if user has started typing
+                            if (!value || value.trim().length === 0) {
+                              const currentSavedCardId = watch("savedCardId");
+                              if (currentSavedCardId) return true;
+                              return undefined; // Let refine handle
+                            }
+                            // Validate if user typed something
+                            if (value.length < 2) {
+                              return "Numele titularului trebuie să aibă minim 2 caractere";
+                            }
+                            return true;
+                          }
+                        })}
+                      />
+                    </Field>
+
+                    {/* Save Card Radio Buttons */}
+                    <div className="flex items-center gap-4 pt-2">
+                      <label className="flex items-center gap-2 cursor-pointer">
+                        <input
+                          type="radio"
+                          name="saveCard"
+                          value="save"
+                          checked={watch("saveCard") === "save"}
+                          onChange={(e) => setValue("saveCard", e.target.value as "save" | "no-save")}
+                          className="h-4 w-4 cursor-pointer accent-primary"
+                        />
+                        <span className="text-sm text-slate-700 dark:text-slate-300">Salvează card</span>
+                      </label>
+
+                      <label className="flex items-center gap-2 cursor-pointer">
+                        <input
+                          type="radio"
+                          name="saveCard"
+                          value="no-save"
+                          checked={watch("saveCard") === "no-save" || !watch("saveCard")}
+                          onChange={(e) => setValue("saveCard", e.target.value as "save" | "no-save")}
+                          className="h-4 w-4 cursor-pointer accent-primary"
+                        />
+                        <span className="text-sm text-slate-700 dark:text-slate-300">Nu salva card</span>
+                      </label>
                     </div>
                   </div>
-                </div>
+                )}
+
+                {/* Error message if card is not properly filled - only show if user tried to submit or has started filling */}
+                {errors.cardNumber && typeof errors.cardNumber.message === 'string' && errors.cardNumber.message.includes('Completează toate câmpurile') && (
+                  (watch("cardNumber") || watch("cardExpiry") || watch("cardCvv") || watch("cardholderName") || !savedCardId) && (
+                    <div className="rounded-lg border border-red-200 bg-red-50 dark:bg-red-900/20 dark:border-red-800 p-3">
+                      <p className="text-sm text-red-800 dark:text-red-200 font-medium">
+                        ⚠️ Completează toate câmpurile cardului bancar sau selectează un card salvat pentru a continua.
+                      </p>
+                    </div>
+                  )
+                )}
 
                 <div className="space-y-4">
                   <label htmlFor="accept-terms" className="flex items-start gap-3 cursor-pointer select-none">

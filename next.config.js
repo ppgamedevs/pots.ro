@@ -91,6 +91,36 @@ const nextConfig = {
     ]
   },
 
+  // Rewrites to handle icon requests from browser extensions
+  async rewrites() {
+    return [
+      {
+        source: '/32.png',
+        destination: '/api/block-icon?size=32',
+      },
+      {
+        source: '/64.png',
+        destination: '/api/block-icon?size=64',
+      },
+      {
+        source: '/128.png',
+        destination: '/api/block-icon?size=128',
+      },
+      {
+        source: '/192.png',
+        destination: '/api/block-icon?size=192',
+      },
+      {
+        source: '/512.png',
+        destination: '/api/block-icon?size=512',
+      },
+      {
+        source: '/icon.png',
+        destination: '/api/block-icon?size=icon',
+      },
+    ];
+  },
+
   // SEO Redirects for old English URLs to new Romanian URLs
   async redirects() {
     return [
