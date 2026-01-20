@@ -99,22 +99,35 @@ export default function SearchPage() {
 
   // Load search results when q param changes
   useEffect(() => {
+    const currentQ = searchParams.get('q') || '';
+    setSearchQuery(currentQ);
+    
     const loadResults = async () => {
-      if (!qParam.trim()) {
+      if (!currentQ.trim()) {
         setFilteredResults([]);
         setTotal(0);
         return;
       }
 
+      console.log('[SearchPage] Loading results for query:', currentQ);
       setLoading(true);
       try {
-        const response = await fetch(`/api/search?q=${encodeURIComponent(qParam)}&size=24`);
+        const url = `/api/search?q=${encodeURIComponent(currentQ)}&size=24`;
+        console.log('[SearchPage] Fetching from:', url);
+        const response = await fetch(url, {
+          cache: 'no-store',
+        });
+        console.log('[SearchPage] Response status:', response.status);
+        
         if (response.ok) {
           const data = await response.json();
+          console.log('[SearchPage] Response data:', data);
+          console.log('[SearchPage] Items count:', data.items?.length || 0);
           setFilteredResults(data.items || []);
           setTotal(data.total || 0);
         } else {
-          console.error('Search API error:', response.status);
+          const errorText = await response.text();
+          console.error('Search API error:', response.status, errorText);
           setFilteredResults([]);
           setTotal(0);
         }
@@ -128,7 +141,7 @@ export default function SearchPage() {
     };
 
     loadResults();
-  }, [qParam]);
+  }, [searchParams]);
 
   const handleSearch = (e: React.FormEvent) => {
     e.preventDefault();
@@ -170,7 +183,7 @@ export default function SearchPage() {
           </form>
           
           <div className="mt-4 flex items-center gap-4">
-            {qParam && (
+            {searchParams.get('q') && (
               <Badge variant="outline" className="px-3 py-1">
                 {loading ? 'Se caută...' : `${total} produse găsite`}
               </Badge>
@@ -193,57 +206,67 @@ export default function SearchPage() {
         {/* Search Results */}
         {!loading && filteredResults.length > 0 && (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {filteredResults.map((product: any) => (
-              <Card key={product.id} className="group hover:shadow-lg transition-shadow">
-                <CardContent className="p-0">
-                  <Link href={`/p/${product.slug || product.id}`}>
-                    <div className="relative aspect-square overflow-hidden rounded-t-lg">
-                      <Image
-                        src={product.image?.src || product.images?.[0] || "/placeholder.png"}
-                        alt={product.image?.alt || product.title}
-                        fill
-                        className="object-cover group-hover:scale-105 transition-transform duration-300"
-                      />
-                    </div>
-                    
-                    <div className="p-4">
-                      <div className="mb-2">
-                        <h3 className="font-semibold text-gray-900 dark:text-gray-100 line-clamp-2 group-hover:text-blue-600 dark:group-hover:text-blue-400 transition-colors">
-                          {product.title}
-                        </h3>
-                        {product.seller && (
-                          <p className="text-sm text-gray-600 dark:text-gray-400 mt-1">
-                            de <span className="font-medium">{typeof product.seller === 'string' ? product.seller : product.seller.name}</span>
-                          </p>
-                        )}
+            {filteredResults.map((product: any) => {
+              const imageSrc = product.image?.src || product.images?.[0] || "/placeholder.svg";
+              const imageAlt = product.image?.alt || product.title;
+              const sellerName = typeof product.seller === 'string' ? product.seller : (product.seller?.name || '');
+              const categoryName = typeof product.category === 'string' ? product.category : (product.category?.name || '');
+              const productSlug = product.slug || product.id;
+              const productPrice = product.price || 0;
+              const productCurrency = product.currency || 'RON';
+              
+              return (
+                <Card key={product.id} className="group hover:shadow-lg transition-shadow">
+                  <CardContent className="p-0">
+                    <Link href={`/p/${productSlug}`}>
+                      <div className="relative aspect-square overflow-hidden rounded-t-lg">
+                        <Image
+                          src={imageSrc}
+                          alt={imageAlt}
+                          fill
+                          className="object-cover group-hover:scale-105 transition-transform duration-300"
+                        />
                       </div>
                       
-                      <div className="flex items-center justify-between">
-                        <div>
-                          <p className="text-lg font-bold text-gray-900 dark:text-gray-100">
-                            {formatPrice(product.price, product.currency || 'RON')}
-                          </p>
-                          {product.category && (
-                            <Badge variant="secondary" className="text-xs">
-                              {typeof product.category === 'string' ? product.category : product.category.name}
-                            </Badge>
+                      <div className="p-4">
+                        <div className="mb-2">
+                          <h3 className="font-semibold text-gray-900 dark:text-gray-100 line-clamp-2 group-hover:text-blue-600 dark:group-hover:text-blue-400 transition-colors">
+                            {product.title}
+                          </h3>
+                          {sellerName && (
+                            <p className="text-sm text-gray-600 dark:text-gray-400 mt-1">
+                              de <span className="font-medium">{sellerName}</span>
+                            </p>
                           )}
                         </div>
+                        
+                        <div className="flex items-center justify-between">
+                          <div>
+                            <p className="text-lg font-bold text-gray-900 dark:text-gray-100">
+                              {formatPrice(productPrice, productCurrency)}
+                            </p>
+                            {categoryName && (
+                              <Badge variant="secondary" className="text-xs">
+                                {categoryName}
+                              </Badge>
+                            )}
+                          </div>
+                        </div>
                       </div>
-                    </div>
-                  </Link>
-                </CardContent>
-              </Card>
-            ))}
+                    </Link>
+                  </CardContent>
+                </Card>
+              );
+            })}
           </div>
         )}
 
         {/* No Results */}
-        {!loading && filteredResults.length === 0 && qParam && (
+        {!loading && filteredResults.length === 0 && searchParams.get('q') && (
           <div className="text-center py-12">
             <Search className="h-12 w-12 mx-auto text-gray-400 mb-4" />
             <h3 className="text-lg font-medium text-gray-900 dark:text-gray-100 mb-2">
-              Nu am găsit produse pentru "{qParam}"
+              Nu am găsit produse pentru "{searchParams.get('q')}"
             </h3>
             <p className="text-gray-600 dark:text-gray-400 mb-4">
               Încearcă să modifici termenii de căutare sau să folosești filtrele.
@@ -258,7 +281,7 @@ export default function SearchPage() {
         )}
 
         {/* Empty State */}
-        {!loading && filteredResults.length === 0 && !qParam && (
+        {!loading && filteredResults.length === 0 && !searchParams.get('q') && (
           <div className="text-center py-12">
             <Search className="h-12 w-12 mx-auto text-gray-400 mb-4" />
             <h3 className="text-lg font-medium text-gray-900 dark:text-gray-100 mb-2">

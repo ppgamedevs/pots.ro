@@ -16,16 +16,20 @@ export async function GET(req: NextRequest) {
     const size = Number(searchParams.get("size") || "24");
     const sort = searchParams.get("sort") || "relevance";
 
+    console.log('[Search API] Request:', { q, from, size, sort, hasElastic: !!(ELASTIC_URL && ELASTIC_API_KEY) });
+
     // If Elasticsearch is not configured, use database search
     if (!ELASTIC_URL || !ELASTIC_API_KEY) {
       // Build search conditions
       const conditions = [eq(products.status, 'active')];
       
       if (q) {
+        // Use case-insensitive search with ILIKE
+        const searchTerm = `%${q}%`;
         conditions.push(
           or(
-            ilike(products.title, `%${q}%`),
-            ilike(products.description, `%${q}%`)
+            ilike(products.title, searchTerm),
+            ilike(products.description, searchTerm)
           )!
         );
       }
@@ -43,26 +47,71 @@ export async function GET(req: NextRequest) {
       }
 
       // Get total count
-      const totalResult = await db
-        .select({ count: sql<number>`count(*)` })
-        .from(products)
-        .where(and(...conditions));
-      const total = Number(totalResult[0]?.count || 0);
+      let total = 0;
+      try {
+        const totalResult = await db
+          .select({ count: sql<number>`count(*)` })
+          .from(products)
+          .where(and(...conditions));
+        total = Number(totalResult[0]?.count || 0);
+        console.log('[Search API] Total products found:', total);
+      } catch (countError) {
+        console.error('[Search API] Error counting products:', countError);
+        total = 0;
+      }
 
       // Fetch products
-      const result = await db
-        .select({
-          product: products,
-          seller: sellers,
-          category: categories,
-        })
-        .from(products)
-        .innerJoin(sellers, eq(products.sellerId, sellers.id))
-        .leftJoin(categories, eq(products.categoryId, categories.id))
-        .where(and(...conditions))
-        .orderBy(orderByClause)
-        .limit(size)
-        .offset(from);
+      console.log('[Search API] Fetching products with conditions:', {
+        q,
+        conditionsCount: conditions.length,
+        size,
+        from
+      });
+      
+      let result;
+      try {
+        // First check if we have any active products at all
+        const activeCount = await db
+          .select({ count: sql<number>`count(*)` })
+          .from(products)
+          .where(eq(products.status, 'active'));
+        console.log('[Search API] Total active products in DB:', Number(activeCount[0]?.count || 0));
+        
+        result = await db
+          .select({
+            product: products,
+            seller: sellers,
+            category: categories,
+          })
+          .from(products)
+          .innerJoin(sellers, eq(products.sellerId, sellers.id))
+          .leftJoin(categories, eq(products.categoryId, categories.id))
+          .where(and(...conditions))
+          .orderBy(orderByClause)
+          .limit(size)
+          .offset(from);
+        
+        console.log('[Search API] Products fetched after join:', result.length);
+        if (result.length === 0 && q) {
+          // Try to find products without seller join to see if they exist
+          const productsOnly = await db
+            .select()
+            .from(products)
+            .where(and(...conditions))
+            .limit(5);
+          console.log('[Search API] Products found without seller join:', productsOnly.length);
+        }
+      } catch (queryError: any) {
+        console.error('[Search API] Error fetching products:', queryError);
+        console.error('[Search API] Error details:', {
+          message: queryError?.message,
+          stack: queryError?.stack,
+        });
+        return NextResponse.json({ 
+          error: "Failed to search products",
+          details: process.env.NODE_ENV === 'development' ? String(queryError?.message) : undefined
+        }, { status: 500 });
+      }
 
       // Transform to match expected format
       const items = await Promise.all(
@@ -91,11 +140,12 @@ export async function GET(req: NextRequest) {
             id: product.id,
             title: product.title,
             price: product.priceCents / 100, // Convert cents to RON
+            currency: product.currency || 'RON',
             image: {
               src: imageUrl,
               alt: imageAlt,
             },
-            seller: seller.brandName,
+            seller: seller.brandName || seller.company || '',
             category: category?.name || '',
             slug: product.slug,
             badge: product.stock < 5 ? 'stoc redus' : undefined,
@@ -103,6 +153,7 @@ export async function GET(req: NextRequest) {
         })
       );
 
+      console.log('[Search API] Returning:', { itemsCount: items.length, total });
       return NextResponse.json({ items, total });
     }
 

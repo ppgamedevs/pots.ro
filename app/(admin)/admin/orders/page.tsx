@@ -9,6 +9,7 @@ import { OrderDetail, OrderFilters } from '@/lib/types';
 import { listOrders } from '@/lib/api/orders';
 import { useKeyboardShortcuts } from '@/lib/keyboard';
 import { toast } from 'sonner';
+import { AdminPageWrapper } from '@/components/admin/AdminPageWrapper';
 
 export default function AdminOrdersPage() {
   const router = useRouter();
@@ -72,36 +73,40 @@ export default function AdminOrdersPage() {
   }
 
   return (
-    <div className="container mx-auto px-4 py-8">
+    <div className="container mx-auto px-6 py-10 max-w-7xl">
       <main role="main">
-        <header className="mb-8">
-          <h1 className="text-3xl font-bold text-gray-900 mb-2">All Orders</h1>
-          <p className="text-gray-600">Manage and monitor all orders across the platform</p>
-        </header>
+        <AdminPageWrapper 
+          title="Comenzi"
+          description="Gestionează și monitorizează toate comenzile platformei"
+        >
+          <div className="space-y-6">
+            {/* Filters */}
+            <div className="bg-white dark:bg-slate-900/60 border border-slate-200 dark:border-white/10 rounded-xl shadow-sm p-6">
+              <OrderFiltersComponent
+                role="admin"
+                onFiltersChange={handleFiltersChange}
+              />
+            </div>
 
-        <div className="space-y-6">
-          {/* Filters */}
-          <OrderFiltersComponent
-            role="admin"
-            onFiltersChange={handleFiltersChange}
-          />
+            {/* Orders Table */}
+            <div className="bg-white dark:bg-slate-900/60 border border-slate-200 dark:border-white/10 rounded-xl shadow-sm overflow-hidden">
+              <OrdersTable
+                orders={data?.data || []}
+                role="admin"
+                unreadCountByOrderId={unreadCountByOrderId}
+                onPageChange={handlePageChange}
+                currentPage={filters.page || 1}
+                totalPages={Math.ceil((data?.total || 0) / 20)}
+                isLoading={isLoading}
+              />
+            </div>
 
-          {/* Orders Table */}
-          <OrdersTable
-            orders={data?.data || []}
-            role="admin"
-            unreadCountByOrderId={unreadCountByOrderId}
-            onPageChange={handlePageChange}
-            currentPage={filters.page || 1}
-            totalPages={Math.ceil((data?.total || 0) / 20)}
-            isLoading={isLoading}
-          />
-        </div>
-
-        {/* Keyboard Shortcuts Help */}
-        <div className="mt-8 text-sm text-gray-500">
-          <p>Keyboard shortcuts: Press <kbd className="px-2 py-1 bg-gray-100 rounded">g</kbd> then <kbd className="px-2 py-1 bg-gray-100 rounded">a</kbd> to navigate to admin orders</p>
-        </div>
+            {/* Keyboard Shortcuts Help */}
+            <div className="pt-4 text-sm text-slate-500 dark:text-slate-400 text-center">
+              <p>Keyboard shortcuts: Press <kbd className="px-2 py-1 bg-slate-100 dark:bg-slate-800 rounded text-xs font-mono">g</kbd> then <kbd className="px-2 py-1 bg-slate-100 dark:bg-slate-800 rounded text-xs font-mono">a</kbd> to navigate to admin orders</p>
+            </div>
+          </div>
+        </AdminPageWrapper>
       </main>
     </div>
   );

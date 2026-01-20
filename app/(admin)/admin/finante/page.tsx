@@ -22,6 +22,7 @@ import { Label } from '@/components/ui/label';
 import { RefreshCw, Play, Download, TrendingUp, CreditCard, Users } from 'lucide-react';
 import { formatCurrency } from '@/lib/money';
 import { SeoToolsTab } from '@/components/admin/SeoToolsTab';
+import { AdminPageWrapper } from '@/components/admin/AdminPageWrapper';
 
 export default function AdminFinancePage() {
   const [activeTab, setActiveTab] = useState('payouts');
@@ -124,25 +125,21 @@ export default function AdminFinancePage() {
   const failedRefunds = refunds.filter(r => r.status === 'FAILED').length;
 
   return (
-    <div className="space-y-6">
-      {/* Header */}
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-3xl font-bold">Finanțe</h1>
-          <p className="text-gray-600">
-            Gestionează payout-urile, refund-urile și rapoartele financiare
-          </p>
-        </div>
-        <div className="flex gap-2">
-          <Button onClick={() => loadPayouts()} variant="outline" disabled={isLoadingPayouts}>
+    <div className="space-y-8">
+      <AdminPageWrapper 
+        title="Finanțe"
+        description="Gestionează payout-urile, refund-urile și rapoartele financiare"
+      >
+        {/* Header Actions */}
+        <div className="flex items-center justify-end">
+          <Button onClick={() => loadPayouts()} variant="outline" disabled={isLoadingPayouts} size="sm">
             <RefreshCw className={`h-4 w-4 mr-2 ${isLoadingPayouts ? 'animate-spin' : ''}`} />
             Actualizează
           </Button>
         </div>
-      </div>
 
       {/* Statistici rapide */}
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+      <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">Total Payout-uri</CardTitle>
@@ -348,6 +345,7 @@ export default function AdminFinancePage() {
           <SeoToolsTab />
         </TabsContent>
       </Tabs>
+      </AdminPageWrapper>
     </div>
   );
 }

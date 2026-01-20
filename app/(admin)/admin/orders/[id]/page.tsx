@@ -17,6 +17,7 @@ import { ConversationTab } from '@/components/orders/ConversationTab';
 import { MessageComposer } from '@/components/orders/MessageComposer';
 import { useOrderKeyboardShortcuts } from '@/lib/keyboard';
 import { toast } from 'sonner';
+import { AdminPageWrapper } from '@/components/admin/AdminPageWrapper';
 
 export default function AdminOrderDetailPage() {
   const params = useParams();
@@ -99,10 +100,10 @@ export default function AdminOrderDetailPage() {
 
   if (isLoading) {
     return (
-      <div className="container mx-auto px-4 py-8">
+      <div className="container mx-auto px-6 py-10 max-w-7xl">
         <div className="animate-pulse space-y-6">
-          <div className="h-8 bg-gray-200 rounded w-1/3"></div>
-          <div className="h-64 bg-gray-200 rounded"></div>
+          <div className="h-8 bg-slate-200 dark:bg-slate-800 rounded w-1/3"></div>
+          <div className="h-64 bg-slate-200 dark:bg-slate-800 rounded-xl"></div>
         </div>
       </div>
     );
@@ -110,13 +111,13 @@ export default function AdminOrderDetailPage() {
 
   if (error || !order) {
     return (
-      <div className="container mx-auto px-4 py-8">
-        <div className="text-center">
-          <h1 className="text-2xl font-bold text-red-600 mb-4">Order Not Found</h1>
-          <p className="text-gray-600 mb-4">The order you're looking for doesn't exist or you don't have access to it.</p>
+      <div className="container mx-auto px-6 py-10 max-w-7xl">
+        <div className="bg-white dark:bg-slate-900/60 border border-slate-200 dark:border-white/10 rounded-xl shadow-sm p-8 text-center">
+          <h1 className="text-2xl font-bold text-red-600 dark:text-red-400 mb-4">Comandă negăsită</h1>
+          <p className="text-slate-600 dark:text-slate-400 mb-6">Comanda pe care o cauți nu există sau nu ai acces la ea.</p>
           <Button onClick={() => router.back()}>
             <ArrowLeftIcon className="h-4 w-4 mr-2" />
-            Go Back
+            Înapoi
           </Button>
         </div>
       </div>
@@ -124,26 +125,15 @@ export default function AdminOrderDetailPage() {
   }
 
   return (
-    <div className="container mx-auto px-4 py-8">
+    <div className="container mx-auto px-6 py-10 max-w-7xl">
       <main role="main">
-        {/* Header */}
-        <header className="mb-8">
-          <div className="flex items-center gap-4 mb-4">
-            <Button variant="outline" onClick={() => router.back()}>
-              <ArrowLeftIcon className="h-4 w-4 mr-2" />
-              Back
-            </Button>
-            <h1 className="text-3xl font-bold text-gray-900">
-              Order #{order.id.slice(-8).toUpperCase()}
-            </h1>
-            <Badge variant="outline" className="ml-auto">
-              Admin View
-            </Badge>
-          </div>
-          <p className="text-gray-600">Created on {formatDate(order.createdAt)}</p>
-        </header>
-
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+        <AdminPageWrapper 
+          title={`Comandă #${order.id.slice(-8).toUpperCase()}`}
+          description={`Creată pe ${formatDate(order.createdAt)}`}
+          customBreadcrumbLabel="Detalii Comandă"
+          backButtonHref="/admin/orders"
+        >
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
           {/* Main Content */}
           <div className="lg:col-span-2 space-y-6">
             {/* Order Status */}
@@ -314,6 +304,7 @@ export default function AdminOrderDetailPage() {
             </Card>
           </div>
         </div>
+        </AdminPageWrapper>
       </main>
     </div>
   );

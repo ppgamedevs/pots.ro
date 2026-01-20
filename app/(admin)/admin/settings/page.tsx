@@ -7,6 +7,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { toast } from 'sonner';
 import { Settings, Save, RefreshCw } from 'lucide-react';
+import { AdminPageWrapper } from '@/components/admin/AdminPageWrapper';
 
 interface Setting {
   key: string;
@@ -88,23 +89,17 @@ export default function AdminSettingsPage() {
   };
 
   return (
-    <div className="space-y-6">
-      {/* Header */}
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-3xl font-bold flex items-center gap-2">
-            <Settings className="h-8 w-8" />
-            Setări Magazin
-          </h1>
-          <p className="text-gray-600 mt-1">
-            Configurează setările generale ale magazinului
-          </p>
+    <div className="space-y-8">
+      <AdminPageWrapper 
+        title="Setări Magazin"
+        description="Configurează setările generale ale magazinului"
+      >
+        <div className="flex items-center justify-end">
+          <Button onClick={loadSettings} variant="outline" disabled={isLoading} size="sm">
+            <RefreshCw className={`h-4 w-4 mr-2 ${isLoading ? 'animate-spin' : ''}`} />
+            Actualizează
+          </Button>
         </div>
-        <Button onClick={loadSettings} variant="outline" disabled={isLoading}>
-          <RefreshCw className={`h-4 w-4 mr-2 ${isLoading ? 'animate-spin' : ''}`} />
-          Actualizează
-        </Button>
-      </div>
 
       {/* Shipping Settings Card */}
       <Card>
@@ -114,7 +109,7 @@ export default function AdminSettingsPage() {
             Configurează costurile de livrare și opțiunile de transport
           </CardDescription>
         </CardHeader>
-        <CardContent className="space-y-6">
+        <CardContent className="space-y-6 pt-2">
           <div className="max-w-md space-y-4">
             <div className="space-y-2">
               <Label htmlFor="shipping-fee">Tarif de Transport (RON)</Label>
@@ -181,8 +176,8 @@ export default function AdminSettingsPage() {
             Mai multe opțiuni de configurare vor fi disponibile în curând
           </CardDescription>
         </CardHeader>
-        <CardContent>
-          <div className="text-sm text-gray-600 space-y-2">
+        <CardContent className="pt-2">
+          <div className="text-sm text-slate-600 dark:text-slate-400 space-y-3">
             <p>• Configurare metode de plată</p>
             <p>• Setări notificări email</p>
             <p>• Configurare curierat multiplu</p>
@@ -190,6 +185,7 @@ export default function AdminSettingsPage() {
           </div>
         </CardContent>
       </Card>
+      </AdminPageWrapper>
     </div>
   );
 }

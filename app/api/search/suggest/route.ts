@@ -1,4 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
+import { db } from "@/db";
+import { products, sellers } from "@/db/schema/core";
+import { eq, and, ilike, or } from "drizzle-orm";
 
 const ELASTIC_URL = process.env.ELASTIC_URL!;
 const ELASTIC_API_KEY = process.env.ELASTIC_API_KEY!;
@@ -12,18 +15,33 @@ export async function GET(req: NextRequest) {
       return NextResponse.json({ suggestions: [] });
     }
 
-    // For MVP, return mock suggestions if Elasticsearch is not configured
+    // For MVP, return real products from database if Elasticsearch is not configured
     if (!ELASTIC_URL || !ELASTIC_API_KEY) {
-      const mockSuggestions = [
-        { title: `Ghivece ceramică ${q}`, slug: `ghivece-ceramica-${q}` },
-        { title: `Cutii rotunde ${q}`, slug: `cutii-rotunde-${q}` },
-        { title: `Ambalaje ${q}`, slug: `ambalaje-${q}` },
-        { title: `Accesorii ${q}`, slug: `accesorii-${q}` },
-        { title: `Unelte ${q}`, slug: `unelte-${q}` },
-        { title: `Decor ${q}`, slug: `decor-${q}` },
-      ].slice(0, 6);
+      // Search for products matching the query
+      const results = await db
+        .select({
+          product: products,
+          seller: sellers,
+        })
+        .from(products)
+        .innerJoin(sellers, eq(products.sellerId, sellers.id))
+        .where(
+          and(
+            eq(products.status, 'active'),
+            or(
+              ilike(products.title, `%${q}%`),
+              ilike(products.description, `%${q}%`)
+            )!
+          )
+        )
+        .limit(6);
 
-      return NextResponse.json({ suggestions: mockSuggestions });
+      const suggestions = results.map(({ product, seller }) => ({
+        title: product.title,
+        slug: product.slug,
+      }));
+
+      return NextResponse.json({ suggestions });
     }
 
     const body = {
