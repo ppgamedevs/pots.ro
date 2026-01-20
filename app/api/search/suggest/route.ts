@@ -36,7 +36,8 @@ export async function GET(req: NextRequest) {
         )
         .limit(6);
 
-      const suggestions = results.map(({ product, seller }) => ({
+      type ResultType = typeof results[0];
+      const suggestions = results.map(({ product, seller }: ResultType) => ({
         title: product.title,
         slug: product.slug,
       }));

@@ -145,7 +145,7 @@ export async function GET(req: NextRequest) {
               src: imageUrl,
               alt: imageAlt,
             },
-            seller: seller.brandName || seller.company || '',
+            seller: seller.brandName || '',
             category: category?.name || '',
             slug: product.slug,
             badge: product.stock < 5 ? 'stoc redus' : undefined,

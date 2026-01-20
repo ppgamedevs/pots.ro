@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { db } from "@/db";
 import { products, sellers, users } from "@/db/schema/core";
 import { eq, and, or, ilike, desc, asc, count, gte, lte } from "drizzle-orm";
+import type { InferSelectModel } from "drizzle-orm";
 import { getUserId } from "@/lib/auth-helpers";
 
 export const dynamic = 'force-dynamic';
@@ -168,7 +169,8 @@ export async function GET(req: Request) {
       .offset(offset);
 
     // Transform to match client component expectations
-    const transformedItems = items.map((item) => ({
+    type ItemType = typeof items[0];
+    const transformedItems = items.map((item: ItemType) => ({
       id: item.id,
       title: item.title,
       price: item.price / 100, // Convert cents to currency
