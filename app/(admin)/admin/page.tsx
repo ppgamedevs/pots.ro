@@ -1,7 +1,49 @@
 import Link from "next/link";
 import { Package, Users, ShoppingBag, DollarSign, Settings, FileText } from "lucide-react";
+import { db } from "@/db";
+import { orders, products, sellerApplications } from "@/db/schema/core";
+import { and, eq, gte, ne, sql } from "drizzle-orm";
 
-export default function AdminDashboardPage() {
+export const dynamic = "force-dynamic";
+
+async function getQuickStats() {
+  const startOfToday = new Date();
+  startOfToday.setHours(0, 0, 0, 0);
+
+  const [pendingSellerAppsRows, newOrdersTodayRows, activeProductsRows] = await Promise.all([
+    db
+      .select({ count: sql<number>`count(*)` })
+      .from(sellerApplications)
+      .where(
+        and(
+          ne(sellerApplications.status, "approved"),
+          ne(sellerApplications.status, "rejected")
+        )
+      ),
+    db
+      .select({ count: sql<number>`count(*)` })
+      .from(orders)
+      .where(gte(orders.createdAt, startOfToday)),
+    db
+      .select({ count: sql<number>`count(*)` })
+      .from(products)
+      .where(eq(products.status, "active")),
+  ]);
+
+  const pendingSellerAppsRow = pendingSellerAppsRows[0];
+  const newOrdersTodayRow = newOrdersTodayRows[0];
+  const activeProductsRow = activeProductsRows[0];
+
+  return {
+    pendingSellerApps: Number(pendingSellerAppsRow?.count ?? 0),
+    newOrdersToday: Number(newOrdersTodayRow?.count ?? 0),
+    activeProducts: Number(activeProductsRow?.count ?? 0),
+  };
+}
+
+export default async function AdminDashboardPage() {
+  const stats = await getQuickStats();
+
   const menuItems = [
     {
       title: "Aplicații Vânzători",
@@ -88,15 +130,27 @@ export default function AdminDashboardPage() {
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mt-4">
           <div className="bg-white p-4 rounded-lg">
             <p className="text-sm text-gray-600">Aplicații în așteptare</p>
-            <p className="text-2xl font-bold text-gray-900">-</p>
+            <p className="text-2xl font-bold text-gray-900">{stats.pendingSellerApps}</p>
+            <Link
+              href="/admin/seller-applications"
+              className="text-sm text-blue-700 hover:underline"
+            >
+              Vezi aplicațiile
+            </Link>
           </div>
           <div className="bg-white p-4 rounded-lg">
             <p className="text-sm text-gray-600">Comenzi noi astăzi</p>
-            <p className="text-2xl font-bold text-gray-900">-</p>
+            <p className="text-2xl font-bold text-gray-900">{stats.newOrdersToday}</p>
+            <Link href="/admin/orders" className="text-sm text-blue-700 hover:underline">
+              Vezi comenzile
+            </Link>
           </div>
           <div className="bg-white p-4 rounded-lg">
             <p className="text-sm text-gray-600">Produse active</p>
-            <p className="text-2xl font-bold text-gray-900">-</p>
+            <p className="text-2xl font-bold text-gray-900">{stats.activeProducts}</p>
+            <Link href="/admin/products" className="text-sm text-blue-700 hover:underline">
+              Vezi produsele
+            </Link>
           </div>
         </div>
       </div>
