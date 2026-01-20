@@ -57,16 +57,16 @@ export function Navbar() {
           </Button>
           {/* Admin button - only visible to admin users */}
           {!loading && user?.role === 'admin' && (
-            <Link href="/admin">
-              <Button 
-                variant="outline" 
-                size="sm" 
-                className="border-red-600 text-red-600 hover:bg-red-50 dark:hover:bg-red-950"
-                aria-label="Go to admin panel"
-              >
+            <Button
+              asChild
+              variant="outline"
+              size="sm"
+              className="border-red-600 text-red-600 hover:bg-red-50 dark:hover:bg-red-950"
+            >
+              <Link href="/admin" aria-label="Go to admin panel">
                 Admin Panel
-              </Button>
-            </Link>
+              </Link>
+            </Button>
           )}
           <Link 
             href="/components-demo" 
@@ -111,9 +111,9 @@ export function Navbar() {
             Admin
           </Link>
           <MiniCart />
-          <Link href="/auth/autentificare">
-            <Button size="sm" aria-label="Sign in to your account">Autentificare</Button>
-          </Link>
+          <Button asChild size="sm" aria-label="Sign in to your account">
+            <Link href="/autentificare">Autentificare</Link>
+          </Button>
         </div>
       </div>
       <CommandPaletteControlled open={searchOpen} onOpenChange={setSearchOpen} />
