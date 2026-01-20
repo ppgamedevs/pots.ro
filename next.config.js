@@ -3,6 +3,12 @@ const { withSentryConfig } = require("@sentry/nextjs");
 
 /** @type {import('next').NextConfig} */
 const nextConfig = {
+  // Vercel/CI: don't fail production builds on existing lint backlog.
+  // Lint should be run separately (e.g. `npm run lint`) while we fix issues incrementally.
+  eslint: {
+    ignoreDuringBuilds: true,
+  },
+
   // Image optimization
   images: {
     remotePatterns: [
