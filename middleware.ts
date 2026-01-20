@@ -92,7 +92,9 @@ export async function middleware(request: NextRequest) {
   
   // Check if route is public
   const isPublicRoute = publicRoutes.some(route => 
-    pathname === route || pathname.startsWith(route + '/')
+    route === '/seller'
+      ? pathname === '/seller'
+      : pathname === route || pathname.startsWith(route + '/')
   );
   
   if (isPublicRoute) {
@@ -110,6 +112,21 @@ export async function middleware(request: NextRequest) {
       const loginUrl = new URL('/autentificare', request.url);
       loginUrl.searchParams.set('next', pathname);
       return NextResponse.redirect(loginUrl);
+    }
+
+    // Role-gated routes
+    if (pathname === '/admin' || pathname.startsWith('/admin/')) {
+      // Keep demos public (already handled by isPublicRoute)
+      if (session.role !== 'admin') {
+        return NextResponse.redirect(new URL('/', request.url));
+      }
+    }
+
+    if (pathname.startsWith('/seller/')) {
+      // Only allow seller/admin for protected seller pages (apply/thanks/requirements stay public)
+      if (session.role !== 'seller' && session.role !== 'admin') {
+        return NextResponse.redirect(new URL('/seller/apply', request.url));
+      }
     }
     
     console.log('[middleware] Session valid, continuing to:', pathname);

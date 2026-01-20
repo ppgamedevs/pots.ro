@@ -2,9 +2,16 @@ import React from "react";
 import { db } from "@/db";
 import { sellerApplications } from "@/db/schema/core";
 import { eq } from "drizzle-orm";
-import { Navbar } from "@/components/navbar";
-import { Footer } from "@/components/footer";
 import { AdminPageWrapper } from "@/components/admin/AdminPageWrapper";
+
+function slugifyCompany(input: string | null | undefined): string {
+  return (input || '')
+    .toLowerCase()
+    .trim()
+    .replace(/[^a-z0-9]+/g, '-')
+    .replace(/(^-|-$)/g, '')
+    .slice(0, 60) || 'aplicatie';
+}
 
 async function fetchApps(status?: string) {
   try {
@@ -29,14 +36,12 @@ export default async function AdminSellerApplicationsPage({ searchParams }: { se
   const items = data.items || [];
   const statuses = ['received','in_review','need_info','approved','rejected'];
   return (
-    <>
-      <Navbar />
-      <main className="mx-auto max-w-7xl px-6 py-10">
-        <AdminPageWrapper 
-          title="Aplicații Vânzători"
-          description="Gestionează cererile de înregistrare ale vânzătorilor"
-        >
-          <div className="space-y-6">
+    <main className="mx-auto max-w-7xl px-6 py-10">
+      <AdminPageWrapper 
+        title="Aplicații Vânzători"
+        description="Gestionează cererile de înregistrare ale vânzătorilor"
+      >
+        <div className="space-y-6">
             {/* Status Filters */}
             <div className="flex flex-wrap gap-3">
               {statuses.map(s => (
@@ -98,7 +103,7 @@ export default async function AdminSellerApplicationsPage({ searchParams }: { se
                         <td className="p-4">
                           <a 
                             className="text-primary hover:text-primary/80 font-medium text-sm transition-colors" 
-                            href={`/admin/seller-applications/${a.id}`}
+                            href={`/admin/seller-applications/${a.id}/${slugifyCompany(a.company)}`}
                           >
                             Vezi
                           </a>
@@ -109,11 +114,9 @@ export default async function AdminSellerApplicationsPage({ searchParams }: { se
                 </table>
               </div>
             </div>
-          </div>
-        </AdminPageWrapper>
-      </main>
-      <Footer />
-    </>
+        </div>
+      </AdminPageWrapper>
+    </main>
   );
 }
 
