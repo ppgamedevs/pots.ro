@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { Package, Users, ShoppingBag, DollarSign, Settings, FileText } from "lucide-react";
+import { Package, Users, ShoppingBag, DollarSign, Settings, FileText, UserCog } from "lucide-react";
 import { db } from "@/db";
 import { orders, products, sellerApplications } from "@/db/schema/core";
 import { and, eq, gte, ne, sql } from "drizzle-orm";
@@ -79,6 +79,13 @@ export default async function AdminDashboardPage() {
       href: "/admin/analytics",
       icon: FileText,
       color: "bg-indigo-500",
+    },
+    {
+      title: "Utilizatori & Roluri",
+      description: "Gestionează utilizatorii platformei și rolurile acestora",
+      href: "/admin/users",
+      icon: UserCog,
+      color: "bg-red-500",
     },
     {
       title: "Setări",
