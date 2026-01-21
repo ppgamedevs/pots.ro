@@ -35,8 +35,10 @@ type User = {
 
 type UserAction = {
   id: string;
-  action: "suspend" | "reactivate";
+  action: "suspend" | "reactivate" | "role_change";
   message: string;
+  oldRole?: string | null;
+  newRole?: string | null;
   createdAt: string;
   adminUser: {
     id: string;
@@ -365,7 +367,7 @@ export default function AdminUserDetailClient({ user: initialUser }: AdminUserDe
                 onClick={handleRoleChangeSubmit}
                 disabled={!newRole || newRole === user.role || roleChangeMessage.length < 10 || roleChangeLoading}
                 className="w-full"
-                variant="default"
+                variant="primary"
               >
                 {roleChangeLoading ? (
                   <>

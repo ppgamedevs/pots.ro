@@ -46,10 +46,10 @@ export async function GET(
       .where(eq(userActions.userId, userId))
       .orderBy(desc(userActions.createdAt));
     
-    console.log('Found actions:', actions.length, actions.map(a => ({ action: a.action, createdAt: a.createdAt })));
+    console.log('Found actions:', actions.length);
 
     const response = NextResponse.json({
-      actions: actions.map(action => ({
+      actions: actions.map((action: (typeof actions)[number]) => ({
         id: action.id,
         action: action.action,
         message: action.message || "",

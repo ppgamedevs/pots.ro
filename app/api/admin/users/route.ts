@@ -111,7 +111,7 @@ export async function GET(req: NextRequest) {
       });
       
       // Get user status based on last action
-      const statusPromises = userIdList.map(async (userId) => {
+      const statusPromises = userIdList.map(async (userId: string) => {
         try {
           const [lastAction] = await db
             .select({
