@@ -26,11 +26,14 @@ export async function GET(
     }
 
     // Get all actions for this user with admin user info
+    console.log('Fetching actions for user:', userId);
     const actions = await db
       .select({
         id: userActions.id,
         action: userActions.action,
         message: userActions.message,
+        oldRole: userActions.oldRole,
+        newRole: userActions.newRole,
         createdAt: userActions.createdAt,
         adminUser: {
           id: users.id,
@@ -42,12 +45,16 @@ export async function GET(
       .innerJoin(users, eq(userActions.adminUserId, users.id))
       .where(eq(userActions.userId, userId))
       .orderBy(desc(userActions.createdAt));
+    
+    console.log('Found actions:', actions.length, actions.map(a => ({ action: a.action, createdAt: a.createdAt })));
 
-    return NextResponse.json({
-      actions: actions.map((action: any) => ({
+    const response = NextResponse.json({
+      actions: actions.map(action => ({
         id: action.id,
         action: action.action,
         message: action.message || "",
+        oldRole: action.oldRole || null,
+        newRole: action.newRole || null,
         createdAt: action.createdAt.toISOString(),
         adminUser: {
           id: action.adminUser.id,
@@ -56,6 +63,13 @@ export async function GET(
         },
       })),
     });
+
+    // Prevent caching to ensure fresh data
+    response.headers.set('Cache-Control', 'no-store, no-cache, must-revalidate, proxy-revalidate');
+    response.headers.set('Pragma', 'no-cache');
+    response.headers.set('Expires', '0');
+    
+    return response;
   } catch (error) {
     console.error("Error fetching user actions:", error);
     if (error instanceof Error && error.message === 'Unauthorized') {
