@@ -44,10 +44,14 @@ function statusVariant(status?: string) {
 export default function AdminSellersPage() {
   const [q, setQ] = useState('');
 
+  // Temporar dezactivat (nu-l folosim curând). Lăsăm wiring-ul corect pentru când îl reactivăm.
+  const PLATFORM_TOGGLE_ENABLED = false;
+
   const url = useMemo(() => {
     const sp = new URLSearchParams();
     if (q.trim()) sp.set('q', q.trim());
-    return `/api/admin/sellers?${sp.toString()}`;
+    const qs = sp.toString();
+    return qs ? `/api/admin/sellers?${qs}` : '/api/admin/sellers';
   }, [q]);
 
   const { data, error, isLoading, mutate } = useSWR<{ items: SellerRow[] }>(url, fetcher, {
@@ -56,8 +60,7 @@ export default function AdminSellersPage() {
 
   const items = data?.items ?? [];
 
-  const togglePlatform = async (seller: SellerRow) => {
-    const next = !seller.isPlatform;
+  const togglePlatform = async (seller: SellerRow, next: boolean) => {
     const reason = window.prompt(
       `Motiv pentru ${next ? 'activare' : 'dezactivare'} isPlatform (audit):`,
       `Set isPlatform=${next} from sellers list`
@@ -135,13 +138,23 @@ export default function AdminSellersPage() {
       key: 'isPlatform',
       sortable: true,
       render: (seller) => (
-        <div className="flex items-center gap-2">
+        <div
+          className="flex items-center gap-2 opacity-60"
+          title={PLATFORM_TOGGLE_ENABLED ? undefined : 'Dezactivat temporar'}
+        >
           <Switch
             checked={!!seller.isPlatform}
-            onCheckedChange={() => togglePlatform(seller)}
+            disabled={!PLATFORM_TOGGLE_ENABLED}
+            onCheckedChange={(checked) => {
+              if (!PLATFORM_TOGGLE_ENABLED) return;
+              void togglePlatform(seller, checked);
+            }}
             aria-label="Toggle isPlatform"
           />
-          <span className="text-xs text-slate-500">{seller.isPlatform ? 'Da' : 'Nu'}</span>
+          <span className="text-xs text-slate-500">
+            {seller.isPlatform ? 'Da' : 'Nu'}
+            {!PLATFORM_TOGGLE_ENABLED ? ' (dezactivat)' : ''}
+          </span>
         </div>
       ),
     },

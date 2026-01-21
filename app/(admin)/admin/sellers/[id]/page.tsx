@@ -118,6 +118,9 @@ export default function AdminSellerDetailPage() {
   const router = useRouter();
   const sellerIdentifier = params.id;
 
+  // Temporar dezactivat (nu-l folosim curând). Lăsăm backend-ul pregătit pentru când îl reactivăm.
+  const PLATFORM_TOGGLE_ENABLED = false;
+
   const looksLikeUuid = (value: string) =>
     /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(value);
 
@@ -373,7 +376,7 @@ export default function AdminSellerDetailPage() {
         credentials: 'include',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          isPlatform: isPlatformDraft,
+          ...(PLATFORM_TOGGLE_ENABLED ? { isPlatform: isPlatformDraft } : {}),
           returnPolicy: returnPolicyDraft.trim() || null,
           shippingPrefs,
           auditMessage: profileAuditMessage.trim() || undefined,
@@ -544,9 +547,22 @@ export default function AdminSellerDetailPage() {
                   <div className="text-xs text-slate-500">Profil seller</div>
                   <div className="flex items-center justify-between">
                     <div className="text-sm font-medium">isPlatform</div>
-                    <div className="flex items-center gap-2">
-                      <Switch checked={isPlatformDraft} onCheckedChange={setIsPlatformDraft} />
-                      <span className="text-xs text-slate-500">{isPlatformDraft ? 'Da' : 'Nu'}</span>
+                    <div
+                      className="flex items-center gap-2 opacity-60"
+                      title={PLATFORM_TOGGLE_ENABLED ? undefined : 'Dezactivat temporar'}
+                    >
+                      <Switch
+                        checked={isPlatformDraft}
+                        disabled={!PLATFORM_TOGGLE_ENABLED}
+                        onCheckedChange={(checked) => {
+                          if (!PLATFORM_TOGGLE_ENABLED) return;
+                          setIsPlatformDraft(checked);
+                        }}
+                      />
+                      <span className="text-xs text-slate-500">
+                        {isPlatformDraft ? 'Da' : 'Nu'}
+                        {!PLATFORM_TOGGLE_ENABLED ? ' (dezactivat)' : ''}
+                      </span>
                     </div>
                   </div>
 
@@ -791,6 +807,8 @@ export default function AdminSellerDetailPage() {
             )}
           </CardContent>
         </Card>
+
+        {/* ... rest of page ... */}
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
