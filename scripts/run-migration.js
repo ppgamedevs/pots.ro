@@ -50,6 +50,45 @@ async function ensureInternalNotesColumn(sql) {
   }
 }
 
+async function ensureSellerApplicationStatusEvents(sql) {
+  try {
+    console.log('🔧 Ensuring seller application status events (audit)...');
+
+    // Needed for gen_random_uuid()
+    await sql`CREATE EXTENSION IF NOT EXISTS pgcrypto`;
+
+    await sql`
+      CREATE TABLE IF NOT EXISTS seller_application_status_events (
+        id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+        application_id uuid NOT NULL REFERENCES seller_applications(id) ON DELETE CASCADE,
+        actor_id uuid REFERENCES users(id) ON DELETE SET NULL,
+        from_status seller_application_status NOT NULL,
+        to_status seller_application_status NOT NULL,
+        public_message text,
+        internal_message text,
+        created_at timestamptz NOT NULL DEFAULT now()
+      );
+    `;
+
+    await sql`
+      CREATE INDEX IF NOT EXISTS seller_app_status_events_app_idx
+      ON seller_application_status_events(application_id);
+    `;
+    await sql`
+      CREATE INDEX IF NOT EXISTS seller_app_status_events_created_idx
+      ON seller_application_status_events(application_id, created_at);
+    `;
+    await sql`
+      CREATE INDEX IF NOT EXISTS seller_app_status_events_actor_idx
+      ON seller_application_status_events(actor_id);
+    `;
+
+    console.log('✅ Seller application status events ensured');
+  } catch (err) {
+    console.warn('⚠️  Could not ensure seller application status events (tables may not exist yet):', err.message || err);
+  }
+}
+
 async function ensureSupportSchema(sql) {
   try {
     console.log('🔧 Ensuring support schema (notes/tickets/conversations)...');
@@ -202,6 +241,7 @@ async function runMigration() {
     // Always attempt safe, idempotent schema tweaks
     await ensureInternalNotesColumn(sql);
     await ensureSupportSchema(sql);
+    await ensureSellerApplicationStatusEvents(sql);
 
     // Check if orders table already exists
     console.log('🔍 Checking if orders table exists...');

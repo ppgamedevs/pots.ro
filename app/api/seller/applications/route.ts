@@ -3,11 +3,44 @@ import { db } from '@/db';
 import { sellerApplications } from '@/db/schema/core';
 import { and, eq, or, ilike, gte, lte, desc, asc, count } from 'drizzle-orm';
 import { requireRole } from '@/lib/authz';
-import type { InferSelectModel } from 'drizzle-orm';
+
+type ListItemRow = {
+  id: string;
+  company: string;
+  cui: string | null;
+  iban: string | null;
+  status: string;
+  internalNotes: string | null;
+  createdAt: Date;
+};
+
+function maskValue(value: string, opts: { keepStart: number; keepEnd: number }): string {
+  const normalized = value.replace(/\s+/g, '');
+  if (normalized.length <= opts.keepStart + opts.keepEnd) return '••••';
+  return `${normalized.slice(0, opts.keepStart)}•••${normalized.slice(-opts.keepEnd)}`;
+}
+
+function maskCui(cui: string): string {
+  const normalized = cui.trim();
+  if (!normalized) return '-';
+
+  const upper = normalized.toUpperCase();
+  if (upper.startsWith('RO') && upper.length > 2) {
+    return `RO${maskValue(upper.slice(2), { keepStart: 1, keepEnd: 2 })}`;
+  }
+
+  return maskValue(upper, { keepStart: 1, keepEnd: 2 });
+}
+
+function maskIban(iban: string): string {
+  const normalized = iban.trim();
+  if (!normalized) return '-';
+  return maskValue(normalized.toUpperCase(), { keepStart: 4, keepEnd: 4 });
+}
 
 export async function GET(req: NextRequest) {
   try {
-    await requireRole(req, ['admin', 'support']);
+    const user = await requireRole(req, ['admin', 'support']);
     const { searchParams } = new URL(req.url);
     
     // Pagination
@@ -79,18 +112,27 @@ export async function GET(req: NextRequest) {
     const totalItems = totalResult?.count || 0;
     const totalPages = Math.ceil(totalItems / pageSize);
     
-    // Get items
-    const items = await db
-      .select()
+    // Get items (return minimal data; mask PII for support)
+    const items: ListItemRow[] = await db
+      .select({
+        id: sellerApplications.id,
+        company: sellerApplications.company,
+        cui: sellerApplications.cui,
+        iban: sellerApplications.iban,
+        status: sellerApplications.status,
+        internalNotes: sellerApplications.internalNotes,
+        createdAt: sellerApplications.createdAt,
+      })
       .from(sellerApplications)
       .where(whereClause)
       .orderBy(orderByClause)
       .limit(pageSize)
       .offset(offset);
-    
-    type ItemType = typeof items[0];
-    const itemsWithFormattedDate = items.map((item: ItemType) => ({
+
+    const itemsWithFormattedDate = items.map((item: ListItemRow) => ({
       ...item,
+      cui: user.role === 'support' ? (item.cui ? maskCui(item.cui) : null) : item.cui,
+      iban: user.role === 'support' ? (item.iban ? maskIban(item.iban) : null) : item.iban,
       createdAt: item.createdAt?.toISOString() || null,
     }));
     

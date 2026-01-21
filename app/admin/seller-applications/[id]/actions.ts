@@ -35,6 +35,7 @@ export async function updateSellerApplicationStatusAction(
     status: nextStatus,
     notes: notes || undefined,
     internalNotes: internalNotes || undefined,
+    actorId: user.id,
   });
 
   if (!result.ok) {

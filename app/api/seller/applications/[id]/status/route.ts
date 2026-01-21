@@ -4,9 +4,9 @@ import { updateSellerApplicationStatus, type SellerApplicationStatus } from '@/l
 
 export async function POST(req: NextRequest, { params }: { params: { id: string } }) {
   try {
-    await requireRole(req, ['admin']);
+    const user = await requireRole(req, ['admin']);
     const id = params.id;
-    const { status, notes } = await req.json();
+    const { status, notes, internalNotes } = await req.json();
 
     const allowed: SellerApplicationStatus[] = ['received', 'in_review', 'need_info', 'approved', 'rejected'];
     if (!allowed.includes(status)) {
@@ -17,6 +17,8 @@ export async function POST(req: NextRequest, { params }: { params: { id: string 
       applicationId: id,
       status: status as SellerApplicationStatus,
       notes: typeof notes === 'string' ? notes : undefined,
+      internalNotes: typeof internalNotes === 'string' ? internalNotes : undefined,
+      actorId: user.id,
     });
 
     if (!result.ok) {

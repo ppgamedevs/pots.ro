@@ -8,28 +8,6 @@ interface AdminLayoutProps {
 export default function AdminLayout({ children }: AdminLayoutProps) {
   return (
     <div className="min-h-screen bg-gray-50">
-      <nav role="navigation" aria-label="Admin navigation" className="bg-white shadow-sm border-b">
-        <div className="container mx-auto px-4 py-3">
-          <div className="flex items-center gap-4">
-            <a href="/admin/orders" className="text-gray-600 hover:text-gray-900">
-              Orders
-            </a>
-            <a href="/admin/products" className="text-gray-600 hover:text-gray-900">
-              Products
-            </a>
-            <a href="/admin/finante" className="text-gray-600 hover:text-gray-900">
-              Finanțe
-            </a>
-            <a href="/admin/settings" className="text-gray-600 hover:text-gray-900">
-              Setări
-            </a>
-            <a href="/admin" className="text-gray-600 hover:text-gray-900">
-              Dashboard
-            </a>
-          </div>
-        </div>
-      </nav>
-      
       <main role="main" className="container mx-auto px-4 py-8">
         {children}
       </main>

@@ -1,5 +1,5 @@
 import { db } from '@/db';
-import { sellerApplications, sellers, users } from '@/db/schema/core';
+import { sellerApplications, sellerApplicationStatusEvents, sellers, users } from '@/db/schema/core';
 import { eq } from 'drizzle-orm';
 import { generateUniqueDisplayId } from '@/lib/utils/displayId';
 import { emailService } from '@/lib/email';
@@ -30,8 +30,9 @@ export async function updateSellerApplicationStatus(opts: {
   status: SellerApplicationStatus;
   notes?: string;
   internalNotes?: string;
+  actorId?: string | null;
 }): Promise<SellerApplicationUpdateResult> {
-  const { applicationId, status, notes, internalNotes } = opts;
+  const { applicationId, status, notes, internalNotes, actorId } = opts;
 
   try {
     const result = await db.transaction(async (tx: unknown) => {
@@ -46,11 +47,22 @@ export async function updateSellerApplicationStatus(opts: {
         return { ok: false as const, status: 404 as const, error: 'Aplicația nu a fost găsită.' };
       }
 
+      const fromStatus = app.status;
+
       if (status !== 'approved') {
         await txDb
           .update(sellerApplications)
           .set({ status, notes: notes || null, internalNotes: internalNotes || null })
           .where(eq(sellerApplications.id, applicationId));
+
+        await txDb.insert(sellerApplicationStatusEvents).values({
+          applicationId,
+          actorId: actorId || null,
+          fromStatus,
+          toStatus: status,
+          publicMessage: notes || null,
+          internalMessage: internalNotes || null,
+        });
 
         return { ok: true as const, app };
       }
@@ -129,6 +141,15 @@ export async function updateSellerApplicationStatus(opts: {
         .update(sellerApplications)
         .set({ status, notes: notes || null, internalNotes: internalNotes || null })
         .where(eq(sellerApplications.id, applicationId));
+
+      await txDb.insert(sellerApplicationStatusEvents).values({
+        applicationId,
+        actorId: actorId || null,
+        fromStatus,
+        toStatus: status,
+        publicMessage: notes || null,
+        internalMessage: internalNotes || null,
+      });
 
       return { ok: true as const, app };
     });

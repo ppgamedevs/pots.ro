@@ -15,7 +15,8 @@ type Row = {
   id: string;
   company: string;
   cui: string | null;
-  email: string;
+  iban: string | null;
+  internalNotes: string | null;
   status: string;
   createdAt: string | null;
 };
@@ -155,12 +156,11 @@ export default function AdminSellerApplicationsClient() {
       ),
     },
     {
-      key: "email",
-      header: "Email",
-      sortable: true,
+      key: "iban",
+      header: "IBAN",
       render: (r) => (
-        <div className="text-slate-600 dark:text-slate-400">
-          {r.email}
+        <div className="text-slate-600 dark:text-slate-400 font-mono">
+          {r.iban || '-'}
         </div>
       ),
     },
@@ -172,6 +172,15 @@ export default function AdminSellerApplicationsClient() {
         <Badge variant={getStatusVariant(r.status)}>
           {getStatusLabel(r.status)}
         </Badge>
+      ),
+    },
+    {
+      key: "internalNotes",
+      header: "Note interne",
+      render: (r) => (
+        <div className="text-slate-600 dark:text-slate-400">
+          {r.internalNotes ? `${r.internalNotes.slice(0, 80)}${r.internalNotes.length > 80 ? '…' : ''}` : '-'}
+        </div>
       ),
     },
     {

@@ -80,6 +80,26 @@ export const sellerApplications = pgTable("seller_applications", {
   sellerApplicationsCuiIdx: index("seller_app_cui_idx").on(table.cui),
 }));
 
+// Seller application status events (audit trail)
+export const sellerApplicationStatusEvents = pgTable(
+  "seller_application_status_events",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    applicationId: uuid("application_id").notNull().references(() => sellerApplications.id, { onDelete: "cascade" }),
+    actorId: uuid("actor_id").references(() => users.id, { onDelete: "set null" }),
+    fromStatus: sellerApplicationStatusEnum("from_status").notNull(),
+    toStatus: sellerApplicationStatusEnum("to_status").notNull(),
+    publicMessage: text("public_message"),
+    internalMessage: text("internal_message"),
+    createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
+  },
+  (table) => ({
+    sellerAppStatusEventsAppIdx: index("seller_app_status_events_app_idx").on(table.applicationId),
+    sellerAppStatusEventsCreatedIdx: index("seller_app_status_events_created_idx").on(table.applicationId, table.createdAt),
+    sellerAppStatusEventsActorIdx: index("seller_app_status_events_actor_idx").on(table.actorId),
+  })
+);
+
 // Seller notes (visible only to admin/support)
 export const sellerNotes = pgTable(
   "seller_notes",
