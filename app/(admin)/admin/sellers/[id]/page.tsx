@@ -3,6 +3,7 @@
 
 import { useEffect, useMemo, useState } from 'react';
 import { useParams, useRouter } from 'next/navigation';
+import Link from 'next/link';
 import useSWR from 'swr';
 import { AdminPageWrapper } from '@/components/admin/AdminPageWrapper';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -508,7 +509,17 @@ export default function AdminSellerDetailPage() {
             <CardTitle className="text-xl">Overview</CardTitle>
             {seller && <div className="text-sm text-slate-600 dark:text-slate-300">{seller.user.email || '—'}</div>}
           </div>
-          {seller && <Badge variant={statusVariant(seller.status) as any}>{seller.status}</Badge>}
+          {seller ? (
+            <div className="flex flex-wrap items-center gap-2">
+              <Button asChild variant="outline" size="sm">
+                <Link href={`/admin/sellers/${seller.slug}/compliance`}>Compliance</Link>
+              </Button>
+              <Button asChild variant="outline" size="sm">
+                <Link href={`/admin/sellers/${seller.slug}/content`}>Content</Link>
+              </Button>
+              <Badge variant={statusVariant(seller.status) as any}>{seller.status}</Badge>
+            </div>
+          ) : null}
         </CardHeader>
         <CardContent>
           {isLoading || !seller || !stats ? (

@@ -123,6 +123,128 @@ async function ensureSellerApplicationStatusEvents(sql) {
     }
   }
 
+async function ensureSellerCompliance(sql) {
+  try {
+    console.log('🔧 Ensuring seller compliance columns...');
+
+    await sql`
+      ALTER TABLE sellers
+      ADD COLUMN IF NOT EXISTS verified_badge boolean NOT NULL DEFAULT false;
+    `;
+    await sql`
+      ALTER TABLE sellers
+      ADD COLUMN IF NOT EXISTS cui_validated_at timestamptz;
+    `;
+    await sql`
+      ALTER TABLE sellers
+      ADD COLUMN IF NOT EXISTS iban_validated_at timestamptz;
+    `;
+    await sql`
+      ALTER TABLE sellers
+      ADD COLUMN IF NOT EXISTS kyc_reverification_requested_at timestamptz;
+    `;
+
+    console.log('✅ Seller compliance columns ensured');
+  } catch (err) {
+    console.warn('⚠️  Could not ensure seller compliance columns (tables may not exist yet):', err.message || err);
+  }
+}
+
+async function ensureSellerKycDocuments(sql) {
+  try {
+    console.log('🔧 Ensuring seller KYC documents...');
+
+    await sql`CREATE EXTENSION IF NOT EXISTS pgcrypto`;
+
+    await sql`
+      CREATE TABLE IF NOT EXISTS seller_kyc_documents (
+        id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+        seller_id uuid NOT NULL REFERENCES sellers(id) ON DELETE CASCADE,
+        doc_type text NOT NULL,
+        filename text NOT NULL,
+        mime_type text NOT NULL,
+        size_bytes int NOT NULL,
+        encrypted_data bytea NOT NULL,
+        encryption_iv bytea NOT NULL,
+        encryption_tag bytea NOT NULL,
+        status text NOT NULL DEFAULT 'uploaded',
+        uploaded_by uuid REFERENCES users(id) ON DELETE SET NULL,
+        reviewed_by uuid REFERENCES users(id) ON DELETE SET NULL,
+        reviewed_at timestamptz,
+        review_message text,
+        created_at timestamptz NOT NULL DEFAULT now(),
+        updated_at timestamptz NOT NULL DEFAULT now()
+      );
+    `;
+
+    await sql`
+      CREATE INDEX IF NOT EXISTS seller_kyc_documents_seller_idx
+      ON seller_kyc_documents(seller_id);
+    `;
+    await sql`
+      CREATE INDEX IF NOT EXISTS seller_kyc_documents_type_idx
+      ON seller_kyc_documents(seller_id, doc_type);
+    `;
+    await sql`
+      CREATE INDEX IF NOT EXISTS seller_kyc_documents_status_idx
+      ON seller_kyc_documents(seller_id, status);
+    `;
+    await sql`
+      CREATE INDEX IF NOT EXISTS seller_kyc_documents_created_idx
+      ON seller_kyc_documents(seller_id, created_at);
+    `;
+
+    console.log('✅ Seller KYC documents ensured');
+  } catch (err) {
+    console.warn('⚠️  Could not ensure seller KYC documents (tables may not exist yet):', err.message || err);
+  }
+}
+
+async function ensureSellerPageVersions(sql) {
+  try {
+    console.log('🔧 Ensuring seller page versions...');
+
+    await sql`CREATE EXTENSION IF NOT EXISTS pgcrypto`;
+
+    await sql`
+      CREATE TABLE IF NOT EXISTS seller_page_versions (
+        id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+        seller_id uuid NOT NULL REFERENCES sellers(id) ON DELETE CASCADE,
+        version int NOT NULL,
+        status text NOT NULL DEFAULT 'draft',
+        about_md text,
+        seo_title text,
+        seo_desc text,
+        logo_url text,
+        banner_url text,
+        created_by uuid REFERENCES users(id) ON DELETE SET NULL,
+        created_at timestamptz NOT NULL DEFAULT now(),
+        published_by uuid REFERENCES users(id) ON DELETE SET NULL,
+        published_at timestamptz,
+        meta jsonb,
+        CONSTRAINT seller_page_versions_seller_version_uq UNIQUE (seller_id, version)
+      );
+    `;
+
+    await sql`
+      CREATE INDEX IF NOT EXISTS seller_page_versions_seller_idx
+      ON seller_page_versions(seller_id);
+    `;
+    await sql`
+      CREATE INDEX IF NOT EXISTS seller_page_versions_status_idx
+      ON seller_page_versions(seller_id, status);
+    `;
+    await sql`
+      CREATE INDEX IF NOT EXISTS seller_page_versions_published_idx
+      ON seller_page_versions(seller_id, published_at);
+    `;
+
+    console.log('✅ Seller page versions ensured');
+  } catch (err) {
+    console.warn('⚠️  Could not ensure seller page versions (tables may not exist yet):', err.message || err);
+  }
+}
+
 async function ensureSupportSchema(sql) {
   try {
     console.log('🔧 Ensuring support schema (notes/tickets/conversations)...');
@@ -277,6 +399,9 @@ async function runMigration() {
     await ensureSupportSchema(sql);
     await ensureSellerApplicationStatusEvents(sql);
       await ensureSellerActions(sql);
+    await ensureSellerCompliance(sql);
+    await ensureSellerKycDocuments(sql);
+    await ensureSellerPageVersions(sql);
 
     // Check if orders table already exists
     console.log('🔍 Checking if orders table exists...');

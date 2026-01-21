@@ -9,29 +9,16 @@ import { SellerTabs } from "@/components/seller/SellerTabs";
 async function getSellerAnon(slug: string) {
   try {
     const seller = await apiGetSeller(slug);
-    
-    // Fetch about data from API
-    let aboutData = null;
-    try {
-      const aboutResponse = await fetch(`${process.env.NEXT_PUBLIC_BASE_URL || 'http://localhost:3000'}/api/seller/about`, {
-        next: { revalidate: 60 } // Revalidate every minute
-      });
-      if (aboutResponse.ok) {
-        aboutData = await aboutResponse.json();
-      }
-    } catch (error) {
-      console.error('Failed to fetch about data:', error);
-    }
-    
+
     return {
       displayName: seller.brandName,
       description: "Partener marketplace verificat. Livrări și retururi gestionate prin Pots.",
-      verified: true,
+      verified: Boolean(seller.verifiedBadge),
       rating: 4.7,
       totalProducts: 0, // va fi actualizat din produse
       bannerUrl: seller.bannerUrl || "https://images.unsplash.com/photo-1441986300917-64674bd600d8?w=1200&h=400&fit=crop&crop=center",
       logoUrl: seller.logoUrl || "https://images.unsplash.com/photo-1560472354-b33ff0c44a43?w=200&h=200&fit=crop&crop=center",
-      aboutMd: aboutData?.content || `# Despre ${seller.brandName}
+      aboutMd: seller.aboutMd || `# Despre ${seller.brandName}
 
 Acesta este un partener verificat al platformei Pots.ro, specializat în produse de calitate pentru floristică.
 
@@ -65,8 +52,8 @@ Pentru întrebări despre produse, vă rugăm să folosiți [mesageria platforme
 ---
 
 *Toate produsele sunt vândute prin Pots Marketplace. Asistența, returul și garanția sunt gestionate de Pots.*`,
-      seoTitle: aboutData?.seoTitle || `Despre ${seller.brandName} - Partener Pots.ro`,
-      seoDescription: aboutData?.seoDescription || `Descoperă ${seller.brandName}, partener verificat pe Pots.ro.`,
+      seoTitle: seller.seoTitle || `Despre ${seller.brandName} - Partener Pots.ro`,
+      seoDescription: seller.seoDescription || `Descoperă ${seller.brandName}, partener verificat pe Pots.ro.`,
     };
   } catch (error) {
     return null;

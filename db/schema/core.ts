@@ -1,5 +1,11 @@
-import { pgTable, uuid, text, timestamp, integer, jsonb, pgEnum, index, uniqueIndex, boolean, check, decimal, varchar } from "drizzle-orm/pg-core";
+import { pgTable, uuid, text, timestamp, integer, jsonb, pgEnum, index, uniqueIndex, boolean, check, decimal, varchar, customType } from "drizzle-orm/pg-core";
 import { sql } from "drizzle-orm";
+
+const bytea = customType<{ data: Uint8Array; driverData: Uint8Array }>({
+  dataType() {
+    return 'bytea';
+  },
+});
 
 // Enums
 export const productStatusEnum = pgEnum('product_status', ['draft', 'active', 'archived']);
@@ -44,6 +50,10 @@ export const sellers = pgTable("sellers", {
   email: text("email"),
   logoUrl: text("logo_url"),
   bannerUrl: text("banner_url"),
+  verifiedBadge: boolean("verified_badge").notNull().default(false),
+  cuiValidatedAt: timestamp("cui_validated_at", { withTimezone: true }),
+  ibanValidatedAt: timestamp("iban_validated_at", { withTimezone: true }),
+  kycReverificationRequestedAt: timestamp("kyc_reverification_requested_at", { withTimezone: true }),
   returnPolicy: text("return_policy"),
   shippingPrefs: jsonb("shipping_prefs"),
   status: sellerStatusEnum("status").notNull().default('onboarding'),
@@ -57,6 +67,62 @@ export const sellers = pgTable("sellers", {
   sellersEmailIdx: index("sellers_email_idx").on(table.email),
   sellersCuiIdx: index("sellers_cui_idx").on(table.cui),
 }));
+
+// Seller KYC documents (encrypted at rest; served only via authorized endpoints)
+export const sellerKycDocuments = pgTable(
+  'seller_kyc_documents',
+  {
+    id: uuid('id').primaryKey().defaultRandom(),
+    sellerId: uuid('seller_id').notNull().references(() => sellers.id, { onDelete: 'cascade' }),
+    docType: text('doc_type').notNull(), // e.g. company_registration | iban_proof | id_doc
+    filename: text('filename').notNull(),
+    mimeType: text('mime_type').notNull(),
+    sizeBytes: integer('size_bytes').notNull(),
+    encryptedData: bytea('encrypted_data').notNull(),
+    encryptionIv: bytea('encryption_iv').notNull(),
+    encryptionTag: bytea('encryption_tag').notNull(),
+    status: text('status').notNull().default('uploaded').$type<'uploaded' | 'approved' | 'rejected' | 'superseded'>(),
+    uploadedBy: uuid('uploaded_by').references(() => users.id, { onDelete: 'set null' }),
+    reviewedBy: uuid('reviewed_by').references(() => users.id, { onDelete: 'set null' }),
+    reviewedAt: timestamp('reviewed_at', { withTimezone: true }),
+    reviewMessage: text('review_message'),
+    createdAt: timestamp('created_at', { withTimezone: true }).defaultNow().notNull(),
+    updatedAt: timestamp('updated_at', { withTimezone: true }).defaultNow().notNull(),
+  },
+  (table) => ({
+    sellerKycDocumentsSellerIdx: index('seller_kyc_documents_seller_idx').on(table.sellerId),
+    sellerKycDocumentsTypeIdx: index('seller_kyc_documents_type_idx').on(table.sellerId, table.docType),
+    sellerKycDocumentsStatusIdx: index('seller_kyc_documents_status_idx').on(table.sellerId, table.status),
+    sellerKycDocumentsCreatedIdx: index('seller_kyc_documents_created_idx').on(table.sellerId, table.createdAt),
+  })
+);
+
+// Seller page versions (draft/publish history + rollback)
+export const sellerPageVersions = pgTable(
+  'seller_page_versions',
+  {
+    id: uuid('id').primaryKey().defaultRandom(),
+    sellerId: uuid('seller_id').notNull().references(() => sellers.id, { onDelete: 'cascade' }),
+    version: integer('version').notNull(),
+    status: text('status').notNull().default('draft').$type<'draft' | 'published'>(),
+    aboutMd: text('about_md'),
+    seoTitle: text('seo_title'),
+    seoDesc: text('seo_desc'),
+    logoUrl: text('logo_url'),
+    bannerUrl: text('banner_url'),
+    createdBy: uuid('created_by').references(() => users.id, { onDelete: 'set null' }),
+    createdAt: timestamp('created_at', { withTimezone: true }).defaultNow().notNull(),
+    publishedBy: uuid('published_by').references(() => users.id, { onDelete: 'set null' }),
+    publishedAt: timestamp('published_at', { withTimezone: true }),
+    meta: jsonb('meta'),
+  },
+  (table) => ({
+    sellerPageVersionsSellerIdx: index('seller_page_versions_seller_idx').on(table.sellerId),
+    sellerPageVersionsVersionIdx: uniqueIndex('seller_page_versions_seller_version_uq').on(table.sellerId, table.version),
+    sellerPageVersionsStatusIdx: index('seller_page_versions_status_idx').on(table.sellerId, table.status),
+    sellerPageVersionsPublishedIdx: index('seller_page_versions_published_idx').on(table.sellerId, table.publishedAt),
+  })
+);
 
 // Seller applications table
 export const sellerApplications = pgTable("seller_applications", {

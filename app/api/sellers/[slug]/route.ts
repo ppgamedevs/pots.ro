@@ -55,10 +55,14 @@ export async function GET(
     return NextResponse.json({
       brandName: seller.brandName,
       slug: seller.slug,
+      logoUrl: seller.logoUrl,
+      bannerUrl: seller.bannerUrl,
+      verifiedBadge: seller.verifiedBadge,
       about: seller.about,
       aboutMd: page?.aboutMd,
       seoTitle: page?.seoTitle,
       seoDesc: page?.seoDesc,
+      seoDescription: page?.seoDesc,
       counts: {
         totalProducts: productCounts[0]?.total || 0,
         activeProducts: productCounts[0]?.active || 0,
