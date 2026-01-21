@@ -5,14 +5,10 @@ import { eq } from 'drizzle-orm';
 import { z } from 'zod';
 import { getUserId } from '@/lib/auth-helpers';
 import { resolveSellerId } from '@/lib/server/resolve-seller-id';
-import { emailService } from '@/lib/email';
-import { SITE_URL } from '@/lib/env';
-import { SellerStatusUpdateEmail, getSellerStatusUpdateSubject } from '@/lib/email/templates/SellerStatusUpdate';
 
 export const dynamic = 'force-dynamic';
 
 const schema = z.object({
-  action: z.enum(['suspend', 'reactivate']),
   message: z.string().min(10, 'Mesajul trebuie să aibă minimum 10 caractere'),
 });
 
@@ -30,69 +26,32 @@ export async function POST(req: NextRequest, { params }: { params: { id: string 
     const body = await req.json();
     const data = schema.parse(body);
 
-    const nextStatus = data.action === 'suspend' ? 'suspended' : 'active';
-
     const [updated] = await db
       .update(sellers)
-      .set({ status: nextStatus as any, updatedAt: new Date() })
+      .set({ status: 'onboarding' as any, updatedAt: new Date() })
       .where(eq(sellers.id, sellerId))
-      .returning({ id: sellers.id, status: sellers.status, slug: sellers.slug, brandName: sellers.brandName, email: sellers.email, userId: sellers.userId });
+      .returning({ id: sellers.id, status: sellers.status, slug: sellers.slug });
 
     if (!updated) return NextResponse.json({ error: 'Not found' }, { status: 404 });
 
-    // Write audit trail (best-effort)
     try {
       await db.insert(sellerActions).values({
         sellerId,
-        action: data.action,
+        action: 'reset_onboarding',
         message: data.message,
-        meta: { from: data.action === 'suspend' ? 'active' : 'suspended', to: nextStatus },
+        meta: { to: 'onboarding' },
         adminUserId: userId,
       });
     } catch (err) {
       console.error('Could not write seller action audit:', err);
     }
 
-    // Notify seller by email (best-effort)
-    try {
-      const [sellerUser] = await db
-        .select({ email: users.email, name: users.name })
-        .from(users)
-        .where(eq(users.id, updated.userId))
-        .limit(1);
-
-      const toEmail = updated.email || sellerUser?.email;
-      if (toEmail) {
-        await emailService.sendEmail({
-          to: toEmail,
-          subject: getSellerStatusUpdateSubject(nextStatus as any),
-          template: SellerStatusUpdateEmail({
-            contactName: sellerUser?.name,
-            companyName: updated.brandName,
-            status: nextStatus as any,
-            adminMessage: data.message,
-            helpUrl: `${SITE_URL}/ajutor`,
-          }),
-        });
-      }
-    } catch (err) {
-      console.error('Could not send seller status email:', err);
-    }
-
-    return NextResponse.json({
-      ok: true,
-      seller: {
-        id: updated.id,
-        slug: updated.slug,
-        status: updated.status,
-      },
-    });
+    return NextResponse.json({ ok: true, seller: updated });
   } catch (error) {
     if (error instanceof z.ZodError) {
       return NextResponse.json({ error: 'Invalid request data', details: error.issues }, { status: 400 });
     }
-
-    console.error('Error updating seller status:', error);
+    console.error('Error resetting onboarding:', error);
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
   }
 }

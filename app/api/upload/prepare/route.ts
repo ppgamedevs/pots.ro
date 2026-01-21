@@ -4,6 +4,7 @@ import { getSellerByUser } from "@/lib/ownership";
 import { constructSellerPath, validateMimeType } from "@/lib/blob";
 import { uploadPrepareSchema } from "@/lib/validations";
 import { put } from "@vercel/blob";
+import { isImpersonatingAdmin } from "@/lib/impersonation";
 
 export async function POST(request: NextRequest) {
   try {
@@ -14,6 +15,10 @@ export async function POST(request: NextRequest) {
 
     if (user.role !== 'seller' && user.role !== 'admin') {
       return NextResponse.json({ error: "Seller role required" }, { status: 403 });
+    }
+
+    if (user.role === 'admin' && await isImpersonatingAdmin(user.id)) {
+      return NextResponse.json({ error: "Impersonation is read-only" }, { status: 403 });
     }
 
     const seller = await getSellerByUser(user.id);

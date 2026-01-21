@@ -11,6 +11,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Switch } from '@/components/ui/switch';
 import { toast } from 'sonner';
 
 type SellerDetail = {
@@ -19,12 +20,15 @@ type SellerDetail = {
     slug: string;
     brandName: string;
     status: string;
+    isPlatform?: boolean;
     phone?: string | null;
     email?: string | null;
     legalName?: string | null;
     cui?: string | null;
     iban?: string | null;
     about?: string | null;
+    returnPolicy?: string | null;
+    shippingPrefs?: any;
     createdAt: string;
     updatedAt: string;
     user: { id: string; email?: string | null; name?: string | null };
@@ -36,6 +40,21 @@ type SellerDetail = {
     productsCount: number;
     activeProductsCount: number;
   };
+};
+
+type SellerAction = {
+  id: string;
+  action: string;
+  message?: string | null;
+  meta?: any;
+  createdAt: string;
+  admin?: { id?: string | null; email?: string | null; name?: string | null; role?: string | null };
+};
+
+type ImpersonationStatus = {
+  active: boolean;
+  expiresAt?: string | null;
+  seller?: { id: string; slug?: string; brandName?: string };
 };
 
 type Note = {
@@ -124,6 +143,18 @@ export default function AdminSellerDetailPage() {
     { revalidateOnFocus: false }
   );
 
+  const { data: actionsData, mutate: mutateActions } = useSWR<{ items: SellerAction[] }>(
+    `/api/admin/sellers/${sellerIdentifier}/actions`,
+    fetcher,
+    { revalidateOnFocus: false }
+  );
+
+  const { data: impersonationData, mutate: mutateImpersonation } = useSWR<ImpersonationStatus>(
+    `/api/admin/impersonation`,
+    fetcher,
+    { revalidateOnFocus: false }
+  );
+
   const [newNote, setNewNote] = useState('');
   const [ticketTitle, setTicketTitle] = useState('');
   const [ticketDesc, setTicketDesc] = useState('');
@@ -132,6 +163,18 @@ export default function AdminSellerDetailPage() {
 
   const [statusLoading, setStatusLoading] = useState(false);
   const [statusMessage, setStatusMessage] = useState('');
+
+  const [profileSaving, setProfileSaving] = useState(false);
+  const [profileAuditMessage, setProfileAuditMessage] = useState('');
+  const [isPlatformDraft, setIsPlatformDraft] = useState(false);
+  const [returnPolicyDraft, setReturnPolicyDraft] = useState('');
+  const [shippingPrefsDraft, setShippingPrefsDraft] = useState('');
+
+  const [resetOnboardingLoading, setResetOnboardingLoading] = useState(false);
+  const [resetOnboardingMessage, setResetOnboardingMessage] = useState('');
+
+  const [impersonationMessage, setImpersonationMessage] = useState('');
+  const [impersonationLoading, setImpersonationLoading] = useState(false);
 
   const selectedTicket = useMemo(() => (ticketsData?.items || []).find((t) => t.id === selectedTicketId), [ticketsData, selectedTicketId]);
 
@@ -296,6 +339,152 @@ export default function AdminSellerDetailPage() {
   const stats = data?.stats;
 
   useEffect(() => {
+    if (!seller) return;
+    setIsPlatformDraft(!!seller.isPlatform);
+    setReturnPolicyDraft(seller.returnPolicy || '');
+    try {
+      setShippingPrefsDraft(
+        seller.shippingPrefs ? JSON.stringify(seller.shippingPrefs, null, 2) : ''
+      );
+    } catch {
+      setShippingPrefsDraft('');
+    }
+  }, [seller?.id]);
+
+  const saveProfile = async () => {
+    if (!seller) return;
+    try {
+      setProfileSaving(true);
+
+      let shippingPrefs: any = undefined;
+      if (shippingPrefsDraft.trim()) {
+        try {
+          shippingPrefs = JSON.parse(shippingPrefsDraft);
+        } catch {
+          toast.error('shippingPrefs trebuie să fie JSON valid');
+          return;
+        }
+      } else {
+        shippingPrefs = null;
+      }
+
+      const res = await fetch(`/api/admin/sellers/${sellerIdentifier}`, {
+        method: 'PATCH',
+        credentials: 'include',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          isPlatform: isPlatformDraft,
+          returnPolicy: returnPolicyDraft.trim() || null,
+          shippingPrefs,
+          auditMessage: profileAuditMessage.trim() || undefined,
+        }),
+      });
+
+      const payload = await res.json().catch(() => ({}));
+      if (!res.ok) {
+        toast.error(payload?.error || 'Nu am putut salva');
+        return;
+      }
+
+      toast.success('Salvat');
+      setProfileAuditMessage('');
+      await mutate();
+      await mutateActions();
+    } catch (err) {
+      console.error(err);
+      toast.error('Eroare de rețea');
+    } finally {
+      setProfileSaving(false);
+    }
+  };
+
+  const resetOnboarding = async () => {
+    if (!seller) return;
+    if (resetOnboardingMessage.trim().length < 10) return;
+    if (!window.confirm('Sigur vrei să resetezi sellerul în onboarding?')) return;
+
+    try {
+      setResetOnboardingLoading(true);
+      const res = await fetch(`/api/admin/sellers/${sellerIdentifier}/reset-onboarding`, {
+        method: 'POST',
+        credentials: 'include',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ message: resetOnboardingMessage.trim() }),
+      });
+
+      const payload = await res.json().catch(() => ({}));
+      if (!res.ok) {
+        toast.error(payload?.error || 'Nu am putut reseta onboarding');
+        return;
+      }
+      toast.success('Reset onboarding');
+      setResetOnboardingMessage('');
+      await mutate();
+      await mutateActions();
+    } catch (err) {
+      console.error(err);
+      toast.error('Eroare de rețea');
+    } finally {
+      setResetOnboardingLoading(false);
+    }
+  };
+
+  const startImpersonation = async () => {
+    if (!seller) return;
+    if (impersonationMessage.trim().length < 10) return;
+
+    try {
+      setImpersonationLoading(true);
+      const res = await fetch(`/api/admin/sellers/${sellerIdentifier}/impersonation`, {
+        method: 'POST',
+        credentials: 'include',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ message: impersonationMessage.trim(), ttlMinutes: 15 }),
+      });
+
+      const payload = await res.json().catch(() => ({}));
+      if (!res.ok) {
+        toast.error(payload?.error || 'Nu am putut porni impersonarea');
+        return;
+      }
+
+      toast.success('Impersonare pornită (read-only)');
+      setImpersonationMessage('');
+      await mutateImpersonation();
+      await mutateActions();
+    } catch (err) {
+      console.error(err);
+      toast.error('Eroare de rețea');
+    } finally {
+      setImpersonationLoading(false);
+    }
+  };
+
+  const stopImpersonation = async () => {
+    if (!seller) return;
+    try {
+      setImpersonationLoading(true);
+      const res = await fetch(`/api/admin/sellers/${sellerIdentifier}/impersonation`, {
+        method: 'DELETE',
+        credentials: 'include',
+      });
+      const payload = await res.json().catch(() => ({}));
+      if (!res.ok) {
+        toast.error(payload?.error || 'Nu am putut opri impersonarea');
+        return;
+      }
+      toast.success('Impersonare oprită');
+      await mutateImpersonation();
+      await mutateActions();
+    } catch (err) {
+      console.error(err);
+      toast.error('Eroare de rețea');
+    } finally {
+      setImpersonationLoading(false);
+    }
+  };
+
+  useEffect(() => {
     if (!seller?.slug) return;
     if (!looksLikeUuid(sellerIdentifier)) return;
     if (sellerIdentifier === seller.slug) return;
@@ -349,6 +538,55 @@ export default function AdminSellerDetailPage() {
                   <div className="text-sm">Denumire: {seller.legalName || '—'}</div>
                   <div className="text-sm">CUI: {seller.cui || '—'}</div>
                   <div className="text-sm">IBAN: {seller.iban || '—'}</div>
+                </div>
+
+                <div className="md:col-span-2 rounded-xl border border-slate-200 dark:border-white/10 p-4 space-y-2">
+                  <div className="text-xs text-slate-500">Profil seller</div>
+                  <div className="flex items-center justify-between">
+                    <div className="text-sm font-medium">isPlatform</div>
+                    <div className="flex items-center gap-2">
+                      <Switch checked={isPlatformDraft} onCheckedChange={setIsPlatformDraft} />
+                      <span className="text-xs text-slate-500">{isPlatformDraft ? 'Da' : 'Nu'}</span>
+                    </div>
+                  </div>
+
+                  <div className="space-y-1">
+                    <div className="text-sm font-medium">Return policy</div>
+                    <Textarea
+                      value={returnPolicyDraft}
+                      onChange={(e) => setReturnPolicyDraft(e.target.value)}
+                      rows={4}
+                      placeholder="Politica de retur..."
+                    />
+                  </div>
+
+                  <div className="space-y-1">
+                    <div className="text-sm font-medium">Shipping prefs (JSON)</div>
+                    <Textarea
+                      value={shippingPrefsDraft}
+                      onChange={(e) => setShippingPrefsDraft(e.target.value)}
+                      rows={6}
+                      placeholder='{"carrier":"..."}'
+                    />
+                  </div>
+
+                  <div className="space-y-1">
+                    <div className="text-sm font-medium">Audit mesaj (opțional)</div>
+                    <Input
+                      value={profileAuditMessage}
+                      onChange={(e) => setProfileAuditMessage(e.target.value)}
+                      placeholder="De ce ai schimbat profilul?"
+                    />
+                  </div>
+
+                  <div className="flex gap-2">
+                    <Button onClick={saveProfile} disabled={profileSaving || !seller}>
+                      {profileSaving ? 'Se salvează…' : 'Salvează profil'}
+                    </Button>
+                    <Button variant="outline" onClick={() => mutateActions()}>
+                      Reîncarcă audit
+                    </Button>
+                  </div>
                 </div>
               </div>
             </div>
@@ -427,6 +665,133 @@ export default function AdminSellerDetailPage() {
           </Button>
         </CardContent>
       </Card>
+
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        <Card hover={false}>
+          <CardHeader>
+            <CardTitle className="text-xl">Reset onboarding</CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-3">
+            <div className="text-sm text-slate-600 dark:text-slate-300">
+              Setează statusul sellerului la <strong>onboarding</strong> și înregistrează acțiunea în audit.
+            </div>
+            <div>
+              <div className="text-sm font-medium mb-2">
+                Mesaj <span className="text-red-500">*</span>
+              </div>
+              <Textarea
+                value={resetOnboardingMessage}
+                onChange={(e) => setResetOnboardingMessage(e.target.value)}
+                rows={3}
+                placeholder="Motiv reset onboarding (minimum 10 caractere)..."
+                className={
+                  resetOnboardingMessage.length > 0 && resetOnboardingMessage.trim().length < 10
+                    ? 'border-red-500 focus-visible:ring-red-500'
+                    : ''
+                }
+              />
+              {resetOnboardingMessage.length > 0 && resetOnboardingMessage.trim().length < 10 && (
+                <p className="mt-1 text-sm text-red-500">Mesajul trebuie să aibă minimum 10 caractere</p>
+              )}
+            </div>
+            <Button
+              variant="outline"
+              onClick={resetOnboarding}
+              disabled={resetOnboardingLoading || resetOnboardingMessage.trim().length < 10 || !seller}
+            >
+              {resetOnboardingLoading ? 'Procesare…' : 'Reset onboarding'}
+            </Button>
+          </CardContent>
+        </Card>
+
+        <Card hover={false}>
+          <CardHeader>
+            <CardTitle className="text-xl">Impersonare (read-only)</CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-3">
+            <div className="text-sm text-slate-600 dark:text-slate-300">
+              Creează o sesiune temporară de impersonare (15 minute) pentru a vedea UI-ul de seller.
+            </div>
+
+            <div className="rounded-lg border border-slate-200 dark:border-white/10 p-3 text-sm">
+              <div className="flex items-center justify-between">
+                <div className="font-medium">Status</div>
+                <Badge variant={impersonationData?.active ? ('success' as any) : ('secondary' as any)}>
+                  {impersonationData?.active ? 'Activ' : 'Inactiv'}
+                </Badge>
+              </div>
+              {impersonationData?.active && impersonationData?.expiresAt ? (
+                <div className="mt-2 text-xs text-slate-500">
+                  Expiră: {new Date(impersonationData.expiresAt).toLocaleString('ro-RO')}
+                </div>
+              ) : null}
+            </div>
+
+            <div>
+              <div className="text-sm font-medium mb-2">
+                Mesaj <span className="text-red-500">*</span>
+              </div>
+              <Input
+                value={impersonationMessage}
+                onChange={(e) => setImpersonationMessage(e.target.value)}
+                placeholder="Motiv impersonare (minimum 10 caractere)..."
+              />
+              {impersonationMessage.length > 0 && impersonationMessage.trim().length < 10 ? (
+                <p className="mt-1 text-sm text-red-500">Mesajul trebuie să aibă minimum 10 caractere</p>
+              ) : null}
+            </div>
+
+            <div className="flex flex-wrap gap-2">
+              <Button
+                variant="outline"
+                onClick={startImpersonation}
+                disabled={impersonationLoading || impersonationMessage.trim().length < 10 || !seller}
+              >
+                {impersonationLoading ? 'Procesare…' : 'Pornește (15 min)'}
+              </Button>
+              <Button variant="outline" onClick={stopImpersonation} disabled={impersonationLoading || !seller}>
+                Oprește
+              </Button>
+              <Button asChild variant="primary" disabled={!impersonationData?.active}>
+                <a href="/seller/orders" target="_blank" rel="noreferrer">Deschide seller UI</a>
+              </Button>
+            </div>
+          </CardContent>
+        </Card>
+
+        <Card hover={false}>
+          <CardHeader className="flex-row items-center justify-between">
+            <CardTitle className="text-xl">Audit acțiuni</CardTitle>
+            <Button variant="outline" size="sm" onClick={() => mutateActions()}>
+              Reîncarcă
+            </Button>
+          </CardHeader>
+          <CardContent>
+            {(actionsData?.items || []).length === 0 ? (
+              <div className="text-sm text-slate-500">Nu există acțiuni înregistrate.</div>
+            ) : (
+              <div className="space-y-3">
+                {(actionsData?.items || []).slice(0, 25).map((a) => (
+                  <div key={a.id} className="rounded-lg border border-slate-200 dark:border-white/10 p-3">
+                    <div className="flex items-center justify-between gap-3">
+                      <div className="text-sm font-medium">{a.action}</div>
+                      <div className="text-xs text-slate-500">
+                        {a.createdAt ? new Date(a.createdAt).toLocaleString('ro-RO') : '—'}
+                      </div>
+                    </div>
+                    <div className="mt-1 text-xs text-slate-500">
+                      {a.admin?.email || a.admin?.name || '—'}
+                    </div>
+                    {a.message ? (
+                      <div className="mt-2 text-sm whitespace-pre-wrap">{a.message}</div>
+                    ) : null}
+                  </div>
+                ))}
+              </div>
+            )}
+          </CardContent>
+        </Card>
+      </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         <Card hover={false}>

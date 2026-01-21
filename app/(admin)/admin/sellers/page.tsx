@@ -9,7 +9,9 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { DataTable, type Column } from '@/components/ui/datatable';
+import { Switch } from '@/components/ui/switch';
 import { RefreshCw, Search } from 'lucide-react';
+import { toast } from 'sonner';
 
 type SellerRow = {
   id: string;
@@ -17,6 +19,8 @@ type SellerRow = {
   brandName?: string;
   brand_name?: string;
   status?: string;
+  isPlatform?: boolean;
+  ordersCount?: number;
   email?: string | null;
   userEmail?: string | null;
   phone?: string | null;
@@ -52,6 +56,54 @@ export default function AdminSellersPage() {
 
   const items = data?.items ?? [];
 
+  const togglePlatform = async (seller: SellerRow) => {
+    const next = !seller.isPlatform;
+    const reason = window.prompt(
+      `Motiv pentru ${next ? 'activare' : 'dezactivare'} isPlatform (audit):`,
+      `Set isPlatform=${next} from sellers list`
+    );
+    if (!reason) return;
+
+    const res = await fetch(`/api/admin/sellers/${seller.slug || seller.id}`, {
+      method: 'PATCH',
+      credentials: 'include',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ isPlatform: next, auditMessage: reason }),
+    });
+
+    const payload = await res.json().catch(() => ({}));
+    if (!res.ok) {
+      toast.error(payload?.error || 'Nu am putut actualiza isPlatform');
+      return;
+    }
+    toast.success('Actualizat');
+    await mutate();
+  };
+
+  const suspendReactivate = async (seller: SellerRow) => {
+    const action = seller.status === 'suspended' ? 'reactivate' : 'suspend';
+    const reason = window.prompt(
+      `Motiv pentru ${action === 'suspend' ? 'suspendare' : 'reactivare'} (min 10 caractere):`,
+      ''
+    );
+    if (!reason) return;
+
+    const res = await fetch(`/api/admin/sellers/${seller.slug || seller.id}/status`, {
+      method: 'POST',
+      credentials: 'include',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ action, message: reason }),
+    });
+
+    const payload = await res.json().catch(() => ({}));
+    if (!res.ok) {
+      toast.error(payload?.error || 'Nu am putut actualiza statusul');
+      return;
+    }
+    toast.success(action === 'suspend' ? 'Seller suspendat' : 'Seller reactivat');
+    await mutate();
+  };
+
   const columns: Column<SellerRow>[] = [
     {
       header: 'Seller',
@@ -79,6 +131,27 @@ export default function AdminSellersPage() {
       },
     },
     {
+      header: 'Platform',
+      key: 'isPlatform',
+      sortable: true,
+      render: (seller) => (
+        <div className="flex items-center gap-2">
+          <Switch
+            checked={!!seller.isPlatform}
+            onCheckedChange={() => togglePlatform(seller)}
+            aria-label="Toggle isPlatform"
+          />
+          <span className="text-xs text-slate-500">{seller.isPlatform ? 'Da' : 'Nu'}</span>
+        </div>
+      ),
+    },
+    {
+      header: 'Comenzi',
+      key: 'ordersCount',
+      sortable: true,
+      render: (seller) => <span className="text-sm">{typeof seller.ordersCount === 'number' ? seller.ordersCount : '—'}</span>,
+    },
+    {
       header: 'Email',
       key: 'email',
       render: (seller) => <span className="text-sm">{seller.email || seller.userEmail || '—'}</span>,
@@ -87,6 +160,24 @@ export default function AdminSellersPage() {
       header: 'Telefon',
       key: 'phone',
       render: (seller) => <span className="text-sm">{seller.phone || '—'}</span>,
+    },
+    {
+      header: 'Acțiuni',
+      key: 'actions',
+      render: (seller) => (
+        <div className="flex flex-wrap gap-2">
+          <Button asChild variant="outline" size="sm">
+            <Link href={`/admin/sellers/${seller.slug || seller.id}`}>Vezi</Link>
+          </Button>
+          <Button
+            variant={seller.status === 'suspended' ? 'primary' : 'destructive'}
+            size="sm"
+            onClick={() => suspendReactivate(seller)}
+          >
+            {seller.status === 'suspended' ? 'Reactivează' : 'Suspendă'}
+          </Button>
+        </div>
+      ),
     },
   ];
 

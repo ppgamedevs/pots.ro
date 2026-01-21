@@ -1,10 +1,27 @@
 import { db } from "@/db";
 import { sellers, products } from "@/db/schema/core";
 import { eq } from "drizzle-orm";
+import { getCurrentUser } from "@/lib/auth-helpers";
+import { getImpersonationFromCookies } from "@/lib/impersonation";
 
 export async function getSellerByUser(userId: string) {
   const result = await db.select().from(sellers).where(eq(sellers.userId, userId)).limit(1);
-  return result[0] || null;
+
+  if (result[0]) return result[0];
+
+  // Admin read-only impersonation: allow resolving a seller by impersonation cookie
+  try {
+    const currentUser = await getCurrentUser();
+    if (!currentUser || currentUser.id !== userId || currentUser.role !== 'admin') return null;
+
+    const imp = await getImpersonationFromCookies();
+    if (!imp || imp.adminUserId !== currentUser.id) return null;
+
+    const byId = await db.select().from(sellers).where(eq(sellers.id, imp.sellerId)).limit(1);
+    return byId[0] || null;
+  } catch {
+    return null;
+  }
 }
 
 export async function sellerIdsForUser(userId: string): Promise<string[]> {

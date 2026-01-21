@@ -390,6 +390,34 @@ export const userActions = pgTable("user_actions", {
   userActionsCreatedIdx: index("user_actions_created_idx").on(table.createdAt),
 }));
 
+// Seller actions table for tracking admin actions (suspend/reactivate/platform/profile/impersonation)
+export const sellerActions = pgTable(
+  "seller_actions",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    sellerId: uuid("seller_id").notNull().references(() => sellers.id, { onDelete: "cascade" }),
+    action: text("action")
+      .notNull()
+      .$type<
+        | 'suspend'
+        | 'reactivate'
+        | 'set_platform'
+        | 'update_profile'
+        | 'reset_onboarding'
+        | 'impersonate_start'
+        | 'impersonate_end'
+      >(),
+    message: text("message"),
+    meta: jsonb("meta"),
+    adminUserId: uuid("admin_user_id").notNull().references(() => users.id, { onDelete: "set null" }),
+    createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
+  },
+  (table) => ({
+    sellerActionsSellerIdIdx: index("seller_actions_seller_id_idx").on(table.sellerId),
+    sellerActionsCreatedIdx: index("seller_actions_created_idx").on(table.createdAt),
+  })
+);
+
 // Orders table
 export const orders = pgTable("orders", {
   id: uuid("id").primaryKey().defaultRandom(),

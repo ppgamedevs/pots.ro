@@ -89,6 +89,40 @@ async function ensureSellerApplicationStatusEvents(sql) {
   }
 }
 
+  async function ensureSellerActions(sql) {
+    try {
+      console.log('🔧 Ensuring seller actions (audit)...');
+
+      // Needed for gen_random_uuid()
+      await sql`CREATE EXTENSION IF NOT EXISTS pgcrypto`;
+
+      await sql`
+        CREATE TABLE IF NOT EXISTS seller_actions (
+          id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+          seller_id uuid NOT NULL REFERENCES sellers(id) ON DELETE CASCADE,
+          action text NOT NULL,
+          message text,
+          meta jsonb,
+          admin_user_id uuid NOT NULL REFERENCES users(id) ON DELETE SET NULL,
+          created_at timestamptz NOT NULL DEFAULT now()
+        );
+      `;
+
+      await sql`
+        CREATE INDEX IF NOT EXISTS seller_actions_seller_id_idx
+        ON seller_actions(seller_id);
+      `;
+      await sql`
+        CREATE INDEX IF NOT EXISTS seller_actions_created_idx
+        ON seller_actions(created_at);
+      `;
+
+      console.log('✅ Seller actions ensured');
+    } catch (err) {
+      console.warn('⚠️  Could not ensure seller actions (tables may not exist yet):', err.message || err);
+    }
+  }
+
 async function ensureSupportSchema(sql) {
   try {
     console.log('🔧 Ensuring support schema (notes/tickets/conversations)...');
@@ -242,6 +276,7 @@ async function runMigration() {
     await ensureInternalNotesColumn(sql);
     await ensureSupportSchema(sql);
     await ensureSellerApplicationStatusEvents(sql);
+      await ensureSellerActions(sql);
 
     // Check if orders table already exists
     console.log('🔍 Checking if orders table exists...');

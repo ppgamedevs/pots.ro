@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { db } from "@/db";
-import { sellers, users } from "@/db/schema/core";
-import { eq, ilike, or } from "drizzle-orm";
+import { orders, sellers, users } from "@/db/schema/core";
+import { eq, ilike, or, sql } from "drizzle-orm";
 import { getUserId } from "@/lib/auth-helpers";
 
 export const dynamic = 'force-dynamic';
@@ -50,13 +50,17 @@ export async function GET(req: Request) {
         brand_name: sellers.brandName,
         brandName: sellers.brandName,
         status: sellers.status,
+        isPlatform: sellers.isPlatform,
+        ordersCount: sql<number>`coalesce(count(${orders.id}), 0)::int`,
         phone: sellers.phone,
         email: sellers.email,
         userEmail: users.email,
       })
       .from(sellers)
       .leftJoin(users, eq(users.id, sellers.userId))
+      .leftJoin(orders, eq(orders.sellerId, sellers.id))
       .where(conditions.length > 0 ? or(...conditions)! : undefined)
+      .groupBy(sellers.id, users.email)
       .orderBy(sellers.brandName)
       .limit(100);
 

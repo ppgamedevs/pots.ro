@@ -6,6 +6,7 @@ import { getCurrentUser } from "@/lib/auth-helpers";
 import { getSellerByUser } from "@/lib/ownership";
 import { z } from "zod";
 import { isValidTransition } from "@/lib/orderTransitions";
+import { isImpersonatingAdmin } from "@/lib/impersonation";
 
 const updateStatusSchema = z.object({
   status: z.enum(['pending', 'paid', 'packed', 'shipped', 'delivered', 'canceled']),
@@ -32,6 +33,10 @@ export async function PATCH(
 
     if (user.role !== 'seller' && user.role !== 'admin') {
       return NextResponse.json({ error: "Seller role required" }, { status: 403 });
+    }
+
+    if (user.role === 'admin' && await isImpersonatingAdmin(user.id)) {
+      return NextResponse.json({ error: "Impersonation is read-only" }, { status: 403 });
     }
 
     const seller = await getSellerByUser(user.id);

@@ -5,6 +5,7 @@ import { getCurrentUser } from "@/lib/auth-helpers";
 import { getSellerByUser } from "@/lib/ownership";
 import { slugifyUnique } from "@/lib/slug";
 import { z } from "zod";
+import { isImpersonatingAdmin } from "@/lib/impersonation";
 
 export const dynamic = 'force-dynamic';
 
@@ -26,6 +27,10 @@ export async function POST(request: NextRequest) {
 
     if (user.role !== 'seller' && user.role !== 'admin') {
       return NextResponse.json({ error: "Seller role required" }, { status: 403 });
+    }
+
+    if (user.role === 'admin' && await isImpersonatingAdmin(user.id)) {
+      return NextResponse.json({ error: "Impersonation is read-only" }, { status: 403 });
     }
 
     const seller = await getSellerByUser(user.id);
