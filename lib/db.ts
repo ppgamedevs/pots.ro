@@ -7,7 +7,16 @@ import postgres from 'postgres';
 import * as schema from '@/db/schema/core';
 
 // Configurare conexiune PostgreSQL
-const connectionString = process.env.DATABASE_URL || process.env.POSTGRES_URL || '';
+// Accept multiple provider env var names (Vercel Postgres, local, pooled/unpooled)
+const connectionString =
+  process.env.POSTGRES_DATABASE_URL ||
+  process.env.POSTGRES_DATABASE_URL_UNPOOLED ||
+  process.env.POSTGRES_POSTGRES_URL ||
+  process.env.POSTGRES_POSTGRES_URL_NON_POOLING ||
+  process.env.DATABASE_URL ||
+  process.env.POSTGRES_URL_NON_POOLING ||
+  process.env.POSTGRES_URL ||
+  '';
 
 if (!connectionString) {
   throw new Error('DATABASE_URL is not set');

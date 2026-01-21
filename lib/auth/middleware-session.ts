@@ -13,6 +13,27 @@ export interface MiddlewareSession extends JWTPayload {
   expiresAt: number;
 }
 
+export async function verifySessionTokenValue(sessionToken: string): Promise<MiddlewareSession | null> {
+  try {
+    const { payload } = await jwtVerify(sessionToken, JWT_SECRET);
+
+    // Check if token is expired
+    if (payload.exp && payload.exp < Date.now() / 1000) {
+      return null;
+    }
+
+    return {
+      ...(payload as MiddlewareSession),
+      userId: payload.userId as string,
+      email: payload.email as string,
+      role: payload.role as MiddlewareSession["role"],
+      expiresAt: payload.exp as number,
+    };
+  } catch {
+    return null;
+  }
+}
+
 /**
  * Create a JWT session token for middleware validation
  */
@@ -50,33 +71,20 @@ export async function verifyMiddlewareSessionToken(request: NextRequest): Promis
     }
     
     console.log('[verifyMiddlewareSessionToken] Verifying JWT token, length:', sessionToken.length);
-    
-    const { payload } = await jwtVerify(sessionToken, JWT_SECRET);
-    
-    console.log('[verifyMiddlewareSessionToken] JWT payload:', {
-      userId: payload.userId,
-      email: payload.email,
-      role: payload.role,
-      exp: payload.exp,
-      expDate: payload.exp ? new Date(payload.exp * 1000).toISOString() : 'no exp',
-      currentTime: Math.floor(Date.now() / 1000),
-      currentDate: new Date().toISOString()
-    });
-    
-    // Check if token is expired
-    if (payload.exp && payload.exp < Date.now() / 1000) {
-      console.log('[verifyMiddlewareSessionToken] Token expired');
+
+    const session = await verifySessionTokenValue(sessionToken);
+    if (!session) {
+      console.log('[verifyMiddlewareSessionToken] Invalid or expired token');
       return null;
     }
-    
-    const session = {
-      userId: payload.userId as string,
-      email: payload.email as string,
-      role: payload.role as 'buyer' | 'seller' | 'admin',
-      expiresAt: payload.exp as number,
-    };
-    
-    console.log('[verifyMiddlewareSessionToken] Session validated successfully:', session);
+
+    console.log('[verifyMiddlewareSessionToken] Session validated successfully:', {
+      userId: session.userId,
+      email: session.email,
+      role: session.role,
+      expiresAt: session.expiresAt,
+    });
+
     return session;
   } catch (error) {
     console.error('[verifyMiddlewareSessionToken] Error verifying middleware session token:', error);

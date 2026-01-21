@@ -30,7 +30,9 @@ export async function POST(request: NextRequest) {
     const body = await request.json();
     console.log('[otp.verify] Request body:', body);
     
-    const { email, code } = otpVerifySchema.parse(body);
+    const parsedInput = otpVerifySchema.parse(body);
+    const email = parsedInput.email.trim().toLowerCase();
+    const code = parsedInput.code;
     console.log('[otp.verify] Parsed data:', { email, code });
     
     // Find or create user

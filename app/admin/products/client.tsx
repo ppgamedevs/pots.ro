@@ -336,6 +336,52 @@ export default function AdminProductsClient() {
     setPage(1);
   };
 
+  const runBulkAction = async (action: "activate" | "deactivate" | "delete") => {
+    const ids = selectedRows.map(String);
+    if (ids.length === 0) return;
+
+    const labels: Record<typeof action, string> = {
+      activate: "Activează",
+      deactivate: "Dezactivează",
+      delete: "Șterge",
+    };
+
+    const ok = await confirm({
+      title: `${labels[action]} produse?`,
+      description:
+        action === "delete"
+          ? "Acțiune ireversibilă. Produsele selectate vor fi șterse definitiv."
+          : "Se va actualiza statusul produselor selectate.",
+      confirmText: labels[action],
+      variant: action === "delete" ? "danger" : undefined,
+    });
+    if (!ok) return;
+
+    try {
+      const res = await fetch("/api/admin/products/bulk", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        credentials: "include",
+        body: JSON.stringify({ action, ids }),
+      });
+      if (!res.ok) throw new Error();
+
+      toast.success(
+        action === "delete"
+          ? "Produsele au fost șterse"
+          : "Produsele au fost actualizate"
+      );
+      setSelectedRows([]);
+      fetchProducts();
+    } catch (error) {
+      toast.error(
+        action === "delete"
+          ? "Eroare la ștergere"
+          : "Eroare la actualizare"
+      );
+    }
+  };
+
   return (
     <div className="space-y-6">
       {/* Filters */}
@@ -474,13 +520,13 @@ export default function AdminProductsClient() {
             {selectedRows.length} produse selectate
           </span>
           <div className="flex gap-2 ml-auto">
-            <Button variant="secondary" size="sm">
+            <Button variant="secondary" size="sm" onClick={() => runBulkAction("activate")}>
               Activează
             </Button>
-            <Button variant="secondary" size="sm">
+            <Button variant="secondary" size="sm" onClick={() => runBulkAction("deactivate")}>
               Dezactivează
             </Button>
-            <Button variant="destructive" size="sm">
+            <Button variant="destructive" size="sm" onClick={() => runBulkAction("delete")}>
               Șterge
             </Button>
           </div>

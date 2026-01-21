@@ -21,6 +21,35 @@ async function checkOrdersTable(sql) {
   }
 }
 
+async function ensureInternalNotesColumn(sql) {
+  try {
+    const result = await sql`
+      SELECT EXISTS (
+        SELECT 1
+        FROM information_schema.columns
+        WHERE table_schema = 'public'
+          AND table_name = 'seller_applications'
+          AND column_name = 'internal_notes'
+      ) as exists
+    `;
+
+    if (result[0]?.exists) {
+      console.log('✅ seller_applications.internal_notes already exists');
+      return;
+    }
+
+    console.log('🔧 Adding seller_applications.internal_notes column...');
+    await sql`
+      ALTER TABLE seller_applications
+      ADD COLUMN IF NOT EXISTS internal_notes TEXT
+    `;
+    console.log('✅ Added seller_applications.internal_notes');
+  } catch (err) {
+    // If the table doesn't exist yet, ignore and continue
+    console.warn('⚠️  Could not ensure internal_notes column (table may not exist yet):', err.message || err);
+  }
+}
+
 async function runMigration() {
   let sql;
   try {
@@ -53,6 +82,9 @@ async function runMigration() {
       console.error('❌ Cannot connect to database:', connErr.message);
       process.exit(1);
     }
+
+    // Always attempt safe, idempotent schema tweaks
+    await ensureInternalNotesColumn(sql);
 
     // Check if orders table already exists
     console.log('🔍 Checking if orders table exists...');

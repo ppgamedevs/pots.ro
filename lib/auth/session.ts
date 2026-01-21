@@ -5,7 +5,7 @@ import { db } from '@/db';
 import { sessions, users, authAudit } from '@/db/schema/core';
 import { eq, and, gt, isNull, lt } from 'drizzle-orm';
 import { hash, generateSessionToken, getClientIP, getUserAgent } from './crypto';
-import { createMiddlewareSessionToken, verifyMiddlewareSessionToken } from './middleware-session';
+import { createMiddlewareSessionToken, verifySessionTokenValue } from './middleware-session';
 
 // Session configuration
 const SESSION_COOKIE_NAME = 'fm_session';
@@ -170,6 +170,31 @@ export async function getSession(): Promise<Session | null> {
     
     if (!sessionToken) {
       return null;
+    }
+
+    // Preferred: JWT cookie (edge-middleware compatible)
+    const jwtSession = await verifySessionTokenValue(sessionToken);
+    if (jwtSession?.userId) {
+      const [user] = await db
+        .select({
+          id: users.id,
+          email: users.email,
+          name: users.name,
+          displayId: users.displayId,
+          role: users.role,
+        })
+        .from(users)
+        .where(eq(users.id, jwtSession.userId))
+        .limit(1);
+
+      if (!user) return null;
+
+      return {
+        id: jwtSession.jti || jwtSession.userId,
+        userId: user.id,
+        user,
+        expiresAt: new Date((jwtSession.expiresAt || jwtSession.exp || 0) * 1000),
+      };
     }
     
     const sessionTokenHash = await hash(sessionToken);
