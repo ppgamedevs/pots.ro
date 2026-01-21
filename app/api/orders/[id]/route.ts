@@ -1,13 +1,15 @@
 import { NextRequest, NextResponse } from "next/server";
 import { db } from "@/db";
 import { orders, orderItems, products, sellers, users, invoices } from "@/db/schema/core";
-import { eq, and, inArray, or } from "drizzle-orm";
+import { eq, and, inArray } from "drizzle-orm";
 import { getCurrentUser } from "@/lib/auth-helpers";
 import { sellerIdsForUser } from "@/lib/ownership";
 
-export async function GET(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
+export const dynamic = "force-dynamic";
+
+export async function GET(request: NextRequest, { params }: { params: { id: string } }) {
   try {
-    const { id } = await params;
+    const { id } = params;
     const user = await getCurrentUser();
     
     // Parametrul 'id' poate fi fie UUID, fie orderNumber
@@ -35,20 +37,26 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
 
     const { order, buyer } = orderResult[0];
 
-    // Check access permissions
-    if (user) {
-      const userSellerIds = await sellerIdsForUser(user.id);
-      const isBuyer = order.buyerId === user.id;
-      const isSeller = userSellerIds.length > 0;
-      const isAdmin = user.role === 'admin' || user.role === 'support';
+    if (!user) {
+      return NextResponse.json({ error: "Authentication required" }, { status: 401 });
+    }
 
-      if (!isBuyer && !isSeller && !isAdmin) {
+    // Check access permissions (buyer/admin/support/seller-with-items)
+    if (user.role !== "admin" && user.role !== "support" && order.buyerId !== user.id) {
+      const userSellerIds = await sellerIdsForUser(user.id);
+      if (userSellerIds.length === 0) {
         return NextResponse.json({ error: "Access denied" }, { status: 403 });
       }
-    } else {
-      // Pentru endpoint-ul public (dacă e nevoie), verificăm doar dacă există comanda
-      // În mod normal, ar trebui să fie autentificat
-      return NextResponse.json({ error: "Authentication required" }, { status: 401 });
+
+      const sellerHasItems = await db
+        .select({ id: orderItems.id })
+        .from(orderItems)
+        .where(and(eq(orderItems.orderId, order.id), inArray(orderItems.sellerId, userSellerIds)))
+        .limit(1);
+
+      if (sellerHasItems.length === 0) {
+        return NextResponse.json({ error: "Access denied" }, { status: 403 });
+      }
     }
 
     // Get order items
@@ -135,29 +143,67 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
 
     return NextResponse.json({
       id: order.id,
-      createdAt: order.createdAt.toISOString(),
+      orderNumber: order.orderNumber,
       buyerEmail: buyer.email,
       status: order.status,
-      deliveryStatus: (order.deliveryStatus as any) ?? null,
-      awbNumber: order.awbNumber,
-      awbLabelUrl: order.awbLabelUrl,
+      currency: order.currency,
+      createdAt: order.createdAt.toISOString(),
+      updatedAt: order.updatedAt ? order.updatedAt.toISOString() : null,
+      paidAt: order.paidAt ? order.paidAt.toISOString() : null,
+      packedAt: order.packedAt ? order.packedAt.toISOString() : null,
+      shippedAt: order.shippedAt ? order.shippedAt.toISOString() : null,
       deliveredAt: order.deliveredAt ? order.deliveredAt.toISOString() : null,
-      canceledReason: order.canceledReason,
-      shippingAddress,
+      totals: {
+        subtotalCents: order.subtotalCents,
+        shippingFeeCents: order.shippingFeeCents,
+        totalDiscountCents: order.totalDiscountCents,
+        totalCents: order.totalCents,
+        currency: order.currency,
+      },
+      shippingAddress: {
+        name:
+          shippingAddress?.name ||
+          `${shippingAddress?.firstName || ""} ${shippingAddress?.lastName || ""}`.trim() ||
+          buyer.name ||
+          "",
+        email: shippingAddress?.email || buyer.email,
+        phone: shippingAddress?.phone || null,
+        address: shippingAddress?.address || null,
+        city: shippingAddress?.city || null,
+        county: shippingAddress?.county || null,
+        postalCode: shippingAddress?.postalCode || null,
+        country: shippingAddress?.country || "România",
+        notes: shippingAddress?.notes || null,
+      },
       items: (orderItemsResult || []).map((item: any) => ({
         id: item.id,
-        productName: item.product?.title || 'Produs indisponibil',
-        qty: item.qty,
-        unitPrice: item.unitPriceCents,
-        subtotal: item.subtotalCents,
+        productName: item.product?.title || "Produs indisponibil",
+        productSlug: item.product?.slug || null,
+        sellerName: item.seller?.brandName || item.seller?.company || "Vânzător necunoscut",
         sellerId: item.sellerId,
+        qty: item.qty,
+        unitPriceCents: item.unitPriceCents,
+        subtotalCents: item.subtotalCents,
       })),
-      totals: {
-        subtotal: order.subtotalCents,
-        shipping: order.shippingFeeCents,
-        tax: 0,
-        total: order.totalCents,
+      tracking: {
+        awbNumber: order.awbNumber || null,
+        carrier: (order.carrierMeta as any)?.carrier ?? null,
+        trackingUrl: (order.carrierMeta as any)?.trackingUrl ?? null,
       },
+      invoices: invoicesResult.map((inv: any) => ({
+        id: inv.id,
+        series: inv.series,
+        number: inv.number,
+        pdfUrl: inv.pdfUrl,
+        total: inv.total != null ? Number(inv.total) : null,
+        currency: inv.currency,
+        issuer: inv.issuer,
+        status: inv.status,
+        sellerInvoiceNumber: inv.sellerInvoiceNumber,
+        uploadedBy: inv.uploadedBy,
+        uploadedAt: inv.uploadedAt ? new Date(inv.uploadedAt).toISOString() : null,
+        createdAt: inv.createdAt ? new Date(inv.createdAt).toISOString() : null,
+      })),
     });
 
   } catch (error) {

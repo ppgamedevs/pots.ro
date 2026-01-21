@@ -100,6 +100,7 @@ export function DataTable<T>({
             )}
             {columns.map((c) => {
               const isSorted = sort.key === String(c.key);
+              const align = c.align || "left";
               return (
                 <th
                   key={String(c.key)}
@@ -107,11 +108,13 @@ export function DataTable<T>({
                   onClick={() => onSort(c)}
                   className={clsx(
                     "p-3 font-semibold text-slate-700 dark:text-slate-200 border-b border-slate-200 dark:border-white/10",
-                    c.align === "right" && "text-right",
-                    c.align === "center" && "text-center",
+                    align === "right" ? "text-right" : align === "center" ? "text-center" : "text-left",
                     c.sortable && "cursor-pointer select-none hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors"
                   )}
-                  style={{ width: c.width }}
+                  style={{ 
+                    width: c.width,
+                    textAlign: align === "right" ? "right" : align === "center" ? "center" : "left"
+                  }}
                 >
                   <span className="inline-flex items-center gap-1">
                     {c.header}
@@ -160,14 +163,17 @@ export function DataTable<T>({
                   )}
                   {columns.map((c) => {
                     const content = c.render ? c.render(row) : (row as any)[c.key as any];
+                    const align = c.align || "left";
                     return (
                       <td
                         key={String(c.key)}
                         className={clsx(
                           "p-3 text-slate-800 dark:text-slate-100",
-                          c.align === "right" && "text-right",
-                          c.align === "center" && "text-center"
+                          align === "right" ? "text-right" : align === "center" ? "text-center" : "text-left"
                         )}
+                        style={{
+                          textAlign: align === "right" ? "right" : align === "center" ? "center" : "left"
+                        }}
                       >
                         {content}
                       </td>

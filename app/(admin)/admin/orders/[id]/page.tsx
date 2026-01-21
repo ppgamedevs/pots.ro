@@ -73,11 +73,11 @@ export default function AdminOrderDetailPage() {
     setMessages(prev => [...prev, newMessage]);
   };
 
-  const formatCurrency = (cents: number) => {
+  const formatCurrency = (amount: number) => {
     return new Intl.NumberFormat('ro-RO', {
       style: 'currency',
       currency: 'RON',
-    }).format(cents / 100);
+    }).format(amount);
   };
 
   const formatDate = (dateString: string) => {
@@ -128,7 +128,7 @@ export default function AdminOrderDetailPage() {
     <div className="container mx-auto px-6 py-10 max-w-7xl">
       <main role="main">
         <AdminPageWrapper 
-          title={`Comandă #${order.id.slice(-8).toUpperCase()}`}
+          title={`Comandă ${(order as any).orderNumber || `#${order.id.slice(-8).toUpperCase()}`}`}
           description={`Creată pe ${formatDate(order.createdAt)}`}
           customBreadcrumbLabel="Detalii Comandă"
           backButtonHref="/admin/orders"
@@ -268,7 +268,7 @@ export default function AdminOrderDetailPage() {
                           <div>
                             <h4 className="font-medium mb-2">Order Information</h4>
                             <div className="text-sm text-gray-600 space-y-1">
-                              <p>Status: <Badge>{order.status}</Badge></p>
+                              <p>Status: <Badge variant="default" className="text-white">{order.status}</Badge></p>
                               <p>Created: {formatDate(order.createdAt)}</p>
                               {order.awbNumber && <p>AWB: {order.awbNumber}</p>}
                               {order.deliveredAt && <p>Delivered: {formatDate(order.deliveredAt)}</p>}

@@ -355,6 +355,19 @@ export const authAudit = pgTable("auth_audit", {
   kindIdx: index("auth_audit_kind_idx").on(table.kind),
 }));
 
+// User actions table for tracking suspend/reactivate actions
+export const userActions = pgTable("user_actions", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  userId: uuid("user_id").notNull().references(() => users.id, { onDelete: "cascade" }),
+  action: text("action").notNull().$type<'suspend' | 'reactivate'>(),
+  message: text("message"),
+  adminUserId: uuid("admin_user_id").notNull().references(() => users.id, { onDelete: "set null" }),
+  createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
+}, (table) => ({
+  userActionsUserIdIdx: index("user_actions_user_id_idx").on(table.userId),
+  userActionsCreatedIdx: index("user_actions_created_idx").on(table.createdAt),
+}));
+
 // Orders table
 export const orders = pgTable("orders", {
   id: uuid("id").primaryKey().defaultRandom(),
