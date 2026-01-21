@@ -146,11 +146,10 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
       shippedAt: order.shippedAt,
       deliveredAt: order.deliveredAt,
       totals: {
-        subtotal_cents: order.subtotalCents,
-        shipping_fee_cents: order.shippingFeeCents,
-        total_discount_cents: order.totalDiscountCents,
-        total_cents: order.totalCents,
-        currency: order.currency,
+        subtotal: order.subtotalCents / 100,
+        shipping: order.shippingFeeCents / 100,
+        tax: 0, // VAT is included in subtotal
+        total: order.totalCents / 100,
       },
       shippingAddress: {
         name: shippingAddress?.name || shippingAddress?.firstName + ' ' + shippingAddress?.lastName || buyer.name,
@@ -169,9 +168,10 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
         productName: item.product?.title || 'Produs indisponibil',
         productSlug: item.product?.slug || null,
         sellerName: item.seller?.brandName || item.seller?.company || 'Vânzător necunoscut',
+        sellerId: item.sellerId,
         qty: item.qty,
-        unitPriceCents: item.unitPriceCents,
-        subtotalCents: item.subtotalCents,
+        unitPrice: item.unitPriceCents / 100,
+        subtotal: item.subtotalCents / 100,
       })),
       tracking: {
         awbNumber: order.awbNumber,
