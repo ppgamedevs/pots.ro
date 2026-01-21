@@ -1,7 +1,8 @@
+
 'use client';
 
-import { useMemo, useState } from 'react';
-import { useParams } from 'next/navigation';
+import { useEffect, useMemo, useState } from 'react';
+import { useParams, useRouter } from 'next/navigation';
 import useSWR from 'swr';
 import { AdminPageWrapper } from '@/components/admin/AdminPageWrapper';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -95,26 +96,30 @@ function statusVariant(status?: string) {
 
 export default function AdminSellerDetailPage() {
   const params = useParams<{ id: string }>();
-  const sellerId = params.id;
+  const router = useRouter();
+  const sellerIdentifier = params.id;
 
-  const { data, error, isLoading, mutate } = useSWR<SellerDetail>(`/api/admin/sellers/${sellerId}`, fetcher, {
+  const looksLikeUuid = (value: string) =>
+    /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(value);
+
+  const { data, error, isLoading, mutate } = useSWR<SellerDetail>(`/api/admin/sellers/${sellerIdentifier}`, fetcher, {
     revalidateOnFocus: false,
   });
 
   const { data: notesData, mutate: mutateNotes } = useSWR<{ items: Note[] }>(
-    `/api/admin/sellers/${sellerId}/notes`,
+    `/api/admin/sellers/${sellerIdentifier}/notes`,
     fetcher,
     { revalidateOnFocus: false }
   );
 
   const { data: ticketsData, mutate: mutateTickets } = useSWR<{ items: Ticket[] }>(
-    `/api/admin/sellers/${sellerId}/tickets`,
+    `/api/admin/sellers/${sellerIdentifier}/tickets`,
     fetcher,
     { revalidateOnFocus: false }
   );
 
   const { data: convoData, mutate: mutateConvo } = useSWR<ConversationPayload>(
-    `/api/admin/sellers/${sellerId}/conversation`,
+    `/api/admin/sellers/${sellerIdentifier}/conversation`,
     fetcher,
     { revalidateOnFocus: false }
   );
@@ -125,10 +130,13 @@ export default function AdminSellerDetailPage() {
   const [ticketPriority, setTicketPriority] = useState<'low' | 'normal' | 'high' | 'urgent'>('normal');
   const [selectedTicketId, setSelectedTicketId] = useState<string>('');
 
+  const [statusLoading, setStatusLoading] = useState(false);
+  const [statusMessage, setStatusMessage] = useState('');
+
   const selectedTicket = useMemo(() => (ticketsData?.items || []).find((t) => t.id === selectedTicketId), [ticketsData, selectedTicketId]);
 
   const { data: ticketMessages, mutate: mutateTicketMessages } = useSWR<{ items: TicketMessage[] }>(
-    selectedTicketId ? `/api/admin/sellers/${sellerId}/tickets/${selectedTicketId}/messages` : null,
+    selectedTicketId ? `/api/admin/sellers/${sellerIdentifier}/tickets/${selectedTicketId}/messages` : null,
     fetcher,
     { revalidateOnFocus: false }
   );
@@ -140,7 +148,7 @@ export default function AdminSellerDetailPage() {
     const body = newNote.trim();
     if (!body) return;
 
-    const res = await fetch(`/api/admin/sellers/${sellerId}/notes`, {
+    const res = await fetch(`/api/admin/sellers/${sellerIdentifier}/notes`, {
       method: 'POST',
       credentials: 'include',
       headers: { 'Content-Type': 'application/json' },
@@ -162,7 +170,7 @@ export default function AdminSellerDetailPage() {
     const title = ticketTitle.trim();
     if (!title) return;
 
-    const res = await fetch(`/api/admin/sellers/${sellerId}/tickets`, {
+    const res = await fetch(`/api/admin/sellers/${sellerIdentifier}/tickets`, {
       method: 'POST',
       credentials: 'include',
       headers: { 'Content-Type': 'application/json' },
@@ -186,7 +194,7 @@ export default function AdminSellerDetailPage() {
     const body = ticketReply.trim();
     if (!selectedTicketId || !body) return;
 
-    const res = await fetch(`/api/admin/sellers/${sellerId}/tickets/${selectedTicketId}/messages`, {
+    const res = await fetch(`/api/admin/sellers/${sellerIdentifier}/tickets/${selectedTicketId}/messages`, {
       method: 'POST',
       credentials: 'include',
       headers: { 'Content-Type': 'application/json' },
@@ -207,7 +215,7 @@ export default function AdminSellerDetailPage() {
   const updateTicket = async (updates: Partial<Pick<Ticket, 'status' | 'priority'>>) => {
     if (!selectedTicketId) return;
 
-    const res = await fetch(`/api/admin/sellers/${sellerId}/tickets/${selectedTicketId}`, {
+    const res = await fetch(`/api/admin/sellers/${sellerIdentifier}/tickets/${selectedTicketId}`, {
       method: 'PATCH',
       credentials: 'include',
       headers: { 'Content-Type': 'application/json' },
@@ -227,7 +235,7 @@ export default function AdminSellerDetailPage() {
     const body = conversationText.trim();
     if (!body) return;
 
-    const res = await fetch(`/api/admin/sellers/${sellerId}/conversation`, {
+    const res = await fetch(`/api/admin/sellers/${sellerIdentifier}/conversation`, {
       method: 'POST',
       credentials: 'include',
       headers: { 'Content-Type': 'application/json' },
@@ -244,6 +252,38 @@ export default function AdminSellerDetailPage() {
     await mutateConvo();
   };
 
+  const handleSuspendReactivate = async () => {
+    if (!seller) return;
+    if (statusMessage.trim().length < 10) return;
+
+    try {
+      setStatusLoading(true);
+      const action = seller.status === 'suspended' ? 'reactivate' : 'suspend';
+
+      const res = await fetch(`/api/admin/sellers/${sellerIdentifier}/status`, {
+        method: 'POST',
+        credentials: 'include',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ action, message: statusMessage.trim() }),
+      });
+
+      const payload = await res.json().catch(() => ({}));
+      if (!res.ok) {
+        toast.error(payload?.error || 'Nu am putut actualiza statusul sellerului');
+        return;
+      }
+
+      toast.success(action === 'suspend' ? 'Seller suspendat' : 'Seller reactivat');
+      setStatusMessage('');
+      await mutate();
+    } catch (err) {
+      console.error(err);
+      toast.error('Eroare de rețea');
+    } finally {
+      setStatusLoading(false);
+    }
+  };
+
   if (error) {
     return (
       <AdminPageWrapper title="Seller" description="Eroare la încărcare" showBackButton>
@@ -254,6 +294,13 @@ export default function AdminSellerDetailPage() {
 
   const seller = data?.seller;
   const stats = data?.stats;
+
+  useEffect(() => {
+    if (!seller?.slug) return;
+    if (!looksLikeUuid(sellerIdentifier)) return;
+    if (sellerIdentifier === seller.slug) return;
+    router.replace(`/admin/sellers/${seller.slug}`);
+  }, [router, seller?.slug, sellerIdentifier]);
 
   return (
     <AdminPageWrapper
@@ -312,6 +359,72 @@ export default function AdminSellerDetailPage() {
               Reîncarcă overview
             </Button>
           </div>
+        </CardContent>
+      </Card>
+
+      {/* Suspend/Reactivate Seller */}
+      <Card hover={false}>
+        <CardHeader>
+          <CardTitle className="text-xl">Acțiuni</CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4 items-start">
+            <div>
+              <div className="text-sm font-medium mb-2">Status curent</div>
+              <Badge variant={statusVariant(seller?.status) as any}>
+                {seller?.status || '—'}
+              </Badge>
+            </div>
+
+            <div>
+              <div className="text-sm font-medium mb-2">Acțiune</div>
+              <Select value={seller?.status === 'suspended' ? 'reactivate' : 'suspend'} disabled>
+                <SelectTrigger>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  {seller?.status !== 'suspended' && <SelectItem value="suspend">Suspendă</SelectItem>}
+                  {seller?.status === 'suspended' && <SelectItem value="reactivate">Reactivează</SelectItem>}
+                </SelectContent>
+              </Select>
+            </div>
+
+            <div className="md:col-span-3">
+              <div className="text-sm font-medium mb-2">
+                Mesaj <span className="text-red-500">*</span>
+              </div>
+              <Textarea
+                value={statusMessage}
+                onChange={(e) => setStatusMessage(e.target.value)}
+                placeholder="Mesaj pentru acțiune (minimum 10 caractere)..."
+                rows={3}
+                className={
+                  statusMessage.length > 0 && statusMessage.trim().length < 10
+                    ? 'border-red-500 focus-visible:ring-red-500'
+                    : ''
+                }
+              />
+              {statusMessage.length > 0 && statusMessage.trim().length < 10 && (
+                <p className="mt-1 text-sm text-red-500">Mesajul trebuie să aibă minimum 10 caractere</p>
+              )}
+            </div>
+          </div>
+
+          <Button
+            onClick={handleSuspendReactivate}
+            disabled={statusLoading || statusMessage.trim().length < 10 || !seller}
+            className={
+              `w-full ${seller?.status === 'suspended'
+                ? 'bg-green-600 hover:bg-green-700 text-white disabled:bg-green-400 disabled:cursor-not-allowed'
+                : 'bg-red-600 hover:bg-red-700 text-white disabled:bg-red-400 disabled:cursor-not-allowed'}`
+            }
+          >
+            {statusLoading
+              ? 'Procesare...'
+              : seller?.status === 'suspended'
+              ? 'Reactivează'
+              : 'Suspendă'}
+          </Button>
         </CardContent>
       </Card>
 

@@ -35,6 +35,7 @@ export function RefundsTable({
   onCreateRefund,
   onRetryRefund
 }: RefundsTableProps) {
+  const ALL_STATUSES = '__ALL__';
   const [filters, setFilters] = useState<RefundFilters>({
     status: undefined,
     orderId: undefined,
@@ -140,14 +141,14 @@ export function RefundsTable({
           <div className="flex items-center gap-2">
             <Filter className="h-4 w-4 text-gray-500" />
             <Select
-              value={filters.status || ''}
-              onValueChange={(value) => handleFilterChange('status', value || undefined)}
+              value={filters.status ?? ALL_STATUSES}
+              onValueChange={(value) => handleFilterChange('status', value === ALL_STATUSES ? undefined : value)}
             >
               <SelectTrigger className="w-40">
                 <SelectValue placeholder="Status" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="">Toate</SelectItem>
+                <SelectItem value={ALL_STATUSES}>Toate</SelectItem>
                 <SelectItem value="PENDING">În așteptare</SelectItem>
                 <SelectItem value="PROCESSING">În procesare</SelectItem>
                 <SelectItem value="REFUNDED">Rambursat</SelectItem>

@@ -3,6 +3,7 @@ import { db } from "@/db";
 import { supportTickets, users } from "@/db/schema/core";
 import { eq } from "drizzle-orm";
 import { getUserId } from "@/lib/auth-helpers";
+import { resolveSellerId } from "@/lib/server/resolve-seller-id";
 
 export const dynamic = 'force-dynamic';
 
@@ -20,6 +21,9 @@ export async function GET(_req: Request, { params }: { params: { id: string; tic
       return NextResponse.json({ error: "Forbidden" }, { status: 403 });
     }
 
+    const sellerId = await resolveSellerId(params.id);
+    if (!sellerId) return NextResponse.json({ error: "Not found" }, { status: 404 });
+
     const [ticket] = await db
       .select({
         id: supportTickets.id,
@@ -36,7 +40,7 @@ export async function GET(_req: Request, { params }: { params: { id: string; tic
       .where(eq(supportTickets.id, params.ticketId))
       .limit(1);
 
-    if (!ticket || ticket.sellerId !== params.id) {
+    if (!ticket || ticket.sellerId !== sellerId) {
       return NextResponse.json({ error: "Not found" }, { status: 404 });
     }
 
@@ -62,6 +66,9 @@ export async function PATCH(req: Request, { params }: { params: { id: string; ti
     if (!me || (me.role !== 'admin' && me.role !== 'support')) {
       return NextResponse.json({ error: "Forbidden" }, { status: 403 });
     }
+
+    const sellerId = await resolveSellerId(params.id);
+    if (!sellerId) return NextResponse.json({ error: "Not found" }, { status: 404 });
 
     const body = await req.json().catch(() => null);
 
@@ -96,7 +103,7 @@ export async function PATCH(req: Request, { params }: { params: { id: string; ti
         updatedAt: supportTickets.updatedAt,
       });
 
-    if (!updated || updated.sellerId !== params.id) {
+    if (!updated || updated.sellerId !== sellerId) {
       return NextResponse.json({ error: "Not found" }, { status: 404 });
     }
 

@@ -3,6 +3,7 @@ import { db } from "@/db";
 import { supportTicketMessages, supportTickets, users } from "@/db/schema/core";
 import { asc, eq } from "drizzle-orm";
 import { getUserId } from "@/lib/auth-helpers";
+import { resolveSellerId } from "@/lib/server/resolve-seller-id";
 
 export const dynamic = 'force-dynamic';
 
@@ -20,13 +21,16 @@ export async function GET(_req: Request, { params }: { params: { id: string; tic
       return NextResponse.json({ error: "Forbidden" }, { status: 403 });
     }
 
+    const sellerId = await resolveSellerId(params.id);
+    if (!sellerId) return NextResponse.json({ error: "Not found" }, { status: 404 });
+
     const [ticket] = await db
       .select({ id: supportTickets.id, sellerId: supportTickets.sellerId })
       .from(supportTickets)
       .where(eq(supportTickets.id, params.ticketId))
       .limit(1);
 
-    if (!ticket || ticket.sellerId !== params.id) {
+    if (!ticket || ticket.sellerId !== sellerId) {
       return NextResponse.json({ error: "Not found" }, { status: 404 });
     }
 
@@ -70,6 +74,9 @@ export async function POST(req: Request, { params }: { params: { id: string; tic
       return NextResponse.json({ error: "Forbidden" }, { status: 403 });
     }
 
+    const sellerId = await resolveSellerId(params.id);
+    if (!sellerId) return NextResponse.json({ error: "Not found" }, { status: 404 });
+
     const payload = await req.json().catch(() => null);
     const body = String(payload?.body ?? '').trim();
     if (!body) return badRequest('Body is required');
@@ -80,7 +87,7 @@ export async function POST(req: Request, { params }: { params: { id: string; tic
       .where(eq(supportTickets.id, params.ticketId))
       .limit(1);
 
-    if (!ticket || ticket.sellerId !== params.id) {
+    if (!ticket || ticket.sellerId !== sellerId) {
       return NextResponse.json({ error: "Not found" }, { status: 404 });
     }
 

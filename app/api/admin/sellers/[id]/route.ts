@@ -3,6 +3,7 @@ import { db } from "@/db";
 import { orders, products, sellers, users } from "@/db/schema/core";
 import { eq, sql } from "drizzle-orm";
 import { getUserId } from "@/lib/auth-helpers";
+import { resolveSellerId } from "@/lib/server/resolve-seller-id";
 
 export const dynamic = 'force-dynamic';
 
@@ -15,8 +16,8 @@ export async function GET(_req: Request, { params }: { params: { id: string } })
     if (!me || (me.role !== 'admin' && me.role !== 'support')) {
       return NextResponse.json({ error: "Forbidden" }, { status: 403 });
     }
-
-    const sellerId = params.id;
+  const sellerId = await resolveSellerId(params.id);
+  if (!sellerId) return NextResponse.json({ error: "Not found" }, { status: 404 });
 
     const rows = await db
       .select({

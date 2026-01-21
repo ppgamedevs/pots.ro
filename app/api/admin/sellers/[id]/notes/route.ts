@@ -3,6 +3,7 @@ import { db } from "@/db";
 import { sellerNotes, users } from "@/db/schema/core";
 import { desc, eq } from "drizzle-orm";
 import { getUserId } from "@/lib/auth-helpers";
+import { resolveSellerId } from "@/lib/server/resolve-seller-id";
 
 export const dynamic = 'force-dynamic';
 
@@ -20,6 +21,9 @@ export async function GET(_req: Request, { params }: { params: { id: string } })
       return NextResponse.json({ error: "Forbidden" }, { status: 403 });
     }
 
+    const sellerId = await resolveSellerId(params.id);
+    if (!sellerId) return NextResponse.json({ error: "Not found" }, { status: 404 });
+
     const items = await db
       .select({
         id: sellerNotes.id,
@@ -35,7 +39,7 @@ export async function GET(_req: Request, { params }: { params: { id: string } })
       })
       .from(sellerNotes)
       .leftJoin(users, eq(users.id, sellerNotes.authorId))
-      .where(eq(sellerNotes.sellerId, params.id))
+      .where(eq(sellerNotes.sellerId, sellerId))
       .orderBy(desc(sellerNotes.createdAt))
       .limit(200);
 
@@ -62,6 +66,9 @@ export async function POST(req: Request, { params }: { params: { id: string } })
       return NextResponse.json({ error: "Forbidden" }, { status: 403 });
     }
 
+    const sellerId = await resolveSellerId(params.id);
+    if (!sellerId) return NextResponse.json({ error: "Not found" }, { status: 404 });
+
     const body = await req.json().catch(() => null);
     const noteBody = String(body?.body ?? '').trim();
     if (!noteBody) return badRequest('Body is required');
@@ -69,7 +76,7 @@ export async function POST(req: Request, { params }: { params: { id: string } })
     const [inserted] = await db
       .insert(sellerNotes)
       .values({
-        sellerId: params.id,
+        sellerId,
         authorId: userId,
         body: noteBody,
       })

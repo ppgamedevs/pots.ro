@@ -50,7 +50,8 @@ export async function listRefunds(filters: RefundFilters = {}): Promise<ApiRespo
   if (filters.to) params.append('to', filters.to);
   if (filters.page) params.append('page', filters.page.toString());
 
-  return apiFetch<Paged<Refund>>(`${API_BASE}/admin/refunds?${params}`);
+  const qs = params.toString();
+  return apiFetch<Paged<Refund>>(`${API_BASE}/admin/refunds${qs ? `?${qs}` : ''}`);
 }
 
 // Creează refund pentru o comandă

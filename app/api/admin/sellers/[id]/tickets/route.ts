@@ -3,6 +3,7 @@ import { db } from "@/db";
 import { supportTickets, users } from "@/db/schema/core";
 import { desc, eq } from "drizzle-orm";
 import { getUserId } from "@/lib/auth-helpers";
+import { resolveSellerId } from "@/lib/server/resolve-seller-id";
 
 export const dynamic = 'force-dynamic';
 
@@ -20,6 +21,9 @@ export async function GET(_req: Request, { params }: { params: { id: string } })
       return NextResponse.json({ error: "Forbidden" }, { status: 403 });
     }
 
+    const sellerId = await resolveSellerId(params.id);
+    if (!sellerId) return NextResponse.json({ error: "Not found" }, { status: 404 });
+
     const items = await db
       .select({
         id: supportTickets.id,
@@ -32,7 +36,7 @@ export async function GET(_req: Request, { params }: { params: { id: string } })
         assignedTo: supportTickets.assignedTo,
       })
       .from(supportTickets)
-      .where(eq(supportTickets.sellerId, params.id))
+      .where(eq(supportTickets.sellerId, sellerId))
       .orderBy(desc(supportTickets.updatedAt))
       .limit(200);
 
@@ -59,6 +63,9 @@ export async function POST(req: Request, { params }: { params: { id: string } })
       return NextResponse.json({ error: "Forbidden" }, { status: 403 });
     }
 
+    const sellerId = await resolveSellerId(params.id);
+    if (!sellerId) return NextResponse.json({ error: "Not found" }, { status: 404 });
+
     const payload = await req.json().catch(() => null);
     const title = String(payload?.title ?? '').trim();
     if (!title) return badRequest('Title is required');
@@ -68,7 +75,7 @@ export async function POST(req: Request, { params }: { params: { id: string } })
     const [ticket] = await db
       .insert(supportTickets)
       .values({
-        sellerId: params.id,
+        sellerId,
         createdBy: userId,
         title,
         description: payload?.description ? String(payload.description) : null,

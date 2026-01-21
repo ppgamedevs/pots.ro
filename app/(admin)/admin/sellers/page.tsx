@@ -61,7 +61,7 @@ export default function AdminSellersPage() {
         const name = seller.brandName || seller.brand_name || seller.slug;
         return (
           <div className="space-y-1">
-            <Link href={`/admin/sellers/${seller.id}`} className="font-medium text-slate-900 dark:text-slate-100 hover:underline">
+            <Link href={`/admin/sellers/${seller.slug || seller.id}`} className="font-medium text-slate-900 dark:text-slate-100 hover:underline">
               {name}
             </Link>
             <div className="text-xs text-slate-500">/{seller.slug}</div>

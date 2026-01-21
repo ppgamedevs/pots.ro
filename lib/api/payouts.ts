@@ -67,7 +67,8 @@ export async function listPayouts(filters: PayoutFilters = {}): Promise<ApiRespo
   if (filters.to) params.append('to', filters.to);
   if (filters.page) params.append('page', filters.page.toString());
 
-  return apiFetch<Paged<Payout>>(`${API_BASE}/admin/payouts?${params}`);
+  const qs = params.toString();
+  return apiFetch<Paged<Payout>>(`${API_BASE}/admin/payouts${qs ? `?${qs}` : ''}`);
 }
 
 // Admin API - Procesează payout individual

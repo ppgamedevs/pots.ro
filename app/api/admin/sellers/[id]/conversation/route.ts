@@ -3,6 +3,7 @@ import { db } from "@/db";
 import { supportConversationMessages, supportConversations, users } from "@/db/schema/core";
 import { asc, eq } from "drizzle-orm";
 import { getUserId } from "@/lib/auth-helpers";
+import { resolveSellerId } from "@/lib/server/resolve-seller-id";
 
 export const dynamic = 'force-dynamic';
 
@@ -24,7 +25,8 @@ export async function GET(_req: Request, { params }: { params: { id: string } })
     const me = await requireSupportOrAdmin(userId);
     if (!me) return NextResponse.json({ error: "Forbidden" }, { status: 403 });
 
-    const sellerId = params.id;
+    const sellerId = await resolveSellerId(params.id);
+    if (!sellerId) return NextResponse.json({ error: "Not found" }, { status: 404 });
 
     const existing = await db
       .select({ id: supportConversations.id })
@@ -85,7 +87,8 @@ export async function POST(req: Request, { params }: { params: { id: string } })
     const body = String(payload?.body ?? '').trim();
     if (!body) return badRequest('Body is required');
 
-    const sellerId = params.id;
+    const sellerId = await resolveSellerId(params.id);
+    if (!sellerId) return NextResponse.json({ error: "Not found" }, { status: 404 });
 
     const existing = await db
       .select({ id: supportConversations.id })
