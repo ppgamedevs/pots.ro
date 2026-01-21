@@ -375,12 +375,14 @@ export const authAudit = pgTable("auth_audit", {
   kindIdx: index("auth_audit_kind_idx").on(table.kind),
 }));
 
-// User actions table for tracking suspend/reactivate actions
+// User actions table for tracking suspend/reactivate/role_change actions
 export const userActions = pgTable("user_actions", {
   id: uuid("id").primaryKey().defaultRandom(),
   userId: uuid("user_id").notNull().references(() => users.id, { onDelete: "cascade" }),
-  action: text("action").notNull().$type<'suspend' | 'reactivate'>(),
+  action: text("action").notNull().$type<'suspend' | 'reactivate' | 'role_change'>(),
   message: text("message"),
+  oldRole: text("old_role").$type<'buyer' | 'seller' | 'admin' | 'support'>(),
+  newRole: text("new_role").$type<'buyer' | 'seller' | 'admin' | 'support'>(),
   adminUserId: uuid("admin_user_id").notNull().references(() => users.id, { onDelete: "set null" }),
   createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
 }, (table) => ({

@@ -3,12 +3,13 @@ import * as Dialog from "@radix-ui/react-dialog";
 import { AnimatePresence, motion } from "framer-motion";
 import { X, AlertTriangle } from "lucide-react";
 import { useState } from "react";
+import React from "react";
 import clsx from "clsx";
 
 export type ConfirmDialogProps = {
   open: boolean;
   title?: string;
-  description?: string;
+  description?: string | React.ReactNode;
   confirmText?: string;    // ex: "Delete"
   cancelText?: string;     // ex: "Cancel"
   variant?: "danger" | "default";
