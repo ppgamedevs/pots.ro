@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { useParams, useSearchParams } from "next/navigation";
+import { useParams, useRouter, useSearchParams } from "next/navigation";
 import { generateCategoryLDJSON } from "@/lib/seo/meta-catalog";
 import { CategoryHeader } from "@/components/catalog/CategoryHeader";
 import { FiltersBar } from "@/components/catalog/FiltersBar";
@@ -56,6 +56,7 @@ interface CategoryResponse {
   facets: Facet[];
   currentPage: number;
   totalPages: number;
+  redirectTo?: string;
 }
 
 const sortOptions = [
@@ -69,6 +70,7 @@ const sortOptions = [
 export default function Category() {
   const params = useParams();
   const searchParams = useSearchParams();
+  const router = useRouter();
   const categorySlug = params.slug as string;
   
   const [categoryData, setCategoryData] = useState<CategoryResponse | null>(null);
@@ -134,7 +136,14 @@ export default function Category() {
           throw new Error('Categoria nu a fost găsită');
         }
         
-        const data = await response.json();
+        const data = (await response.json()) as CategoryResponse;
+
+        if (data?.redirectTo) {
+          const qs = typeof window !== 'undefined' ? window.location.search : '';
+          router.replace(`/c/${data.redirectTo}${qs}`);
+          return;
+        }
+
         setCategoryData(data);
       } catch (err) {
         setError(err instanceof Error ? err.message : 'Eroare la încărcarea categoriei');

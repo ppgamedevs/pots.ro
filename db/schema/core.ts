@@ -255,6 +255,7 @@ export const categories = pgTable("categories", {
   parentId: uuid("parent_id"),
   name: text("name").notNull(),
   slug: text("slug").notNull().unique(),
+  slugLocked: boolean("slug_locked").notNull().default(true),
   position: integer("position").default(0),
   createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
   updatedAt: timestamp("updated_at", { withTimezone: true }).defaultNow().notNull(),
@@ -262,6 +263,23 @@ export const categories = pgTable("categories", {
   categoriesParentIdx: index("categories_parent_idx").on(table.parentId),
   categoriesSlugIdx: index("categories_slug_idx").on(table.slug),
 }));
+
+// Category redirects (for slug lock + merge)
+export const categoryRedirects = pgTable(
+  'category_redirects',
+  {
+    id: uuid('id').primaryKey().defaultRandom(),
+    fromSlug: text('from_slug').notNull().unique(),
+    toSlug: text('to_slug').notNull(),
+    reason: text('reason'),
+    createdBy: uuid('created_by').references(() => users.id, { onDelete: 'set null' }),
+    createdAt: timestamp('created_at', { withTimezone: true }).defaultNow().notNull(),
+  },
+  (table) => ({
+    categoryRedirectsFromIdx: index('category_redirects_from_idx').on(table.fromSlug),
+    categoryRedirectsToIdx: index('category_redirects_to_idx').on(table.toSlug),
+  })
+);
 
 // Products table
 export const products = pgTable("products", {
@@ -275,6 +293,9 @@ export const products = pgTable("products", {
   currency: text("currency").notNull().default("RON"),
   stock: integer("stock").notNull().default(0),
   status: productStatusEnum("status").notNull().default("draft"),
+  featured: boolean('featured').notNull().default(false),
+  seoTitle: text('seo_title'),
+  seoDesc: text('seo_desc'),
   attributes: jsonb("attributes").notNull().default({}),
   searchTsv: text("search_tsv"), // tsvector column (converted in migration)
   imageUrl: text("image_url"),
@@ -284,6 +305,7 @@ export const products = pgTable("products", {
   idxProductsSlug: index("idx_products_slug").on(table.slug),
   idxProductsStatus: index("idx_products_status").on(table.status),
   idxProductsSeller: index("idx_products_seller").on(table.sellerId),
+  idxProductsFeatured: index('idx_products_featured').on(table.featured),
 }));
 
 // Product images table
@@ -294,11 +316,108 @@ export const productImages = pgTable("product_images", {
   alt: text("alt"),
   position: integer("position").default(0),
   isPrimary: boolean("is_primary").notNull().default(false),
+  isHidden: boolean('is_hidden').notNull().default(false),
+  isBlurred: boolean('is_blurred').notNull().default(false),
+  reportCount: integer('report_count').notNull().default(0),
+  moderationStatus: text('moderation_status').notNull().default('approved').$type<'approved' | 'hidden' | 'blurred' | 'flagged'>(),
+  moderatedBy: uuid('moderated_by').references(() => users.id, { onDelete: 'set null' }),
+  moderatedAt: timestamp('moderated_at', { withTimezone: true }),
   createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
   updatedAt: timestamp("updated_at", { withTimezone: true }).defaultNow().notNull(),
 }, (table) => ({
   productImagesProductIdx: index("product_images_product_idx").on(table.productId),
+  productImagesStatusIdx: index('product_images_status_idx').on(table.moderationStatus),
+  productImagesReportsIdx: index('product_images_reports_idx').on(table.reportCount),
 }));
+
+// Generic admin audit log (catalog, moderation, search tuning, etc.)
+export const adminAuditLogs = pgTable(
+  'admin_audit_logs',
+  {
+    id: uuid('id').primaryKey().defaultRandom(),
+    actorId: uuid('actor_id').references(() => users.id, { onDelete: 'set null' }),
+    actorRole: text('actor_role'),
+    action: text('action').notNull(),
+    entityType: text('entity_type').notNull(),
+    entityId: text('entity_id').notNull(),
+    message: text('message'),
+    meta: jsonb('meta'),
+    createdAt: timestamp('created_at', { withTimezone: true }).defaultNow().notNull(),
+  },
+  (table) => ({
+    adminAuditLogsEntityIdx: index('admin_audit_logs_entity_idx').on(table.entityType, table.entityId),
+    adminAuditLogsCreatedIdx: index('admin_audit_logs_created_idx').on(table.createdAt),
+    adminAuditLogsActorIdx: index('admin_audit_logs_actor_idx').on(table.actorId),
+  })
+);
+
+// Search tuning (admin-only)
+export const searchQueryLogs = pgTable(
+  'search_query_logs',
+  {
+    id: uuid('id').primaryKey().defaultRandom(),
+    q: text('q').notNull(),
+    resultsCount: integer('results_count').notNull().default(0),
+    createdAt: timestamp('created_at', { withTimezone: true }).defaultNow().notNull(),
+  },
+  (table) => ({
+    searchQueryLogsCreatedIdx: index('search_query_logs_created_idx').on(table.createdAt),
+    searchQueryLogsQIdx: index('search_query_logs_q_idx').on(table.q),
+  })
+);
+
+export const searchSynonyms = pgTable(
+  'search_synonyms',
+  {
+    id: uuid('id').primaryKey().defaultRandom(),
+    term: text('term').notNull().unique(),
+    synonyms: jsonb('synonyms').notNull().$type<string[]>(),
+    createdAt: timestamp('created_at', { withTimezone: true }).defaultNow().notNull(),
+    updatedAt: timestamp('updated_at', { withTimezone: true }).defaultNow().notNull(),
+  },
+  (table) => ({
+    searchSynonymsTermIdx: index('search_synonyms_term_idx').on(table.term),
+  })
+);
+
+export const searchBoosts = pgTable(
+  'search_boosts',
+  {
+    id: uuid('id').primaryKey().defaultRandom(),
+    term: text('term').notNull().unique(),
+    boost: integer('boost').notNull().default(0),
+    createdAt: timestamp('created_at', { withTimezone: true }).defaultNow().notNull(),
+    updatedAt: timestamp('updated_at', { withTimezone: true }).defaultNow().notNull(),
+  },
+  (table) => ({
+    searchBoostsTermIdx: index('search_boosts_term_idx').on(table.term),
+  })
+);
+
+export const searchStopwords = pgTable(
+  'search_stopwords',
+  {
+    id: uuid('id').primaryKey().defaultRandom(),
+    term: text('term').notNull().unique(),
+    createdAt: timestamp('created_at', { withTimezone: true }).defaultNow().notNull(),
+  },
+  (table) => ({
+    searchStopwordsTermIdx: index('search_stopwords_term_idx').on(table.term),
+  })
+);
+
+export const searchTuningSettings = pgTable(
+  'search_tuning_settings',
+  {
+    id: text('id').primaryKey(), // singleton: 'default'
+    enabled: boolean('enabled').notNull().default(false),
+    updatedBy: uuid('updated_by').references(() => users.id, { onDelete: 'set null' }),
+    updatedAt: timestamp('updated_at', { withTimezone: true }).defaultNow().notNull(),
+  },
+  (table) => ({
+    searchTuningSettingsEnabledIdx: index('search_tuning_settings_enabled_idx').on(table.enabled),
+  })
+);
 
 // Seller pages table
 export const sellerPages = pgTable("seller_pages", {

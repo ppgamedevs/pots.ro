@@ -247,8 +247,7 @@ export default function AdminProductsClient() {
         <RowActions
           published={r.status === "active"}
           onEdit={() => {
-            // TODO: Navigate to edit page
-            toast.info("Funcționalitate de editare va fi implementată");
+            router.push(`/admin/products/${r.id}`);
           }}
           onPublish={async () => {
             const ok = await confirm({

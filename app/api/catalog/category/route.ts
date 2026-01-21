@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { db } from "@/db";
-import { products, productImages, sellers, categories } from "@/db/schema/core";
+import { products, productImages, sellers, categories, categoryRedirects } from "@/db/schema/core";
 import { eq, and, desc, asc, ilike, or, sql, gte, lte, gt } from "drizzle-orm";
 import type { InferSelectModel } from "drizzle-orm";
 
@@ -61,6 +61,10 @@ export async function GET(request: NextRequest) {
     const sort = searchParams.get('sort') || 'relevance';
     const filters = searchParams.get('filters') || '{}';
 
+    if (!slug.trim()) {
+      return NextResponse.json({ error: 'Missing slug' }, { status: 400 });
+    }
+
     // Try to fetch real products from database first
     try {
       // Find category by slug
@@ -72,12 +76,25 @@ export async function GET(request: NextRequest) {
 
       const category = categoryResult[0];
 
+      if (!category) {
+        const redirectRow = await db
+          .select({ toSlug: categoryRedirects.toSlug })
+          .from(categoryRedirects)
+          .where(eq(categoryRedirects.fromSlug, slug))
+          .limit(1);
+
+        const redirectTo = redirectRow[0]?.toSlug;
+        if (redirectTo) {
+          return NextResponse.json({ redirectTo }, { status: 200 });
+        }
+
+        return NextResponse.json({ error: 'Category not found' }, { status: 404 });
+      }
+
       // Build base conditions (always applied)
       const baseConditions = [eq(products.status, 'active')];
       
-      if (category) {
-        baseConditions.push(eq(products.categoryId, category.id));
-      }
+      baseConditions.push(eq(products.categoryId, category.id));
 
       // Apply filters
       const parsedFilters = JSON.parse(filters);

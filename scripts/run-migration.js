@@ -245,6 +245,132 @@ async function ensureSellerPageVersions(sql) {
   }
 }
 
+async function ensureCatalogAdminSchema(sql) {
+  try {
+    console.log('🔧 Ensuring catalog admin schema (categories/products/images/search tuning)...');
+
+    await sql`CREATE EXTENSION IF NOT EXISTS pgcrypto`;
+
+    // Categories: lock slugs
+    await sql`
+      ALTER TABLE categories
+      ADD COLUMN IF NOT EXISTS slug_locked boolean NOT NULL DEFAULT true;
+    `;
+
+    // Category redirects
+    await sql`
+      CREATE TABLE IF NOT EXISTS category_redirects (
+        id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+        from_slug text NOT NULL UNIQUE,
+        to_slug text NOT NULL,
+        reason text,
+        created_by uuid REFERENCES users(id) ON DELETE SET NULL,
+        created_at timestamptz NOT NULL DEFAULT now()
+      );
+    `;
+    await sql`CREATE INDEX IF NOT EXISTS category_redirects_from_idx ON category_redirects(from_slug);`;
+    await sql`CREATE INDEX IF NOT EXISTS category_redirects_to_idx ON category_redirects(to_slug);`;
+
+    // Products: featured + SEO override
+    await sql`ALTER TABLE products ADD COLUMN IF NOT EXISTS featured boolean NOT NULL DEFAULT false;`;
+    await sql`ALTER TABLE products ADD COLUMN IF NOT EXISTS seo_title text;`;
+    await sql`ALTER TABLE products ADD COLUMN IF NOT EXISTS seo_desc text;`;
+    await sql`CREATE INDEX IF NOT EXISTS idx_products_featured ON products(featured);`;
+
+    // Product images: moderation fields
+    await sql`ALTER TABLE product_images ADD COLUMN IF NOT EXISTS is_hidden boolean NOT NULL DEFAULT false;`;
+    await sql`ALTER TABLE product_images ADD COLUMN IF NOT EXISTS is_blurred boolean NOT NULL DEFAULT false;`;
+    await sql`ALTER TABLE product_images ADD COLUMN IF NOT EXISTS report_count int NOT NULL DEFAULT 0;`;
+    await sql`ALTER TABLE product_images ADD COLUMN IF NOT EXISTS moderation_status text NOT NULL DEFAULT 'approved';`;
+    await sql`ALTER TABLE product_images ADD COLUMN IF NOT EXISTS moderated_by uuid REFERENCES users(id) ON DELETE SET NULL;`;
+    await sql`ALTER TABLE product_images ADD COLUMN IF NOT EXISTS moderated_at timestamptz;`;
+    await sql`CREATE INDEX IF NOT EXISTS product_images_status_idx ON product_images(moderation_status);`;
+    await sql`CREATE INDEX IF NOT EXISTS product_images_reports_idx ON product_images(report_count);`;
+
+    // Admin audit log (generic)
+    await sql`
+      CREATE TABLE IF NOT EXISTS admin_audit_logs (
+        id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+        actor_id uuid REFERENCES users(id) ON DELETE SET NULL,
+        actor_role text,
+        action text NOT NULL,
+        entity_type text NOT NULL,
+        entity_id text NOT NULL,
+        message text,
+        meta jsonb,
+        created_at timestamptz NOT NULL DEFAULT now()
+      );
+    `;
+    await sql`CREATE INDEX IF NOT EXISTS admin_audit_logs_entity_idx ON admin_audit_logs(entity_type, entity_id);`;
+    await sql`CREATE INDEX IF NOT EXISTS admin_audit_logs_created_idx ON admin_audit_logs(created_at);`;
+    await sql`CREATE INDEX IF NOT EXISTS admin_audit_logs_actor_idx ON admin_audit_logs(actor_id);`;
+
+    // Search tuning
+    await sql`
+      CREATE TABLE IF NOT EXISTS search_query_logs (
+        id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+        q text NOT NULL,
+        results_count int NOT NULL DEFAULT 0,
+        created_at timestamptz NOT NULL DEFAULT now()
+      );
+    `;
+    await sql`CREATE INDEX IF NOT EXISTS search_query_logs_created_idx ON search_query_logs(created_at);`;
+    await sql`CREATE INDEX IF NOT EXISTS search_query_logs_q_idx ON search_query_logs(q);`;
+
+    await sql`
+      CREATE TABLE IF NOT EXISTS search_synonyms (
+        id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+        term text NOT NULL UNIQUE,
+        synonyms jsonb NOT NULL,
+        created_at timestamptz NOT NULL DEFAULT now(),
+        updated_at timestamptz NOT NULL DEFAULT now()
+      );
+    `;
+    await sql`CREATE INDEX IF NOT EXISTS search_synonyms_term_idx ON search_synonyms(term);`;
+
+    await sql`
+      CREATE TABLE IF NOT EXISTS search_boosts (
+        id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+        term text NOT NULL UNIQUE,
+        boost int NOT NULL DEFAULT 0,
+        created_at timestamptz NOT NULL DEFAULT now(),
+        updated_at timestamptz NOT NULL DEFAULT now()
+      );
+    `;
+    await sql`CREATE INDEX IF NOT EXISTS search_boosts_term_idx ON search_boosts(term);`;
+
+    await sql`
+      CREATE TABLE IF NOT EXISTS search_stopwords (
+        id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+        term text NOT NULL UNIQUE,
+        created_at timestamptz NOT NULL DEFAULT now()
+      );
+    `;
+    await sql`CREATE INDEX IF NOT EXISTS search_stopwords_term_idx ON search_stopwords(term);`;
+
+    await sql`
+      CREATE TABLE IF NOT EXISTS search_tuning_settings (
+        id text PRIMARY KEY,
+        enabled boolean NOT NULL DEFAULT false,
+        updated_by uuid REFERENCES users(id) ON DELETE SET NULL,
+        updated_at timestamptz NOT NULL DEFAULT now()
+      );
+    `;
+    await sql`CREATE INDEX IF NOT EXISTS search_tuning_settings_enabled_idx ON search_tuning_settings(enabled);`;
+
+    // Ensure singleton row exists
+    await sql`
+      INSERT INTO search_tuning_settings(id, enabled)
+      VALUES ('default', false)
+      ON CONFLICT (id) DO NOTHING;
+    `;
+
+    console.log('✅ Catalog admin schema ensured');
+  } catch (err) {
+    console.warn('⚠️  Could not ensure catalog admin schema (tables may not exist yet):', err.message || err);
+  }
+}
+
 async function ensureSupportSchema(sql) {
   try {
     console.log('🔧 Ensuring support schema (notes/tickets/conversations)...');
@@ -402,6 +528,7 @@ async function runMigration() {
     await ensureSellerCompliance(sql);
     await ensureSellerKycDocuments(sql);
     await ensureSellerPageVersions(sql);
+    await ensureCatalogAdminSchema(sql);
 
     // Check if orders table already exists
     console.log('🔍 Checking if orders table exists...');

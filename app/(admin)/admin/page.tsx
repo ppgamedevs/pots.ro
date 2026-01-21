@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { Package, Users, ShoppingBag, DollarSign, Settings, FileText, UserCog } from "lucide-react";
+import { Package, Users, ShoppingBag, DollarSign, Settings, FileText, UserCog, Tags } from "lucide-react";
 import { db } from "@/db";
 import { orders, products, sellerApplications } from "@/db/schema/core";
 import { and, eq, gte, ne, sql } from "drizzle-orm";
@@ -45,6 +45,13 @@ export default async function AdminDashboardPage() {
   const stats = await getQuickStats();
 
   const menuItems = [
+    {
+      title: "Catalog",
+      description: "Categorii, structura catalogului și organizare",
+      href: "/admin/catalog/categories",
+      icon: Tags,
+      color: "bg-slate-700",
+    },
     {
       title: "Selleri",
       description: "Informații, produse, vânzări și suport pentru vânzători",
