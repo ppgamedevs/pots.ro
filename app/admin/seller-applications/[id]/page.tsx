@@ -10,7 +10,6 @@ function carrierLabel(value: string | null | undefined): string {
   const v = (value || '').toLowerCase().trim();
   if (!v || v === '-') return 'Cargus';
   if (v === 'cargus') return 'Cargus';
-  if (v === 'dpd') return 'DPD';
   if (v === 'fan' || v === 'fancourier' || v === 'fan courier') return 'FAN Courier';
   return value || 'Cargus';
 }

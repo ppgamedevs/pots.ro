@@ -26,7 +26,6 @@ const ORDER_STATUSES: { value: OrderStatus; label: string }[] = [
 
 const CARRIERS = [
   { value: 'cargus', label: 'Cargus' },
-  { value: 'dpd', label: 'DPD' },
   { value: 'mock', label: 'Mock' },
 ];
 

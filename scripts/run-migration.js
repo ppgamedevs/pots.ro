@@ -50,6 +50,118 @@ async function ensureInternalNotesColumn(sql) {
   }
 }
 
+async function ensureSupportSchema(sql) {
+  try {
+    console.log('🔧 Ensuring support schema (notes/tickets/conversations)...');
+
+    // Needed for gen_random_uuid()
+    await sql`CREATE EXTENSION IF NOT EXISTS pgcrypto`;
+
+    // Enums (idempotent)
+    await sql`
+      DO $$
+      BEGIN
+        IF NOT EXISTS (SELECT 1 FROM pg_type WHERE typname = 'support_ticket_status') THEN
+          CREATE TYPE support_ticket_status AS ENUM ('open', 'in_progress', 'waiting_on_seller', 'resolved', 'closed');
+        END IF;
+        IF NOT EXISTS (SELECT 1 FROM pg_type WHERE typname = 'support_ticket_priority') THEN
+          CREATE TYPE support_ticket_priority AS ENUM ('low', 'normal', 'high', 'urgent');
+        END IF;
+      END $$;
+    `;
+
+    // Tables
+    await sql`
+      CREATE TABLE IF NOT EXISTS seller_notes (
+        id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+        seller_id uuid NOT NULL REFERENCES sellers(id) ON DELETE CASCADE,
+        author_id uuid NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+        body text NOT NULL,
+        created_at timestamptz NOT NULL DEFAULT now(),
+        updated_at timestamptz NOT NULL DEFAULT now()
+      );
+    `;
+
+    await sql`
+      CREATE INDEX IF NOT EXISTS seller_notes_seller_idx ON seller_notes(seller_id);
+    `;
+    await sql`
+      CREATE INDEX IF NOT EXISTS seller_notes_created_idx ON seller_notes(seller_id, created_at);
+    `;
+
+    await sql`
+      CREATE TABLE IF NOT EXISTS support_tickets (
+        id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+        seller_id uuid NOT NULL REFERENCES sellers(id) ON DELETE CASCADE,
+        created_by uuid NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+        assigned_to uuid REFERENCES users(id) ON DELETE SET NULL,
+        status support_ticket_status NOT NULL DEFAULT 'open',
+        priority support_ticket_priority NOT NULL DEFAULT 'normal',
+        title text NOT NULL,
+        description text,
+        created_at timestamptz NOT NULL DEFAULT now(),
+        updated_at timestamptz NOT NULL DEFAULT now()
+      );
+    `;
+
+    await sql`
+      CREATE INDEX IF NOT EXISTS support_tickets_seller_idx ON support_tickets(seller_id);
+    `;
+    await sql`
+      CREATE INDEX IF NOT EXISTS support_tickets_status_idx ON support_tickets(status);
+    `;
+    await sql`
+      CREATE INDEX IF NOT EXISTS support_tickets_priority_idx ON support_tickets(priority);
+    `;
+    await sql`
+      CREATE INDEX IF NOT EXISTS support_tickets_updated_idx ON support_tickets(updated_at);
+    `;
+
+    await sql`
+      CREATE TABLE IF NOT EXISTS support_ticket_messages (
+        id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+        ticket_id uuid NOT NULL REFERENCES support_tickets(id) ON DELETE CASCADE,
+        author_id uuid NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+        body text NOT NULL,
+        created_at timestamptz NOT NULL DEFAULT now()
+      );
+    `;
+    await sql`
+      CREATE INDEX IF NOT EXISTS support_ticket_messages_ticket_idx ON support_ticket_messages(ticket_id);
+    `;
+
+    await sql`
+      CREATE TABLE IF NOT EXISTS support_conversations (
+        id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+        seller_id uuid NOT NULL UNIQUE REFERENCES sellers(id) ON DELETE CASCADE,
+        created_at timestamptz NOT NULL DEFAULT now(),
+        updated_at timestamptz NOT NULL DEFAULT now()
+      );
+    `;
+    await sql`
+      CREATE INDEX IF NOT EXISTS support_conversations_seller_idx ON support_conversations(seller_id);
+    `;
+
+    await sql`
+      CREATE TABLE IF NOT EXISTS support_conversation_messages (
+        id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+        conversation_id uuid NOT NULL REFERENCES support_conversations(id) ON DELETE CASCADE,
+        author_id uuid REFERENCES users(id) ON DELETE SET NULL,
+        author_role text NOT NULL,
+        body text NOT NULL,
+        created_at timestamptz NOT NULL DEFAULT now()
+      );
+    `;
+    await sql`
+      CREATE INDEX IF NOT EXISTS support_conversation_messages_conv_idx ON support_conversation_messages(conversation_id);
+    `;
+
+    console.log('✅ Support schema ensured');
+  } catch (err) {
+    console.warn('⚠️  Could not ensure support schema (tables may not exist yet):', err.message || err);
+  }
+}
+
 async function runMigration() {
   let sql;
   try {
@@ -72,7 +184,11 @@ async function runMigration() {
     }
 
     console.log('🔄 Connecting to database...');
-    sql = postgres(DATABASE_URL, { max: 1, idle_timeout: 30 });
+    sql = postgres(DATABASE_URL, {
+      max: 1,
+      idle_timeout: 30,
+      onnotice: () => {},
+    });
 
     // Test connection
     try {
@@ -85,6 +201,7 @@ async function runMigration() {
 
     // Always attempt safe, idempotent schema tweaks
     await ensureInternalNotesColumn(sql);
+    await ensureSupportSchema(sql);
 
     // Check if orders table already exists
     console.log('🔍 Checking if orders table exists...');

@@ -26,11 +26,6 @@ export async function POST(request: NextRequest) {
         service: 'Standard',
         fee_cents: calculateCargusRate(weight_kg),
       },
-      {
-        carrier: 'DPD',
-        service: 'Classic',
-        fee_cents: calculateDPDRate(weight_kg),
-      },
     ];
 
     return NextResponse.json({ rates });
@@ -47,13 +42,6 @@ export async function POST(request: NextRequest) {
 function calculateCargusRate(weightKg: number): number {
   const baseFee = 1999; // 19.99 RON in cents
   const perKgFee = 150; // 1.5 RON per kg over 1kg in cents
-  const excessWeight = Math.max(0, weightKg - 1);
-  return baseFee + Math.round(excessWeight * perKgFee);
-}
-
-function calculateDPDRate(weightKg: number): number {
-  const baseFee = 1849; // 18.49 RON in cents
-  const perKgFee = 180; // 1.8 RON per kg over 1kg in cents
   const excessWeight = Math.max(0, weightKg - 1);
   return baseFee + Math.round(excessWeight * perKgFee);
 }

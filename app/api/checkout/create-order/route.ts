@@ -154,8 +154,8 @@ export async function POST(request: NextRequest) {
     if (shippingChoice) {
       shippingFeeCents = shippingChoice.fee_cents;
     } else {
-      // Default to cheapest option (DPD Classic for 1kg)
-      shippingFeeCents = 1849; // 18.49 RON
+      // Default to standard option (Cargus Standard for 1kg)
+      shippingFeeCents = 1999; // 19.99 RON
     }
 
     const totalCents = subtotalCents + shippingFeeCents - totalDiscountCents;

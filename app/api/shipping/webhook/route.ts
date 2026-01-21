@@ -7,7 +7,7 @@ import { validateTransition } from "@/lib/orderTransitions";
 import { z } from "zod";
 
 const webhookPayloadSchema = z.object({
-  provider: z.enum(['cargus', 'dpd', 'mock']),
+  provider: z.enum(['cargus', 'mock']),
   eventId: z.string().min(1, "Event ID is required"),
   orderId: z.string().min(1, "Order ID is required"),
   status: z.enum(['in_transit', 'out_for_delivery', 'delivered', 'return']),

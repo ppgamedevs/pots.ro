@@ -1,6 +1,5 @@
 import { Breadcrumbs } from '@/components/ui/breadcrumbs';
 import { H1 } from '@/components/ui/typography';
-import { AdminAnalytics } from '@/components/admin/AdminAnalytics';
 
 export default function AdminAnalyticsPage() {
   const breadcrumbItems = [
@@ -24,8 +23,13 @@ export default function AdminAnalyticsPage() {
           </p>
         </div>
 
-        {/* Analytics Content */}
-        <AdminAnalytics />
+        <div className="bg-white dark:bg-slate-900/60 border border-slate-200 dark:border-white/10 rounded-xl shadow-sm p-10 text-center">
+          <p className="text-sm font-medium text-slate-500 dark:text-slate-400">Coming soon</p>
+          <h2 className="mt-2 text-2xl font-semibold text-slate-900 dark:text-slate-100">Analytics</h2>
+          <p className="mt-3 text-slate-600 dark:text-slate-400 max-w-2xl mx-auto">
+            Secțiunea de analytics este în lucru. Între timp, poți folosi zona de Finanțe pentru comisioane și payout-uri.
+          </p>
+        </div>
       </div>
     </div>
   );

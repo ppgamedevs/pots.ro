@@ -10,7 +10,7 @@ export function Benefits() {
     },
     { 
       title: "AWB & curieri integrați", 
-      text: "Cargus/DPD la un click; etichete din dashboard." 
+      text: "Cargus la un click; etichete din dashboard." 
     },
     { 
       title: "Suport și vizibilitate", 

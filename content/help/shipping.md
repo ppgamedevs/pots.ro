@@ -5,10 +5,7 @@ Informații complete despre livrare, termene estimate și urmărirea coletelor p
 ## Curierii parteneri
 
 Lucrăm cu următorii curieri de încredere:
-- **Fan Courier**: Livrare rapidă în toată țara
-- **DPD**: Servicii premium cu urmărire în timp real
 - **Cargus**: Acoperire națională extinsă
-- **Sameday**: Livrare în aceeași zi pentru București
 
 ## Termene de livrare
 

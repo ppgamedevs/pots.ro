@@ -95,10 +95,8 @@ Pentru vânzători:
       id: "shipping",
       title: "Livrare și transport",
       content: `Livrarea se face prin curieri autorizați:
-- Fan Courier
-- DPD
-- Cargus
-- Sameday
+    Livrarea se face prin curier autorizat:
+    - Cargus
 
 Termenele de livrare:
 - București: 1-2 zile lucrătoare

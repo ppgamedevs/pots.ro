@@ -9,27 +9,9 @@ export const metadata: Metadata = {
 export default function ParteneriPage() {
   const partners = [
     {
-      name: 'Fan Courier',
-      description: 'Livrare rapidă și sigură în toată România',
-      logo: '/partners/fan-courier.svg',
-      category: 'Curierat'
-    },
-    {
-      name: 'DPD',
-      description: 'Servicii de livrare premium pentru produse delicate',
-      logo: '/partners/dpd.svg',
-      category: 'Curierat'
-    },
-    {
       name: 'Cargus',
       description: 'Soluții logistice complete pentru florării',
       logo: '/partners/cargus.svg',
-      category: 'Curierat'
-    },
-    {
-      name: 'Sameday',
-      description: 'Livrare în aceeași zi pentru comenzi urgente',
-      logo: '/partners/sameday.svg',
       category: 'Curierat'
     },
     {

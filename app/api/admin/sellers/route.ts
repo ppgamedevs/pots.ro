@@ -14,14 +14,14 @@ export async function GET(req: Request) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    // Check if user is admin
+    // Check if user is admin/support
     const [user] = await db
       .select({ role: users.role })
       .from(users)
       .where(eq(users.id, userId))
       .limit(1);
 
-    if (!user || user.role !== 'admin') {
+    if (!user || (user.role !== 'admin' && user.role !== 'support')) {
       return NextResponse.json({ error: "Forbidden" }, { status: 403 });
     }
 
@@ -48,8 +48,14 @@ export async function GET(req: Request) {
         id: sellers.id,
         slug: sellers.slug,
         brand_name: sellers.brandName,
+        brandName: sellers.brandName,
+        status: sellers.status,
+        phone: sellers.phone,
+        email: sellers.email,
+        userEmail: users.email,
       })
       .from(sellers)
+      .leftJoin(users, eq(users.id, sellers.userId))
       .where(conditions.length > 0 ? or(...conditions)! : undefined)
       .orderBy(sellers.brandName)
       .limit(100);

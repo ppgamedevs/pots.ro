@@ -22,8 +22,8 @@ export interface AWBResult {
 }
 
 export interface Courier {
-  name: 'cargus' | 'dpd' | 'mock';
+  name: 'cargus' | 'mock';
   createAwb(req: AWBRequest): Promise<AWBResult>;
 }
 
-export type CourierName = 'cargus' | 'dpd' | 'mock';
+export type CourierName = 'cargus' | 'mock';

@@ -16,6 +16,10 @@ export const ADMIN_ROUTE_CONFIG: Record<string, { label: string; parent?: string
   '/admin': {
     label: 'Dashboard',
   },
+  '/admin/sellers': {
+    label: 'Selleri',
+    parent: '/admin',
+  },
   '/admin/seller-applications': {
     label: 'Aplicații Vânzători',
     parent: '/admin',
@@ -54,6 +58,9 @@ function getRouteLabel(pathname: string): string {
   // Verifică rute dinamice (ex: /admin/seller-applications/[id])
   if (pathname.startsWith('/admin/seller-applications/')) {
     return 'Detalii Aplicație';
+  }
+  if (pathname.startsWith('/admin/sellers/')) {
+    return 'Detalii Seller';
   }
   if (pathname.startsWith('/admin/orders/')) {
     return 'Detalii Comandă';

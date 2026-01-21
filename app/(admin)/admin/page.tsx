@@ -46,6 +46,13 @@ export default async function AdminDashboardPage() {
 
   const menuItems = [
     {
+      title: "Selleri",
+      description: "Informații, produse, vânzări și suport pentru vânzători",
+      href: "/admin/sellers",
+      icon: Users,
+      color: "bg-teal-500",
+    },
+    {
       title: "Aplicații Vânzători",
       description: "Gestionează cererile de înregistrare ale vânzătorilor",
       href: "/admin/seller-applications",

@@ -192,7 +192,7 @@ curl /api/analytics/admin?range=30d
 # Creează comandă (reducerile se aplică automat)
 curl -X POST /api/checkout/create-order \
   -H "Content-Type: application/json" \
-  -d '{"shippingChoice": {"carrier": "DPD", "service": "Classic", "fee_cents": 1849}}'
+  -d '{"shippingChoice": {"carrier": "Cargus", "service": "Standard", "fee_cents": 1999}}'
 ```
 
 ### 4. UI Testing

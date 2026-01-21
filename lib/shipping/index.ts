@@ -1,6 +1,5 @@
 import { Courier, AWBRequest, AWBResult, CourierName } from './providers';
 import { CargusProvider } from './cargus';
-import { DPDProvider } from './dpd';
 import { MockProvider } from './mock';
 
 export class ShippingProviderSelector {
@@ -14,12 +13,6 @@ export class ShippingProviderSelector {
       this.providers.push(new CargusProvider());
     } catch (error) {
       console.warn('Cargus provider not available:', error instanceof Error ? error.message : 'Unknown error');
-    }
-    
-    try {
-      this.providers.push(new DPDProvider());
-    } catch (error) {
-      console.warn('DPD provider not available:', error instanceof Error ? error.message : 'Unknown error');
     }
     
     // Always add mock provider as fallback

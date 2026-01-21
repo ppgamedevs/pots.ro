@@ -14,8 +14,6 @@ This document provides curl examples for testing all the Week 5 MVP endpoints.
 # Optional - if not set, providers will fallback to mock
 CARGUS_API_BASE=https://api.cargus.ro
 CARGUS_API_KEY=your_cargus_api_key
-DPD_API_BASE=https://api.dpd.ro
-DPD_API_KEY=your_dpd_api_key
 ```
 
 ## Order Status Endpoints

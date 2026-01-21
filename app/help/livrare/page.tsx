@@ -24,34 +24,6 @@ import Link from "next/link";
 
 const couriers = [
   {
-    name: "Fan Courier",
-    logo: "/partners/fan-courier.png",
-    deliveryTime: "1-2 zile lucrătoare",
-    coverage: "Toată România",
-    features: [
-      "Livrare la domiciliu",
-      "Livrare la punct de ridicare",
-      "Urmărire în timp real",
-      "SMS și email notificări"
-    ],
-    cost: "15-25 RON",
-    tracking: "https://www.fancourier.ro/tracking"
-  },
-  {
-    name: "DPD",
-    logo: "/partners/dpd.png",
-    deliveryTime: "1-3 zile lucrătoare",
-    coverage: "Toată România",
-    features: [
-      "Livrare programată",
-      "Opțiuni de livrare flexibile",
-      "Notificări push",
-      "Geofencing pentru livrare"
-    ],
-    cost: "18-30 RON",
-    tracking: "https://tracking.dpd.ro"
-  },
-  {
     name: "Cargus",
     logo: "/partners/cargus.png",
     deliveryTime: "2-4 zile lucrătoare",
@@ -64,20 +36,6 @@ const couriers = [
     ],
     cost: "12-20 RON",
     tracking: "https://www.cargus.ro/tracking"
-  },
-  {
-    name: "Sameday",
-    logo: "/partners/sameday.png",
-    deliveryTime: "În aceeași zi",
-    coverage: "București și orașe mari",
-    features: [
-      "Livrare în aceeași zi",
-      "Livrare express",
-      "Notificări instant",
-      "Tracking live"
-    ],
-    cost: "25-45 RON",
-    tracking: "https://www.sameday.ro/tracking"
   }
 ];
 

@@ -19,6 +19,9 @@ export default function SellerLayout({ children }: SellerLayoutProps) {
               <a href="/seller/products" className="text-gray-600 hover:text-gray-900">
                 Products
               </a>
+              <a href="/seller/support" className="text-gray-600 hover:text-gray-900">
+                Suport
+              </a>
               <a href="/seller" className="text-gray-600 hover:text-gray-900">
                 Dashboard
               </a>

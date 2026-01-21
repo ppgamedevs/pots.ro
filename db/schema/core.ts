@@ -11,6 +11,9 @@ export const promotionTypeEnum = pgEnum('promotion_type', ['banner', 'discount']
 export const sellerApplicationStatusEnum = pgEnum('seller_application_status', ['received','in_review','need_info','approved','rejected']);
 export const sellerStatusEnum = pgEnum('seller_status', ['onboarding','active','suspended']);
 
+export const supportTicketStatusEnum = pgEnum('support_ticket_status', ['open', 'in_progress', 'waiting_on_seller', 'resolved', 'closed']);
+export const supportTicketPriorityEnum = pgEnum('support_ticket_priority', ['low', 'normal', 'high', 'urgent']);
+
 // Users table for passwordless auth
 export const users = pgTable("users", {
   id: uuid("id").primaryKey().defaultRandom(),
@@ -76,6 +79,89 @@ export const sellerApplications = pgTable("seller_applications", {
   sellerApplicationsEmailIdx: index("seller_app_email_idx").on(table.email),
   sellerApplicationsCuiIdx: index("seller_app_cui_idx").on(table.cui),
 }));
+
+// Seller notes (visible only to admin/support)
+export const sellerNotes = pgTable(
+  "seller_notes",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    sellerId: uuid("seller_id").notNull().references(() => sellers.id, { onDelete: "cascade" }),
+    authorId: uuid("author_id").notNull().references(() => users.id, { onDelete: "cascade" }),
+    body: text("body").notNull(),
+    createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
+    updatedAt: timestamp("updated_at", { withTimezone: true }).defaultNow().notNull(),
+  },
+  (table) => ({
+    sellerNotesSellerIdx: index("seller_notes_seller_idx").on(table.sellerId),
+    sellerNotesCreatedIdx: index("seller_notes_created_idx").on(table.sellerId, table.createdAt),
+  })
+);
+
+// Support tickets for sellers
+export const supportTickets = pgTable(
+  "support_tickets",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    sellerId: uuid("seller_id").notNull().references(() => sellers.id, { onDelete: "cascade" }),
+    createdBy: uuid("created_by").notNull().references(() => users.id, { onDelete: "cascade" }),
+    assignedTo: uuid("assigned_to").references(() => users.id, { onDelete: "set null" }),
+    status: supportTicketStatusEnum("status").notNull().default("open"),
+    priority: supportTicketPriorityEnum("priority").notNull().default("normal"),
+    title: text("title").notNull(),
+    description: text("description"),
+    createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
+    updatedAt: timestamp("updated_at", { withTimezone: true }).defaultNow().notNull(),
+  },
+  (table) => ({
+    supportTicketsSellerIdx: index("support_tickets_seller_idx").on(table.sellerId),
+    supportTicketsStatusIdx: index("support_tickets_status_idx").on(table.status),
+    supportTicketsPriorityIdx: index("support_tickets_priority_idx").on(table.priority),
+    supportTicketsUpdatedIdx: index("support_tickets_updated_idx").on(table.updatedAt),
+  })
+);
+
+export const supportTicketMessages = pgTable(
+  "support_ticket_messages",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    ticketId: uuid("ticket_id").notNull().references(() => supportTickets.id, { onDelete: "cascade" }),
+    authorId: uuid("author_id").notNull().references(() => users.id, { onDelete: "cascade" }),
+    body: text("body").notNull(),
+    createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
+  },
+  (table) => ({
+    supportTicketMessagesTicketIdx: index("support_ticket_messages_ticket_idx").on(table.ticketId),
+  })
+);
+
+// Direct 1:1 support conversation for a seller (separate from tickets)
+export const supportConversations = pgTable(
+  "support_conversations",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    sellerId: uuid("seller_id").notNull().unique().references(() => sellers.id, { onDelete: "cascade" }),
+    createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
+    updatedAt: timestamp("updated_at", { withTimezone: true }).defaultNow().notNull(),
+  },
+  (table) => ({
+    supportConversationsSellerIdx: index("support_conversations_seller_idx").on(table.sellerId),
+  })
+);
+
+export const supportConversationMessages = pgTable(
+  "support_conversation_messages",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    conversationId: uuid("conversation_id").notNull().references(() => supportConversations.id, { onDelete: "cascade" }),
+    authorId: uuid("author_id").references(() => users.id, { onDelete: "set null" }),
+    authorRole: text("author_role").notNull(),
+    body: text("body").notNull(),
+    createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
+  },
+  (table) => ({
+    supportConversationMessagesConvIdx: index("support_conversation_messages_conv_idx").on(table.conversationId),
+  })
+);
 
 // Categories table
 export const categories = pgTable("categories", {

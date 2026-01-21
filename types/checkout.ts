@@ -11,7 +11,7 @@ export type CheckoutAddress = {
 };
 
 export type ShippingRate = {
-  carrier: 'Cargus' | 'DPD';
+  carrier: 'Cargus';
   service: string;
   fee_cents: number;
 };

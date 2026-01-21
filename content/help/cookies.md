@@ -39,10 +39,7 @@ Cookie-urile sunt fișiere text mici stocate pe dispozitivul tău când vizitezi
 - **Netopia Payments**: Pentru plăți securizate cu cardul
 
 ### Servicii de livrare
-- **Fan Courier**: Pentru tracking-ul coletelor
-- **DPD**: Pentru urmărirea livrărilor
 - **Cargus**: Pentru servicii de curierat
-- **Sameday**: Pentru livrări rapide
 
 ## Gestionarea cookie-urilor
 

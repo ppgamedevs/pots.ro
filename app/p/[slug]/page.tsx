@@ -228,7 +228,7 @@ export default function PDP() {
               />
 
               <PDPShipping
-                carriers={["Fan Courier", "DPD", "Cargus", "Sameday"]}
+                carriers={["Cargus"]}
                 eta="1-3 zile"
                 freeShippingThreshold={200}
                 currentPrice={product.price}

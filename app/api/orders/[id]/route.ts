@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { db } from "@/db";
 import { orders, orderItems, products, sellers, users, invoices } from "@/db/schema/core";
 import { eq, and, inArray, or } from "drizzle-orm";
-import { getUserId, getCurrentUser } from "@/lib/auth-helpers";
+import { getCurrentUser } from "@/lib/auth-helpers";
 import { sellerIdsForUser } from "@/lib/ownership";
 
 export async function GET(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
@@ -40,7 +40,7 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
       const userSellerIds = await sellerIdsForUser(user.id);
       const isBuyer = order.buyerId === user.id;
       const isSeller = userSellerIds.length > 0;
-      const isAdmin = user.role === 'admin';
+      const isAdmin = user.role === 'admin' || user.role === 'support';
 
       if (!isBuyer && !isSeller && !isAdmin) {
         return NextResponse.json({ error: "Access denied" }, { status: 403 });
@@ -55,7 +55,7 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
     const userSellerIds = user ? await sellerIdsForUser(user.id) : [];
     const isBuyer = user && order.buyerId === user.id;
     const isSeller = userSellerIds.length > 0;
-    const isAdmin = user?.role === 'admin';
+    const isAdmin = user?.role === 'admin' || user?.role === 'support';
     
     let orderItemsResult;
     if (isSeller && !isBuyer && !isAdmin && userSellerIds.length > 0) {
@@ -131,66 +131,33 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
       invoicesResult = [];
     }
 
-    // Formatează răspunsul pentru pagina de comandă
-    const shippingAddress = order.shippingAddress as any;
+    const shippingAddress = (order.shippingAddress as any) || {};
 
     return NextResponse.json({
       id: order.id,
-      orderNumber: order.orderNumber,
+      createdAt: order.createdAt.toISOString(),
+      buyerEmail: buyer.email,
       status: order.status,
-      currency: order.currency,
-      createdAt: order.createdAt,
-      updatedAt: order.updatedAt,
-      paidAt: order.paidAt,
-      packedAt: order.packedAt,
-      shippedAt: order.shippedAt,
-      deliveredAt: order.deliveredAt,
-      totals: {
-        subtotal_cents: order.subtotalCents,
-        shipping_fee_cents: order.shippingFeeCents,
-        total_discount_cents: order.totalDiscountCents,
-        total_cents: order.totalCents,
-        currency: order.currency,
-      },
-      shippingAddress: {
-        name: shippingAddress?.name || shippingAddress?.firstName + ' ' + shippingAddress?.lastName || buyer.name,
-        email: shippingAddress?.email || buyer.email,
-        phone: shippingAddress?.phone,
-        address: shippingAddress?.address,
-        city: shippingAddress?.city,
-        county: shippingAddress?.county,
-        postalCode: shippingAddress?.postalCode,
-        country: shippingAddress?.country || 'România',
-        notes: shippingAddress?.notes,
-      },
+      deliveryStatus: (order.deliveryStatus as any) ?? null,
+      awbNumber: order.awbNumber,
+      awbLabelUrl: order.awbLabelUrl,
+      deliveredAt: order.deliveredAt ? order.deliveredAt.toISOString() : null,
+      canceledReason: order.canceledReason,
+      shippingAddress,
       items: (orderItemsResult || []).map((item: any) => ({
         id: item.id,
-        productId: item.product?.id || item.productId,
         productName: item.product?.title || 'Produs indisponibil',
-        productSlug: item.product?.slug || null,
-        sellerName: item.seller?.brandName || item.seller?.company || 'Vânzător necunoscut',
         qty: item.qty,
-        unitPriceCents: item.unitPriceCents,
-        subtotalCents: item.subtotalCents,
+        unitPrice: item.unitPriceCents,
+        subtotal: item.subtotalCents,
+        sellerId: item.sellerId,
       })),
-      tracking: {
-        awbNumber: order.awbNumber,
-        carrier: (order.carrierMeta as any)?.carrier,
-        trackingUrl: (order.carrierMeta as any)?.trackingUrl,
+      totals: {
+        subtotal: order.subtotalCents,
+        shipping: order.shippingFeeCents,
+        tax: 0,
+        total: order.totalCents,
       },
-      invoices: invoicesResult.map((inv: any) => ({
-        id: inv.id,
-        type: inv.type || 'commission', // Default to 'commission' if type doesn't exist
-        series: inv.series,
-        number: inv.number,
-        pdfUrl: inv.pdfUrl,
-        total: Number(inv.total),
-        currency: inv.currency,
-        issuer: inv.issuer,
-        status: inv.status,
-        sellerInvoiceNumber: inv.sellerInvoiceNumber,
-        createdAt: inv.createdAt,
-      })),
     });
 
   } catch (error) {

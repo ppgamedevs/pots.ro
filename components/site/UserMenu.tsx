@@ -114,17 +114,27 @@ export function UserMenu() {
             </Link>
             
             {user.role === 'seller' && (
-              <Link
-                href="/seller"
-                className="flex items-center gap-2 px-3 py-2 text-sm text-ink hover:bg-bg-soft rounded transition-micro"
-                onClick={() => setIsOpen(false)}
-              >
-                <User className="h-4 w-4" />
-                Dashboard Vânzător
-              </Link>
+              <>
+                <Link
+                  href="/seller"
+                  className="flex items-center gap-2 px-3 py-2 text-sm text-ink hover:bg-bg-soft rounded transition-micro"
+                  onClick={() => setIsOpen(false)}
+                >
+                  <User className="h-4 w-4" />
+                  Dashboard Vânzător
+                </Link>
+                <Link
+                  href="/seller/support"
+                  className="flex items-center gap-2 px-3 py-2 text-sm text-ink hover:bg-bg-soft rounded transition-micro"
+                  onClick={() => setIsOpen(false)}
+                >
+                  <User className="h-4 w-4" />
+                  Suport
+                </Link>
+              </>
             )}
             
-            {user.role === 'admin' && (
+            {(user.role === 'admin' || user.role === 'support') && (
               <Link
                 href="/admin"
                 className="flex items-center gap-2 px-3 py-2 text-sm text-ink hover:bg-bg-soft rounded transition-micro"
