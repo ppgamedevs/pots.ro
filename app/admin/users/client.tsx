@@ -16,6 +16,7 @@ type Row = {
   email: string;
   name: string;
   role: "buyer" | "seller" | "admin" | "support";
+  status: "active" | "suspended";
   created_at: string;
   updated_at: string;
   last_login: string | null;
@@ -152,6 +153,17 @@ export default function AdminUsersClient() {
       render: (r) => (
         <Badge variant={getRoleVariant(r.role)}>
           {getRoleLabel(r.role)}
+        </Badge>
+      ),
+    },
+    {
+      key: "status",
+      header: "Status",
+      align: "left",
+      sortable: false,
+      render: (r) => (
+        <Badge variant={r.status === "suspended" ? "danger" : "success"}>
+          {r.status === "suspended" ? "Suspendat" : "Activ"}
         </Badge>
       ),
     },

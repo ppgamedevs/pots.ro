@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { db } from "@/db";
-import { users, sessions } from "@/db/schema/core";
+import { users, sessions, userActions } from "@/db/schema/core";
 import { eq, and, or, ilike, desc, asc, count, sql, isNull, max } from "drizzle-orm";
 import { requireRole } from "@/lib/authz";
 
@@ -84,6 +84,7 @@ export async function GET(req: NextRequest) {
 
     // Get last login dates for these users
     const lastLoginMap = new Map<string, Date>();
+    const statusMap = new Map<string, "active" | "suspended">();
     if (items.length > 0) {
       const userIdList = items.map((u: any) => u.id);
       
@@ -109,7 +110,31 @@ export async function GET(req: NextRequest) {
         }
       });
       
-      await Promise.all(loginPromises);
+      // Get user status based on last action
+      const statusPromises = userIdList.map(async (userId) => {
+        try {
+          const [lastAction] = await db
+            .select({
+              action: userActions.action,
+            })
+            .from(userActions)
+            .where(eq(userActions.userId, userId))
+            .orderBy(desc(userActions.createdAt))
+            .limit(1);
+          
+          if (lastAction?.action === "suspend") {
+            statusMap.set(userId, "suspended");
+          } else {
+            statusMap.set(userId, "active");
+          }
+        } catch (err) {
+          console.error(`Error fetching status for user ${userId}:`, err);
+          // Default to active if error
+          statusMap.set(userId, "active");
+        }
+      });
+      
+      await Promise.all([...loginPromises, ...statusPromises]);
     }
 
     // Transform to match client component expectations
@@ -119,6 +144,7 @@ export async function GET(req: NextRequest) {
       email: item.email,
       name: item.name || "",
       role: item.role,
+      status: statusMap.get(item.id) || "active",
       created_at: item.created_at.toISOString(),
       updated_at: item.updated_at.toISOString(),
       last_login: lastLoginMap.get(item.id)?.toISOString() || null,

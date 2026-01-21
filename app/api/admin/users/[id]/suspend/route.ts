@@ -36,28 +36,31 @@ export async function POST(
 
     // Insert action record
     try {
-      await db.insert(userActions).values({
+      const insertResult = await db.insert(userActions).values({
         userId: userId,
         action: data.action,
         message: data.message || null,
         adminUserId: adminUser.id,
       });
+      console.log('User action inserted successfully:', { userId, action: data.action, adminUserId: adminUser.id });
     } catch (dbError) {
       // If table doesn't exist, create it
       const errorMessage = dbError instanceof Error ? dbError.message : String(dbError);
       const errorString = errorMessage.toLowerCase();
       if (dbError instanceof Error && errorString.includes('user_actions')) {
         console.log('Creating user_actions table');
-        await db.execute(`
-          CREATE TABLE IF NOT EXISTS user_actions (
-            id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-            user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
-            action TEXT NOT NULL CHECK (action IN ('suspend', 'reactivate')),
-            message TEXT,
-            admin_user_id UUID NOT NULL REFERENCES users(id) ON DELETE SET NULL,
-            created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW() NOT NULL
-          )
-        `);
+            await db.execute(`
+              CREATE TABLE IF NOT EXISTS user_actions (
+                id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+                user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+                action TEXT NOT NULL CHECK (action IN ('suspend', 'reactivate', 'role_change')),
+                message TEXT,
+                old_role TEXT,
+                new_role TEXT,
+                admin_user_id UUID NOT NULL REFERENCES users(id) ON DELETE SET NULL,
+                created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW() NOT NULL
+              )
+            `);
         
         await db.execute(`
           CREATE INDEX IF NOT EXISTS user_actions_user_id_idx ON user_actions(user_id)

@@ -37,7 +37,13 @@ export async function POST(request: NextRequest) {
     
     // Find or create user
     let user = await db
-      .select()
+      .select({
+        id: users.id,
+        email: users.email,
+        name: users.name,
+        displayId: users.displayId,
+        role: users.role,
+      })
       .from(users)
       .where(eq(users.email, email))
       .limit(1);
@@ -53,7 +59,13 @@ export async function POST(request: NextRequest) {
           displayId: displayId,
           role: 'buyer',
         })
-        .returning();
+        .returning({
+          id: users.id,
+          email: users.email,
+          name: users.name,
+          displayId: users.displayId,
+          role: users.role,
+        });
       
       user = newUser;
     }
@@ -65,6 +77,24 @@ export async function POST(request: NextRequest) {
     await syncCartFromSessionToUser(userData.id);
     
     // Note: GDPR preferences sync happens client-side after login
+    
+    // Create session in database for last login tracking
+    const { createSession } = await import('@/lib/auth/session');
+    try {
+      // Create User object matching createSession interface
+      const userForSession = {
+        id: userData.id,
+        email: userData.email,
+        name: userData.name,
+        displayId: userData.displayId || userData.email.split('@')[0],
+        role: userData.role,
+      };
+      const { session } = await createSession(userForSession, request);
+      console.log('[otp.verify] Session created in database:', session.id);
+    } catch (sessionError) {
+      console.error('[otp.verify] Error creating session in database (non-fatal):', sessionError);
+      // Don't fail the login if session creation fails
+    }
     
     // Create response with session
     const response = NextResponse.json({ 
