@@ -6,7 +6,7 @@ import { requireRole } from '@/lib/authz';
 
 export async function GET(req: NextRequest) {
   try {
-    await requireRole(req, ['admin']);
+    await requireRole(req, ['admin', 'support']);
     const { searchParams } = new URL(req.url);
     const status = searchParams.get('status') as any | null;
     const items = await db.select().from(sellerApplications).where(status ? eq(sellerApplications.status, status) : undefined);

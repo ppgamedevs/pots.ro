@@ -6,6 +6,15 @@ import { eq } from "drizzle-orm";
 import { getCurrentUser } from "@/lib/auth/session";
 import { SellerApplicationActions } from "./SellerApplicationActions";
 
+function carrierLabel(value: string | null | undefined): string {
+  const v = (value || '').toLowerCase().trim();
+  if (!v || v === '-') return 'Cargus';
+  if (v === 'cargus') return 'Cargus';
+  if (v === 'dpd') return 'DPD';
+  if (v === 'fan' || v === 'fancourier' || v === 'fan courier') return 'FAN Courier';
+  return value || 'Cargus';
+}
+
 async function getApp(id: string) {
   const [app] = await db
     .select()
@@ -18,7 +27,7 @@ async function getApp(id: string) {
 
 export default async function AdminSellerApplicationDetail({ params }: { params: { id: string } }) {
   const currentUser = await getCurrentUser();
-  if (!currentUser || currentUser.role !== 'admin') {
+  if (!currentUser || (currentUser.role !== 'admin' && currentUser.role !== 'support')) {
     return (
       <main className="mx-auto max-w-4xl px-6 py-10">
         <AdminPageWrapper title="Acces restricționat">
@@ -79,7 +88,7 @@ export default async function AdminSellerApplicationDetail({ params }: { params:
                   </div>
                   <div>
                     <div className="text-xs font-medium text-slate-500 dark:text-slate-400 uppercase tracking-wide mb-1">Curier</div>
-                    <div className="text-sm text-slate-900 dark:text-slate-100">{app.carrier || '-'}</div>
+                    <div className="text-sm text-slate-900 dark:text-slate-100">{carrierLabel(app.carrier)}</div>
                   </div>
                   <div>
                     <div className="text-xs font-medium text-slate-500 dark:text-slate-400 uppercase tracking-wide mb-1">Status</div>
@@ -99,7 +108,12 @@ export default async function AdminSellerApplicationDetail({ params }: { params:
             {/* Actions Card */}
             <div className="bg-white dark:bg-slate-900/60 border border-slate-200 dark:border-white/10 rounded-xl shadow-sm p-6">
               <h2 className="text-lg font-semibold text-slate-900 dark:text-slate-100 mb-6">Acțiuni</h2>
-              <SellerApplicationActions appId={app.id} initialNotes={app.notes} />
+              <SellerApplicationActions
+                appId={app.id}
+                role={currentUser.role}
+                initialNotes={app.notes}
+                initialInternalNotes={app.internalNotes}
+              />
             </div>
         </div>
       </AdminPageWrapper>

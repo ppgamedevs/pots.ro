@@ -17,7 +17,7 @@ export interface User {
   email: string;
   name: string | null;
   displayId: string;
-  role: 'buyer' | 'seller' | 'admin';
+  role: 'buyer' | 'seller' | 'support' | 'admin';
 }
 
 export interface Session {
@@ -413,14 +413,15 @@ export async function getCurrentUser(): Promise<User | null> {
 /**
  * Check if user has required role
  */
-export async function hasRole(requiredRole: 'buyer' | 'seller' | 'admin'): Promise<boolean> {
+export async function hasRole(requiredRole: 'buyer' | 'seller' | 'support' | 'admin'): Promise<boolean> {
   const user = await getCurrentUser();
   if (!user) return false;
   
   const roleHierarchy = {
     buyer: 1,
     seller: 2,
-    admin: 3,
+    support: 3,
+    admin: 4,
   };
   
   return roleHierarchy[user.role] >= roleHierarchy[requiredRole];
@@ -440,13 +441,14 @@ export async function requireAuth(): Promise<User> {
 /**
  * Require specific role middleware
  */
-export async function requireRole(role: 'buyer' | 'seller' | 'admin'): Promise<User> {
+export async function requireRole(role: 'buyer' | 'seller' | 'support' | 'admin'): Promise<User> {
   const user = await requireAuth();
   
   const roleHierarchy = {
     buyer: 1,
     seller: 2,
-    admin: 3,
+    support: 3,
+    admin: 4,
   };
   
   if (roleHierarchy[user.role] < roleHierarchy[role]) {

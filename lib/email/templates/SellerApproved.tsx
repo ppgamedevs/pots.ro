@@ -16,6 +16,7 @@ interface SellerApprovedEmailProps {
   companyName: string;
   onboardingUrl: string;
   dashboardUrl: string;
+  adminMessage?: string | null;
 }
 
 export const getSellerApprovedSubject = () => 'Cont aprobat - începe onboarding-ul';
@@ -25,6 +26,7 @@ export const SellerApprovedEmail = ({
   companyName,
   onboardingUrl,
   dashboardUrl,
+  adminMessage,
 }: SellerApprovedEmailProps) => {
   const greetingName = (contactName || companyName || '').trim();
 
@@ -64,6 +66,14 @@ export const SellerApprovedEmail = ({
             <br />
             Echipa FloristMarket
           </Text>
+          {adminMessage ? (
+            <Section style={noteBox}>
+              <Text style={{ ...text, marginBottom: 8 }}>
+                Mesaj de la echipa noastră:
+              </Text>
+              <Text style={{ ...text, whiteSpace: 'pre-wrap' }}>{adminMessage}</Text>
+            </Section>
+          ) : null}
         </Container>
       </Body>
     </Html>
@@ -136,4 +146,11 @@ const footer = {
   lineHeight: '22px',
   marginTop: '12px',
   textAlign: 'left' as const,
+};
+
+const noteBox = {
+  backgroundColor: '#f8fafc',
+  borderRadius: '10px',
+  padding: '14px 16px',
+  marginTop: '14px',
 };

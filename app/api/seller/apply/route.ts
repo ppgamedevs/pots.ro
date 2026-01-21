@@ -40,6 +40,9 @@ export async function POST(req: NextRequest) {
       categories = cats && cats.length ? cats.map((c:any)=>String(c)) : undefined;
     }
 
+    // UI currently forces Cargus, but disabled fields may not submit.
+    if (!carrier) carrier = 'cargus';
+
     if (!company || !email || !isValidEmail(email) || !isValidCUI(cui) || !isValidIBAN(iban)) {
       return NextResponse.json({ error: 'Date invalide' }, { status: 400 });
     }

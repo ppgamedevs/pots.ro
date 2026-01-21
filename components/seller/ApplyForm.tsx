@@ -112,8 +112,10 @@ export function ApplyForm() {
       <div className="grid md:grid-cols-2 gap-4">
         <div>
           <Select label="Curier preferat" name="carrier" disabled>
-            <option value="cargus" selected>Cargus</option>
+            <option value="cargus">Cargus</option>
           </Select>
+          {/* Disabled inputs are not submitted; keep a hidden value for the backend */}
+          <input type="hidden" name="carrier" value="cargus" />
           <p className="text-xs text-gray-500 mt-1">
             Momentan doar Cargus este disponibil. Alți curieri vor fi adăugați în curând.
           </p>

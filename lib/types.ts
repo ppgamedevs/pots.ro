@@ -34,7 +34,7 @@ export type Conversation = {
 
 export type Message = { 
   id: string; 
-  author: { id: string; role: 'buyer' | 'seller' | 'admin' }; 
+  author: { id: string; role: 'buyer' | 'seller' | 'support' | 'admin' }; 
   body: string; 
   createdAt: string; 
   redacted?: boolean; 

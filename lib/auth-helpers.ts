@@ -2,7 +2,7 @@ export interface User {
   id: string;
   email: string;
   name: string | null;
-  role: 'buyer' | 'seller' | 'admin';
+  role: 'buyer' | 'seller' | 'support' | 'admin';
 }
 
 export async function getSessionUser(): Promise<User | null> {

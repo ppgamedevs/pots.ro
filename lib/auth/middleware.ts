@@ -59,7 +59,7 @@ export async function authMiddleware(request: NextRequest) {
  */
 export async function roleMiddleware(
   request: NextRequest,
-  requiredRole: 'buyer' | 'seller' | 'admin'
+  requiredRole: 'buyer' | 'seller' | 'support' | 'admin'
 ) {
   try {
     const user = await requireRole(requiredRole);
@@ -107,7 +107,7 @@ export function withAuth(handler: (request: NextRequest, user: any) => Promise<N
  * API route wrapper for role-based access
  */
 export function withRole(
-  requiredRole: 'buyer' | 'seller' | 'admin',
+  requiredRole: 'buyer' | 'seller' | 'support' | 'admin',
   handler: (request: NextRequest, user: any) => Promise<NextResponse>
 ) {
   return async (request: NextRequest) => {
@@ -138,7 +138,7 @@ export function getUserFromHeaders(request: NextRequest) {
   return {
     id: userId,
     email: userEmail,
-    role: userRole as 'buyer' | 'seller' | 'admin',
+    role: userRole as 'buyer' | 'seller' | 'support' | 'admin',
   };
 }
 
@@ -146,13 +146,14 @@ export function getUserFromHeaders(request: NextRequest) {
  * Check if user has required role
  */
 export function hasRequiredRole(
-  userRole: 'buyer' | 'seller' | 'admin',
-  requiredRole: 'buyer' | 'seller' | 'admin'
+  userRole: 'buyer' | 'seller' | 'support' | 'admin',
+  requiredRole: 'buyer' | 'seller' | 'support' | 'admin'
 ): boolean {
   const roleHierarchy = {
     buyer: 1,
     seller: 2,
-    admin: 3,
+    support: 3,
+    admin: 4,
   };
   
   return roleHierarchy[userRole] >= roleHierarchy[requiredRole];

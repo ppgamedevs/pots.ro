@@ -7,7 +7,7 @@ export interface User {
   email: string;
   name: string | null;
   displayId: string;
-  role: 'buyer' | 'seller' | 'admin';
+  role: 'buyer' | 'seller' | 'support' | 'admin';
 }
 
 export function useUser() {

@@ -18,7 +18,7 @@ export const users = pgTable("users", {
   name: text("name"),
   displayId: text("display_id").unique(), // Unique display ID for user greeting
   password: text("password"), // For password-based auth
-  role: text("role").notNull().default("buyer").$type<'buyer' | 'seller' | 'admin'>(),
+  role: text("role").notNull().default("buyer").$type<'buyer' | 'seller' | 'admin' | 'support'>(),
   notificationPreferences: jsonb("notification_preferences"), // User notification settings
   createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
   updatedAt: timestamp("updated_at", { withTimezone: true }).defaultNow().notNull(),
@@ -70,6 +70,7 @@ export const sellerApplications = pgTable("seller_applications", {
   returnPolicy: text("return_policy"),
   status: sellerApplicationStatusEnum("status").notNull().default('received'),
   notes: text("notes"),
+  internalNotes: text("internal_notes"),
   createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
 }, (table) => ({
   sellerApplicationsEmailIdx: index("seller_app_email_idx").on(table.email),

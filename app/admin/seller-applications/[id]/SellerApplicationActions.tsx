@@ -49,7 +49,17 @@ function SubmitButtons() {
   );
 }
 
-export function SellerApplicationActions({ appId, initialNotes }: { appId: string; initialNotes?: string | null }) {
+export function SellerApplicationActions({
+  appId,
+  role,
+  initialNotes,
+  initialInternalNotes,
+}: {
+  appId: string;
+  role: 'admin' | 'support' | 'seller' | 'buyer';
+  initialNotes?: string | null;
+  initialInternalNotes?: string | null;
+}) {
   const router = useRouter();
   const [state, formAction] = useFormState<SellerApplicationActionState | null, FormData>(
     updateSellerApplicationStatusAction,
@@ -79,7 +89,7 @@ export function SellerApplicationActions({ appId, initialNotes }: { appId: strin
       ) : null}
 
       <div>
-        <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">Note pentru applicant</label>
+        <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">Note pentru aplicant (trimise pe email)</label>
         <textarea
           name="notes"
           defaultValue={initialNotes || ''}
@@ -88,7 +98,19 @@ export function SellerApplicationActions({ appId, initialNotes }: { appId: strin
         />
       </div>
 
-      <SubmitButtons />
+      <div>
+        <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">Note interne (doar admin/suport)</label>
+        <textarea
+          name="internalNotes"
+          defaultValue={initialInternalNotes || ''}
+          placeholder="Notițe interne pentru echipă (nu se trimit aplicantului)…"
+          className="w-full border border-slate-200 dark:border-white/10 rounded-lg p-3 text-sm bg-white dark:bg-slate-800/50 focus:ring-2 focus:ring-primary focus:border-primary transition-colors resize-none min-h-[120px]"
+          readOnly={role !== 'admin'}
+        />
+        <p className="mt-2 text-xs text-slate-500 dark:text-slate-400">Acest câmp este doar pentru uz intern și nu apare în emailurile către aplicant.</p>
+      </div>
+
+      {role === 'admin' ? <SubmitButtons /> : null}
     </form>
   );
 }

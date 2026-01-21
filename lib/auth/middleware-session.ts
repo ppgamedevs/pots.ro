@@ -9,7 +9,7 @@ const JWT_SECRET = new TextEncoder().encode(
 export interface MiddlewareSession extends JWTPayload {
   userId: string;
   email: string;
-  role: 'buyer' | 'seller' | 'admin';
+  role: 'buyer' | 'seller' | 'support' | 'admin';
   expiresAt: number;
 }
 

@@ -5,6 +5,7 @@ import { generateUniqueDisplayId } from '@/lib/utils/displayId';
 import { emailService } from '@/lib/email';
 import { SITE_URL } from '@/lib/env';
 import { SellerApprovedEmail, getSellerApprovedSubject } from '@/lib/email/templates/SellerApproved';
+import { SellerApplicationStatusUpdateEmail, getSellerApplicationStatusUpdateSubject } from '@/lib/email/templates/SellerApplicationStatusUpdate';
 import React from 'react';
 
 export type SellerApplicationStatus = 'received' | 'in_review' | 'need_info' | 'approved' | 'rejected';
@@ -28,8 +29,9 @@ export async function updateSellerApplicationStatus(opts: {
   applicationId: string;
   status: SellerApplicationStatus;
   notes?: string;
+  internalNotes?: string;
 }): Promise<SellerApplicationUpdateResult> {
-  const { applicationId, status, notes } = opts;
+  const { applicationId, status, notes, internalNotes } = opts;
 
   try {
     const result = await db.transaction(async (tx: unknown) => {
@@ -47,7 +49,7 @@ export async function updateSellerApplicationStatus(opts: {
       if (status !== 'approved') {
         await txDb
           .update(sellerApplications)
-          .set({ status, notes: notes || null })
+          .set({ status, notes: notes || null, internalNotes: internalNotes || null })
           .where(eq(sellerApplications.id, applicationId));
 
         return { ok: true as const, app };
@@ -125,7 +127,7 @@ export async function updateSellerApplicationStatus(opts: {
 
       await txDb
         .update(sellerApplications)
-        .set({ status, notes: notes || null })
+        .set({ status, notes: notes || null, internalNotes: internalNotes || null })
         .where(eq(sellerApplications.id, applicationId));
 
       return { ok: true as const, app };
@@ -133,22 +135,39 @@ export async function updateSellerApplicationStatus(opts: {
 
     if (!result.ok) return result;
 
-    // Email: only required for approved (requested). Keep logic tight.
-    if (status === 'approved') {
+    // Email notifications for workflow statuses.
+    // `received` is already handled at application submission.
+    if (status !== 'received') {
       const app = result.app;
-      const onboardingUrl = `${SITE_URL}/autentificare?next=${encodeURIComponent('/seller/onboarding')}`;
-      const dashboardUrl = `${SITE_URL}/autentificare?next=${encodeURIComponent('/seller/orders')}`;
 
-      await emailService.sendEmail({
-        to: app.email,
-        subject: getSellerApprovedSubject(),
-        template: React.createElement(SellerApprovedEmail, {
-          contactName: app.contactName,
-          companyName: app.company,
-          onboardingUrl,
-          dashboardUrl,
-        }),
-      });
+      if (status === 'approved') {
+        const onboardingUrl = `${SITE_URL}/autentificare?next=${encodeURIComponent('/seller/onboarding')}`;
+        const dashboardUrl = `${SITE_URL}/autentificare?next=${encodeURIComponent('/seller/orders')}`;
+
+        await emailService.sendEmail({
+          to: app.email,
+          subject: getSellerApprovedSubject(),
+          template: React.createElement(SellerApprovedEmail, {
+            contactName: app.contactName,
+            companyName: app.company,
+            onboardingUrl,
+            dashboardUrl,
+            adminMessage: notes || null,
+          }),
+        });
+      } else {
+        await emailService.sendEmail({
+          to: app.email,
+          subject: getSellerApplicationStatusUpdateSubject(status),
+          template: React.createElement(SellerApplicationStatusUpdateEmail, {
+            contactName: app.contactName,
+            companyName: app.company,
+            status,
+            adminMessage: notes || null,
+            helpUrl: `${SITE_URL}/ajutor`,
+          }),
+        });
+      }
     }
 
     return { ok: true };

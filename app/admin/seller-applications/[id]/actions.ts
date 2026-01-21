@@ -19,6 +19,7 @@ export async function updateSellerApplicationStatusAction(
   const applicationId = String(formData.get('appId') || '');
   const nextStatus = String(formData.get('next') || '') as SellerApplicationStatus;
   const notes = String(formData.get('notes') || '');
+  const internalNotes = String(formData.get('internalNotes') || '');
 
   if (!applicationId) {
     return { ok: false, error: 'ID aplicație lipsă.' };
@@ -33,6 +34,7 @@ export async function updateSellerApplicationStatusAction(
     applicationId,
     status: nextStatus,
     notes: notes || undefined,
+    internalNotes: internalNotes || undefined,
   });
 
   if (!result.ok) {

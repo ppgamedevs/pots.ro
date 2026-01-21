@@ -117,7 +117,7 @@ export async function middleware(request: NextRequest) {
     // Role-gated routes
     if (pathname === '/admin' || pathname.startsWith('/admin/')) {
       // Keep demos public (already handled by isPublicRoute)
-      if (session.role !== 'admin') {
+      if (session.role !== 'admin' && session.role !== 'support') {
         return NextResponse.redirect(new URL('/', request.url));
       }
     }
