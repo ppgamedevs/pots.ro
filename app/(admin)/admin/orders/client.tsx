@@ -64,6 +64,7 @@ export default function AdminOrdersClient() {
   const [page, setPage] = useState(parseInt(searchParams.get("page") || "1"));
   const [totalItems, setTotalItems] = useState(0);
   const [totalPages, setTotalPages] = useState(1);
+  const [exporting, setExporting] = useState(false);
 
   // Fetch orders
   const fetchOrders = async () => {
@@ -95,6 +96,39 @@ export default function AdminOrdersClient() {
       toast.error("Eroare la încărcarea comenzilor");
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handleExportCsv = async () => {
+    try {
+      setExporting(true);
+      const params = new URLSearchParams();
+      if (search) params.set("q", search);
+      if (statusFilter && statusFilter !== "all") params.set("status", statusFilter);
+      if (dateFrom) params.set("from", dateFrom);
+      if (dateTo) params.set("to", dateTo);
+
+      const url = `/api/admin/orders/export?${params.toString()}`;
+      const res = await fetch(url, { credentials: "include" });
+      if (!res.ok) {
+        const msg = (await res.json().catch(() => null))?.error || "Export eșuat";
+        throw new Error(msg);
+      }
+
+      const blob = await res.blob();
+      const downloadUrl = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = downloadUrl;
+      a.download = `orders_export_${new Date().toISOString().split("T")[0]}.csv`;
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      URL.revokeObjectURL(downloadUrl);
+    } catch (err: any) {
+      console.error("Export CSV error:", err);
+      toast.error(err?.message || "Nu s-a putut exporta CSV");
+    } finally {
+      setExporting(false);
     }
   };
 
@@ -262,6 +296,16 @@ export default function AdminOrdersClient() {
                 ))}
               </SelectContent>
             </Select>
+            <Button
+              variant="secondary"
+              size="sm"
+              onClick={handleExportCsv}
+              disabled={loading || exporting}
+              className="h-10"
+              title="Exportă CSV (PII mascat implicit)"
+            >
+              {exporting ? "Export..." : "Export CSV"}
+            </Button>
             <Button
               variant="secondary"
               size="sm"
