@@ -7,6 +7,7 @@ import { UITabs } from '@/components/ui/tabs';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
+import { Textarea } from '@/components/ui/textarea';
 import { ArrowLeftIcon, PackageIcon, UserIcon, MapPinIcon, ClockIcon } from 'lucide-react';
 import { OrderDetail } from '@/lib/types';
 import { getOrder } from '@/lib/api/orders';
@@ -31,6 +32,9 @@ export default function AdminOrderDetailPage() {
   const [messages, setMessages] = useState<any[]>([]);
   const [conversationId, setConversationId] = useState<string | null>(null);
   const [hasWarning, setHasWarning] = useState(false);
+  const [internalNote, setInternalNote] = useState('');
+  const [noteSaving, setNoteSaving] = useState(false);
+  const [emailSending, setEmailSending] = useState<null | 'paid' | 'shipped' | 'delivered'>(null);
 
   const { data: order, error, isLoading, mutate } = useSWR(
     ['order', orderId],
@@ -69,14 +73,62 @@ export default function AdminOrderDetailPage() {
     mutate();
   };
 
+  const addInternalNote = async () => {
+    if (!internalNote.trim()) return;
+    try {
+      setNoteSaving(true);
+      const res = await fetch(`/api/orders/${orderId}/internal-note`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ note: internalNote.trim() }),
+        credentials: 'include',
+      });
+      if (!res.ok) {
+        const msg = (await res.json().catch(() => null))?.error || 'Nu s-a putut salva nota';
+        throw new Error(msg);
+      }
+      setInternalNote('');
+      toast.success('Notă internă salvată');
+      mutate();
+    } catch (e: any) {
+      toast.error(e?.message || 'Eroare');
+    } finally {
+      setNoteSaving(false);
+    }
+  };
+
+  const resendEmail = async (type: 'paid' | 'shipped' | 'delivered') => {
+    try {
+      setEmailSending(type);
+      const res = await fetch(`/api/orders/${orderId}/resend-email`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ type }),
+        credentials: 'include',
+      });
+      const data = await res.json().catch(() => null);
+      if (!res.ok || !data?.success) {
+        throw new Error(data?.error || 'Nu s-a putut retrimite email-ul');
+      }
+      toast.success('Email retrimis');
+      mutate();
+    } catch (e: any) {
+      toast.error(e?.message || 'Eroare');
+    } finally {
+      setEmailSending(null);
+    }
+  };
+
   const handleMessageSent = (newMessage: any) => {
     setMessages(prev => [...prev, newMessage]);
   };
 
-  const formatCurrency = (amount: number) => {
+  const formatCurrencyFromCents = (amountCents: number) => {
+    const currency = (order as any)?.currency || 'RON';
+    const amount = (Number(amountCents) || 0) / 100;
     return new Intl.NumberFormat('ro-RO', {
       style: 'currency',
-      currency: 'RON',
+      currency,
     }).format(amount);
   };
 
@@ -90,13 +142,21 @@ export default function AdminOrderDetailPage() {
     });
   };
 
-  // Mock audit timeline for demonstration
-  const auditTimeline = [
-    { action: 'Order created', timestamp: order?.createdAt, actor: 'System' },
-    { action: 'Payment received', timestamp: order?.createdAt, actor: 'Customer' },
-    { action: 'Order packed', timestamp: order?.createdAt, actor: 'Seller' },
-    { action: 'Order shipped', timestamp: order?.createdAt, actor: 'Seller' },
-  ].filter(Boolean);
+  const auditTimeline = ((order as any)?.auditTrail || []) as Array<{
+    action: string;
+    actorRole?: string | null;
+    createdAt?: string | null;
+    meta?: any;
+  }>;
+
+  function formatAuditAction(action: string) {
+    if (action === 'status_change') return 'Status schimbat';
+    if (action === 'awb_created') return 'AWB creat';
+    if (action === 'webhook_update') return 'Tracking update (webhook)';
+    if (action === 'request_return') return 'Retur cerut';
+    if (action === 'approve_return') return 'Retur aprobat';
+    return action;
+  }
 
   if (isLoading) {
     return (
@@ -170,8 +230,8 @@ export default function AdminOrderDetailPage() {
                         <p className="text-sm text-gray-600">Qty: {item.qty}</p>
                       </div>
                       <div className="text-right">
-                        <p className="font-medium">{formatCurrency(item.subtotal)}</p>
-                        <p className="text-sm text-gray-600">{formatCurrency(item.unitPrice)} each</p>
+                        <p className="font-medium">{formatCurrencyFromCents((item as any).subtotalCents ?? (item as any).subtotal ?? 0)}</p>
+                        <p className="text-sm text-gray-600">{formatCurrencyFromCents((item as any).unitPriceCents ?? (item as any).unitPrice ?? 0)} each</p>
                       </div>
                     </div>
                   ))}
@@ -182,20 +242,59 @@ export default function AdminOrderDetailPage() {
                   <div className="space-y-2">
                     <div className="flex justify-between">
                       <span>Subtotal:</span>
-                      <span>{formatCurrency(order.totals.subtotal)}</span>
+                      <span>{formatCurrencyFromCents((order as any).totals?.subtotalCents ?? 0)}</span>
                     </div>
                     <div className="flex justify-between">
                       <span>Shipping:</span>
-                      <span>{formatCurrency(order.totals.shipping)}</span>
+                      <span>{formatCurrencyFromCents((order as any).totals?.shippingFeeCents ?? 0)}</span>
                     </div>
+                    {Number((order as any).totals?.totalDiscountCents ?? 0) > 0 && (
+                      <div className="flex justify-between">
+                        <span>Discount:</span>
+                        <span>-{formatCurrencyFromCents((order as any).totals?.totalDiscountCents ?? 0)}</span>
+                      </div>
+                    )}
                     <div className="flex justify-between font-bold text-lg">
                       <span>Total:</span>
-                      <span>{formatCurrency(order.totals.total)}</span>
+                      <span>{formatCurrencyFromCents((order as any).totals?.totalCents ?? 0)}</span>
                     </div>
                   </div>
                 </div>
               </CardContent>
             </Card>
+
+            {/* Invoices */}
+            {Array.isArray((order as any).invoices) && (order as any).invoices.length > 0 && (
+              <Card>
+                <CardHeader>
+                  <CardTitle>Facturi</CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <div className="space-y-2">
+                    {(order as any).invoices.map((inv: any) => (
+                      <div key={inv.id} className="flex items-center justify-between gap-4">
+                        <div className="text-sm text-slate-700 dark:text-slate-300">
+                          <div className="font-medium">{inv.series}{inv.number}</div>
+                          <div className="text-slate-500">{inv.status} • {inv.issuer}</div>
+                        </div>
+                        {inv.pdfUrl ? (
+                          <a
+                            href={inv.pdfUrl}
+                            target="_blank"
+                            rel="noreferrer"
+                            className="text-primary hover:text-primary/80 font-medium text-sm"
+                          >
+                            Deschide PDF
+                          </a>
+                        ) : (
+                          <span className="text-sm text-slate-400">-</span>
+                        )}
+                      </div>
+                    ))}
+                  </div>
+                </CardContent>
+              </Card>
+            )}
 
             {/* Shipping Address */}
             <Card>
@@ -226,17 +325,21 @@ export default function AdminOrderDetailPage() {
               </CardHeader>
               <CardContent>
                 <div className="space-y-4">
-                  {auditTimeline.map((event, index) => (
-                    <div key={index} className="flex items-center gap-3">
+                  {auditTimeline.length === 0 ? (
+                    <div className="text-sm text-slate-500">Nu există evenimente în audit trail.</div>
+                  ) : (
+                    auditTimeline.map((event, index) => (
+                      <div key={index} className="flex items-center gap-3">
                       <div className="w-2 h-2 bg-blue-500 rounded-full"></div>
                       <div className="flex-1">
-                        <p className="font-medium">{event.action}</p>
+                        <p className="font-medium">{formatAuditAction(event.action)}</p>
                         <p className="text-sm text-gray-600">
-                          {event.timestamp ? formatDate(event.timestamp) : 'Unknown date'} by {event.actor || 'System'}
+                          {event.createdAt ? formatDate(event.createdAt) : 'Unknown date'} by {event.actorRole || 'system'}
                         </p>
                       </div>
-                    </div>
-                  ))}
+                      </div>
+                    ))
+                  )}
                 </div>
               </CardContent>
             </Card>
@@ -244,6 +347,58 @@ export default function AdminOrderDetailPage() {
 
           {/* Sidebar */}
           <div className="space-y-6">
+            <Card>
+              <CardHeader>
+                <CardTitle>Ops</CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <div>
+                  <div className="text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">Notă internă</div>
+                  <Textarea
+                    value={internalNote}
+                    onChange={(e) => setInternalNote(e.target.value)}
+                    rows={4}
+                    placeholder="Scrie o notă internă (vizibilă doar în admin/support)…"
+                  />
+                  <div className="mt-2 flex justify-end">
+                    <Button onClick={addInternalNote} disabled={noteSaving || !internalNote.trim()} size="sm">
+                      {noteSaving ? 'Salvez…' : 'Salvează nota'}
+                    </Button>
+                  </div>
+                </div>
+
+                <div>
+                  <div className="text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">Retrimite email</div>
+                  <div className="flex flex-wrap gap-2">
+                    <Button
+                      variant="secondary"
+                      size="sm"
+                      onClick={() => resendEmail('paid')}
+                      disabled={emailSending !== null}
+                    >
+                      {emailSending === 'paid' ? 'Trimit…' : 'Paid'}
+                    </Button>
+                    <Button
+                      variant="secondary"
+                      size="sm"
+                      onClick={() => resendEmail('shipped')}
+                      disabled={emailSending !== null}
+                    >
+                      {emailSending === 'shipped' ? 'Trimit…' : 'Shipped'}
+                    </Button>
+                    <Button
+                      variant="secondary"
+                      size="sm"
+                      onClick={() => resendEmail('delivered')}
+                      disabled={emailSending !== null}
+                    >
+                      {emailSending === 'delivered' ? 'Trimit…' : 'Delivered'}
+                    </Button>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+
             {/* Actions */}
             <OrderActions
               order={order}

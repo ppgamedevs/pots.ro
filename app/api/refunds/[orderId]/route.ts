@@ -7,6 +7,10 @@ import { recordRefund } from '@/lib/ledger/post';
 import { logWebhook } from '@/lib/webhook-logging';
 import { emailService } from '@/lib/email';
 import React from 'react';
+import { getCurrentUser } from '@/lib/auth-helpers';
+import { writeAdminAudit } from '@/lib/admin/audit';
+import { logOrderAction } from '@/lib/audit';
+import { processRefund as processRefundShared } from '@/lib/refunds/process';
 
 /**
  * POST /api/refunds/[orderId]
@@ -29,11 +33,10 @@ export async function POST(
       }, { status: 400 });
     }
 
-    // TODO: Verifică autentificarea admin
-    // const user = await getCurrentUser(request);
-    // if (!user || user.role !== 'admin') {
-    //   return NextResponse.json({ error: 'Acces interzis' }, { status: 403 });
-    // }
+    const user = await getCurrentUser();
+    if (!user || user.role !== 'admin') {
+      return NextResponse.json({ success: false, error: 'Acces interzis' }, { status: 403 });
+    }
 
     console.log(`🔄 Procesez refund pentru comanda ${orderId}: ${amount} RON`);
 
@@ -81,20 +84,59 @@ export async function POST(
       }, { status: 400 });
     }
 
+    const LARGE_REFUND_RON = Number.parseFloat(process.env.LARGE_REFUND_RON || '500');
+    const requiresApproval = Number.isFinite(LARGE_REFUND_RON) && amount >= LARGE_REFUND_RON;
+
     // Creează refund-ul
     const refund = await db.insert(refunds).values({
       orderId: orderId,
       amount: amount.toString(),
       reason: reason,
-      status: 'pending'
+      status: 'pending',
+      failureReason: requiresApproval ? 'approval_required' : null,
     }).returning();
 
     const refundId = refund[0].id;
 
     console.log(`📝 Creat refund ${refundId} pentru comanda ${orderId}`);
 
+    await writeAdminAudit({
+      actorId: user.id,
+      actorRole: user.role,
+      action: requiresApproval ? 'refund_large_requested' : 'refund_requested',
+      entityType: 'refund',
+      entityId: refundId,
+      message: requiresApproval ? 'Refund mare - necesită aprobare a 2-a persoană' : 'Refund cerut',
+      meta: { orderId, amount, reason },
+    });
+
+    await logOrderAction({
+      orderId,
+      actorId: user.id,
+      actorRole: user.role,
+      action: 'refund',
+      meta: { refundId, amount, reason, requiresApproval },
+    });
+
+    if (requiresApproval) {
+      await logWebhook({
+        source: 'refunds',
+        ref: orderId,
+        payload: { action: 'create_refund', refundId, amount, reason, items, requiresApproval },
+        result: 'ok',
+      });
+
+      return NextResponse.json({
+        success: true,
+        refundId,
+        status: 'pending',
+        approvalRequired: true,
+        message: 'Refund-ul a fost înregistrat și așteaptă aprobarea a 2-a persoană',
+      }, { status: 202 });
+    }
+
     // Procesează refund-ul
-    const result = await processRefund(refundId, orderId, amount, order.currency);
+    const result = await processRefundShared(refundId, orderId, amount, order.currency);
 
     // Log webhook
     await logWebhook({
@@ -139,145 +181,3 @@ export async function POST(
   }
 }
 
-/**
- * Procesează un refund prin provider
- */
-async function processRefund(
-  refundId: string,
-  orderId: string,
-  amount: number,
-  currency: string
-): Promise<{
-  success: boolean;
-  status: 'pending' | 'processing' | 'refunded' | 'failed';
-  providerRef?: string;
-  failureReason?: string;
-}> {
-  try {
-    // Marchează ca fiind în procesare
-    await db.update(refunds)
-      .set({ status: 'processing' })
-      .where(eq(refunds.id, refundId));
-
-    console.log(`📤 Procesez refund ${refundId} prin provider`);
-
-    // Verifică dacă există payout-uri pentru această comandă
-    const orderPayouts = await db.query.payouts.findMany({
-      where: eq(payouts.orderId, orderId)
-    });
-
-    const wasPostPayout = orderPayouts.some((p: any) => p.status === 'paid');
-
-    // Procesează refund-ul prin provider (mock pentru MVP)
-    const result = await retryWithLogging(
-      `Refund ${refundId}`,
-      async () => {
-        // Simulează procesarea prin provider
-        await new Promise(resolve => setTimeout(resolve, 1000 + Math.random() * 2000));
-        
-        // Simulează eroare ocazională (5% șanse)
-        if (Math.random() < 0.05) {
-          throw new Error('Eroare simulată de procesare refund');
-        }
-        
-        return {
-          ok: true,
-          providerRef: `REFUND-${refundId}-${Date.now()}`,
-          failureReason: undefined
-        };
-      },
-      {
-        retryCondition: isRefundRetryableError,
-        maxAttempts: 3
-      }
-    );
-
-    if (result.ok) {
-      // Refund reușit
-      await db.update(refunds)
-        .set({
-          status: 'refunded',
-          providerRef: result.providerRef
-        })
-        .where(eq(refunds.id, refundId));
-
-      // Înregistrează în ledger
-      await recordRefund(refundId, wasPostPayout);
-
-      console.log(`✅ Refund ${refundId} procesat cu succes: ${result.providerRef}`);
-
-      return {
-        success: true,
-        status: 'refunded',
-        providerRef: result.providerRef
-      };
-    } else {
-      // Refund eșuat
-      await db.update(refunds)
-        .set({
-          status: 'failed',
-          failureReason: result.failureReason || 'Eroare necunoscută'
-        })
-        .where(eq(refunds.id, refundId));
-
-      // Trimite email de alertă către admin
-      await sendRefundFailureAlert(refundId, result.failureReason || 'Eroare necunoscută');
-
-      console.log(`❌ Refund ${refundId} eșuat: ${result.failureReason}`);
-
-      return {
-        success: false,
-        status: 'failed',
-        failureReason: result.failureReason
-      };
-    }
-  } catch (error) {
-    // Eroare în procesare
-    const errorMessage = error instanceof Error ? error.message : 'Eroare necunoscută';
-    
-    await db.update(refunds)
-      .set({
-        status: 'failed',
-        failureReason: errorMessage
-      })
-      .where(eq(refunds.id, refundId));
-
-    // Trimite email de alertă către admin
-    await sendRefundFailureAlert(refundId, errorMessage);
-
-    console.log(`❌ Refund ${refundId} eșuat cu excepție: ${errorMessage}`);
-
-    return {
-      success: false,
-      status: 'failed',
-      failureReason: errorMessage
-    };
-  }
-}
-
-/**
- * Trimite email de alertă când un refund eșuează
- */
-async function sendRefundFailureAlert(refundId: string, reason: string): Promise<void> {
-  try {
-    const adminEmails = process.env.ADMIN_EMAILS?.split(',') || ['admin@floristmarket.ro'];
-    
-    for (const email of adminEmails) {
-      await emailService.sendEmail({
-        to: email.trim(),
-        subject: `🚨 Refund eșuat - ${refundId}`,
-        template: React.createElement('div', {
-          style: { fontFamily: 'Arial, sans-serif', maxWidth: '600px', margin: '0 auto', padding: '20px' }
-        }, [
-          React.createElement('h2', { key: 'title', style: { color: '#d32f2f' } }, 'Refund eșuat'),
-          React.createElement('p', { key: 'refund-id' }, `Refund ID: ${refundId}`),
-          React.createElement('p', { key: 'reason' }, `Motiv: ${reason}`),
-          React.createElement('p', { key: 'date' }, `Data: ${new Date().toLocaleString('ro-RO')}`),
-          React.createElement('p', { key: 'action' }, 'Te rugăm să investighezi și să rezolvi problema.')
-        ])
-      });
-    }
-  } catch (error) {
-    console.error('Eroare la trimiterea email-ului de alertă refund:', error);
-  }
-}

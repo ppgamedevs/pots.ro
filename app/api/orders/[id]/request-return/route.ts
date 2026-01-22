@@ -4,6 +4,7 @@ import { orders, auditLogs } from '@/db/schema/core';
 import { eq } from 'drizzle-orm';
 import { validateReturnRequest, RETURN_POLICY } from '@/lib/returns/policy';
 import { logWebhook } from '@/lib/webhook-logging';
+import { getCurrentUser } from '@/lib/auth-helpers';
 
 /**
  * POST /api/orders/[id]/request-return
@@ -26,11 +27,10 @@ export async function POST(
       }, { status: 400 });
     }
 
-    // TODO: Verifică autentificarea buyer-ului
-    // const user = await getCurrentUser(request);
-    // if (!user || user.role !== 'buyer') {
-    //   return NextResponse.json({ error: 'Acces interzis' }, { status: 403 });
-    // }
+    const user = await getCurrentUser();
+    if (!user || user.role !== 'buyer') {
+      return NextResponse.json({ success: false, error: 'Acces interzis' }, { status: 403 });
+    }
 
     console.log(`🔄 Procesez cererea de retur pentru comanda ${orderId}`);
 
@@ -44,6 +44,10 @@ export async function POST(
         success: false,
         error: 'Comanda nu a fost găsită'
       }, { status: 404 });
+    }
+
+    if (order.buyerId !== user.id) {
+      return NextResponse.json({ success: false, error: 'Acces interzis' }, { status: 403 });
     }
 
     // Validează cererea de retur
@@ -75,8 +79,8 @@ export async function POST(
     // Înregistrează în audit log
     await db.insert(auditLogs).values({
       orderId: orderId,
-      actorId: 'buyer', // TODO: user.id
-      actorRole: 'buyer',
+      actorId: user.id,
+      actorRole: user.role,
       action: 'request_return',
       meta: {
         reason,

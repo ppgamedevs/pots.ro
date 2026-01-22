@@ -3,6 +3,8 @@ import { db } from '@/db';
 import { orders, auditLogs } from '@/db/schema/core';
 import { eq } from 'drizzle-orm';
 import { logWebhook } from '@/lib/webhook-logging';
+import { getCurrentUser } from '@/lib/auth-helpers';
+import { sellerIdsForUser } from '@/lib/ownership';
 
 /**
  * POST /api/orders/[id]/approve-return
@@ -25,11 +27,10 @@ export async function POST(
       }, { status: 400 });
     }
 
-    // TODO: Verifică autentificarea admin/seller
-    // const user = await getCurrentUser(request);
-    // if (!user || (user.role !== 'admin' && user.role !== 'seller')) {
-    //   return NextResponse.json({ error: 'Acces interzis' }, { status: 403 });
-    // }
+    const user = await getCurrentUser();
+    if (!user || (user.role !== 'admin' && user.role !== 'support' && user.role !== 'seller')) {
+      return NextResponse.json({ success: false, error: 'Acces interzis' }, { status: 403 });
+    }
 
     console.log(`✅ Aprob cererea de retur pentru comanda ${orderId} (metoda: ${method})`);
 
@@ -43,6 +44,13 @@ export async function POST(
         success: false,
         error: 'Comanda nu a fost găsită'
       }, { status: 404 });
+    }
+
+    if (user.role === 'seller') {
+      const ids = await sellerIdsForUser(user.id);
+      if (!ids.includes(order.sellerId)) {
+        return NextResponse.json({ success: false, error: 'Acces interzis' }, { status: 403 });
+      }
     }
 
     if (order.status !== 'return_requested') {
@@ -63,8 +71,8 @@ export async function POST(
     // Înregistrează în audit log
     await db.insert(auditLogs).values({
       orderId: orderId,
-      actorId: 'admin', // TODO: user.id
-      actorRole: 'admin', // TODO: user.role
+      actorId: user.id,
+      actorRole: user.role,
       action: 'approve_return',
       meta: {
         method,

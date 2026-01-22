@@ -14,13 +14,21 @@ import { Pagination } from "@/components/ui/pagination";
 type Row = {
   id: string;
   orderNumber: string;
+  buyerEmail?: string | null;
+  sellerName?: string | null;
   status: string;
   totalCents: number;
   currency: string;
+  paymentRef?: string | null;
   createdAt: string | null;
-  buyerId: string;
-  sellerId: string;
 };
+
+function maskPaymentRef(ref: string): string {
+  const v = ref.trim();
+  if (!v) return "";
+  if (v.length <= 4) return "****";
+  return `****${v.slice(-4)}`;
+}
 
 const ORDER_STATUSES = [
   { value: 'pending', label: 'Pending' },
@@ -180,6 +188,26 @@ export default function AdminOrdersClient() {
       ),
     },
     {
+      key: "buyerEmail",
+      header: "Buyer",
+      sortable: false,
+      render: (r) => (
+        <div className="text-slate-700 dark:text-slate-300 text-sm truncate max-w-[220px]" title={r.buyerEmail || undefined}>
+          {r.buyerEmail || "-"}
+        </div>
+      ),
+    },
+    {
+      key: "sellerName",
+      header: "Seller",
+      sortable: false,
+      render: (r) => (
+        <div className="text-slate-700 dark:text-slate-300 text-sm truncate max-w-[180px]" title={r.sellerName || undefined}>
+          {r.sellerName || "-"}
+        </div>
+      ),
+    },
+    {
       key: "status",
       header: "Status",
       sortable: true,
@@ -197,6 +225,16 @@ export default function AdminOrdersClient() {
       render: (r) => (
         <div className="font-medium text-slate-900 dark:text-slate-100">
           {(r.totalCents / 100).toFixed(2)} {r.currency || 'RON'}
+        </div>
+      ),
+    },
+    {
+      key: "paymentRef",
+      header: "Payment ref",
+      sortable: false,
+      render: (r) => (
+        <div className="text-slate-600 dark:text-slate-400 text-sm" title={r.paymentRef || undefined}>
+          {r.paymentRef ? maskPaymentRef(r.paymentRef) : "-"}
         </div>
       ),
     },

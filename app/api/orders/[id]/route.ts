@@ -4,6 +4,7 @@ import { orders, orderItems, products, sellers, users, invoices } from "@/db/sch
 import { eq, and, inArray } from "drizzle-orm";
 import { getCurrentUser } from "@/lib/auth-helpers";
 import { sellerIdsForUser } from "@/lib/ownership";
+import { getOrderAuditTrail } from "@/lib/audit";
 
 export const dynamic = "force-dynamic";
 
@@ -21,9 +22,11 @@ export async function GET(request: NextRequest, { params }: { params: { id: stri
       .select({
         order: orders,
         buyer: users,
+        seller: sellers,
       })
       .from(orders)
       .innerJoin(users, eq(orders.buyerId, users.id))
+      .innerJoin(sellers, eq(orders.sellerId, sellers.id))
       .where(
         isOrderNumber 
           ? eq(orders.orderNumber, id)
@@ -35,7 +38,7 @@ export async function GET(request: NextRequest, { params }: { params: { id: stri
       return NextResponse.json({ error: "Order not found" }, { status: 404 });
     }
 
-    const { order, buyer } = orderResult[0];
+    const { order, buyer, seller } = orderResult[0];
 
     if (!user) {
       return NextResponse.json({ error: "Authentication required" }, { status: 401 });
@@ -141,10 +144,18 @@ export async function GET(request: NextRequest, { params }: { params: { id: stri
 
     const shippingAddress = (order.shippingAddress as any) || {};
 
+    const auditTrail =
+      user?.role === "admin" || user?.role === "support"
+        ? await getOrderAuditTrail(order.id, 50)
+        : [];
+
     return NextResponse.json({
       id: order.id,
       orderNumber: order.orderNumber,
       buyerEmail: buyer.email,
+      sellerId: order.sellerId,
+      sellerName: seller?.brandName ?? null,
+      paymentRef: order.paymentRef ?? null,
       status: order.status,
       currency: order.currency,
       createdAt: order.createdAt.toISOString(),
@@ -203,6 +214,14 @@ export async function GET(request: NextRequest, { params }: { params: { id: stri
         uploadedBy: inv.uploadedBy,
         uploadedAt: inv.uploadedAt ? new Date(inv.uploadedAt).toISOString() : null,
         createdAt: inv.createdAt ? new Date(inv.createdAt).toISOString() : null,
+      })),
+      auditTrail: (auditTrail || []).map((a: any) => ({
+        id: a.id,
+        action: a.action,
+        actorId: a.actorId,
+        actorRole: a.actorRole,
+        meta: a.meta,
+        createdAt: a.createdAt ? new Date(a.createdAt).toISOString() : null,
       })),
     });
 

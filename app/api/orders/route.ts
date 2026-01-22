@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { db } from "@/db";
-import { orders, orderItems, users } from "@/db/schema/core";
+import { orders, orderItems, sellers, users } from "@/db/schema/core";
 import { and, count, desc, eq, gte, ilike, inArray, lte, or, sql } from "drizzle-orm";
 import { getCurrentUser } from "@/lib/auth-helpers";
 import { sellerIdsForUser } from "@/lib/ownership";
@@ -73,9 +73,10 @@ export async function GET(request: NextRequest) {
         .where(whereClause);
 
       const rows = await db
-        .select({ order: orders, buyerEmail: users.email })
+        .select({ order: orders, buyerEmail: users.email, sellerName: sellers.brandName })
         .from(orders)
         .innerJoin(users, eq(orders.buyerId, users.id))
+        .innerJoin(sellers, eq(orders.sellerId, sellers.id))
         .where(whereClause)
         .orderBy(desc(orders.createdAt))
         .limit(pageSize)
@@ -83,14 +84,16 @@ export async function GET(request: NextRequest) {
 
       return NextResponse.json({
         data: rows.map((row: any) => {
-          const { order, buyerEmail } = row;
+          const { order, buyerEmail, sellerName } = row;
           return {
             id: order.id,
             orderNumber: order.orderNumber,
             buyerEmail,
+            sellerName,
             status: order.status,
             currency: order.currency,
             totalCents: order.totalCents,
+            paymentRef: order.paymentRef,
             createdAt: order.createdAt.toISOString(),
             deliveryStatus: (order.deliveryStatus as any) ?? null,
             awbNumber: order.awbNumber,
