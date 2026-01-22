@@ -1,10 +1,12 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { parseNetopiaCallback, verifyNetopiaSignature, isNetopiaPaymentSuccess } from '@/lib/netopia';
 import { db } from '@/db';
-import { orders, users } from '@/db/schema/core';
+import { orders, users, webhookEvents } from '@/db/schema/core';
 import { eq } from 'drizzle-orm';
 import { sendPaymentConfirmationEmail } from '@/lib/email/payment-confirmation';
 import { updateInventoryAfterPayment } from '@/lib/inventory/payment-updates';
+import { logWebhook, logWebhookDuplicate, logWebhookError, redactWebhookPayload } from '@/lib/webhook-logging';
+import { applyNetopiaPaymentUpdate, NetopiaCallbackParsed } from '@/lib/payments/netopia/processor';
 
 // Helper function to get order with buyer data
 async function getOrderWithBuyer(orderId: string) {
@@ -120,117 +122,96 @@ export async function POST(request: NextRequest) {
       }
     }
 
-    // Check if payment was successful
-    const isSuccess = callbackData.isV2 
+    const isSuccess = callbackData.isV2
       ? callbackData.status === 'paid'
       : isNetopiaPaymentSuccess(callbackData.status);
 
-    if (isSuccess) {
-      // Update order status in database
+    const providerRef = callbackData.ntpID || null;
+    const eventId = callbackData.isV2
+      ? String(callbackData.ntpID || `${callbackData.orderId}:${callbackData.status}`)
+      : String(callbackData.signature || `${callbackData.orderId}:${callbackData.status}:${callbackData.amount}`);
+
+    const parsed: NetopiaCallbackParsed = {
+      orderId: callbackData.orderId,
+      status: isSuccess ? 'paid' : 'failed',
+      amount: callbackData.amount,
+      currency: callbackData.currency,
+      eventId,
+      providerRef,
+      isV2: !!callbackData.isV2,
+    };
+
+    const logPayload = {
+      provider: 'netopia',
+      eventId,
+      callback: callbackData,
+    };
+
+    // Idempotency / dedupe (best-effort): store provider eventId
+    try {
+      await db.insert(webhookEvents).values({
+        id: eventId,
+        orderId: callbackData.orderId,
+        payload: redactWebhookPayload(logPayload),
+      });
+    } catch (e: any) {
+      // Duplicate event id -> mark as duplicate and exit
+      await logWebhookDuplicate('payments', callbackData.orderId, logPayload);
+      return NextResponse.json({ status: 'ok', duplicate: true });
+    }
+
+    await logWebhook({ source: 'payments', ref: callbackData.orderId, payload: logPayload, result: 'ok' });
+
+    const result = await applyNetopiaPaymentUpdate(parsed, { source: 'webhook' });
+
+    // Side effects only when we actually set paidAt / moved to paid
+    if (isSuccess && result.ok && (result.currentStatus === 'paid' || result.setPaidAt)) {
+      // Send confirmation email
       try {
-        await db
-          .update(orders)
-          .set({ 
-            status: 'paid',
-            paidAt: new Date(),
-            updatedAt: new Date()
-          })
-          .where(eq(orders.id, callbackData.orderId));
-        
-        console.log('Order status updated to paid for:', callbackData.orderId);
-        
-        // Send confirmation email
-        try {
-          const orderData = await getOrderWithBuyer(callbackData.orderId);
-          await sendPaymentConfirmationEmail({
-            order: orderData,
-            customerEmail: orderData.buyer.email,
-            customerName: orderData.buyer.name,
-          });
-        } catch (emailError) {
-          console.error('Error sending payment confirmation email:', emailError);
-          // Don't fail the callback if email fails
-        }
-        
-        // Update inventory
-        try {
-          const orderData = await getOrderWithBuyer(callbackData.orderId);
-          await updateInventoryAfterPayment(orderData);
-        } catch (inventoryError) {
-          console.error('Error updating inventory:', inventoryError);
-          // Don't fail the callback if inventory update fails
-        }
-        
-        // Emite factura de comision (doar pentru comision, nu factura principală)
-        try {
-          const invoiceResponse = await fetch(`${process.env.SITE_URL || 'http://localhost:3000'}/api/internal/invoice-create`, {
-            method: 'POST',
-            headers: {
-              'Content-Type': 'application/json',
-            },
-            body: JSON.stringify({
-              orderId: callbackData.orderId,
-              invoiceType: 'commission', // Emite doar factura de comision
-            }),
-          });
-
-          if (invoiceResponse.ok) {
-            console.log('Commission invoice created for order:', callbackData.orderId);
-          } else {
-            console.error('Failed to create commission invoice:', await invoiceResponse.text());
-          }
-        } catch (invoiceError) {
-          console.error('Error creating commission invoice:', invoiceError);
-          // Don't fail the callback if invoice creation fails
-        }
-
-        // Verifică dacă există produse ale platformei și emite factura pentru ele
-        try {
-          const invoiceResponse = await fetch(`${process.env.SITE_URL || 'http://localhost:3000'}/api/internal/invoice-create`, {
-            method: 'POST',
-            headers: {
-              'Content-Type': 'application/json',
-            },
-            body: JSON.stringify({
-              orderId: callbackData.orderId,
-              invoiceType: 'platform', // Emite factura pentru produsele platformei
-            }),
-          });
-
-          if (invoiceResponse.ok) {
-            console.log('Platform invoice created for order:', callbackData.orderId);
-          } else {
-            // Nu este o eroare dacă nu există produse ale platformei
-            const errorText = await invoiceResponse.text();
-            if (!errorText.includes('No platform products')) {
-              console.error('Failed to create platform invoice:', errorText);
-            }
-          }
-        } catch (invoiceError) {
-          console.error('Error creating platform invoice:', invoiceError);
-          // Don't fail the callback if invoice creation fails
-        }
-      } catch (dbError) {
-        console.error('Error updating order status:', dbError);
-        // Still return success to Netopia to avoid retries
+        const orderData = await getOrderWithBuyer(callbackData.orderId);
+        await sendPaymentConfirmationEmail({
+          order: orderData,
+          customerEmail: orderData.buyer.email,
+          customerName: orderData.buyer.name,
+        });
+      } catch (emailError) {
+        console.error('Error sending payment confirmation email:', emailError);
       }
-    } else {
-      // Update order status to failed
+
+      // Update inventory
       try {
-        await db
-          .update(orders)
-          .set({ 
-            status: 'failed',
-            updatedAt: new Date()
-          })
-          .where(eq(orders.id, callbackData.orderId));
-        
-        console.log('Order status updated to failed for:', callbackData.orderId);
-      } catch (dbError) {
-        console.error('Error updating order status to failed:', dbError);
+        const orderData = await getOrderWithBuyer(callbackData.orderId);
+        await updateInventoryAfterPayment(orderData);
+      } catch (inventoryError) {
+        console.error('Error updating inventory:', inventoryError);
       }
-      
-      console.log('Payment failed for order:', callbackData.orderId, 'Status:', callbackData.status);
+
+      // Create invoices (commission + platform)
+      const baseUrl = process.env.SITE_URL || 'http://localhost:3000';
+      try {
+        await fetch(`${baseUrl}/api/internal/invoice-create`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ orderId: callbackData.orderId, invoiceType: 'commission' }),
+        });
+      } catch (invoiceError) {
+        console.error('Error creating commission invoice:', invoiceError);
+      }
+      try {
+        const resp = await fetch(`${baseUrl}/api/internal/invoice-create`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ orderId: callbackData.orderId, invoiceType: 'platform' }),
+        });
+        if (!resp.ok) {
+          const t = await resp.text();
+          if (!t.includes('No platform products')) {
+            console.error('Failed to create platform invoice:', t);
+          }
+        }
+      } catch (invoiceError) {
+        console.error('Error creating platform invoice:', invoiceError);
+      }
     }
 
     // Return success response to Netopia
@@ -238,6 +219,7 @@ export async function POST(request: NextRequest) {
 
   } catch (error) {
     console.error('Error processing Netopia callback:', error);
+    await logWebhookError('payments', undefined, { provider: 'netopia' }, error as Error);
     return NextResponse.json(
       { error: 'Callback processing failed' },
       { status: 500 }
@@ -279,70 +261,39 @@ export async function GET(request: NextRequest) {
       );
     }
 
-    // Check if payment was successful
     const isSuccess = isNetopiaPaymentSuccess(callbackData.status);
+    const eventId = String(callbackData.signature || `${callbackData.orderId}:${callbackData.status}:${callbackData.amount}`);
+    const parsed: NetopiaCallbackParsed = {
+      orderId: callbackData.orderId,
+      status: isSuccess ? 'paid' : 'failed',
+      amount: callbackData.amount,
+      currency: callbackData.currency,
+      eventId,
+      providerRef: null,
+      isV2: false,
+    };
 
-    if (isSuccess) {
-      // Update order status in database
-      try {
-        await db
-          .update(orders)
-          .set({ 
-            status: 'paid',
-            paidAt: new Date(),
-            updatedAt: new Date()
-          })
-          .where(eq(orders.id, callbackData.orderId));
-        
-        console.log('Order status updated to paid for:', callbackData.orderId);
-        
-        // Send confirmation email
-        try {
-          const orderData = await getOrderWithBuyer(callbackData.orderId);
-          await sendPaymentConfirmationEmail({
-            order: orderData,
-            customerEmail: orderData.buyer.email,
-            customerName: orderData.buyer.name,
-          });
-        } catch (emailError) {
-          console.error('Error sending payment confirmation email:', emailError);
-          // Don't fail the callback if email fails
-        }
-        
-        // Update inventory
-        try {
-          const orderData = await getOrderWithBuyer(callbackData.orderId);
-          await updateInventoryAfterPayment(orderData);
-        } catch (inventoryError) {
-          console.error('Error updating inventory:', inventoryError);
-          // Don't fail the callback if inventory update fails
-        }
-      } catch (dbError) {
-        console.error('Error updating order status:', dbError);
-      }
-    } else {
-      // Update order status to failed
-      try {
-        await db
-          .update(orders)
-          .set({ 
-            status: 'failed',
-            updatedAt: new Date()
-          })
-          .where(eq(orders.id, callbackData.orderId));
-        
-        console.log('Order status updated to failed for:', callbackData.orderId);
-      } catch (dbError) {
-        console.error('Error updating order status to failed:', dbError);
-      }
-      
-      console.log('Payment failed for order:', callbackData.orderId, 'Status:', callbackData.status);
+    const logPayload = { provider: 'netopia', eventId, callback: callbackData, isGet: true };
+
+    try {
+      await db.insert(webhookEvents).values({
+        id: eventId,
+        orderId: callbackData.orderId,
+        payload: redactWebhookPayload(logPayload),
+      });
+    } catch {
+      await logWebhookDuplicate('payments', callbackData.orderId, logPayload);
+      return NextResponse.json({ status: 'ok', duplicate: true });
     }
+
+    await logWebhook({ source: 'payments', ref: callbackData.orderId, payload: logPayload, result: 'ok' });
+    await applyNetopiaPaymentUpdate(parsed, { source: 'webhook' });
 
     return NextResponse.json({ status: 'ok' });
 
   } catch (error) {
     console.error('Error processing Netopia GET callback:', error);
+    await logWebhookError('payments', undefined, { provider: 'netopia', isGet: true }, error as Error);
     return NextResponse.json(
       { error: 'Callback processing failed' },
       { status: 500 }

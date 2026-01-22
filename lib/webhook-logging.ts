@@ -11,12 +11,114 @@ export interface WebhookLogData {
   result?: WebhookResult;
 }
 
+const DEFAULT_MAX_STRING_LENGTH = 4096;
+const DEFAULT_MAX_KEYS_PER_OBJECT = 200;
+const DEFAULT_MAX_DEPTH = 8;
+
+const SENSITIVE_KEYS = new Set([
+  'authorization',
+  'auth',
+  'token',
+  'access_token',
+  'refresh_token',
+  'api_key',
+  'apikey',
+  'secret',
+  'secretkey',
+  'private_key',
+  'password',
+  'signature',
+  'card',
+  'pan',
+  'cvv',
+  'cvc',
+  'iban',
+  'account',
+  'secretCode',
+]);
+
+function truncateString(value: string, maxLen: number) {
+  if (value.length <= maxLen) return value;
+  return value.slice(0, maxLen) + `…[truncated:${value.length - maxLen}]`;
+}
+
+function redactValue(value: unknown): unknown {
+  if (typeof value === 'string') {
+    if (!value) return value;
+    const trimmed = value.trim();
+    if (trimmed.length <= 8) return '***';
+    return `${trimmed.slice(0, 2)}***${trimmed.slice(-2)}`;
+  }
+  return '***';
+}
+
+/**
+ * Best-effort redaction for webhook payloads.
+ * - Masks known sensitive keys
+ * - Limits depth/size to avoid storing huge blobs
+ */
+export function redactWebhookPayload(
+  payload: any,
+  opts: {
+    maxStringLength?: number;
+    maxKeysPerObject?: number;
+    maxDepth?: number;
+  } = {}
+): any {
+  const maxStringLength = opts.maxStringLength ?? DEFAULT_MAX_STRING_LENGTH;
+  const maxKeysPerObject = opts.maxKeysPerObject ?? DEFAULT_MAX_KEYS_PER_OBJECT;
+  const maxDepth = opts.maxDepth ?? DEFAULT_MAX_DEPTH;
+
+  const seen = new WeakSet<object>();
+
+  const walk = (value: any, depth: number): any => {
+    if (depth > maxDepth) return '[max_depth]';
+    if (value === null || value === undefined) return value;
+
+    if (typeof value === 'string') return truncateString(value, maxStringLength);
+    if (typeof value === 'number' || typeof value === 'boolean') return value;
+    if (value instanceof Date) return value.toISOString();
+
+    if (Array.isArray(value)) {
+      return value.slice(0, 200).map((v) => walk(v, depth + 1));
+    }
+
+    if (typeof value === 'object') {
+      if (seen.has(value)) return '[circular]';
+      seen.add(value);
+
+      const entries = Object.entries(value as Record<string, any>);
+      const limited = entries.slice(0, maxKeysPerObject);
+      const out: Record<string, any> = {};
+
+      for (const [key, v] of limited) {
+        const lower = key.toLowerCase();
+        if (SENSITIVE_KEYS.has(lower)) {
+          out[key] = redactValue(v);
+          continue;
+        }
+        out[key] = walk(v, depth + 1);
+      }
+
+      if (entries.length > limited.length) {
+        out.__truncated_keys__ = entries.length - limited.length;
+      }
+
+      return out;
+    }
+
+    return String(value);
+  };
+
+  return walk(payload, 0);
+}
+
 export async function logWebhook(data: WebhookLogData): Promise<void> {
   try {
     await db.insert(webhookLogs).values({
       source: data.source,
       ref: data.ref,
-      payload: data.payload,
+      payload: redactWebhookPayload(data.payload),
       result: data.result || 'ok',
     });
   } catch (error) {
