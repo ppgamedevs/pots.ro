@@ -573,6 +573,36 @@ async function ensureGdprCompliance(sql) {
   }
 }
 
+async function ensureProductLocks(sql) {
+  try {
+    console.log('🔧 Ensuring product locks (price/stock lockouts)...');
+    await sql`CREATE EXTENSION IF NOT EXISTS pgcrypto`;
+
+    await sql`
+      CREATE TABLE IF NOT EXISTS product_locks (
+        id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+        product_id uuid NOT NULL REFERENCES products(id) ON DELETE CASCADE,
+        scope text NOT NULL CHECK (scope IN ('price', 'stock', 'all')),
+        locked_until timestamptz NOT NULL,
+        reason text NOT NULL,
+        created_by uuid REFERENCES users(id) ON DELETE SET NULL,
+        created_at timestamptz NOT NULL DEFAULT now(),
+        revoked_at timestamptz,
+        revoked_by uuid REFERENCES users(id) ON DELETE SET NULL,
+        revoked_reason text
+      );
+    `;
+
+    await sql`CREATE INDEX IF NOT EXISTS product_locks_product_idx ON product_locks(product_id);`;
+    await sql`CREATE INDEX IF NOT EXISTS product_locks_until_idx ON product_locks(locked_until);`;
+    await sql`CREATE INDEX IF NOT EXISTS product_locks_revoked_idx ON product_locks(product_id, revoked_at);`;
+
+    console.log('✅ Product locks ensured');
+  } catch (err) {
+    console.warn('⚠️  Could not ensure product locks (tables may not exist yet):', err.message || err);
+  }
+}
+
 async function ensureSupportSchema(sql) {
   try {
     console.log('🔧 Ensuring support schema (notes/tickets/conversations)...');
@@ -736,6 +766,7 @@ async function runMigration() {
     await ensureFeatureFlags(sql);
     await ensureManagedEmailTemplates(sql);
     await ensureGdprCompliance(sql);
+    await ensureProductLocks(sql);
 
     // Check if orders table already exists
     console.log('🔍 Checking if orders table exists...');

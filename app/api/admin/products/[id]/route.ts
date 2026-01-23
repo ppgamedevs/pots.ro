@@ -1,12 +1,19 @@
 import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
 import { db } from "@/db";
-import { adminAuditLogs, categories, productImages, products, sellers, users } from "@/db/schema/core";
-import { and, asc, desc, eq } from "drizzle-orm";
+import { adminAuditLogs, categories, productImages, productLocks, products, sellers, users } from "@/db/schema/core";
+import { and, asc, desc, eq, gt, inArray, isNull } from "drizzle-orm";
 import { getUserId } from "@/lib/auth-helpers";
 import { writeAdminAudit } from "@/lib/admin/audit";
 
 export const dynamic = "force-dynamic";
+
+type ActiveProductLock = {
+  id: string;
+  scope: 'price' | 'stock' | 'all';
+  lockedUntil: Date;
+  reason: string;
+};
 
 async function assertAdminOrSupport(): Promise<
   | { ok: true; actor: { id: string; role: "admin" | "support" } }
@@ -142,6 +149,58 @@ export async function PATCH(req: NextRequest, ctx: { params: { id: string } }) {
 
     if (guard.actor.role !== "admin" && (input.priceCents !== undefined || input.stock !== undefined)) {
       return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+    }
+
+    // Enforce active product locks (admins must revoke lock before modifying locked fields)
+    const wantsPriceChange = input.priceCents !== undefined;
+    const wantsStockChange = input.stock !== undefined;
+    const wantsAnyChange = Object.keys(input).length > 0;
+    if (guard.actor.role === 'admin' && wantsAnyChange) {
+      const now = new Date();
+      const scopesToCheck: Array<'price' | 'stock' | 'all'> = ['all'];
+      if (wantsPriceChange) scopesToCheck.push('price');
+      if (wantsStockChange) scopesToCheck.push('stock');
+
+      const activeLocks: ActiveProductLock[] = await db
+        .select({
+          id: productLocks.id,
+          scope: productLocks.scope,
+          lockedUntil: productLocks.lockedUntil,
+          reason: productLocks.reason,
+        })
+        .from(productLocks)
+        .where(
+          and(
+            eq(productLocks.productId, id),
+            isNull(productLocks.revokedAt),
+            gt(productLocks.lockedUntil, now),
+            inArray(productLocks.scope, scopesToCheck as any)
+          )
+        )
+        .limit(10);
+
+      const blocksAll = activeLocks.some((l: ActiveProductLock) => l.scope === 'all');
+      const blocksPrice =
+        wantsPriceChange && activeLocks.some((l: ActiveProductLock) => l.scope === 'price' || l.scope === 'all');
+      const blocksStock =
+        wantsStockChange && activeLocks.some((l: ActiveProductLock) => l.scope === 'stock' || l.scope === 'all');
+
+      if (blocksAll || blocksPrice || blocksStock) {
+        return NextResponse.json(
+          {
+            error: 'Product is locked',
+            code: 'PRODUCT_LOCKED',
+            productId: id,
+            locks: activeLocks.map((l: ActiveProductLock) => ({
+              id: String(l.id),
+              scope: l.scope,
+              lockedUntil: l.lockedUntil ? new Date(l.lockedUntil).toISOString() : null,
+              reason: l.reason,
+            })),
+          },
+          { status: 409 }
+        );
+      }
     }
 
     const [before] = await db

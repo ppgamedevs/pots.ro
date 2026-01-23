@@ -310,6 +310,27 @@ export const products = pgTable("products", {
   idxProductsFeatured: index('idx_products_featured').on(table.featured),
 }));
 
+// Admin-enforced locks to prevent silent manipulation of price/stock (and optionally all updates).
+export const productLocks = pgTable(
+  'product_locks',
+  {
+    id: uuid('id').primaryKey().defaultRandom(),
+    productId: uuid('product_id').notNull().references(() => products.id, { onDelete: 'cascade' }),
+    scope: text('scope').notNull().$type<'price' | 'stock' | 'all'>(),
+    lockedUntil: timestamp('locked_until', { withTimezone: true }).notNull(),
+    reason: text('reason').notNull(),
+    createdBy: uuid('created_by').references(() => users.id, { onDelete: 'set null' }),
+    createdAt: timestamp('created_at', { withTimezone: true }).defaultNow().notNull(),
+    revokedAt: timestamp('revoked_at', { withTimezone: true }),
+    revokedBy: uuid('revoked_by').references(() => users.id, { onDelete: 'set null' }),
+    revokedReason: text('revoked_reason'),
+  },
+  (table) => ({
+    productLocksProductIdx: index('product_locks_product_idx').on(table.productId),
+    productLocksUntilIdx: index('product_locks_until_idx').on(table.lockedUntil),
+  })
+);
+
 // Product images table
 export const productImages = pgTable("product_images", {
   id: uuid("id").primaryKey().defaultRandom(),
