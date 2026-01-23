@@ -18,6 +18,15 @@ export interface SendEmailOptions {
   attachments?: EmailAttachment[];
 }
 
+export interface SendHtmlEmailOptions {
+  to: string;
+  subject: string;
+  html: string;
+  text?: string;
+  from?: string;
+  headers?: Record<string, string>;
+}
+
 export class EmailService {
   private resend?: Resend;
   private transporter?: nodemailer.Transporter;
@@ -87,6 +96,49 @@ export class EmailService {
       };
     } catch (error) {
       console.error('Email send error:', error);
+      return {
+        success: false,
+        error: error instanceof Error ? error.message : 'Unknown error',
+      };
+    }
+  }
+
+  async sendHtmlEmail(
+    options: SendHtmlEmailOptions
+  ): Promise<{ success: boolean; messageId?: string; error?: string }> {
+    const { to, subject, html, text, from, headers } = options;
+
+    try {
+      let result: any;
+
+      if (this.provider === 'resend' && this.resend) {
+        result = await this.resend.emails.send({
+          from: from || process.env.EMAIL_FROM || 'FloristMarket <no-reply@floristmarket.ro>',
+          to,
+          subject,
+          html,
+          text,
+          headers,
+        } as any);
+      } else if (this.provider === 'smtp' && this.transporter) {
+        result = await this.transporter.sendMail({
+          from: from || process.env.EMAIL_FROM || 'FloristMarket <no-reply@floristmarket.ro>',
+          to,
+          subject,
+          html,
+          text,
+          headers,
+        } as any);
+      } else {
+        throw new Error('No email provider configured');
+      }
+
+      return {
+        success: true,
+        messageId: result.messageId || result.id,
+      };
+    } catch (error) {
+      console.error('Email sendHtmlEmail error:', error);
       return {
         success: false,
         error: error instanceof Error ? error.message : 'Unknown error',

@@ -13,6 +13,34 @@ const notificationPreferencesSchema = z.object({
   newsletter: z.boolean(),
 });
 
+function parsePrefs(value: unknown) {
+  const defaults = {
+    emailNotifications: true,
+    orderUpdates: true,
+    promotions: false,
+    newsletter: true,
+  };
+
+  if (!value) return defaults;
+
+  if (typeof value === 'object') {
+    const parsed = notificationPreferencesSchema.safeParse(value);
+    return parsed.success ? parsed.data : defaults;
+  }
+
+  if (typeof value === 'string') {
+    try {
+      const obj = JSON.parse(value);
+      const parsed = notificationPreferencesSchema.safeParse(obj);
+      return parsed.success ? parsed.data : defaults;
+    } catch {
+      return defaults;
+    }
+  }
+
+  return defaults;
+}
+
 /**
  * PATCH /api/users/notifications
  * Update user notification preferences
@@ -36,7 +64,7 @@ export async function PATCH(request: NextRequest) {
     const updatedUser = await db
       .update(users)
       .set({
-        notificationPreferences: JSON.stringify(validatedData),
+        notificationPreferences: validatedData,
         updatedAt: new Date(),
       })
       .where(eq(users.id, user.id))
@@ -113,22 +141,8 @@ export async function GET(request: NextRequest) {
     }
 
     const dbUser = userWithPreferences[0];
-    
-    // Parse notification preferences or return defaults
-    let preferences = {
-      emailNotifications: true,
-      orderUpdates: true,
-      promotions: false,
-      newsletter: true,
-    };
 
-    if (dbUser.notificationPreferences) {
-      try {
-        preferences = JSON.parse(dbUser.notificationPreferences as string);
-      } catch (error) {
-        console.error('Error parsing notification preferences:', error);
-      }
-    }
+    const preferences = parsePrefs(dbUser.notificationPreferences);
 
     return NextResponse.json({
       success: true,

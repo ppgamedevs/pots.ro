@@ -842,6 +842,117 @@ export const emailEvents = pgTable("email_events", {
   emailEventsTypeCreatedIdx: index("email_events_type_created_idx").on(table.type, table.createdAt),
 }));
 
+// Communication broadcasts (admin-governed announcements to segments)
+export const communicationBroadcasts = pgTable(
+  'communication_broadcasts',
+  {
+    id: uuid('id').primaryKey().defaultRandom(),
+    kind: text('kind').notNull().$type<'system' | 'announcement' | 'marketing'>().default('announcement'),
+    channel: text('channel').notNull().$type<'email'>().default('email'),
+    status: text('status')
+      .notNull()
+      .$type<'draft' | 'pending_approval' | 'approved' | 'scheduled' | 'sending' | 'sent' | 'cancelled' | 'rejected' | 'failed'>()
+      .default('draft'),
+    name: text('name').notNull(),
+    subject: text('subject').notNull(),
+    html: text('html').notNull(),
+    text: text('text'),
+    fromEmail: text('from_email'),
+    segment: jsonb('segment'),
+    scheduledAt: timestamp('scheduled_at', { withTimezone: true }),
+    approvedBy: uuid('approved_by').references(() => users.id, { onDelete: 'set null' }),
+    approvedAt: timestamp('approved_at', { withTimezone: true }),
+    rejectedBy: uuid('rejected_by').references(() => users.id, { onDelete: 'set null' }),
+    rejectedAt: timestamp('rejected_at', { withTimezone: true }),
+    rejectionReason: text('rejection_reason'),
+    sendStartedAt: timestamp('send_started_at', { withTimezone: true }),
+    sendCompletedAt: timestamp('send_completed_at', { withTimezone: true }),
+    createdBy: uuid('created_by').references(() => users.id, { onDelete: 'set null' }),
+    createdAt: timestamp('created_at', { withTimezone: true }).defaultNow().notNull(),
+    updatedAt: timestamp('updated_at', { withTimezone: true }).defaultNow().notNull(),
+  },
+  (table) => ({
+    commBroadcastsStatusIdx: index('comm_broadcasts_status_idx').on(table.status, table.scheduledAt),
+    commBroadcastsCreatedIdx: index('comm_broadcasts_created_idx').on(table.createdAt),
+  })
+);
+
+export const communicationBroadcastRecipients = pgTable(
+  'communication_broadcast_recipients',
+  {
+    id: uuid('id').primaryKey().defaultRandom(),
+    broadcastId: uuid('broadcast_id').notNull().references(() => communicationBroadcasts.id, { onDelete: 'cascade' }),
+    userId: uuid('user_id').references(() => users.id, { onDelete: 'set null' }),
+    email: text('email').notNull(),
+    status: text('status')
+      .notNull()
+      .$type<'pending' | 'sent' | 'delivered' | 'bounced' | 'complained' | 'suppressed' | 'failed'>()
+      .default('pending'),
+    provider: text('provider').notNull().default('resend'),
+    providerMessageId: text('provider_message_id'),
+    error: text('error'),
+    sentAt: timestamp('sent_at', { withTimezone: true }),
+    createdAt: timestamp('created_at', { withTimezone: true }).defaultNow().notNull(),
+    updatedAt: timestamp('updated_at', { withTimezone: true }).defaultNow().notNull(),
+  },
+  (table) => ({
+    commBroadcastRecipientsBroadcastIdx: index('comm_broadcast_recipients_broadcast_idx').on(table.broadcastId, table.status),
+    commBroadcastRecipientsEmailIdx: index('comm_broadcast_recipients_email_idx').on(table.email),
+    commBroadcastRecipientsProviderMsgIdx: index('comm_broadcast_recipients_provider_msg_idx').on(table.providerMessageId),
+    commBroadcastRecipientsProviderMsgUq: uniqueIndex('comm_broadcast_recipients_provider_msg_uq')
+      .on(table.provider, table.providerMessageId)
+      .where(sql`${table.providerMessageId} is not null`),
+    commBroadcastRecipientsUnique: uniqueIndex('comm_broadcast_recipient_unique').on(table.broadcastId, table.email),
+  })
+);
+
+// Email suppression list (deliverability + compliance)
+export const emailSuppressions = pgTable(
+  'email_suppressions',
+  {
+    email: text('email').primaryKey(),
+    reason: text('reason').notNull().$type<'bounce' | 'complaint' | 'manual' | 'unsubscribe'>(),
+    source: text('source').notNull().$type<'resend' | 'admin' | 'user'>(),
+    note: text('note'),
+    createdBy: uuid('created_by').references(() => users.id, { onDelete: 'set null' }),
+    createdAt: timestamp('created_at', { withTimezone: true }).defaultNow().notNull(),
+    revokedAt: timestamp('revoked_at', { withTimezone: true }),
+    revokedBy: uuid('revoked_by').references(() => users.id, { onDelete: 'set null' }),
+    updatedAt: timestamp('updated_at', { withTimezone: true }).defaultNow().notNull(),
+  },
+  (table) => ({
+    emailSuppressionsCreatedIdx: index('email_suppressions_created_idx').on(table.createdAt),
+    emailSuppressionsRevokedIdx: index('email_suppressions_revoked_idx').on(table.revokedAt),
+  })
+);
+
+// Provider deliverability events (from Resend webhooks)
+export const emailDeliverabilityEvents = pgTable(
+  'email_deliverability_events',
+  {
+    id: uuid('id').primaryKey().defaultRandom(),
+    provider: text('provider').notNull().default('resend'),
+    eventType: text('event_type')
+      .notNull()
+      .$type<'delivered' | 'bounced' | 'complained' | 'opened' | 'clicked' | 'failed' | 'unknown'>(),
+    providerMessageId: text('provider_message_id'),
+    email: text('email'),
+    occurredAt: timestamp('occurred_at', { withTimezone: true }).defaultNow().notNull(),
+    broadcastId: uuid('broadcast_id').references(() => communicationBroadcasts.id, { onDelete: 'set null' }),
+    userId: uuid('user_id').references(() => users.id, { onDelete: 'set null' }),
+    meta: jsonb('meta'),
+    createdAt: timestamp('created_at', { withTimezone: true }).defaultNow().notNull(),
+  },
+  (table) => ({
+    emailDeliverabilityTypeIdx: index('email_deliverability_type_idx').on(table.eventType, table.occurredAt),
+    emailDeliverabilityEmailIdx: index('email_deliverability_email_idx').on(table.email),
+    emailDeliverabilityProviderMsgIdx: index('email_deliverability_provider_msg_idx').on(table.providerMessageId),
+    emailDeliverabilityDedupeUq: uniqueIndex('email_deliverability_events_dedupe_uq')
+      .on(table.provider, table.providerMessageId, table.eventType)
+      .where(sql`${table.providerMessageId} is not null`),
+  })
+);
+
 // Feature flags (minimal rollout + targeting)
 export const featureFlags = pgTable(
   'feature_flags',

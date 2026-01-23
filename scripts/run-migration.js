@@ -603,6 +603,118 @@ async function ensureProductLocks(sql) {
   }
 }
 
+async function ensureCommunicationSchema(sql) {
+  try {
+    console.log('🔧 Ensuring communication schema (broadcasts + deliverability)...');
+    await sql`CREATE EXTENSION IF NOT EXISTS pgcrypto`;
+
+    await sql`
+      CREATE TABLE IF NOT EXISTS communication_broadcasts (
+        id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+        kind text NOT NULL DEFAULT 'announcement' CHECK (kind IN ('system', 'announcement', 'marketing')),
+        channel text NOT NULL DEFAULT 'email' CHECK (channel IN ('email')),
+        status text NOT NULL DEFAULT 'draft' CHECK (status IN ('draft', 'pending_approval', 'approved', 'scheduled', 'sending', 'sent', 'cancelled', 'rejected', 'failed')),
+        name text NOT NULL,
+        subject text NOT NULL,
+        html text NOT NULL,
+        text text,
+        from_email text,
+        segment jsonb,
+        scheduled_at timestamptz,
+        approved_by uuid REFERENCES users(id) ON DELETE SET NULL,
+        approved_at timestamptz,
+        rejected_by uuid REFERENCES users(id) ON DELETE SET NULL,
+        rejected_at timestamptz,
+        rejection_reason text,
+        send_started_at timestamptz,
+        send_completed_at timestamptz,
+        created_by uuid REFERENCES users(id) ON DELETE SET NULL,
+        created_at timestamptz NOT NULL DEFAULT now(),
+        updated_at timestamptz NOT NULL DEFAULT now()
+      );
+    `;
+
+    await sql`
+      CREATE TABLE IF NOT EXISTS communication_broadcast_recipients (
+        id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+        broadcast_id uuid NOT NULL REFERENCES communication_broadcasts(id) ON DELETE CASCADE,
+        user_id uuid REFERENCES users(id) ON DELETE SET NULL,
+        email text NOT NULL,
+        status text NOT NULL DEFAULT 'pending' CHECK (status IN ('pending', 'sent', 'delivered', 'bounced', 'complained', 'suppressed', 'failed')),
+        provider text NOT NULL DEFAULT 'resend',
+        provider_message_id text,
+        error text,
+        sent_at timestamptz,
+        created_at timestamptz NOT NULL DEFAULT now(),
+        updated_at timestamptz NOT NULL DEFAULT now(),
+        CONSTRAINT comm_broadcast_recipient_unique UNIQUE (broadcast_id, email)
+      );
+    `;
+
+    await sql`
+      CREATE TABLE IF NOT EXISTS email_suppressions (
+        email text PRIMARY KEY,
+        reason text NOT NULL CHECK (reason IN ('bounce', 'complaint', 'manual', 'unsubscribe')),
+        source text NOT NULL CHECK (source IN ('resend', 'admin', 'user')),
+        note text,
+        created_by uuid REFERENCES users(id) ON DELETE SET NULL,
+        created_at timestamptz NOT NULL DEFAULT now(),
+        revoked_at timestamptz,
+        revoked_by uuid REFERENCES users(id) ON DELETE SET NULL,
+        updated_at timestamptz NOT NULL DEFAULT now()
+      );
+    `;
+
+    await sql`
+      CREATE TABLE IF NOT EXISTS email_deliverability_events (
+        id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+        provider text NOT NULL DEFAULT 'resend',
+        event_type text NOT NULL CHECK (event_type IN ('delivered', 'bounced', 'complained', 'opened', 'clicked', 'failed', 'unknown')),
+        provider_message_id text,
+        email text,
+        occurred_at timestamptz NOT NULL DEFAULT now(),
+        broadcast_id uuid REFERENCES communication_broadcasts(id) ON DELETE SET NULL,
+        user_id uuid REFERENCES users(id) ON DELETE SET NULL,
+        meta jsonb,
+        created_at timestamptz NOT NULL DEFAULT now()
+      );
+    `;
+
+    await sql`CREATE INDEX IF NOT EXISTS comm_broadcasts_status_idx ON communication_broadcasts(status, scheduled_at);`;
+    await sql`CREATE INDEX IF NOT EXISTS comm_broadcasts_created_idx ON communication_broadcasts(created_at);`;
+
+    await sql`CREATE INDEX IF NOT EXISTS comm_broadcast_recipients_broadcast_idx ON communication_broadcast_recipients(broadcast_id, status);`;
+    await sql`CREATE INDEX IF NOT EXISTS comm_broadcast_recipients_email_idx ON communication_broadcast_recipients(email);`;
+    await sql`CREATE INDEX IF NOT EXISTS comm_broadcast_recipients_provider_msg_idx ON communication_broadcast_recipients(provider_message_id);`;
+
+    // Idempotency for webhook reconciliation: provider_message_id should be unique when present.
+    // Partial unique index avoids treating NULLs as duplicates.
+    await sql`
+      CREATE UNIQUE INDEX IF NOT EXISTS comm_broadcast_recipients_provider_msg_uq
+      ON communication_broadcast_recipients(provider, provider_message_id)
+      WHERE provider_message_id IS NOT NULL;
+    `;
+
+    await sql`CREATE INDEX IF NOT EXISTS email_suppressions_created_idx ON email_suppressions(created_at);`;
+    await sql`CREATE INDEX IF NOT EXISTS email_suppressions_revoked_idx ON email_suppressions(revoked_at);`;
+
+    await sql`CREATE INDEX IF NOT EXISTS email_deliverability_type_idx ON email_deliverability_events(event_type, occurred_at);`;
+    await sql`CREATE INDEX IF NOT EXISTS email_deliverability_email_idx ON email_deliverability_events(email);`;
+    await sql`CREATE INDEX IF NOT EXISTS email_deliverability_provider_msg_idx ON email_deliverability_events(provider_message_id);`;
+
+    // Idempotency for webhook ingestion: dedupe retries by provider+message+type.
+    await sql`
+      CREATE UNIQUE INDEX IF NOT EXISTS email_deliverability_events_dedupe_uq
+      ON email_deliverability_events(provider, provider_message_id, event_type)
+      WHERE provider_message_id IS NOT NULL;
+    `;
+
+    console.log('✅ Communication schema ensured');
+  } catch (err) {
+    console.warn('⚠️  Could not ensure communication schema:', err.message || err);
+  }
+}
+
 async function ensureSupportSchema(sql) {
   try {
     console.log('🔧 Ensuring support schema (notes/tickets/conversations)...');
@@ -767,6 +879,7 @@ async function runMigration() {
     await ensureManagedEmailTemplates(sql);
     await ensureGdprCompliance(sql);
     await ensureProductLocks(sql);
+    await ensureCommunicationSchema(sql);
 
     // Check if orders table already exists
     console.log('🔍 Checking if orders table exists...');

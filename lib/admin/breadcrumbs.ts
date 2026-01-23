@@ -48,6 +48,22 @@ export const ADMIN_ROUTE_CONFIG: Record<string, { label: string; parent?: string
     label: 'Webhooks',
     parent: '/admin',
   },
+  '/admin/communication': {
+    label: 'Communication',
+    parent: '/admin',
+  },
+  '/admin/communication/broadcasts': {
+    label: 'Broadcasts',
+    parent: '/admin/communication',
+  },
+  '/admin/communication/deliverability': {
+    label: 'Deliverability',
+    parent: '/admin/communication',
+  },
+  '/admin/communication/suppressions': {
+    label: 'Suppressions',
+    parent: '/admin/communication',
+  },
   '/admin/security': {
     label: 'Security',
     parent: '/admin',
@@ -107,6 +123,9 @@ function getRouteLabel(pathname: string): string {
   }
   if (pathname.startsWith('/admin/products/')) {
     return 'Detalii Produs';
+  }
+  if (pathname.startsWith('/admin/communication/broadcasts/')) {
+    return 'Broadcast';
   }
 
   // Fallback: capitalizează ultimul segment din path
