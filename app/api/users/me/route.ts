@@ -40,11 +40,13 @@ export async function DELETE(req: NextRequest) {
 
     const userData = user[0];
 
+    const anonymizedEmail = `deleted_${userData.id}_${Date.now()}@deleted.local`;
+
     // Soft-delete: marchează contul ca șters
     await db
       .update(users)
       .set({
-        email: `deleted_${Date.now()}_${userData.email}`, // Mascarează email-ul
+        email: anonymizedEmail,
         updatedAt: new Date(),
       })
       .where(eq(users.id, userId));
@@ -70,7 +72,7 @@ export async function DELETE(req: NextRequest) {
     }
 
     // Log pentru audit
-    console.log(`Account deleted: ${userId} (${userData.email}) - Reason: ${reason}`);
+    console.log(`Account deleted: ${userId} (${anonymizedEmail}) - Reason: ${reason}`);
 
     return NextResponse.json({
       success: true,

@@ -1,52 +1,102 @@
 import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
 
+import { db } from '@/db';
+import { gdprDsrRequests } from '@/db/schema/core';
+import { getClientIP, getUserAgent, normalizeEmail } from '@/lib/auth/crypto';
+import { hashEmailSha256, getEmailDomain } from '@/lib/compliance/gdpr';
+import { createDsarVerifyToken } from '@/lib/compliance/dsar';
+import { maskEmail } from '@/lib/security/pii';
+import { emailService } from '@/lib/email';
+import React from 'react';
+import { getIntSetting } from '@/lib/settings/store';
+
 const exportRequestSchema = z.object({
-  email: z.string().email("Email invalid"),
-  confirm: z.literal(true)
+  email: z.string().email('Email invalid'),
+  confirm: z.preprocess(
+    (v) => (v === true ? true : v === 'true' || v === 'on' || v === '1'),
+    z.literal(true)
+  ),
 });
+
+async function parseBody(req: NextRequest): Promise<unknown> {
+  const ct = req.headers.get('content-type') || '';
+  if (ct.includes('application/json')) return req.json();
+  const formData = await req.formData();
+  return Object.fromEntries(formData.entries());
+}
 
 export async function POST(request: NextRequest) {
   try {
-    const formData = await request.formData();
-    const data = Object.fromEntries(formData.entries());
-    
-    const validatedData = exportRequestSchema.parse(data);
-    
-    // TODO: Save to database
-    // await db.insert(gdprRequests).values({
-    //   type: 'export',
-    //   email: validatedData.email,
-    //   status: 'pending',
-    //   createdAt: new Date()
-    // });
-    
-    // Log for MVP
-    console.log("GDPR export request:", {
-      email: validatedData.email,
-      timestamp: new Date().toISOString(),
-      ip: request.headers.get('x-forwarded-for') || 'unknown'
+    const validatedData = exportRequestSchema.parse(await parseBody(request));
+
+    const email = normalizeEmail(validatedData.email);
+    const emailHash = hashEmailSha256(email);
+    const emailDomain = getEmailDomain(email);
+    const now = new Date();
+
+    const deadlineDays = await getIntSetting('gdpr.dsar_deadline_days', 30);
+    const verifyTtlMinutes = await getIntSetting('gdpr.dsar_verify_ttl_minutes', 24 * 60);
+
+    const dueAt = new Date(now.getTime() + deadlineDays * 24 * 60 * 60 * 1000);
+    const verifyExpiresAt = new Date(now.getTime() + verifyTtlMinutes * 60 * 1000);
+
+    const [row] = await db
+      .insert(gdprDsrRequests)
+      .values({
+        type: 'export',
+        status: 'pending_verification',
+        email,
+        emailHash,
+        emailDomain: emailDomain || null,
+        emailMasked: maskEmail(email),
+        requestedIp: getClientIP(request.headers),
+        requestedUserAgent: getUserAgent(request.headers),
+        verifyExpiresAt,
+        dueAt,
+      })
+      .returning({ id: gdprDsrRequests.id });
+
+    const requestId = row?.id;
+    if (!requestId) throw new Error('Failed to create DSAR request');
+
+    const token = await createDsarVerifyToken({
+      requestId,
+      emailHash,
+      ttlSeconds: verifyTtlMinutes * 60,
     });
-    
-    // TODO: Send email notification to admin
-    // await sendEmail({
-    //   to: 'admin@floristmarket.ro',
-    //   subject: 'GDPR Export Request',
-    //   template: 'gdpr-export-request',
-    //   data: validatedData
-    // });
-    
-    // TODO: Send confirmation email to user
-    // await sendEmail({
-    //   to: validatedData.email,
-    //   subject: 'Confirmare cerere export GDPR',
-    //   template: 'gdpr-export-confirmation',
-    //   data: validatedData
-    // });
-    
-    return NextResponse.json({ 
-      success: true, 
-      message: "Cererea de export a fost trimisă cu succes" 
+
+    const baseUrl = (process.env.APP_BASE_URL || new URL(request.url).origin).replace(/\/$/, '');
+    const verifyUrl = `${baseUrl}/gdpr/verify?token=${encodeURIComponent(token)}`;
+
+    const mail = await emailService.sendEmail({
+      to: email,
+      subject: 'Confirmare cerere export GDPR (Pots.ro)',
+      template: React.createElement('div', { style: { fontFamily: 'Arial, sans-serif', lineHeight: 1.5 } }, [
+        React.createElement('h2', { key: 't' }, 'Confirmare cerere export GDPR'),
+        React.createElement(
+          'p',
+          { key: 'p1' },
+          'Ai solicitat exportul datelor asociate contului tău. Pentru a confirma că această adresă îți aparține, apasă pe linkul de mai jos:'
+        ),
+        React.createElement(
+          'p',
+          { key: 'p2' },
+          React.createElement('a', { href: verifyUrl }, 'Confirmă cererea')
+        ),
+        React.createElement(
+          'p',
+          { key: 'p3', style: { color: '#555' } },
+          `Linkul expiră în aproximativ ${verifyTtlMinutes} minute.`
+        ),
+      ]),
+    });
+
+    // Never leak whether an email exists. Always respond success.
+    return NextResponse.json({
+      success: true,
+      message: 'Cererea a fost înregistrată. Verifică emailul pentru confirmare.',
+      emailSent: mail.success,
     });
     
   } catch (error) {

@@ -12,7 +12,17 @@ export type SettingKey =
   | 'abuse.blocked_ips_json'
   | 'abuse.challenge_ips_json'
   | 'abuse.blocked_email_domains_json'
-  | 'security.pii_reveal_ttl_minutes';
+  | 'security.pii_reveal_ttl_minutes'
+  | 'gdpr.dsar_deadline_days'
+  | 'gdpr.dsar_verify_ttl_minutes'
+  | 'gdpr.consent_policy_version'
+  | 'retention.dry_run'
+  | 'retention.webhook_logs_days'
+  | 'retention.email_events_days'
+  | 'retention.events_raw_days'
+  | 'retention.messages_days'
+  | 'retention.support_conversation_messages_days'
+  | 'retention.support_ticket_messages_days';
 
 export type SettingRegistryEntry = {
   key: SettingKey;
@@ -125,6 +135,66 @@ export const SETTINGS_REGISTRY: Record<SettingKey, SettingRegistryEntry> = {
     description: 'Default TTL (minutes) for PII reveal grants.',
     dangerous: true,
     schema: z.number().int().min(1).max(60),
+  },
+  'gdpr.dsar_deadline_days': {
+    key: 'gdpr.dsar_deadline_days',
+    description: 'Default DSAR deadline in days (e.g. 30).',
+    dangerous: true,
+    schema: z.number().int().min(1).max(120),
+  },
+  'gdpr.dsar_verify_ttl_minutes': {
+    key: 'gdpr.dsar_verify_ttl_minutes',
+    description: 'TTL (minutes) for DSAR email verification links.',
+    dangerous: true,
+    schema: z.number().int().min(5).max(7 * 24 * 60),
+  },
+  'gdpr.consent_policy_version': {
+    key: 'gdpr.consent_policy_version',
+    description: 'Current privacy/cookies policy version string recorded in consent proofs (e.g. 2026-01-23).',
+    dangerous: true,
+    schema: z.string().min(1).max(64),
+  },
+  'retention.dry_run': {
+    key: 'retention.dry_run',
+    description: 'If true, retention jobs will only report counts and skip deletes.',
+    dangerous: true,
+    schema: z.boolean(),
+  },
+  'retention.webhook_logs_days': {
+    key: 'retention.webhook_logs_days',
+    description: 'Retention window (days) for webhook_logs.',
+    dangerous: true,
+    schema: z.number().int().min(1).max(3650),
+  },
+  'retention.email_events_days': {
+    key: 'retention.email_events_days',
+    description: 'Retention window (days) for email_events.',
+    dangerous: true,
+    schema: z.number().int().min(1).max(3650),
+  },
+  'retention.events_raw_days': {
+    key: 'retention.events_raw_days',
+    description: 'Retention window (days) for events_raw (analytics raw events).',
+    dangerous: true,
+    schema: z.number().int().min(1).max(3650),
+  },
+  'retention.messages_days': {
+    key: 'retention.messages_days',
+    description: 'Retention window (days) for buyer/seller chat messages (messages table).',
+    dangerous: true,
+    schema: z.number().int().min(1).max(3650),
+  },
+  'retention.support_conversation_messages_days': {
+    key: 'retention.support_conversation_messages_days',
+    description: 'Retention window (days) for support_conversation_messages.',
+    dangerous: true,
+    schema: z.number().int().min(1).max(3650),
+  },
+  'retention.support_ticket_messages_days': {
+    key: 'retention.support_ticket_messages_days',
+    description: 'Retention window (days) for support_ticket_messages.',
+    dangerous: true,
+    schema: z.number().int().min(1).max(3650),
   },
 };
 

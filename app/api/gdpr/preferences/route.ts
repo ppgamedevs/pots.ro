@@ -1,8 +1,12 @@
 import { NextRequest, NextResponse } from "next/server";
 import { db } from "@/db";
-import { gdprPreferences } from "@/db/schema/core";
+import { gdprConsentEvents, gdprPreferences } from "@/db/schema/core";
 import { eq } from "drizzle-orm";
 import { getCurrentUser } from "@/lib/auth-helpers";
+import { getClientIP, getUserAgent } from '@/lib/auth/crypto';
+import { hashEmailSha256, getEmailDomain } from '@/lib/compliance/gdpr';
+import { maskEmail } from '@/lib/security/pii';
+import { getSettingTyped } from '@/lib/settings/store';
 
 export const dynamic = 'force-dynamic';
 
@@ -113,9 +117,28 @@ export async function POST(request: NextRequest) {
         .returning();
     }
 
-    return NextResponse.json({
-      preference
-    });
+    // Best-effort append-only consent proof event (do not block preference write)
+    try {
+      const policyVersion = await getSettingTyped<string>('gdpr.consent_policy_version', '');
+      const legalBasis = consentType === 'all' ? 'consent' : 'legitimate_interest';
+
+      await db.insert(gdprConsentEvents).values({
+        emailHash: hashEmailSha256(user.email),
+        emailDomain: getEmailDomain(user.email) || null,
+        emailMasked: maskEmail(user.email),
+        consentType,
+        legalBasis,
+        source: 'user',
+        actorId: (user as any)?.id ?? null,
+        ip: getClientIP(request.headers),
+        userAgent: getUserAgent(request.headers),
+        policyVersion: policyVersion || null,
+      });
+    } catch (eventErr) {
+      console.warn('[gdpr/preferences] Failed to write consent proof event:', eventErr);
+    }
+
+    return NextResponse.json({ preference });
   } catch (error: any) {
     console.error('Error saving GDPR preferences:', error);
     console.error('Error details:', {

@@ -48,6 +48,34 @@ export const ADMIN_ROUTE_CONFIG: Record<string, { label: string; parent?: string
     label: 'Webhooks',
     parent: '/admin',
   },
+  '/admin/security': {
+    label: 'Security',
+    parent: '/admin',
+  },
+  '/admin/security/audit': {
+    label: 'Audit Logs',
+    parent: '/admin/security',
+  },
+  '/admin/security/abuse': {
+    label: 'Abuse',
+    parent: '/admin/security',
+  },
+  '/admin/compliance': {
+    label: 'Compliance',
+    parent: '/admin',
+  },
+  '/admin/compliance/consents': {
+    label: 'Consents',
+    parent: '/admin/compliance',
+  },
+  '/admin/compliance/dsar': {
+    label: 'DSAR',
+    parent: '/admin/compliance',
+  },
+  '/admin/compliance/retention': {
+    label: 'Retention',
+    parent: '/admin/compliance',
+  },
   '/admin/analytics': {
     label: 'Statistici',
     parent: '/admin',

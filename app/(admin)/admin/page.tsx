@@ -116,6 +116,13 @@ export default async function AdminDashboardPage() {
       color: "bg-slate-900",
     },
     {
+      title: "Compliance",
+      description: "GDPR consents, DSAR queue, retention purges",
+      href: "/admin/compliance",
+      icon: Shield,
+      color: "bg-slate-800",
+    },
+    {
       title: "Analytics",
       description: "Statistici și rapoarte despre platformă",
       href: "/admin/analytics",

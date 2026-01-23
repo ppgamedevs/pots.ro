@@ -501,6 +501,62 @@ export const gdprPreferences = pgTable("gdpr_preferences", {
   gdprPreferencesEmailIdx: index("gdpr_preferences_email_idx").on(table.email),
 }));
 
+// Append-only consent proof registry (minimal exposure: stores hashes + masked hints; not full email)
+export const gdprConsentEvents = pgTable(
+  'gdpr_consent_events',
+  {
+    id: uuid('id').primaryKey().defaultRandom(),
+    emailHash: text('email_hash').notNull(),
+    emailDomain: text('email_domain'),
+    emailMasked: text('email_masked'),
+    consentType: text('consent_type').notNull().$type<'necessary' | 'all'>(),
+    legalBasis: text('legal_basis')
+      .notNull()
+      .$type<'consent' | 'legitimate_interest' | 'contract' | 'legal_obligation' | 'other'>(),
+    source: text('source').notNull().$type<'user' | 'admin' | 'migration'>(),
+    actorId: uuid('actor_id').references(() => users.id, { onDelete: 'set null' }),
+    ip: text('ip'),
+    userAgent: text('ua'),
+    policyVersion: text('policy_version'),
+    createdAt: timestamp('created_at', { withTimezone: true }).defaultNow().notNull(),
+  },
+  (table) => ({
+    gdprConsentEventsEmailHashIdx: index('gdpr_consent_events_email_hash_idx').on(table.emailHash),
+    gdprConsentEventsCreatedIdx: index('gdpr_consent_events_created_idx').on(table.createdAt),
+  })
+);
+
+// DSAR (data subject access request) tracking (email-based + verified link)
+export const gdprDsrRequests = pgTable(
+  'gdpr_dsr_requests',
+  {
+    id: uuid('id').primaryKey().defaultRandom(),
+    type: text('type').notNull().$type<'export' | 'delete'>(),
+    status: text('status')
+      .notNull()
+      .$type<'pending_verification' | 'open' | 'in_progress' | 'fulfilled' | 'rejected' | 'cancelled'>(),
+    email: text('email').notNull(),
+    emailHash: text('email_hash').notNull(),
+    emailDomain: text('email_domain'),
+    emailMasked: text('email_masked'),
+    requestedIp: text('requested_ip'),
+    requestedUserAgent: text('requested_ua'),
+    requestedAt: timestamp('requested_at', { withTimezone: true }).defaultNow().notNull(),
+    verifyExpiresAt: timestamp('verify_expires_at', { withTimezone: true }),
+    verifiedAt: timestamp('verified_at', { withTimezone: true }),
+    dueAt: timestamp('due_at', { withTimezone: true }),
+    completedAt: timestamp('completed_at', { withTimezone: true }),
+    handledBy: uuid('handled_by').references(() => users.id, { onDelete: 'set null' }),
+    notes: text('notes'),
+    meta: jsonb('meta'),
+  },
+  (table) => ({
+    gdprDsrRequestsEmailHashIdx: index('gdpr_dsr_requests_email_hash_idx').on(table.emailHash),
+    gdprDsrRequestsStatusIdx: index('gdpr_dsr_requests_status_idx').on(table.status),
+    gdprDsrRequestsRequestedAtIdx: index('gdpr_dsr_requests_requested_at_idx').on(table.requestedAt),
+  })
+);
+
 // Saved payment cards table
 export const savedPaymentCards = pgTable("saved_payment_cards", {
   id: uuid("id").primaryKey().defaultRandom(),

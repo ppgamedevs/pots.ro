@@ -12,21 +12,56 @@ export default function GDPRPage() {
     confirm: false,
   });
   const [submitted, setSubmitted] = useState<"delete" | "export" | null>(null);
+  const [error, setError] = useState<string | null>(null);
 
   const handleDeleteSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    // Mock submission for MVP
-    console.log("Delete request submitted:", deleteForm);
-    setSubmitted("delete");
-    setTimeout(() => setSubmitted(null), 5000);
+    setError(null);
+    try {
+      const formData = new FormData();
+      formData.set('email', deleteForm.email);
+      formData.set('confirm', deleteForm.confirm ? 'true' : 'false');
+
+      const res = await fetch('/api/gdpr/delete-request', {
+        method: 'POST',
+        body: formData,
+      });
+
+      if (!res.ok) {
+        const data = await res.json().catch(() => ({}));
+        throw new Error(data?.error || 'Eroare la trimiterea cererii');
+      }
+
+      setSubmitted('delete');
+      setTimeout(() => setSubmitted(null), 5000);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Eroare internă');
+    }
   };
 
   const handleExportSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    // Mock submission for MVP
-    console.log("Export request submitted:", exportForm);
-    setSubmitted("export");
-    setTimeout(() => setSubmitted(null), 5000);
+    setError(null);
+    try {
+      const formData = new FormData();
+      formData.set('email', exportForm.email);
+      formData.set('confirm', exportForm.confirm ? 'true' : 'false');
+
+      const res = await fetch('/api/gdpr/export-request', {
+        method: 'POST',
+        body: formData,
+      });
+
+      if (!res.ok) {
+        const data = await res.json().catch(() => ({}));
+        throw new Error(data?.error || 'Eroare la trimiterea cererii');
+      }
+
+      setSubmitted('export');
+      setTimeout(() => setSubmitted(null), 5000);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Eroare internă');
+    }
   };
 
   return (
@@ -56,6 +91,12 @@ export default function GDPRPage() {
       </div>
 
       <div className="grid md:grid-cols-2 gap-8">
+        {error && (
+          <div className="md:col-span-2 p-4 rounded-lg bg-red-50 border border-red-200 flex items-center gap-3">
+            <AlertCircle className="h-5 w-5 text-red-600" />
+            <div className="text-sm text-red-800">{error}</div>
+          </div>
+        )}
         {/* Delete Request */}
         <div className="rounded-2xl border border-line p-6 bg-white">
           <div className="flex items-center gap-3 mb-6">

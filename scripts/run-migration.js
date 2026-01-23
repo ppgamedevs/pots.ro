@@ -516,6 +516,63 @@ async function ensureManagedEmailTemplates(sql) {
   }
 }
 
+async function ensureGdprCompliance(sql) {
+  try {
+    console.log('🔧 Ensuring GDPR compliance (consent proofs + DSAR requests)...');
+    await sql`CREATE EXTENSION IF NOT EXISTS pgcrypto`;
+
+    await sql`
+      CREATE TABLE IF NOT EXISTS gdpr_consent_events (
+        id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+        email_hash text NOT NULL,
+        email_domain text,
+        email_masked text,
+        consent_type text NOT NULL,
+        legal_basis text NOT NULL,
+        source text NOT NULL,
+        actor_id uuid REFERENCES users(id) ON DELETE SET NULL,
+        ip text,
+        ua text,
+        policy_version text,
+        created_at timestamptz NOT NULL DEFAULT now()
+      );
+    `;
+
+    await sql`CREATE INDEX IF NOT EXISTS gdpr_consent_events_email_hash_idx ON gdpr_consent_events(email_hash);`;
+    await sql`CREATE INDEX IF NOT EXISTS gdpr_consent_events_created_idx ON gdpr_consent_events(created_at);`;
+
+    await sql`
+      CREATE TABLE IF NOT EXISTS gdpr_dsr_requests (
+        id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+        type text NOT NULL,
+        status text NOT NULL,
+        email text NOT NULL,
+        email_hash text NOT NULL,
+        email_domain text,
+        email_masked text,
+        requested_ip text,
+        requested_ua text,
+        requested_at timestamptz NOT NULL DEFAULT now(),
+        verify_expires_at timestamptz,
+        verified_at timestamptz,
+        due_at timestamptz,
+        completed_at timestamptz,
+        handled_by uuid REFERENCES users(id) ON DELETE SET NULL,
+        notes text,
+        meta jsonb
+      );
+    `;
+
+    await sql`CREATE INDEX IF NOT EXISTS gdpr_dsr_requests_email_hash_idx ON gdpr_dsr_requests(email_hash);`;
+    await sql`CREATE INDEX IF NOT EXISTS gdpr_dsr_requests_status_idx ON gdpr_dsr_requests(status);`;
+    await sql`CREATE INDEX IF NOT EXISTS gdpr_dsr_requests_requested_at_idx ON gdpr_dsr_requests(requested_at);`;
+
+    console.log('✅ GDPR compliance ensured');
+  } catch (err) {
+    console.warn('⚠️  Could not ensure GDPR compliance tables:', err.message || err);
+  }
+}
+
 async function ensureSupportSchema(sql) {
   try {
     console.log('🔧 Ensuring support schema (notes/tickets/conversations)...');
@@ -678,6 +735,7 @@ async function runMigration() {
     await ensureSettingsTable(sql);
     await ensureFeatureFlags(sql);
     await ensureManagedEmailTemplates(sql);
+    await ensureGdprCompliance(sql);
 
     // Check if orders table already exists
     console.log('🔍 Checking if orders table exists...');

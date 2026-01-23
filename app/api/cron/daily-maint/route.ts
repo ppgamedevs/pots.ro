@@ -1,10 +1,10 @@
 import { NextRequest, NextResponse } from "next/server";
 import { db } from "@/db";
-import { webhookLogs, emailEvents, eventsRaw, sellerStatsDaily, productStatsDaily } from "@/db/schema/core";
-import { lt, eq, gte, sql, and } from "drizzle-orm";
+import { sql } from "drizzle-orm";
 import { emailService } from "@/lib/email";
 import React from "react";
 import { getAdminAlertRecipients } from "@/lib/alerts/recipients";
+import { runRetentionPurge } from '@/lib/retention/purge';
 
 export async function GET(request: NextRequest) {
   try {
@@ -149,33 +149,10 @@ export async function GET(request: NextRequest) {
       results.analyticsAggregation = false;
     }
 
-    // 4. Cleanup old logs (>90 days)
+    // 4. Retention cleanup (settings-driven; supports dry-run)
     try {
-      const ninetyDaysAgo = new Date();
-      ninetyDaysAgo.setDate(ninetyDaysAgo.getDate() - 90);
-
-      // Clean up old webhook logs
-      await db
-        .delete(webhookLogs)
-        .where(lt(webhookLogs.createdAt, ninetyDaysAgo));
-
-      // Clean up old email events
-      await db
-        .delete(emailEvents)
-        .where(lt(emailEvents.createdAt, ninetyDaysAgo));
-
-      // Clean up old raw events (>30 days) - only if table exists
-      try {
-        const thirtyDaysAgo = new Date();
-        thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
-        
-        await db
-          .delete(eventsRaw)
-          .where(lt(eventsRaw.createdAt, thirtyDaysAgo));
-      } catch (error) {
-        console.log('Events table not found, skipping cleanup');
-      }
-
+      const retention = await runRetentionPurge();
+      (results as any).retention = retention;
       results.cleanup = true;
     } catch (error) {
       console.error('Cleanup error:', error);
