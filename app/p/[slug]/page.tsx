@@ -55,6 +55,30 @@ export default function PDP() {
   const [productData, setProductData] = useState<ProductResponse | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [freeShippingThreshold, setFreeShippingThreshold] = useState(200);
+
+  useEffect(() => {
+    let cancelled = false;
+
+    const fetchShippingSettings = async () => {
+      try {
+        const res = await fetch('/api/settings/shipping-fee', { cache: 'no-store' });
+        if (!res.ok) return;
+        const data = await res.json();
+        const threshold = Number(data?.freeShippingThresholdRON);
+        if (!cancelled && Number.isFinite(threshold)) {
+          setFreeShippingThreshold(threshold);
+        }
+      } catch {
+        // non-blocking
+      }
+    };
+
+    fetchShippingSettings();
+    return () => {
+      cancelled = true;
+    };
+  }, []);
 
   useEffect(() => {
     // Guard: Prevent fetch if slug is empty
@@ -230,7 +254,7 @@ export default function PDP() {
               <PDPShipping
                 carriers={["Cargus"]}
                 eta="1-3 zile"
-                freeShippingThreshold={200}
+                freeShippingThreshold={freeShippingThreshold}
                 currentPrice={product.price}
               />
             </div>

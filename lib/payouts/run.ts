@@ -10,6 +10,7 @@ import { getPayoutProvider, validatePayoutInput, type PayoutInput } from './prov
 import { retryWithLogging } from '@/lib/util/retry';
 import { emailService } from '@/lib/email';
 import React from 'react';
+import { getAdminAlertRecipients } from '@/lib/alerts/recipients';
 
 export type PayoutRunResult = {
   success: boolean;
@@ -310,7 +311,7 @@ export async function createPayoutsForDeliveredOrder(orderId: string): Promise<v
  */
 async function sendPayoutFailureAlert(payoutId: string, reason: string): Promise<void> {
   try {
-    const adminEmails = process.env.ADMIN_EMAILS?.split(',') || ['admin@floristmarket.ro'];
+    const adminEmails = await getAdminAlertRecipients();
     
     for (const email of adminEmails) {
       await emailService.sendEmail({

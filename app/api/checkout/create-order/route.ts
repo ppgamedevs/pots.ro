@@ -148,14 +148,21 @@ export async function POST(request: NextRequest) {
       }
     }
 
-    // Get shipping fee (use provided choice or default to cheapest)
-    let shippingFeeCents = 0;
-    if (shippingChoice) {
-      shippingFeeCents = shippingChoice.fee_cents;
-    } else {
-      // Default to standard option (Cargus Standard for 1kg)
-      shippingFeeCents = 1999; // 19.99 RON
-    }
+    // Compute shipping server-side (do not trust client-provided fee)
+    const netSubtotalCents = Math.max(0, subtotalCents - totalDiscountCents);
+
+    // For MVP, there is effectively one seller per order; use the primary seller id
+    const uniqueSellerIdsForShipping: string[] = [...new Set<string>(cartItemsResult.map((item: any) => String(item.seller.id)))];
+    const primarySellerIdForShipping = uniqueSellerIdsForShipping[0] || null;
+    const categorySlugsForShipping: string[] = [...new Set<string>(cartItemsResult.map((item: any) => String(item.category?.slug || '')).filter(Boolean))];
+
+    const { computeShippingFeeCents } = await import('@/lib/shipping/rules');
+    const shippingFeeCents = await computeShippingFeeCents({
+      netSubtotalCents,
+      weightKg: 1,
+      sellerId: primarySellerIdForShipping,
+      categorySlugs: categorySlugsForShipping,
+    });
 
     const totalCents = subtotalCents + shippingFeeCents - totalDiscountCents;
 

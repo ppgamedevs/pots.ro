@@ -406,6 +406,95 @@ async function ensureCommissionRates(sql) {
   }
 }
 
+async function ensureSettingsTable(sql) {
+  try {
+    console.log('🔧 Ensuring settings (key-value, staged rollout)...');
+    await sql`CREATE EXTENSION IF NOT EXISTS pgcrypto`;
+
+    await sql`
+      CREATE TABLE IF NOT EXISTS settings (
+        id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+        key text NOT NULL UNIQUE,
+        value text NOT NULL,
+        staged_value text,
+        staged_effective_at timestamptz,
+        staged_at timestamptz,
+        staged_by text,
+        description text,
+        updated_at timestamptz NOT NULL DEFAULT now(),
+        updated_by text
+      );
+    `;
+
+    // Ensure new columns exist if the table predates them
+    await sql`ALTER TABLE settings ADD COLUMN IF NOT EXISTS staged_value text;`;
+    await sql`ALTER TABLE settings ADD COLUMN IF NOT EXISTS staged_effective_at timestamptz;`;
+    await sql`ALTER TABLE settings ADD COLUMN IF NOT EXISTS staged_at timestamptz;`;
+    await sql`ALTER TABLE settings ADD COLUMN IF NOT EXISTS staged_by text;`;
+
+    await sql`CREATE INDEX IF NOT EXISTS settings_key_idx ON settings(key);`;
+    await sql`CREATE INDEX IF NOT EXISTS settings_updated_idx ON settings(updated_at);`;
+
+    console.log('✅ Settings ensured');
+  } catch (err) {
+    console.warn('⚠️  Could not ensure settings:', err.message || err);
+  }
+}
+
+async function ensureFeatureFlags(sql) {
+  try {
+    console.log('🔧 Ensuring feature flags...');
+    await sql`CREATE EXTENSION IF NOT EXISTS pgcrypto`;
+
+    await sql`
+      CREATE TABLE IF NOT EXISTS feature_flags (
+        key text PRIMARY KEY,
+        enabled boolean NOT NULL DEFAULT false,
+        rollout_pct int NOT NULL DEFAULT 0,
+        segments jsonb,
+        updated_by uuid REFERENCES users(id) ON DELETE SET NULL,
+        updated_at timestamptz NOT NULL DEFAULT now(),
+        created_at timestamptz NOT NULL DEFAULT now()
+      );
+    `;
+    await sql`CREATE INDEX IF NOT EXISTS feature_flags_updated_idx ON feature_flags(updated_at);`;
+    console.log('✅ Feature flags ensured');
+  } catch (err) {
+    console.warn('⚠️  Could not ensure feature flags:', err.message || err);
+  }
+}
+
+async function ensureManagedEmailTemplates(sql) {
+  try {
+    console.log('🔧 Ensuring managed email templates...');
+    await sql`CREATE EXTENSION IF NOT EXISTS pgcrypto`;
+
+    await sql`
+      CREATE TABLE IF NOT EXISTS managed_email_templates (
+        id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+        template_key text NOT NULL,
+        version int NOT NULL,
+        subject text NOT NULL,
+        html text NOT NULL,
+        status text NOT NULL DEFAULT 'draft',
+        note text,
+        created_by uuid REFERENCES users(id) ON DELETE SET NULL,
+        created_at timestamptz NOT NULL DEFAULT now(),
+        activated_by uuid REFERENCES users(id) ON DELETE SET NULL,
+        activated_at timestamptz,
+        CONSTRAINT managed_email_templates_key_version_uq UNIQUE (template_key, version)
+      );
+    `;
+
+    await sql`CREATE INDEX IF NOT EXISTS managed_email_templates_key_idx ON managed_email_templates(template_key);`;
+    await sql`CREATE INDEX IF NOT EXISTS managed_email_templates_status_idx ON managed_email_templates(template_key, status);`;
+
+    console.log('✅ Managed email templates ensured');
+  } catch (err) {
+    console.warn('⚠️  Could not ensure managed email templates:', err.message || err);
+  }
+}
+
 async function ensureSupportSchema(sql) {
   try {
     console.log('🔧 Ensuring support schema (notes/tickets/conversations)...');
@@ -565,6 +654,9 @@ async function runMigration() {
     await ensureSellerPageVersions(sql);
     await ensureCatalogAdminSchema(sql);
     await ensureCommissionRates(sql);
+    await ensureSettingsTable(sql);
+    await ensureFeatureFlags(sql);
+    await ensureManagedEmailTemplates(sql);
 
     // Check if orders table already exists
     console.log('🔍 Checking if orders table exists...');

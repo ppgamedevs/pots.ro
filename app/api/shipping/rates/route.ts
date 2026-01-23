@@ -1,6 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
 
+import { getShippingRules } from '@/lib/shipping/rules';
+
 const shippingRatesSchema = z.object({
   city: z.string().min(1),
   postal_code: z.string().min(1),
@@ -20,13 +22,12 @@ export async function POST(request: NextRequest) {
     const { city, postal_code, weight_kg = 1, volume_dm3 } = shippingRatesSchema.parse(body);
 
     // MVP: Simple tiered pricing (hardcoded)
-    const rates: ShippingRate[] = [
-      {
-        carrier: 'Cargus',
-        service: 'Standard',
-        fee_cents: calculateCargusRate(weight_kg),
-      },
-    ];
+    const rules = await getShippingRules();
+    const baseFeeCents = Math.max(0, rules.baseFeeCents);
+    const perKgFeeCents = Math.max(0, rules.perKgFeeCents ?? 150);
+    const feeCents = calculateCargusRate(weight_kg, baseFeeCents, perKgFeeCents);
+
+    const rates: ShippingRate[] = [{ carrier: 'Cargus', service: 'Standard', fee_cents: feeCents }];
 
     return NextResponse.json({ rates });
 
@@ -39,9 +40,7 @@ export async function POST(request: NextRequest) {
   }
 }
 
-function calculateCargusRate(weightKg: number): number {
-  const baseFee = 1999; // 19.99 RON in cents
-  const perKgFee = 150; // 1.5 RON per kg over 1kg in cents
+function calculateCargusRate(weightKg: number, baseFee: number, perKgFee: number): number {
   const excessWeight = Math.max(0, weightKg - 1);
-  return baseFee + Math.round(excessWeight * perKgFee);
+  return Math.max(0, baseFee + Math.round(excessWeight * perKgFee));
 }

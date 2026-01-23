@@ -5,6 +5,7 @@ import { retryWithLogging, isRefundRetryableError } from '@/lib/util/retry';
 import { recordRefund } from '@/lib/ledger/post';
 import { emailService } from '@/lib/email';
 import React from 'react';
+import { getAdminAlertRecipients } from '@/lib/alerts/recipients';
 
 /**
  * Processes a refund (mock provider for MVP).
@@ -88,7 +89,7 @@ export async function processRefund(
 
 async function sendRefundFailureAlert(refundId: string, reason: string): Promise<void> {
   try {
-    const adminEmails = process.env.ADMIN_EMAILS?.split(',') || ['admin@floristmarket.ro'];
+    const adminEmails = await getAdminAlertRecipients();
 
     for (const email of adminEmails) {
       await emailService.sendEmail({

@@ -1,6 +1,8 @@
 import { pgTable, uuid, text, timestamp, integer, jsonb, pgEnum, index, uniqueIndex, boolean, check, decimal, varchar, customType } from "drizzle-orm/pg-core";
 import { sql } from "drizzle-orm";
 
+export { settings } from './settings';
+
 const bytea = customType<{ data: Uint8Array; driverData: Uint8Array }>({
   dataType() {
     return 'bytea';
@@ -740,6 +742,46 @@ export const emailEvents = pgTable("email_events", {
 }, (table) => ({
   emailEventsTypeCreatedIdx: index("email_events_type_created_idx").on(table.type, table.createdAt),
 }));
+
+// Feature flags (minimal rollout + targeting)
+export const featureFlags = pgTable(
+  'feature_flags',
+  {
+    key: text('key').primaryKey(),
+    enabled: boolean('enabled').notNull().default(false),
+    rolloutPct: integer('rollout_pct').notNull().default(0),
+    segments: jsonb('segments'),
+    updatedBy: uuid('updated_by').references(() => users.id, { onDelete: 'set null' }),
+    updatedAt: timestamp('updated_at', { withTimezone: true }).defaultNow().notNull(),
+    createdAt: timestamp('created_at', { withTimezone: true }).defaultNow().notNull(),
+  },
+  (table) => ({
+    featureFlagsUpdatedIdx: index('feature_flags_updated_idx').on(table.updatedAt),
+  })
+);
+
+// Managed email templates (OTP/welcome only, versioned)
+export const managedEmailTemplates = pgTable(
+  'managed_email_templates',
+  {
+    id: uuid('id').primaryKey().defaultRandom(),
+    templateKey: text('template_key').notNull(),
+    version: integer('version').notNull(),
+    subject: text('subject').notNull(),
+    html: text('html').notNull(),
+    status: text('status').notNull().default('draft').$type<'draft' | 'active' | 'archived'>(),
+    note: text('note'),
+    createdBy: uuid('created_by').references(() => users.id, { onDelete: 'set null' }),
+    createdAt: timestamp('created_at', { withTimezone: true }).defaultNow().notNull(),
+    activatedBy: uuid('activated_by').references(() => users.id, { onDelete: 'set null' }),
+    activatedAt: timestamp('activated_at', { withTimezone: true }),
+  },
+  (table) => ({
+    managedEmailTemplatesKeyIdx: index('managed_email_templates_key_idx').on(table.templateKey),
+    managedEmailTemplatesStatusIdx: index('managed_email_templates_status_idx').on(table.templateKey, table.status),
+    managedEmailTemplatesKeyVersionUq: uniqueIndex('managed_email_templates_key_version_uq').on(table.templateKey, table.version),
+  })
+);
 
 // Webhook logs table
 export const webhookLogs = pgTable("webhook_logs", {

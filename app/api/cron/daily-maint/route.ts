@@ -4,6 +4,7 @@ import { webhookLogs, emailEvents, eventsRaw, sellerStatsDaily, productStatsDail
 import { lt, eq, gte, sql, and } from "drizzle-orm";
 import { emailService } from "@/lib/email";
 import React from "react";
+import { getAdminAlertRecipients } from "@/lib/alerts/recipients";
 
 export async function GET(request: NextRequest) {
   try {
@@ -198,7 +199,7 @@ export async function GET(request: NextRequest) {
 
 async function sendHealthReportEmail(healthData: any) {
   try {
-    const adminEmails = process.env.ADMIN_EMAILS?.split(',') || ['ops@floristmarket.ro'];
+    const adminEmails = await getAdminAlertRecipients();
     
     for (const email of adminEmails) {
       await emailService.sendEmail({
