@@ -34,6 +34,15 @@ export async function POST(
       return NextResponse.json({ error: "User not found" }, { status: 404 });
     }
 
+    // Update user status column
+    await db
+      .update(users)
+      .set({
+        status: data.action === 'suspend' ? 'suspended' : 'active',
+        updatedAt: new Date(),
+      })
+      .where(eq(users.id, userId));
+
     // Insert action record
     try {
       const insertResult = await db.insert(userActions).values({

@@ -714,7 +714,88 @@ async function ensureCommunicationSchema(sql) {
     console.warn('⚠️  Could not ensure communication schema:', err.message || err);
   }
 }
+async function ensureUserPermissionsSchema(sql) {
+  try {
+    console.log('🔧 Ensuring user permissions schema...');
 
+    // Create user_status enum if not exists
+    await sql`
+      DO $$ BEGIN
+        CREATE TYPE user_status AS ENUM ('active', 'suspended', 'deleted');
+      EXCEPTION
+        WHEN duplicate_object THEN null;
+      END $$;
+    `;
+
+    // Add columns to users table
+    await sql`
+      ALTER TABLE users
+      ADD COLUMN IF NOT EXISTS status user_status NOT NULL DEFAULT 'active',
+      ADD COLUMN IF NOT EXISTS permissions jsonb,
+      ADD COLUMN IF NOT EXISTS rate_limit_bypass boolean NOT NULL DEFAULT false
+    `;
+
+    console.log('✅ User permissions schema ensured');
+  } catch (err) {
+    console.warn('⚠️  Could not ensure user permissions schema:', err.message || err);
+  }
+}
+
+async function ensureReservedNamesSchema(sql) {
+  try {
+    console.log('🔧 Ensuring reserved names schema...');
+
+    await sql`
+      CREATE TABLE IF NOT EXISTS reserved_names (
+        name text PRIMARY KEY,
+        reason text,
+        created_at timestamptz NOT NULL DEFAULT now()
+      )
+    `;
+
+    // Seed initial reserved names from hardcoded list
+    const reservedWords = [
+      'admin', 'administrator', 'support', 'suport', 'moderator', 'mod',
+      'floristmarket', 'staff', 'echipa', 'system', 'root', 'api',
+      'help', 'ajutor', 'contact', 'contabilitate', 'legal'
+    ];
+
+    for (const word of reservedWords) {
+      await sql`
+        INSERT INTO reserved_names (name, reason)
+        VALUES (${word.toLowerCase()}, 'System reserved')
+        ON CONFLICT (name) DO NOTHING
+      `;
+    }
+
+    console.log('✅ Reserved names schema ensured');
+  } catch (err) {
+    console.warn('⚠️  Could not ensure reserved names schema:', err.message || err);
+  }
+}
+
+async function ensureRateLimitsSchema(sql) {
+  try {
+    console.log('🔧 Ensuring rate limits schema...');
+
+    await sql`
+      CREATE TABLE IF NOT EXISTS rate_limits (
+        key text PRIMARY KEY,
+        count integer NOT NULL DEFAULT 0,
+        reset_at bigint NOT NULL
+      )
+    `;
+
+    await sql`
+      CREATE INDEX IF NOT EXISTS rate_limits_reset_at_idx
+      ON rate_limits(reset_at)
+    `;
+
+    console.log('✅ Rate limits schema ensured');
+  } catch (err) {
+    console.warn('⚠️  Could not ensure rate limits schema:', err.message || err);
+  }
+}
 async function ensureSupportSchema(sql) {
   try {
     console.log('🔧 Ensuring support schema (notes/tickets/conversations)...');
@@ -880,6 +961,9 @@ async function runMigration() {
     await ensureGdprCompliance(sql);
     await ensureProductLocks(sql);
     await ensureCommunicationSchema(sql);
+    await ensureUserPermissionsSchema(sql);
+    await ensureReservedNamesSchema(sql);
+    await ensureRateLimitsSchema(sql);
 
     // Check if orders table already exists
     console.log('🔍 Checking if orders table exists...');

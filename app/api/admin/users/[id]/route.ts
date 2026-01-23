@@ -12,6 +12,8 @@ const updateUserSchema = z.object({
   name: z.string().optional(),
   role: z.enum(['buyer', 'seller', 'admin', 'support']).optional(),
   roleChangeMessage: z.string().optional(),
+  permissions: z.array(z.string()).optional(),
+  rateLimitBypass: z.boolean().optional(),
 });
 
 export async function GET(
@@ -28,6 +30,9 @@ export async function GET(
         email: users.email,
         name: users.name,
         role: users.role,
+        status: users.status,
+        permissions: users.permissions,
+        rateLimitBypass: users.rateLimitBypass,
         created_at: users.createdAt,
         updated_at: users.updatedAt,
       })
@@ -65,6 +70,9 @@ export async function GET(
       email: user.email,
       name: user.name || "",
       role: user.role,
+      status: user.status,
+      permissions: (user.permissions as string[]) || [],
+      rateLimitBypass: user.rateLimitBypass || false,
       created_at: user.created_at.toISOString(),
       updated_at: user.updated_at.toISOString(),
       last_login: lastLogin?.toISOString() || null,
@@ -126,6 +134,8 @@ export async function PATCH(
       .set({
         ...(data.name !== undefined && { name: data.name }),
         ...(data.role !== undefined && { role: data.role }),
+        ...(data.permissions !== undefined && { permissions: data.permissions }),
+        ...(data.rateLimitBypass !== undefined && { rateLimitBypass: data.rateLimitBypass }),
         updatedAt: new Date(),
       })
       .where(eq(users.id, userId))
@@ -134,6 +144,9 @@ export async function PATCH(
         email: users.email,
         name: users.name,
         role: users.role,
+        status: users.status,
+        permissions: users.permissions,
+        rateLimitBypass: users.rateLimitBypass,
         created_at: users.createdAt,
         updated_at: users.updatedAt,
       });
@@ -200,6 +213,9 @@ export async function PATCH(
       email: updatedUser.email,
       name: updatedUser.name || "",
       role: updatedUser.role,
+      status: updatedUser.status,
+      permissions: (updatedUser.permissions as string[]) || [],
+      rateLimitBypass: updatedUser.rateLimitBypass || false,
       created_at: updatedUser.created_at.toISOString(),
       updated_at: updatedUser.updated_at.toISOString(),
     });

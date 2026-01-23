@@ -1,12 +1,15 @@
 /**
- * Rate limiting middleware pentru Pots.ro
- * Implementare simplă cu in-memory fallback și suport pentru Vercel KV
+ * Rate limiting middleware pentru FloristMarket.ro
+ * Implementare cu database persistence pentru serverless
  */
 
 import { NextRequest, NextResponse } from 'next/server';
 import { logAuthEvent } from '@/lib/auth/session';
 import { getClientIP as getClientIPFromHeaders, getUserAgent as getUserAgentFromHeaders } from '@/lib/auth/crypto';
 import { getJsonSetting } from '@/lib/settings/store';
+import { db } from '@/db';
+import { rateLimits, users } from '@/db/schema/core';
+import { eq, sql } from 'drizzle-orm';
 
 // Tipuri pentru rate limiting
 interface RateLimitConfig {
@@ -19,9 +22,6 @@ interface RateLimitEntry {
   count: number;
   resetTime: number;
 }
-
-// Store in-memory pentru rate limiting (fallback)
-const rateLimitStore = new Map<string, RateLimitEntry>();
 
 // Configurații pentru diferite endpoint-uri
 const RATE_LIMITS: Record<string, RateLimitConfig> = {
@@ -75,13 +75,66 @@ async function getAbuseLists(): Promise<AbuseLists> {
   }
 }
 
-// Helper pentru cleanup-ul store-ului
-function cleanupExpiredEntries() {
+// DB-backed rate limit check and increment
+async function checkAndIncrementRateLimit(
+  key: string,
+  config: RateLimitConfig
+): Promise<{ allowed: boolean; current: number; resetTime: number }> {
   const now = Date.now();
-  for (const [key, entry] of rateLimitStore.entries()) {
-    if (entry.resetTime <= now) {
-      rateLimitStore.delete(key);
+  const resetTime = now + config.windowMs;
+
+  try {
+    // Try to get existing entry
+    const existing = await db.query.rateLimits.findFirst({
+      where: eq(rateLimits.key, key),
+    });
+
+    if (!existing || existing.resetAt <= now) {
+      // No entry or expired - create/update with count 1
+      await db
+        .insert(rateLimits)
+        .values({ key, count: 1, resetAt: resetTime })
+        .onConflictDoUpdate({
+          target: rateLimits.key,
+          set: { count: 1, resetAt: resetTime },
+        });
+      return { allowed: true, current: 1, resetTime };
     }
+
+    // Entry exists and is valid - check limit
+    if (existing.count >= config.maxRequests) {
+      return {
+        allowed: false,
+        current: existing.count,
+        resetTime: existing.resetAt,
+      };
+    }
+
+    // Increment count
+    await db
+      .update(rateLimits)
+      .set({ count: sql`${rateLimits.count} + 1` })
+      .where(eq(rateLimits.key, key));
+
+    return {
+      allowed: true,
+      current: existing.count + 1,
+      resetTime: existing.resetAt,
+    };
+  } catch (error) {
+    console.error('Rate limit DB error:', error);
+    // Fail open on DB errors to avoid blocking legitimate traffic
+    return { allowed: true, current: 0, resetTime };
+  }
+}
+
+// Cleanup expired entries periodically
+async function cleanupExpiredEntries() {
+  try {
+    const now = Date.now();
+    await db.delete(rateLimits).where(sql`${rateLimits.resetAt} <= ${now}`);
+  } catch (error) {
+    // Ignore cleanup errors
   }
 }
 
@@ -100,8 +153,26 @@ export async function rateLimit(
   const ua = getUserAgentFromHeaders(req.headers);
   const lists = await getAbuseLists();
 
+  // Check for allowed IPs
   if (lists.allowedIps.includes(ip)) {
     return null;
+  }
+
+  // Check for rate limit bypass via user setting (from session cookie)
+  try {
+    const { getSession } = await import('@/lib/auth/session');
+    const session = await getSession();
+    if (session?.user?.id) {
+      const userRecord = await db.query.users.findFirst({
+        where: eq(users.id, session.user.id),
+        columns: { rateLimitBypass: true },
+      });
+      if (userRecord?.rateLimitBypass) {
+        return null; // Bypass rate limiting for this user
+      }
+    }
+  } catch {
+    // Ignore errors - proceed with normal rate limiting
   }
 
   if (lists.blockedIps.includes(ip)) {
@@ -120,35 +191,26 @@ export async function rateLimit(
   const isChallenge = lists.challengeIps.includes(ip);
   const effectiveMax = isChallenge ? Math.max(1, Math.floor(config.maxRequests / 2)) : config.maxRequests;
   const key = config.keyGenerator ? config.keyGenerator(req) : `default:${ip}`;
-  const now = Date.now();
-  const windowStart = now - config.windowMs;
 
-  // Cleanup periodic
-  if (Math.random() < 0.01) { // 1% șansă de cleanup
-    cleanupExpiredEntries();
+  // Cleanup periodic (1% chance)
+  if (Math.random() < 0.01) {
+    cleanupExpiredEntries().catch(() => {});
   }
 
-  // Verifică entry-ul curent
-  const currentEntry = rateLimitStore.get(key);
-  
-  if (!currentEntry || currentEntry.resetTime <= now) {
-    // Prima cerere sau window-ul a expirat
-    rateLimitStore.set(key, {
-      count: 1,
-      resetTime: now + config.windowMs,
-    });
-    return null; // Permite cererea
-  }
+  // Check rate limit via DB
+  const result = await checkAndIncrementRateLimit(key, {
+    ...config,
+    maxRequests: effectiveMax,
+  });
 
-  // Verifică dacă a depășit limita
-  if (currentEntry.count >= effectiveMax) {
+  if (!result.allowed) {
     await logAuthEvent('rate_limit', undefined, undefined, ip, ua, {
       source: 'middleware_rate_limit',
       endpoint,
       key,
       maxRequests: effectiveMax,
       windowMs: config.windowMs,
-      retryAfterSeconds: Math.ceil((currentEntry.resetTime - now) / 1000),
+      retryAfterSeconds: Math.ceil((result.resetTime - Date.now()) / 1000),
       path: req.nextUrl?.pathname,
       challenged: isChallenge,
     });
@@ -156,15 +218,11 @@ export async function rateLimit(
       {
         error: 'Prea multe cereri',
         message: `Limita de ${effectiveMax} cereri în ${config.windowMs / 1000} secunde a fost depășită`,
-        retryAfter: Math.ceil((currentEntry.resetTime - now) / 1000),
+        retryAfter: Math.ceil((result.resetTime - Date.now()) / 1000),
       },
       { status: 429 }
     );
   }
-
-  // Incrementează contorul
-  currentEntry.count++;
-  rateLimitStore.set(key, currentEntry);
 
   if (isChallenge) {
     // Minimal “challenge mode”: add small jitter to slow down abuse without a CAPTCHA dependency.
@@ -198,26 +256,36 @@ export async function checkRateLimit(
 }
 
 // Funcție pentru resetarea rate limit-ului (pentru testing)
-export function resetRateLimit(key?: string) {
-  if (key) {
-    rateLimitStore.delete(key);
-  } else {
-    rateLimitStore.clear();
+export async function resetRateLimit(key?: string) {
+  try {
+    if (key) {
+      await db.delete(rateLimits).where(eq(rateLimits.key, key));
+    } else {
+      await db.delete(rateLimits);
+    }
+  } catch (error) {
+    console.error('Failed to reset rate limit:', error);
   }
 }
 
 // Funcție pentru obținerea statisticilor rate limiting
-export function getRateLimitStats() {
-  const stats: Record<string, { count: number; resetTime: number }> = {};
-  
-  for (const [key, entry] of rateLimitStore.entries()) {
-    stats[key] = {
-      count: entry.count,
-      resetTime: entry.resetTime,
-    };
+export async function getRateLimitStats() {
+  try {
+    const allLimits = await db.query.rateLimits.findMany();
+    const stats: Record<string, { count: number; resetTime: number }> = {};
+    
+    for (const entry of allLimits) {
+      stats[entry.key] = {
+        count: entry.count,
+        resetTime: entry.resetAt,
+      };
+    }
+    
+    return stats;
+  } catch (error) {
+    console.error('Failed to get rate limit stats:', error);
+    return {};
   }
-  
-  return stats;
 }
 
 // Export pentru configurații (pentru debugging)

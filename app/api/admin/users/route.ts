@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { db } from "@/db";
-import { users, sessions, userActions } from "@/db/schema/core";
-import { eq, and, or, ilike, desc, asc, count, sql, isNull, max } from "drizzle-orm";
+import { users, sessions } from "@/db/schema/core";
+import { eq, and, or, ilike, desc, asc, count, isNull, max } from "drizzle-orm";
 import { requireRole } from "@/lib/authz";
 
 export const dynamic = 'force-dynamic';
@@ -19,6 +19,7 @@ export async function GET(req: NextRequest) {
     // Filters
     const q = searchParams.get("q")?.trim() || "";
     const role = searchParams.get("role")?.trim() || "";
+    const status = searchParams.get("status")?.trim() || "";
     const sortBy = searchParams.get("sortBy") || "created_at";
     const sortOrder = searchParams.get("sortOrder") || "desc";
 
@@ -39,6 +40,11 @@ export async function GET(req: NextRequest) {
     // Role filter
     if (role && role !== "all") {
       conditions.push(eq(users.role, role as "buyer" | "seller" | "admin" | "support"));
+    }
+
+    // Status filter
+    if (status && status !== "all") {
+      conditions.push(eq(users.status, status as "active" | "suspended" | "deleted"));
     }
 
     const whereClause = conditions.length > 0 ? and(...conditions) : undefined;
@@ -66,13 +72,14 @@ export async function GET(req: NextRequest) {
     const totalItems = totalResult?.count || 0;
     const totalPages = Math.ceil(totalItems / pageSize);
 
-    // Get users
+    // Get users with status directly from column
     const items = await db
       .select({
         id: users.id,
         email: users.email,
         name: users.name,
         role: users.role,
+        status: users.status,
         created_at: users.createdAt,
         updated_at: users.updatedAt,
       })
@@ -84,7 +91,6 @@ export async function GET(req: NextRequest) {
 
     // Get last login dates for these users
     const lastLoginMap = new Map<string, Date>();
-    const statusMap = new Map<string, "active" | "suspended">();
     if (items.length > 0) {
       const userIdList = items.map((u: any) => u.id);
       
@@ -110,31 +116,7 @@ export async function GET(req: NextRequest) {
         }
       });
       
-      // Get user status based on last action
-      const statusPromises = userIdList.map(async (userId: string) => {
-        try {
-          const [lastAction] = await db
-            .select({
-              action: userActions.action,
-            })
-            .from(userActions)
-            .where(eq(userActions.userId, userId))
-            .orderBy(desc(userActions.createdAt))
-            .limit(1);
-          
-          if (lastAction?.action === "suspend") {
-            statusMap.set(userId, "suspended");
-          } else {
-            statusMap.set(userId, "active");
-          }
-        } catch (err) {
-          console.error(`Error fetching status for user ${userId}:`, err);
-          // Default to active if error
-          statusMap.set(userId, "active");
-        }
-      });
-      
-      await Promise.all([...loginPromises, ...statusPromises]);
+      await Promise.all(loginPromises);
     }
 
     // Transform to match client component expectations
@@ -144,7 +126,7 @@ export async function GET(req: NextRequest) {
       email: item.email,
       name: item.name || "",
       role: item.role,
-      status: statusMap.get(item.id) || "active",
+      status: item.status === 'suspended' ? 'suspended' : 'active',
       created_at: item.created_at.toISOString(),
       updated_at: item.updated_at.toISOString(),
       last_login: lastLoginMap.get(item.id)?.toISOString() || null,

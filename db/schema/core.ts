@@ -1,4 +1,4 @@
-import { pgTable, uuid, text, timestamp, integer, jsonb, pgEnum, index, uniqueIndex, boolean, check, decimal, varchar, customType } from "drizzle-orm/pg-core";
+import { pgTable, uuid, text, timestamp, integer, jsonb, pgEnum, index, uniqueIndex, boolean, check, decimal, varchar, customType, bigint } from "drizzle-orm/pg-core";
 import { sql } from "drizzle-orm";
 
 export { settings } from './settings';
@@ -18,6 +18,7 @@ export const ledgerTypeEnum = pgEnum('ledger_type', ['charge', 'commission', 'pa
 export const promotionTypeEnum = pgEnum('promotion_type', ['banner', 'discount']);
 export const sellerApplicationStatusEnum = pgEnum('seller_application_status', ['received','in_review','need_info','approved','rejected']);
 export const sellerStatusEnum = pgEnum('seller_status', ['onboarding','active','suspended']);
+export const userStatusEnum = pgEnum('user_status', ['active', 'suspended', 'deleted']);
 
 export const supportTicketStatusEnum = pgEnum('support_ticket_status', ['open', 'in_progress', 'waiting_on_seller', 'resolved', 'closed']);
 export const supportTicketPriorityEnum = pgEnum('support_ticket_priority', ['low', 'normal', 'high', 'urgent']);
@@ -30,6 +31,9 @@ export const users = pgTable("users", {
   displayId: text("display_id").unique(), // Unique display ID for user greeting
   password: text("password"), // For password-based auth
   role: text("role").notNull().default("buyer").$type<'buyer' | 'seller' | 'admin' | 'support'>(),
+  status: userStatusEnum("status").notNull().default('active'),
+  permissions: jsonb("permissions").$type<string[]>(),
+  rateLimitBypass: boolean("rate_limit_bypass").notNull().default(false),
   notificationPreferences: jsonb("notification_preferences"), // User notification settings
   createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
   updatedAt: timestamp("updated_at", { withTimezone: true }).defaultNow().notNull(),
@@ -643,6 +647,22 @@ export const sessions = pgTable("sessions", {
   userIdExpiresIdx: index("sessions_user_id_expires_idx").on(table.userId, table.expiresAt),
   sessionTokenHashIdx: index("sessions_token_hash_idx").on(table.sessionTokenHash),
   revokedAtIdx: index("sessions_revoked_at_idx").on(table.revokedAt),
+}));
+
+// Reserved names for username/displayId validation
+export const reservedNames = pgTable("reserved_names", {
+  name: text("name").primaryKey(),
+  reason: text("reason"),
+  createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
+});
+
+// Rate limits persistence (replaces in-memory store)
+export const rateLimits = pgTable("rate_limits", {
+  key: text("key").primaryKey(),
+  count: integer("count").notNull().default(0),
+  resetAt: bigint("reset_at", { mode: "number" }).notNull(),
+}, (table) => ({
+  resetAtIdx: index("rate_limits_reset_at_idx").on(table.resetAt),
 }));
 
 // Auth audit table for security logging

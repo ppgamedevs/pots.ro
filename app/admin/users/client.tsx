@@ -48,6 +48,7 @@ export default function AdminUsersClient() {
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState(searchParams.get("q") || "");
   const [roleFilter, setRoleFilter] = useState(searchParams.get("role") || "all");
+  const [statusFilter, setStatusFilter] = useState(searchParams.get("status") || "all");
   const [page, setPage] = useState(parseInt(searchParams.get("page") || "1"));
   const [totalItems, setTotalItems] = useState(0);
   const [totalPages, setTotalPages] = useState(1);
@@ -61,6 +62,7 @@ export default function AdminUsersClient() {
       params.set("pageSize", "20");
       if (search) params.set("q", search);
       if (roleFilter && roleFilter !== "all") params.set("role", roleFilter);
+      if (statusFilter && statusFilter !== "all") params.set("status", statusFilter);
 
       const res = await fetch(`/api/admin/users?${params.toString()}`, {
         cache: "no-store",
@@ -87,7 +89,7 @@ export default function AdminUsersClient() {
   useEffect(() => {
     fetchUsers();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [page, roleFilter]);
+  }, [page, roleFilter, statusFilter]);
 
   // Debounced search
   useEffect(() => {
@@ -108,6 +110,7 @@ export default function AdminUsersClient() {
     const params = new URLSearchParams();
     if (search) params.set("q", search);
     if (roleFilter && roleFilter !== "all") params.set("role", roleFilter);
+    if (statusFilter && statusFilter !== "all") params.set("status", statusFilter);
     if (page > 1) params.set("page", page.toString());
 
     const newUrl = `/admin/users${params.toString() ? `?${params.toString()}` : ""}`;
@@ -115,7 +118,7 @@ export default function AdminUsersClient() {
     if (newUrl !== window.location.pathname + window.location.search) {
       router.replace(newUrl, { scroll: false });
     }
-  }, [search, roleFilter, page, router]);
+  }, [search, roleFilter, statusFilter, page, router]);
 
   const columns: Column<Row>[] = [
     {
@@ -203,7 +206,7 @@ export default function AdminUsersClient() {
   return (
     <div className="space-y-6">
       {/* Filters */}
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
         {/* Search */}
         <div className="bg-white dark:bg-slate-900/60 border border-slate-200 dark:border-white/10 rounded-xl shadow-sm p-4">
           <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">
@@ -236,6 +239,23 @@ export default function AdminUsersClient() {
               <SelectItem value="seller">Vânzător</SelectItem>
               <SelectItem value="support">Support</SelectItem>
               <SelectItem value="admin">Admin</SelectItem>
+            </SelectContent>
+          </Select>
+        </div>
+
+        {/* Status Filter */}
+        <div className="bg-white dark:bg-slate-900/60 border border-slate-200 dark:border-white/10 rounded-xl shadow-sm p-4">
+          <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">
+            Status
+          </label>
+          <Select value={statusFilter} onValueChange={setStatusFilter}>
+            <SelectTrigger className="w-full">
+              <SelectValue placeholder="Toate statusurile" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">Toate statusurile</SelectItem>
+              <SelectItem value="active">Activ</SelectItem>
+              <SelectItem value="suspended">Suspendat</SelectItem>
             </SelectContent>
           </Select>
         </div>

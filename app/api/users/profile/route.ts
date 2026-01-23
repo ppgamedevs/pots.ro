@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { db } from '@/db';
-import { users } from '@/db/schema/core';
+import { users, reservedNames } from '@/db/schema/core';
 import { eq } from 'drizzle-orm';
 import { getCurrentUser } from '@/lib/auth/session';
 import { z } from 'zod';
@@ -31,11 +31,15 @@ export async function PATCH(request: NextRequest) {
     const validatedData = updateProfileSchema.parse(body);
 
     // Block reserved names for non-admin users
-    if (validatedData.name) {
+    if (validatedData.name && user.role !== 'admin') {
       const nameLower = validatedData.name.toLowerCase().trim();
-      const reservedNames = ['admin', 'administrator', 'support', 'suport', 'moderator', 'mod', 'floristmarket', 'staff', 'echipa'];
       
-      if (reservedNames.includes(nameLower) && user.role !== 'admin') {
+      // Check against database reserved names table
+      const reserved = await db.query.reservedNames.findFirst({
+        where: eq(reservedNames.name, nameLower),
+      });
+      
+      if (reserved) {
         return NextResponse.json(
           { error: 'Acest nume este rezervat. Te rugăm să alegi un alt nume.' },
           { status: 400 }
