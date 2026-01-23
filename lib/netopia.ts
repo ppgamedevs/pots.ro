@@ -298,7 +298,7 @@ export async function createNetopiaV2PaymentRequest(
       amount: Number(request.amount.toFixed(2)),
       currency: 'RON', // Force RON currency
       billing: {
-        email: request.billing?.email || 'customer@pots.ro',
+        email: request.billing?.email || 'customer@floristmarket.ro',
         phone: request.billing?.phone || '0700000000',
         firstName: request.billing?.firstName || 'Customer',
         lastName: request.billing?.lastName || 'Name',
@@ -310,7 +310,7 @@ export async function createNetopiaV2PaymentRequest(
         address: 'Address'
       },
       shipping: {
-        email: request.billing?.email || 'customer@pots.ro',
+        email: request.billing?.email || 'customer@floristmarket.ro',
         phone: request.billing?.phone || '0700000000',
         firstName: request.billing?.firstName || 'Customer',
         lastName: request.billing?.lastName || 'Name',

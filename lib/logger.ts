@@ -30,7 +30,7 @@ class Logger {
   private environment: string;
   private minLevel: LogLevel;
 
-  constructor(service: string = 'pots.ro') {
+  constructor(service: string = 'floristmarket.ro') {
     this.service = service;
     this.environment = process.env.NODE_ENV || 'development';
     

@@ -36,7 +36,7 @@ ${data.trackingUrl ? `Poți urmări livrarea la: ${data.trackingUrl}` : ''}
 Comanda ar trebui să ajungă la tine în următoarele zile.
 
 Cu stimă,
-Echipa Pots.ro`;
+Echipa FloristMarket.ro`;
 }
 
 export function HtmlContent(data: OrderShippedEmailProps): React.ReactElement {
@@ -53,7 +53,7 @@ export function HtmlContent(data: OrderShippedEmailProps): React.ReactElement {
               src="https://floristmarket.ro/logo.png"
               width="120"
               height="40"
-              alt="Pots.ro"
+              alt="FloristMarket.ro"
               style={logo}
             />
           </Section>
@@ -101,7 +101,7 @@ export function HtmlContent(data: OrderShippedEmailProps): React.ReactElement {
           
           <Text style={footer}>
             Cu stimă,<br />
-            Echipa Pots.ro
+            Echipa FloristMarket.ro
           </Text>
         </Container>
       </Body>

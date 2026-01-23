@@ -101,7 +101,7 @@ export function HtmlContent(data: OrderPaidEmailProps): React.ReactElement {
           
           <Text style={footer}>
             Cu stimă,<br />
-            Echipa Pots.ro
+            Echipa FloristMarket.ro
           </Text>
         </Container>
       </Body>

@@ -53,7 +53,7 @@ export const OrderDeliveredEmail = ({
               src="https://floristmarket.ro/logo.png"
               width="120"
               height="40"
-              alt="Pots.ro"
+              alt="FloristMarket.ro"
               style={logo}
             />
           </Section>
@@ -91,7 +91,7 @@ export const OrderDeliveredEmail = ({
           
           <Text style={footer}>
             Mulțumim că ai ales FloristMarket.ro!<br />
-            Echipa Pots.ro
+            Echipa FloristMarket.ro
           </Text>
         </Container>
       </Body>

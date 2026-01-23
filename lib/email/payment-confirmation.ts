@@ -24,7 +24,7 @@ export async function sendPaymentConfirmationEmail(data: PaymentConfirmationEmai
         <head>
           <meta charset="utf-8">
           <meta name="viewport" content="width=device-width, initial-scale=1.0">
-          <title>Confirmare Plată - Pots.ro</title>
+          <title>Confirmare Plată - FloristMarket.ro</title>
         </head>
         <body style="font-family: Arial, sans-serif; line-height: 1.6; color: #333; max-width: 600px; margin: 0 auto; padding: 20px;">
           <div style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; padding: 30px; text-align: center; border-radius: 10px 10px 0 0;">
@@ -101,7 +101,7 @@ export async function sendPaymentConfirmationEmail(data: PaymentConfirmationEmai
             </div>
             
             <div style="text-align: center; margin: 30px 0;">
-              <a href="${process.env.SITE_URL || 'https://pots.ro'}/orders/${order.id}" 
+              <a href="${process.env.SITE_URL || 'https://floristmarket.ro'}/orders/${order.id}" 
                  style="background: #667eea; color: white; padding: 15px 30px; text-decoration: none; border-radius: 8px; font-weight: bold; display: inline-block;">
                 Vezi comanda completă
               </a>
@@ -119,8 +119,8 @@ export async function sendPaymentConfirmationEmail(data: PaymentConfirmationEmai
           
           <div style="background: #f8f9fa; padding: 20px; text-align: center; border-radius: 0 0 10px 10px; border: 1px solid #e0e0e0; border-top: none;">
             <p style="margin: 0; color: #666; font-size: 14px;">
-              Mulțumim că ați ales Pots.ro!<br>
-              Pentru întrebări, contactați-ne la <a href="mailto:support@pots.ro" style="color: #667eea;">support@pots.ro</a>
+              Mulțumim că ați ales FloristMarket.ro!<br>
+              Pentru întrebări, contactați-ne la <a href="mailto:suport@floristmarket.ro" style="color: #667eea;">suport@floristmarket.ro</a>
             </p>
           </div>
         </body>
@@ -128,7 +128,7 @@ export async function sendPaymentConfirmationEmail(data: PaymentConfirmationEmai
     `;
 
     await resend.emails.send({
-      from: 'Pots.ro <noreply@pots.ro>',
+      from: process.env.EMAIL_FROM || 'FloristMarket.ro <no-reply@floristmarket.ro>',
       to: customerEmail,
       subject: `Confirmare plată - Comanda #${order.id.slice(-8)}`,
       html: emailHtml,

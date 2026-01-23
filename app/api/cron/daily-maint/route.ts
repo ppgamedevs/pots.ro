@@ -181,7 +181,7 @@ async function sendHealthReportEmail(healthData: any) {
     for (const email of adminEmails) {
       await emailService.sendEmail({
         to: email.trim(),
-        subject: '🚨 Pots.ro Health Check Failed',
+        subject: '🚨 FloristMarket.ro Health Check Failed',
         template: React.createElement('div', {
           style: {
             fontFamily: 'Arial, sans-serif',
@@ -194,7 +194,7 @@ async function sendHealthReportEmail(healthData: any) {
             key: 'title',
             style: { color: '#d32f2f' } 
           }, 'Health Check Failed'),
-          React.createElement('p', { key: 'desc' }, 'The daily health check has detected issues with the Pots.ro system.'),
+          React.createElement('p', { key: 'desc' }, 'The daily health check has detected issues with the FloristMarket.ro system.'),
           React.createElement('h2', { key: 'results-title' }, 'Health Check Results:'),
           React.createElement('pre', { 
             key: 'results',

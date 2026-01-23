@@ -42,7 +42,7 @@ export async function generateMetadata({ params }: CategoryAttributePageProps): 
   if (!categoryData) {
     return {
       title: `Categorie nu a fost găsită | ${SITE_NAME}`,
-      description: 'Categoria căutată nu a fost găsită pe Pots.ro'
+      description: 'Categoria căutată nu a fost găsită pe FloristMarket.ro'
     };
   }
 

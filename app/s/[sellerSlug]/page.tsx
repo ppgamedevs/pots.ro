@@ -12,7 +12,7 @@ async function getSellerAnon(slug: string) {
 
     return {
       displayName: seller.brandName,
-      description: "Partener marketplace verificat. Livrări și retururi gestionate prin Pots.",
+      description: "Partener marketplace verificat. Livrări și retururi gestionate prin FloristMarket.",
       verified: Boolean(seller.verifiedBadge),
       rating: 4.7,
       totalProducts: 0, // va fi actualizat din produse
@@ -20,7 +20,7 @@ async function getSellerAnon(slug: string) {
       logoUrl: seller.logoUrl || "https://images.unsplash.com/photo-1560472354-b33ff0c44a43?w=200&h=200&fit=crop&crop=center",
       aboutMd: seller.aboutMd || `# Despre ${seller.brandName}
 
-Acesta este un partener verificat al platformei Pots.ro, specializat în produse de calitate pentru floristică.
+    Acesta este un partener verificat al platformei FloristMarket.ro, specializat în produse de calitate pentru floristică.
 
 ## Experiența noastră
 
@@ -51,9 +51,9 @@ Pentru întrebări despre produse, vă rugăm să folosiți [mesageria platforme
 
 ---
 
-*Toate produsele sunt vândute prin Pots Marketplace. Asistența, returul și garanția sunt gestionate de Pots.*`,
-      seoTitle: seller.seoTitle || `Despre ${seller.brandName} - Partener Pots.ro`,
-      seoDescription: seller.seoDescription || `Descoperă ${seller.brandName}, partener verificat pe Pots.ro.`,
+*Toate produsele sunt vândute prin FloristMarket Marketplace. Asistența, returul și garanția sunt gestionate de FloristMarket.*`,
+      seoTitle: seller.seoTitle || `Despre ${seller.brandName} - Partener FloristMarket.ro`,
+      seoDescription: seller.seoDescription || `Descoperă ${seller.brandName}, partener verificat pe FloristMarket.ro.`,
     };
   } catch (error) {
     return null;
@@ -71,16 +71,16 @@ export async function generateMetadata({
   if (!seller) {
     return {
       title: "Vânzător nu găsit",
-      description: "Vânzătorul căutat nu există pe platforma Pots.ro",
+      description: "Vânzătorul căutat nu există pe platforma FloristMarket.ro",
     };
   }
 
   return {
-    title: seller.seoTitle || `Despre ${seller.displayName} - Partener Pots.ro`,
-    description: seller.seoDescription || `Descoperă ${seller.displayName}, partener verificat pe Pots.ro.`,
+    title: seller.seoTitle || `Despre ${seller.displayName} - Partener FloristMarket.ro`,
+    description: seller.seoDescription || `Descoperă ${seller.displayName}, partener verificat pe FloristMarket.ro.`,
     openGraph: {
       title: seller.seoTitle || `Despre ${seller.displayName}`,
-      description: seller.seoDescription || `Descoperă ${seller.displayName}, partener verificat pe Pots.ro.`,
+      description: seller.seoDescription || `Descoperă ${seller.displayName}, partener verificat pe FloristMarket.ro.`,
       images: seller.logoUrl ? [seller.logoUrl] : [],
     },
   };

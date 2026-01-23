@@ -237,7 +237,7 @@ export default function SeoPage() {
           Dashboard SEO
         </h1>
         <p className="text-gray-600 dark:text-gray-400">
-          Monitorizează și optimizează SEO-ul site-ului Pots.ro
+          Monitorizează și optimizează SEO-ul site-ului FloristMarket.ro
         </p>
       </div>
       

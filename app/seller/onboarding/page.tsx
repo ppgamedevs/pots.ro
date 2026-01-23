@@ -3,8 +3,8 @@ import Link from "next/link";
 import { ArrowLeft, CheckCircle } from "lucide-react";
 
 export const metadata: Metadata = {
-  title: "Onboarding Vânzător - Pots.ro",
-  description: "Completează procesul de înregistrare ca vânzător pe Pots.ro",
+  title: "Onboarding Vânzător - FloristMarket.ro",
+  description: "Completează procesul de înregistrare ca vânzător pe FloristMarket.ro",
 };
 
 export default function SellerOnboardingPage() {
@@ -22,7 +22,7 @@ export default function SellerOnboardingPage() {
             </div>
             <div className="flex items-center">
               <Link href="/" className="text-xl font-bold text-slate-900 dark:text-slate-100">
-                Pots.ro
+                FloristMarket.ro
               </Link>
             </div>
           </div>
@@ -36,7 +36,7 @@ export default function SellerOnboardingPage() {
               Onboarding Vânzător
             </h1>
             <p className="text-slate-600 dark:text-slate-300">
-              Completează procesul de înregistrare pentru a deveni vânzător pe Pots.ro
+              Completează procesul de înregistrare pentru a deveni vânzător pe FloristMarket.ro
             </p>
           </div>
 

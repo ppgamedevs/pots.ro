@@ -269,6 +269,6 @@ async function handleOrderCancelRequest(phone: string, nluResult: any, originalM
  */
 async function handleReturnPolicyRequest(phone: string) {
   await sendWhatsAppMessage(phone, 
-    "Politica de retur: Ai 14 zile să returnezi produsele în condiții originale. Pentru detalii complete, vizitează https://pots.ro/returns"
+    "Politica de retur: Ai 14 zile să returnezi produsele în condiții originale. Pentru detalii complete, vizitează https://floristmarket.ro/returns"
   );
 }

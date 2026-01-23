@@ -35,7 +35,7 @@ ${data.conversationUrl ? `Poți vedea și răspunde la mesaj la: ${data.conversa
 Acest mesaj a fost trimis prin sistemul nostru securizat de mesagerie. Te rugăm să răspunzi prin platformă pentru a menține securitatea.
 
 Cu stimă,
-Echipa Pots.ro`;
+Echipa FloristMarket.ro`;
 }
 
 export const MessageCreatedEmail = ({
@@ -58,7 +58,7 @@ export const MessageCreatedEmail = ({
               src="https://floristmarket.ro/logo.png"
               width="120"
               height="40"
-              alt="Pots.ro"
+              alt="FloristMarket.ro"
               style={logo}
             />
           </Section>
@@ -95,7 +95,7 @@ export const MessageCreatedEmail = ({
           
           <Text style={footer}>
             Cu stimă,<br />
-            Echipa Pots.ro
+            Echipa FloristMarket.ro
           </Text>
         </Container>
       </Body>

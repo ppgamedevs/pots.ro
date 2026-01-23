@@ -1,6 +1,6 @@
 /**
  * Pagina 500 - Eroare server
- * Design simplu și consistent cu brandul Pots.ro
+ * Design simplu și consistent cu brandul FloristMarket.ro
  */
 
 'use client';

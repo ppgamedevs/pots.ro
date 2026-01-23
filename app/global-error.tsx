@@ -1,5 +1,5 @@
 /**
- * Global Error Boundary pentru aplicația Pots.ro
+ * Global Error Boundary pentru aplicația FloristMarket.ro
  * Captează erorile și afișează o pagină prietenoasă
  */
 

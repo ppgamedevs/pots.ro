@@ -71,7 +71,7 @@ export async function POST(request: NextRequest) {
 
     const mail = await emailService.sendEmail({
       to: email,
-      subject: 'Confirmare cerere ștergere GDPR (Pots.ro)',
+      subject: 'Confirmare cerere ștergere GDPR (FloristMarket.ro)',
       template: React.createElement('div', { style: { fontFamily: 'Arial, sans-serif', lineHeight: 1.5 } }, [
         React.createElement('h2', { key: 't' }, 'Confirmare cerere ștergere GDPR'),
         React.createElement(

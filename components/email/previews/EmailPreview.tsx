@@ -263,7 +263,7 @@ export function AllEmailPreviews() {
       <div className="text-center">
         <h1 className="text-3xl font-bold mb-2">Email Templates Preview</h1>
         <p className="text-gray-600 dark:text-gray-400">
-          Previzualizare template-uri email pentru Pots.ro
+          Previzualizare template-uri email pentru FloristMarket.ro
         </p>
       </div>
       

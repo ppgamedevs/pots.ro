@@ -55,15 +55,15 @@ export async function DELETE(req: NextRequest) {
     try {
       await emailService.sendEmail({
         to: userData.email,
-        subject: 'Contul tău Pots.ro a fost șters',
+        subject: 'Contul tău FloristMarket.ro a fost șters',
         template: React.createElement('div', null, [
           React.createElement('h1', null, 'Contul tău a fost șters'),
           React.createElement('p', null, 'Salut,'),
-          React.createElement('p', null, `Contul tău Pots.ro a fost șters cu succes la data de ${new Date().toLocaleDateString('ro-RO')}.`),
+          React.createElement('p', null, `Contul tău FloristMarket.ro a fost șters cu succes la data de ${new Date().toLocaleDateString('ro-RO')}.`),
           React.createElement('p', null, `Motivul: ${reason || 'Cerere utilizator'}`),
           React.createElement('p', null, 'Toate datele tale au fost șterse conform politicii de confidențialitate.'),
-          React.createElement('p', null, 'Mulțumim că ai folosit Pots.ro!'),
-          React.createElement('p', null, 'Echipa Pots.ro'),
+          React.createElement('p', null, 'Mulțumim că ai folosit FloristMarket.ro!'),
+          React.createElement('p', null, 'Echipa FloristMarket.ro'),
         ]),
       });
     } catch (emailError) {

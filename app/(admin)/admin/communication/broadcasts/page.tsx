@@ -145,7 +145,7 @@ export default function AdminCommunicationBroadcastsPage() {
             </div>
             <div className="space-y-2">
               <label className="text-sm font-medium">From (optional)</label>
-              <Input value={fromEmail} onChange={(e) => setFromEmail(e.target.value)} placeholder='ex: "FloristMarket <no-reply@pots.ro>"' />
+              <Input value={fromEmail} onChange={(e) => setFromEmail(e.target.value)} placeholder='ex: "FloristMarket <no-reply@floristmarket.ro>"' />
             </div>
             <div className="space-y-2">
               <label className="text-sm font-medium">Nume</label>
