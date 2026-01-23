@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { Package, Users, ShoppingBag, DollarSign, Settings, FileText, UserCog, Tags, CreditCard, Webhook, Percent } from "lucide-react";
+import { Package, Users, ShoppingBag, DollarSign, Settings, FileText, UserCog, Tags, CreditCard, Webhook, Percent, Shield } from "lucide-react";
 import { db } from "@/db";
 import { orders, products, sellerApplications } from "@/db/schema/core";
 import { and, eq, gte, ne, sql } from "drizzle-orm";
@@ -107,6 +107,13 @@ export default async function AdminDashboardPage() {
       href: "/admin/webhooks",
       icon: Webhook,
       color: "bg-sky-600",
+    },
+    {
+      title: "Security",
+      description: "Audit logs, abuse/rate limiting, PII reveal",
+      href: "/admin/security",
+      icon: Shield,
+      color: "bg-slate-900",
     },
     {
       title: "Analytics",

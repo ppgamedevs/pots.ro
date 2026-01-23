@@ -298,12 +298,33 @@ async function ensureCatalogAdminSchema(sql) {
         entity_id text NOT NULL,
         message text,
         meta jsonb,
+        prev_hash text,
+        entry_hash text,
         created_at timestamptz NOT NULL DEFAULT now()
       );
     `;
+    await sql`ALTER TABLE admin_audit_logs ADD COLUMN IF NOT EXISTS prev_hash text;`;
+    await sql`ALTER TABLE admin_audit_logs ADD COLUMN IF NOT EXISTS entry_hash text;`;
     await sql`CREATE INDEX IF NOT EXISTS admin_audit_logs_entity_idx ON admin_audit_logs(entity_type, entity_id);`;
     await sql`CREATE INDEX IF NOT EXISTS admin_audit_logs_created_idx ON admin_audit_logs(created_at);`;
     await sql`CREATE INDEX IF NOT EXISTS admin_audit_logs_actor_idx ON admin_audit_logs(actor_id);`;
+
+    // Admin PII grants (timeboxed reveal with reason)
+    await sql`
+      CREATE TABLE IF NOT EXISTS admin_pii_grants (
+        id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+        actor_id uuid NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+        entity_type text NOT NULL,
+        entity_id text NOT NULL,
+        fields jsonb NOT NULL,
+        reason text NOT NULL,
+        expires_at timestamptz NOT NULL,
+        created_at timestamptz NOT NULL DEFAULT now()
+      );
+    `;
+    await sql`CREATE INDEX IF NOT EXISTS admin_pii_grants_actor_idx ON admin_pii_grants(actor_id);`;
+    await sql`CREATE INDEX IF NOT EXISTS admin_pii_grants_entity_idx ON admin_pii_grants(entity_type, entity_id);`;
+    await sql`CREATE INDEX IF NOT EXISTS admin_pii_grants_expires_idx ON admin_pii_grants(expires_at);`;
 
     // Search tuning
     await sql`

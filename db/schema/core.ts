@@ -344,12 +344,34 @@ export const adminAuditLogs = pgTable(
     entityId: text('entity_id').notNull(),
     message: text('message'),
     meta: jsonb('meta'),
+    prevHash: text('prev_hash'),
+    entryHash: text('entry_hash'),
     createdAt: timestamp('created_at', { withTimezone: true }).defaultNow().notNull(),
   },
   (table) => ({
     adminAuditLogsEntityIdx: index('admin_audit_logs_entity_idx').on(table.entityType, table.entityId),
     adminAuditLogsCreatedIdx: index('admin_audit_logs_created_idx').on(table.createdAt),
     adminAuditLogsActorIdx: index('admin_audit_logs_actor_idx').on(table.actorId),
+  })
+);
+
+// Timeboxed grants for revealing masked PII in admin (reason-required)
+export const adminPiiGrants = pgTable(
+  'admin_pii_grants',
+  {
+    id: uuid('id').primaryKey().defaultRandom(),
+    actorId: uuid('actor_id').notNull().references(() => users.id, { onDelete: 'cascade' }),
+    entityType: text('entity_type').notNull(),
+    entityId: text('entity_id').notNull(),
+    fields: jsonb('fields').notNull().$type<string[]>(),
+    reason: text('reason').notNull(),
+    expiresAt: timestamp('expires_at', { withTimezone: true }).notNull(),
+    createdAt: timestamp('created_at', { withTimezone: true }).defaultNow().notNull(),
+  },
+  (table) => ({
+    adminPiiGrantsActorIdx: index('admin_pii_grants_actor_idx').on(table.actorId),
+    adminPiiGrantsEntityIdx: index('admin_pii_grants_entity_idx').on(table.entityType, table.entityId),
+    adminPiiGrantsExpiresIdx: index('admin_pii_grants_expires_idx').on(table.expiresAt),
   })
 );
 

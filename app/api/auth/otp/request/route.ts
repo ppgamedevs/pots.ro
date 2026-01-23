@@ -23,6 +23,7 @@ import {
   incrementOtpAttempts,
   isDisposableEmail 
 } from '@/lib/auth/rateLimit';
+import { getJsonSetting } from '@/lib/settings/store';
 import { 
   sendOtpEmail, 
   generateMagicLink,
@@ -76,6 +77,24 @@ export async function POST(request: NextRequest) {
         { error: 'Email-uri temporare nu sunt permise' },
         { status: 400 }
       );
+    }
+
+    // Check blocked email domains (abuse prevention)
+    try {
+      const blockedDomains = await getJsonSetting<string[]>('abuse.blocked_email_domains_json', []);
+      const domain = normalizedEmail.split('@')[1] || '';
+      if (domain && Array.isArray(blockedDomains) && blockedDomains.includes(domain)) {
+        await logAuthEvent('otp_denied', normalizedEmail, undefined, ip, userAgent, {
+          type: 'blocked_domain',
+          domain,
+        });
+        return NextResponse.json(
+          { error: 'Email domain blocat' },
+          { status: 403 }
+        );
+      }
+    } catch {
+      // non-blocking
     }
     
     // Check rate limits

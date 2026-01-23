@@ -4,6 +4,9 @@
  */
 
 import { NextRequest, NextResponse } from 'next/server';
+import { logAuthEvent } from '@/lib/auth/session';
+import { getClientIP as getClientIPFromHeaders, getUserAgent as getUserAgentFromHeaders } from '@/lib/auth/crypto';
+import { getJsonSetting } from '@/lib/settings/store';
 
 // Tipuri pentru rate limiting
 interface RateLimitConfig {
@@ -25,7 +28,7 @@ const RATE_LIMITS: Record<string, RateLimitConfig> = {
   login: {
     windowMs: 5 * 60 * 1000, // 5 minute
     maxRequests: 10,
-    keyGenerator: (req) => `login:${getClientIP(req)}`,
+    keyGenerator: (req) => `login:${getClientIPFromHeaders(req.headers)}`,
   },
   messages: {
     windowMs: 60 * 1000, // 1 minut
@@ -37,20 +40,39 @@ const RATE_LIMITS: Record<string, RateLimitConfig> = {
   },
 };
 
-// Helper pentru obținerea IP-ului clientului
-function getClientIP(req: NextRequest): string {
-  const forwarded = req.headers.get('x-forwarded-for');
-  const realIP = req.headers.get('x-real-ip');
-  
-  if (forwarded) {
-    return forwarded.split(',')[0].trim();
+type AbuseLists = {
+  allowedIps: string[];
+  blockedIps: string[];
+  challengeIps: string[];
+};
+
+let abuseListsCache: { value: AbuseLists; fetchedAt: number } | null = null;
+
+async function getAbuseLists(): Promise<AbuseLists> {
+  const now = Date.now();
+  if (abuseListsCache && now - abuseListsCache.fetchedAt < 30_000) {
+    return abuseListsCache.value;
   }
-  
-  if (realIP) {
-    return realIP;
+
+  try {
+    const [allowedIps, blockedIps, challengeIps] = await Promise.all([
+      getJsonSetting<string[]>('abuse.allowed_ips_json', []),
+      getJsonSetting<string[]>('abuse.blocked_ips_json', []),
+      getJsonSetting<string[]>('abuse.challenge_ips_json', []),
+    ]);
+
+    const value = {
+      allowedIps: Array.isArray(allowedIps) ? allowedIps : [],
+      blockedIps: Array.isArray(blockedIps) ? blockedIps : [],
+      challengeIps: Array.isArray(challengeIps) ? challengeIps : [],
+    };
+    abuseListsCache = { value, fetchedAt: now };
+    return value;
+  } catch {
+    const value = { allowedIps: [], blockedIps: [], challengeIps: [] };
+    abuseListsCache = { value, fetchedAt: now };
+    return value;
   }
-  
-  return req.ip || 'unknown';
 }
 
 // Helper pentru cleanup-ul store-ului
@@ -74,7 +96,30 @@ export async function rateLimit(
     return null; // Nu aplică rate limiting pentru endpoint-uri necunoscute
   }
 
-  const key = config.keyGenerator ? config.keyGenerator(req) : `default:${getClientIP(req)}`;
+  const ip = getClientIPFromHeaders(req.headers);
+  const ua = getUserAgentFromHeaders(req.headers);
+  const lists = await getAbuseLists();
+
+  if (lists.allowedIps.includes(ip)) {
+    return null;
+  }
+
+  if (lists.blockedIps.includes(ip)) {
+    await logAuthEvent('rate_limit', undefined, undefined, ip, ua, {
+      source: 'middleware_rate_limit',
+      endpoint,
+      decision: 'blocked_ip',
+      path: req.nextUrl?.pathname,
+    });
+    return NextResponse.json(
+      { error: 'Blocked', message: 'Access blocked' },
+      { status: 429 }
+    );
+  }
+
+  const isChallenge = lists.challengeIps.includes(ip);
+  const effectiveMax = isChallenge ? Math.max(1, Math.floor(config.maxRequests / 2)) : config.maxRequests;
+  const key = config.keyGenerator ? config.keyGenerator(req) : `default:${ip}`;
   const now = Date.now();
   const windowStart = now - config.windowMs;
 
@@ -96,11 +141,21 @@ export async function rateLimit(
   }
 
   // Verifică dacă a depășit limita
-  if (currentEntry.count >= config.maxRequests) {
+  if (currentEntry.count >= effectiveMax) {
+    await logAuthEvent('rate_limit', undefined, undefined, ip, ua, {
+      source: 'middleware_rate_limit',
+      endpoint,
+      key,
+      maxRequests: effectiveMax,
+      windowMs: config.windowMs,
+      retryAfterSeconds: Math.ceil((currentEntry.resetTime - now) / 1000),
+      path: req.nextUrl?.pathname,
+      challenged: isChallenge,
+    });
     return NextResponse.json(
       {
         error: 'Prea multe cereri',
-        message: `Limita de ${config.maxRequests} cereri în ${config.windowMs / 1000} secunde a fost depășită`,
+        message: `Limita de ${effectiveMax} cereri în ${config.windowMs / 1000} secunde a fost depășită`,
         retryAfter: Math.ceil((currentEntry.resetTime - now) / 1000),
       },
       { status: 429 }
@@ -110,6 +165,12 @@ export async function rateLimit(
   // Incrementează contorul
   currentEntry.count++;
   rateLimitStore.set(key, currentEntry);
+
+  if (isChallenge) {
+    // Minimal “challenge mode”: add small jitter to slow down abuse without a CAPTCHA dependency.
+    const jitterMs = 150 + Math.floor(Math.random() * 150);
+    await new Promise((r) => setTimeout(r, jitterMs));
+  }
 
   return null; // Permite cererea
 }

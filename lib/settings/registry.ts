@@ -7,7 +7,12 @@ export type SettingKey =
   | 'shipping.per_kg_fee_cents'
   | 'shipping.rules_json'
   | 'feature_flags.global_kill_switch'
-  | 'notifications.admin_emails_json';
+  | 'notifications.admin_emails_json'
+  | 'abuse.allowed_ips_json'
+  | 'abuse.blocked_ips_json'
+  | 'abuse.challenge_ips_json'
+  | 'abuse.blocked_email_domains_json'
+  | 'security.pii_reveal_ttl_minutes';
 
 export type SettingRegistryEntry = {
   key: SettingKey;
@@ -90,6 +95,36 @@ export const SETTINGS_REGISTRY: Record<SettingKey, SettingRegistryEntry> = {
     description: 'Admin alert recipients as JSON array of emails. Falls back to ADMIN_EMAILS env var.',
     dangerous: true,
     schema: z.array(z.string().email()).min(1),
+  },
+  'abuse.allowed_ips_json': {
+    key: 'abuse.allowed_ips_json',
+    description: 'Allowlist IPs that bypass rate limiting (use sparingly).',
+    dangerous: true,
+    schema: z.array(z.string().min(1)).default([]),
+  },
+  'abuse.blocked_ips_json': {
+    key: 'abuse.blocked_ips_json',
+    description: 'Blocklist IPs (immediate 429).',
+    dangerous: true,
+    schema: z.array(z.string().min(1)).default([]),
+  },
+  'abuse.challenge_ips_json': {
+    key: 'abuse.challenge_ips_json',
+    description: 'Challenge IPs (stricter limits + small jitter).',
+    dangerous: true,
+    schema: z.array(z.string().min(1)).default([]),
+  },
+  'abuse.blocked_email_domains_json': {
+    key: 'abuse.blocked_email_domains_json',
+    description: 'Blocked email domains (for OTP/login flows).',
+    dangerous: true,
+    schema: z.array(z.string().min(1)).default([]),
+  },
+  'security.pii_reveal_ttl_minutes': {
+    key: 'security.pii_reveal_ttl_minutes',
+    description: 'Default TTL (minutes) for PII reveal grants.',
+    dangerous: true,
+    schema: z.number().int().min(1).max(60),
   },
 };
 
