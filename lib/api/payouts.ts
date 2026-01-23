@@ -104,11 +104,39 @@ export async function retryPayout(id: string): Promise<ApiResponse<Payout>> {
 }
 
 // Admin API - Marchează payout ca plătit manual
-export async function markPayoutPaid(id: string, data: { providerRef: string }): Promise<ApiResponse<Payout>> {
+export async function markPayoutPaid(
+  id: string,
+  data: { providerRef?: string; reason: string }
+): Promise<ApiResponse<Payout>> {
   return apiFetch<Payout>(`${API_BASE}/admin/payouts/${id}/mark-paid`, {
     method: 'POST',
     body: JSON.stringify(data),
   });
+}
+
+// Admin API - First-person request approval
+export async function requestPayoutApproval(id: string): Promise<ApiResponse<{ ok: boolean; payoutId: string }>> {
+  return apiFetch(`${API_BASE}/admin/payouts/${id}/request-approval`, {
+    method: 'POST',
+  });
+}
+
+// Admin API - Second-person approve + run
+export async function approveAndRunPayout(id: string): Promise<ApiResponse<any>> {
+  return apiFetch(`${API_BASE}/admin/payouts/${id}/approve`, {
+    method: 'POST',
+  });
+}
+
+// Admin export - banking CSV
+export function getPayoutsExportUrl(opts?: { status?: string; approvedOnly?: boolean; from?: string; to?: string }) {
+  const params = new URLSearchParams();
+  if (opts?.status) params.set('status', opts.status);
+  if (opts?.approvedOnly != null) params.set('approvedOnly', String(opts.approvedOnly));
+  if (opts?.from) params.set('from', opts.from);
+  if (opts?.to) params.set('to', opts.to);
+  const qs = params.toString();
+  return `${API_BASE}/admin/payouts/export${qs ? `?${qs}` : ''}`;
 }
 
 // Helper pentru SWR keys

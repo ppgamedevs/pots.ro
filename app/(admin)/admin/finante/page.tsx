@@ -10,8 +10,11 @@ import { Payout, PayoutFilters, Refund, RefundFilters } from '@/lib/types.finant
 import { PayoutsTable } from '@/components/finante/PayoutsTable';
 import { RefundsTable } from '@/components/finante/RefundsTable';
 import { FinanceMiniReport } from '@/components/finante/FinanceMiniReport';
-import { listPayouts, runPayoutBatch } from '@/lib/api/payouts';
-import { listRefunds, createRefund } from '@/lib/api/refunds';
+import { listPayouts, markPayoutPaid, runPayoutBatch } from '@/lib/api/payouts';
+import { approveAndRunPayout, getPayoutsExportUrl, requestPayoutApproval } from '@/lib/api/payouts';
+import { listRefunds, createRefund, retryRefund, markRefundFailed } from '@/lib/api/refunds';
+import { listLedger, type LedgerFilters } from '@/lib/api/ledger';
+import type { LedgerEntry } from '@/lib/types.finante';
 import { toast } from 'sonner';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -31,6 +34,25 @@ export default function AdminFinancePage() {
   const [isLoadingPayouts, setIsLoadingPayouts] = useState(true);
   const [isLoadingRefunds, setIsLoadingRefunds] = useState(true);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [ledgerEntries, setLedgerEntries] = useState<LedgerEntry[]>([]);
+  const [isLoadingLedger, setIsLoadingLedger] = useState(false);
+
+  const loadLedger = async (filters: LedgerFilters = {}) => {
+    try {
+      setIsLoadingLedger(true);
+      const response = await listLedger(filters);
+      if (response.ok && response.data) {
+        setLedgerEntries((response.data as any).data || []);
+      } else {
+        toast.error(response.error || 'Eroare la încărcarea ledger-ului');
+      }
+    } catch (error) {
+      toast.error('Eroare de rețea');
+      console.error('Error loading ledger:', error);
+    } finally {
+      setIsLoadingLedger(false);
+    }
+  };
 
   // Load payouts
   const loadPayouts = async (filters: PayoutFilters = {}) => {
@@ -73,6 +95,7 @@ export default function AdminFinancePage() {
   useEffect(() => {
     loadPayouts();
     loadRefunds();
+    loadLedger();
   }, []);
 
   // Batch payout processing
@@ -116,6 +139,94 @@ export default function AdminFinancePage() {
     } finally {
       setIsSubmitting(false);
     }
+  };
+
+  const handleRetryRefund = async (refundId: string) => {
+    try {
+      const response = await retryRefund(refundId);
+      if (response.ok) {
+        toast.success('Retry refund inițiat');
+        loadRefunds();
+      } else {
+        toast.error(response.error || 'Eroare la retry refund');
+      }
+    } catch (error) {
+      toast.error('Eroare de rețea');
+      console.error('Error retry refund:', error);
+    }
+  };
+
+  const handleMarkRefundFailed = async (refundId: string) => {
+    const reasonCode = prompt('Reason code (e.g. PROVIDER_ERROR, FRAUD_SUSPECT, MANUAL_REVIEW)');
+    if (!reasonCode) return;
+    const reason = prompt('Reason (details)');
+    if (!reason) return;
+
+    try {
+      const response = await markRefundFailed(refundId, { reasonCode, reason });
+      if (response.ok) {
+        toast.success('Refund marcat eșuat');
+        loadRefunds();
+      } else {
+        toast.error(response.error || 'Eroare la marcarea refund-ului');
+      }
+    } catch (error) {
+      toast.error('Eroare de rețea');
+      console.error('Error mark refund failed:', error);
+    }
+  };
+
+  const handleRequestPayoutApproval = async (payoutId: string) => {
+    try {
+      const response = await requestPayoutApproval(payoutId);
+      if (response.ok) {
+        toast.success('Aprobare cerută (pasul 1)');
+      } else {
+        toast.error(response.error || 'Eroare la cerere aprobare');
+      }
+    } catch (error) {
+      toast.error('Eroare de rețea');
+      console.error('Error request payout approval:', error);
+    }
+  };
+
+  const handleApproveAndRunPayout = async (payoutId: string) => {
+    try {
+      const response = await approveAndRunPayout(payoutId);
+      if (response.ok) {
+        toast.success('Payout aprobat și rulat');
+        loadPayouts();
+      } else {
+        toast.error(response.error || 'Eroare la aprobare + rulare');
+      }
+    } catch (error) {
+      toast.error('Eroare de rețea');
+      console.error('Error approve/run payout:', error);
+    }
+  };
+
+  const handleMarkPayoutPaid = async (payoutId: string) => {
+    const providerRef = prompt('Provider ref (optional)') || '';
+    const reason = prompt('Reason (required)') || '';
+    if (!reason.trim()) return;
+
+    try {
+      const response = await markPayoutPaid(payoutId, { providerRef: providerRef.trim() || undefined, reason: reason.trim() });
+      if (response.ok) {
+        toast.success('Payout marcat plătit (excepție)');
+        loadPayouts();
+      } else {
+        toast.error(response.error || 'Eroare la mark-paid');
+      }
+    } catch (error) {
+      toast.error('Eroare de rețea');
+      console.error('Error mark payout paid:', error);
+    }
+  };
+
+  const handleExportPayoutsBanking = () => {
+    const url = getPayoutsExportUrl({ status: 'pending', approvedOnly: true });
+    window.open(url, '_blank');
   };
 
   // Calculează statistici
@@ -206,9 +317,10 @@ export default function AdminFinancePage() {
 
       {/* Tabs pentru Payouts, Refunds și Rapoarte */}
       <Tabs value={activeTab} onValueChange={setActiveTab}>
-        <TabsList className="grid w-full grid-cols-4">
+        <TabsList className="grid w-full grid-cols-5">
           <TabsTrigger value="payouts">Payout-uri</TabsTrigger>
           <TabsTrigger value="refunds">Refunds</TabsTrigger>
+          <TabsTrigger value="ledger">Ledger</TabsTrigger>
           <TabsTrigger value="reports">Rapoarte</TabsTrigger>
           <TabsTrigger value="seo">SEO Tools</TabsTrigger>
         </TabsList>
@@ -260,7 +372,7 @@ export default function AdminFinancePage() {
                   </DialogContent>
                 </Dialog>
                 
-                <Button variant="outline">
+                <Button variant="outline" onClick={handleExportPayoutsBanking}>
                   <Download className="h-4 w-4 mr-2" />
                   Export CSV
                 </Button>
@@ -274,6 +386,9 @@ export default function AdminFinancePage() {
             isLoading={isLoadingPayouts}
             onFiltersChange={loadPayouts}
             onExportCSV={() => toast.success('Export CSV inițiat')}
+            onRequestApproval={handleRequestPayoutApproval}
+            onApproveAndRun={handleApproveAndRunPayout}
+            onMarkPaid={handleMarkPayoutPaid}
           />
         </TabsContent>
 
@@ -284,9 +399,61 @@ export default function AdminFinancePage() {
             isLoading={isLoadingRefunds}
             onFiltersChange={loadRefunds}
             onExportCSV={() => toast.success('Export CSV inițiat')}
-            onCreateRefund={() => toast.info('Funcționalitatea de creare refund va fi implementată')}
-            onRetryRefund={(refundId) => toast.info(`Retry refund ${refundId}`)}
+            onCreateRefund={handleCreateRefund}
+            onRetryRefund={handleRetryRefund}
+            onMarkFailed={handleMarkRefundFailed}
           />
+        </TabsContent>
+
+        <TabsContent value="ledger" className="space-y-4">
+          <Card>
+            <CardHeader>
+              <CardTitle>Ledger (read-only)</CardTitle>
+              <CardDescription>Intrări contabile imutabile (filtrare/export minim)</CardDescription>
+            </CardHeader>
+            <CardContent>
+              <div className="flex items-center justify-end gap-2 mb-4">
+                <Button onClick={() => loadLedger()} variant="outline" disabled={isLoadingLedger} size="sm">
+                  <RefreshCw className={`h-4 w-4 mr-2 ${isLoadingLedger ? 'animate-spin' : ''}`} />
+                  Actualizează
+                </Button>
+              </div>
+              <div className="rounded-md border overflow-x-auto">
+                <table className="min-w-full text-sm">
+                  <thead className="bg-gray-50">
+                    <tr>
+                      <th className="text-left px-3 py-2">Data</th>
+                      <th className="text-left px-3 py-2">Tip</th>
+                      <th className="text-left px-3 py-2">Entity</th>
+                      <th className="text-right px-3 py-2">Sumă</th>
+                      <th className="text-left px-3 py-2">Valută</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {ledgerEntries.length === 0 ? (
+                      <tr>
+                        <td className="px-3 py-6 text-center text-gray-500" colSpan={5}>
+                          Nu există intrări
+                        </td>
+                      </tr>
+                    ) : (
+                      ledgerEntries.map((e) => (
+                        <tr key={e.id} className="border-t">
+                          <td className="px-3 py-2 whitespace-nowrap">{new Date(e.createdAt).toLocaleString('ro-RO')}</td>
+                          <td className="px-3 py-2">{e.type}</td>
+                          <td className="px-3 py-2">
+                            <span className="text-xs bg-gray-100 px-2 py-1 rounded">{e.entityType}:{e.entityId.slice(-8)}</span>
+                          </td>
+                          <td className="px-3 py-2 text-right">{formatCurrency(e.amount, e.currency)}</td>
+                          <td className="px-3 py-2">{e.currency}</td>
+                        </tr>
+                      ))
+                    )}
+                  </tbody>
+                </table>
+              </div>
+            </CardContent>
+          </Card>
         </TabsContent>
 
         <TabsContent value="reports" className="space-y-4">

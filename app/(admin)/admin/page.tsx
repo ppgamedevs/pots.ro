@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { Package, Users, ShoppingBag, DollarSign, Settings, FileText, UserCog, Tags, CreditCard, Webhook } from "lucide-react";
+import { Package, Users, ShoppingBag, DollarSign, Settings, FileText, UserCog, Tags, CreditCard, Webhook, Percent } from "lucide-react";
 import { db } from "@/db";
 import { orders, products, sellerApplications } from "@/db/schema/core";
 import { and, eq, gte, ne, sql } from "drizzle-orm";
@@ -86,6 +86,13 @@ export default async function AdminDashboardPage() {
       href: "/admin/finante",
       icon: DollarSign,
       color: "bg-yellow-500",
+    },
+    {
+      title: "Comisioane",
+      description: "Comision rates (versioned/effective) + 2-person approval",
+      href: "/admin/commissions",
+      icon: Percent,
+      color: "bg-amber-600",
     },
     {
       title: "Payments",

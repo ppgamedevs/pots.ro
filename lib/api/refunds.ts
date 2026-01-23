@@ -74,6 +74,16 @@ export async function retryRefund(id: string): Promise<ApiResponse<Refund>> {
   });
 }
 
+export async function markRefundFailed(
+  id: string,
+  data: { reasonCode: string; reason: string }
+): Promise<ApiResponse<Refund>> {
+  return apiFetch<Refund>(`${API_BASE}/admin/refunds/${id}/mark-failed`, {
+    method: 'POST',
+    body: JSON.stringify(data),
+  });
+}
+
 // Helper pentru SWR keys
 export const refundKeys = {
   all: ['refunds'] as const,

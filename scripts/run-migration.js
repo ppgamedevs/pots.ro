@@ -371,6 +371,41 @@ async function ensureCatalogAdminSchema(sql) {
   }
 }
 
+async function ensureCommissionRates(sql) {
+  try {
+    console.log('🔧 Ensuring commission rates (versioned/effective)...');
+    await sql`CREATE EXTENSION IF NOT EXISTS pgcrypto`;
+
+    await sql`
+      CREATE TABLE IF NOT EXISTS commission_rates (
+        id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+        seller_id uuid REFERENCES sellers(id) ON DELETE CASCADE,
+        pct_bps int NOT NULL,
+        effective_at timestamptz NOT NULL,
+        status text NOT NULL DEFAULT 'pending',
+        requested_by uuid REFERENCES users(id) ON DELETE SET NULL,
+        approved_by uuid REFERENCES users(id) ON DELETE SET NULL,
+        approved_at timestamptz,
+        note text,
+        created_at timestamptz NOT NULL DEFAULT now()
+      );
+    `;
+
+    await sql`
+      CREATE INDEX IF NOT EXISTS commission_rates_seller_effective_idx
+      ON commission_rates(seller_id, effective_at);
+    `;
+    await sql`
+      CREATE INDEX IF NOT EXISTS commission_rates_status_effective_idx
+      ON commission_rates(status, effective_at);
+    `;
+
+    console.log('✅ Commission rates ensured');
+  } catch (err) {
+    console.warn('⚠️  Could not ensure commission rates:', err.message || err);
+  }
+}
+
 async function ensureSupportSchema(sql) {
   try {
     console.log('🔧 Ensuring support schema (notes/tickets/conversations)...');
@@ -529,6 +564,7 @@ async function runMigration() {
     await ensureSellerKycDocuments(sql);
     await ensureSellerPageVersions(sql);
     await ensureCatalogAdminSchema(sql);
+    await ensureCommissionRates(sql);
 
     // Check if orders table already exists
     console.log('🔍 Checking if orders table exists...');

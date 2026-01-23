@@ -36,6 +36,10 @@ export const ADMIN_ROUTE_CONFIG: Record<string, { label: string; parent?: string
     label: 'Finanțe',
     parent: '/admin',
   },
+  '/admin/commissions': {
+    label: 'Comisioane',
+    parent: '/admin',
+  },
   '/admin/payments': {
     label: 'Payments',
     parent: '/admin',

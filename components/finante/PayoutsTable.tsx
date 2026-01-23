@@ -22,13 +22,19 @@ interface PayoutsTableProps {
   isLoading?: boolean;
   onFiltersChange?: (filters: PayoutFilters) => void;
   onExportCSV?: () => void;
+  onRequestApproval?: (payoutId: string) => void;
+  onApproveAndRun?: (payoutId: string) => void;
+  onMarkPaid?: (payoutId: string) => void;
 }
 
 export function PayoutsTable({ 
   payouts, 
   isLoading = false, 
   onFiltersChange,
-  onExportCSV 
+  onExportCSV,
+  onRequestApproval,
+  onApproveAndRun,
+  onMarkPaid
 }: PayoutsTableProps) {
   const ALL_STATUSES = '__ALL__';
   const [filters, setFilters] = useState<PayoutFilters>({
@@ -145,12 +151,15 @@ export function PayoutsTable({
                 <TableHead scope="col">Comision</TableHead>
                 <TableHead scope="col">Status</TableHead>
                 <TableHead scope="col">Detalii</TableHead>
+                {(onRequestApproval || onApproveAndRun || onMarkPaid) && (
+                  <TableHead scope="col">Acțiuni</TableHead>
+                )}
               </TableRow>
             </TableHeader>
             <TableBody>
               {payouts.length === 0 ? (
                 <TableRow>
-                  <TableCell colSpan={6} className="text-center py-8 text-gray-500">
+                  <TableCell colSpan={(onRequestApproval || onApproveAndRun || onMarkPaid) ? 7 : 6} className="text-center py-8 text-gray-500">
                     Nu există payout-uri pentru filtrele selectate
                   </TableCell>
                 </TableRow>
@@ -204,6 +213,27 @@ export function PayoutsTable({
                         )}
                       </div>
                     </TableCell>
+                    {(onRequestApproval || onApproveAndRun || onMarkPaid) && (
+                      <TableCell>
+                        <div className="flex flex-wrap gap-2">
+                          {(payout.status === 'PENDING' || payout.status === 'FAILED') && onRequestApproval && (
+                            <Button size="sm" variant="outline" onClick={() => onRequestApproval(payout.id)}>
+                              Cere aprobare
+                            </Button>
+                          )}
+                          {(payout.status === 'PENDING' || payout.status === 'FAILED') && onApproveAndRun && (
+                            <Button size="sm" onClick={() => onApproveAndRun(payout.id)}>
+                              Aproba + Rulează
+                            </Button>
+                          )}
+                          {payout.status !== 'PAID' && onMarkPaid && (
+                            <Button size="sm" variant="outline" onClick={() => onMarkPaid(payout.id)}>
+                              Marchează plătit
+                            </Button>
+                          )}
+                        </div>
+                      </TableCell>
+                    )}
                   </TableRow>
                 ))
               )}

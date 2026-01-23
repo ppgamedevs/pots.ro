@@ -23,7 +23,12 @@ export type PayoutRunResult = {
 /**
  * Procesează un payout individual
  */
-export async function runPayout(payoutId: string): Promise<PayoutRunResult> {
+export async function runPayout(
+  payoutId: string,
+  opts?: {
+    allowFailed?: boolean;
+  }
+): Promise<PayoutRunResult> {
   console.log(`🔄 Procesez payout ${payoutId}`);
   
   // Găsește payout-ul în baza de date
@@ -63,7 +68,14 @@ export async function runPayout(payoutId: string): Promise<PayoutRunResult> {
   }
 
   if (payout.status === 'failed') {
-    throw new Error(`Payout ${payoutId} a eșuat anterior și nu poate fi reprocesat`);
+    if (!opts?.allowFailed) {
+      throw new Error(`Payout ${payoutId} a eșuat anterior și nu poate fi reprocesat`);
+    }
+
+    // Allow manual retry: reset to pending and clear failure reason
+    await db.update(payouts)
+      .set({ status: 'pending', failureReason: null })
+      .where(eq(payouts.id, payoutId));
   }
 
   // Validează input-ul pentru provider

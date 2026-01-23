@@ -807,6 +807,28 @@ export const ledger = pgTable("ledger", {
   ledgerTypeCreatedIdx: index("ledger_type_created_idx").on(table.type, table.createdAt),
 }));
 
+// Commission rates (versioned, effective date, 2-person approval handled via API)
+export const commissionRates = pgTable(
+  'commission_rates',
+  {
+    id: uuid('id').primaryKey().defaultRandom(),
+    // null = default platform rate
+    sellerId: uuid('seller_id').references(() => sellers.id, { onDelete: 'cascade' }),
+    pctBps: integer('pct_bps').notNull(),
+    effectiveAt: timestamp('effective_at', { withTimezone: true }).notNull(),
+    status: text('status').notNull().default('pending').$type<'pending' | 'approved' | 'rejected' | 'superseded'>(),
+    requestedBy: uuid('requested_by').references(() => users.id, { onDelete: 'set null' }),
+    approvedBy: uuid('approved_by').references(() => users.id, { onDelete: 'set null' }),
+    approvedAt: timestamp('approved_at', { withTimezone: true }),
+    note: text('note'),
+    createdAt: timestamp('created_at', { withTimezone: true }).defaultNow().notNull(),
+  },
+  (table) => ({
+    commissionRatesSellerEffectiveIdx: index('commission_rates_seller_effective_idx').on(table.sellerId, table.effectiveAt),
+    commissionRatesStatusEffectiveIdx: index('commission_rates_status_effective_idx').on(table.status, table.effectiveAt),
+  })
+);
+
 // Week 10: Analytics tables
 export const sellerStatsDaily = pgTable("seller_stats_daily", {
   id: uuid("id").primaryKey().defaultRandom(),

@@ -6,6 +6,8 @@
 import { FinanceSummary, LedgerEntry, LedgerFilters } from '@/lib/types.finante';
 import { ApiResponse, Paged } from '@/lib/types';
 
+export type { LedgerFilters } from '@/lib/types.finante';
+
 const API_BASE = '/api';
 
 // Helper pentru fetch cu error handling
@@ -94,6 +96,9 @@ export async function listLedgerEntries(filters: LedgerFilters = {}): Promise<Ap
 
   return apiFetch<Paged<LedgerEntry>>(`${API_BASE}/admin/ledger?${params}`);
 }
+
+// Backwards-compatible alias for pages/components.
+export const listLedger = listLedgerEntries;
 
 // Obține soldul curent al platformei
 export async function getPlatformBalance(): Promise<ApiResponse<{

@@ -84,7 +84,9 @@ export async function POST(
       }, { status: 400 });
     }
 
-    const LARGE_REFUND_RON = Number.parseFloat(process.env.LARGE_REFUND_RON || '500');
+    // Policy: refunds are single-person by default (no 2-person approval).
+    // If you want to enable 2-person approval again, set LARGE_REFUND_RON to a realistic threshold (e.g. 500).
+    const LARGE_REFUND_RON = Number.parseFloat(process.env.LARGE_REFUND_RON || '100000000');
     const requiresApproval = Number.isFinite(LARGE_REFUND_RON) && amount >= LARGE_REFUND_RON;
 
     // Creează refund-ul

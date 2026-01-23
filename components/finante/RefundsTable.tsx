@@ -23,8 +23,9 @@ interface RefundsTableProps {
   isLoading?: boolean;
   onFiltersChange?: (filters: RefundFilters) => void;
   onExportCSV?: () => void;
-  onCreateRefund?: () => void;
+  onCreateRefund?: (orderId: string, amount: number, reason: string) => void;
   onRetryRefund?: (refundId: string) => void;
+  onMarkFailed?: (refundId: string) => void;
 }
 
 export function RefundsTable({ 
@@ -33,7 +34,8 @@ export function RefundsTable({
   onFiltersChange,
   onExportCSV,
   onCreateRefund,
-  onRetryRefund
+  onRetryRefund,
+  onMarkFailed
 }: RefundsTableProps) {
   const ALL_STATUSES = '__ALL__';
   const [filters, setFilters] = useState<RefundFilters>({
@@ -42,6 +44,10 @@ export function RefundsTable({
     from: undefined,
     to: undefined,
   });
+
+  const [createOrderId, setCreateOrderId] = useState('');
+  const [createAmount, setCreateAmount] = useState('');
+  const [createReason, setCreateReason] = useState('');
 
   const handleFilterChange = (key: keyof RefundFilters, value: any) => {
     const newFilters = { ...filters, [key]: value };
@@ -111,19 +117,26 @@ export function RefundsTable({
                 <div className="space-y-4">
                   <div>
                     <label className="text-sm font-medium">ID Comandă</label>
-                    <Input placeholder="Introdu ID-ul comenzii" />
+                    <Input placeholder="Introdu ID-ul comenzii" value={createOrderId} onChange={(e) => setCreateOrderId(e.target.value)} />
                   </div>
                   <div>
                     <label className="text-sm font-medium">Sumă (RON)</label>
-                    <Input type="number" placeholder="0.00" step="0.01" />
+                    <Input type="number" placeholder="0.00" step="0.01" value={createAmount} onChange={(e) => setCreateAmount(e.target.value)} />
                   </div>
                   <div>
                     <label className="text-sm font-medium">Motiv</label>
-                    <Input placeholder="Motivul refund-ului" />
+                    <Input placeholder="Motivul refund-ului" value={createReason} onChange={(e) => setCreateReason(e.target.value)} />
                   </div>
                   <div className="flex justify-end gap-2">
                     <Button variant="outline">Anulează</Button>
-                    <Button onClick={onCreateRefund}>Creează Refund</Button>
+                    <Button
+                      onClick={() => {
+                        const amount = Number(createAmount);
+                        onCreateRefund?.(createOrderId.trim(), Number.isFinite(amount) ? amount : 0, createReason.trim());
+                      }}
+                    >
+                      Creează Refund
+                    </Button>
                   </div>
                 </div>
               </DialogContent>
@@ -247,6 +260,11 @@ export function RefundsTable({
                           >
                             <RefreshCw className="h-3 w-3 mr-1" />
                             Retry
+                          </Button>
+                        )}
+                        {refund.status !== 'REFUNDED' && (
+                          <Button size="sm" variant="outline" onClick={() => onMarkFailed?.(refund.id)}>
+                            Marchează eșuat
                           </Button>
                         )}
                         <Button size="sm" variant="outline">

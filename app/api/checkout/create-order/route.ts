@@ -4,7 +4,6 @@ import { carts, cartItems, products, sellers, orders, orderItems, promotions, ca
 import { eq, and, or, isNull, isNotNull, lte, gte } from "drizzle-orm";
 import { getUserId } from "@/lib/auth-helpers";
 import { getOrSetSessionId } from "@/lib/cookies";
-import { COMMISSION_PCT } from "@/lib/env";
 import { calculateCommission, calculateSellerDue } from "@/lib/money";
 import { logger } from "@/lib/logger";
 import { z } from "zod";
@@ -185,13 +184,22 @@ export async function POST(request: NextRequest) {
     };
 
     // Create order and order items in a transaction
+    const { getEffectiveCommissionPct } = await import('@/lib/commission/rates');
+    const defaultCommissionPct = await getEffectiveCommissionPct(null);
+
+    const uniqueSellerIdsForRates: string[] = [...new Set<string>(cartItemsResult.map((item: any) => String(item.seller.id)))];
+    const commissionPctBySeller = new Map<string, number>();
+    for (const sellerId of uniqueSellerIdsForRates) {
+      commissionPctBySeller.set(sellerId, await getEffectiveCommissionPct(sellerId));
+    }
+
     const newOrder = await db.transaction(async (tx: any) => {
       // Get unique seller IDs from cart items
-      const uniqueSellerIds = [...new Set(cartItemsResult.map((item: any) => item.seller.id))];
+      const uniqueSellerIds: string[] = [...new Set<string>(cartItemsResult.map((item: any) => String(item.seller.id)))];
       
       // For MVP, create one order per seller (simplified approach)
       // In a real system, you might want to group by seller and create multiple orders
-      const primarySellerId = uniqueSellerIds[0];
+      const primarySellerId: string = uniqueSellerIds[0];
       
       // Generate unique order number
       const { generateOrderNumber } = await import('@/lib/slug');
@@ -240,7 +248,9 @@ export async function POST(request: NextRequest) {
           : 0;
         
         const finalItemSubtotalCents = itemSubtotalCents - itemDiscountCents;
-        const commissionAmountCents = calculateCommission(finalItemSubtotalCents, COMMISSION_PCT);
+        const sellerId = String(item.seller.id);
+        const commissionPct = commissionPctBySeller.get(sellerId) ?? commissionPctBySeller.get(primarySellerId) ?? defaultCommissionPct;
+        const commissionAmountCents = calculateCommission(finalItemSubtotalCents, commissionPct);
         const sellerDueCents = calculateSellerDue(finalItemSubtotalCents, commissionAmountCents);
 
         return {
@@ -251,7 +261,7 @@ export async function POST(request: NextRequest) {
           unitPriceCents: item.priceCents,
           discountCents: itemDiscountCents,
           subtotalCents: finalItemSubtotalCents,
-          commissionPct: COMMISSION_PCT,
+          commissionPct,
           commissionAmountCents,
           sellerDueCents,
         };
