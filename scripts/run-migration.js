@@ -1217,6 +1217,215 @@ async function ensureDeveloperSchema(sql) {
   }
 }
 
+async function ensurePromotionsGovernanceSchema(sql) {
+  try {
+    console.log('🔧 Ensuring promotions governance columns...');
+
+    await sql`ALTER TABLE promotions ADD COLUMN IF NOT EXISTS meta jsonb`;
+    await sql`ALTER TABLE promotions ADD COLUMN IF NOT EXISTS approval_status text NOT NULL DEFAULT 'approved'`;
+    await sql`ALTER TABLE promotions ADD COLUMN IF NOT EXISTS approval_requested_by uuid REFERENCES users(id) ON DELETE SET NULL`;
+    await sql`ALTER TABLE promotions ADD COLUMN IF NOT EXISTS approval_requested_at timestamptz`;
+    await sql`ALTER TABLE promotions ADD COLUMN IF NOT EXISTS approved_by uuid REFERENCES users(id) ON DELETE SET NULL`;
+    await sql`ALTER TABLE promotions ADD COLUMN IF NOT EXISTS approved_at timestamptz`;
+    await sql`ALTER TABLE promotions ADD COLUMN IF NOT EXISTS change_note text`;
+    await sql`ALTER TABLE promotions ADD COLUMN IF NOT EXISTS version int NOT NULL DEFAULT 1`;
+
+    await sql`CREATE INDEX IF NOT EXISTS promotions_approval_status_idx ON promotions(approval_status)`;
+
+    console.log('✅ Promotions governance ensured');
+  } catch (err) {
+    console.warn('⚠️  Could not ensure promotions governance (table may not exist yet):', err.message || err);
+  }
+}
+
+async function ensurePromotionVersionsSchema(sql) {
+  try {
+    console.log('🔧 Ensuring promotion versions...');
+    await sql`CREATE EXTENSION IF NOT EXISTS pgcrypto`;
+
+    await sql`
+      CREATE TABLE IF NOT EXISTS promotion_versions (
+        id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+        promotion_id uuid NOT NULL REFERENCES promotions(id) ON DELETE CASCADE,
+        version int NOT NULL,
+        snapshot jsonb NOT NULL,
+        created_by uuid REFERENCES users(id) ON DELETE SET NULL,
+        created_at timestamptz NOT NULL DEFAULT now()
+      );
+    `;
+
+    await sql`CREATE INDEX IF NOT EXISTS promotion_versions_promotion_idx ON promotion_versions(promotion_id)`;
+    await sql`CREATE INDEX IF NOT EXISTS promotion_versions_version_idx ON promotion_versions(promotion_id, version)`;
+
+    console.log('✅ Promotion versions ensured');
+  } catch (err) {
+    console.warn('⚠️  Could not ensure promotion versions (tables may not exist yet):', err.message || err);
+  }
+}
+
+async function ensureAssetScanJobsSchema(sql) {
+  try {
+    console.log('🔧 Ensuring asset scan jobs...');
+    await sql`CREATE EXTENSION IF NOT EXISTS pgcrypto`;
+
+    await sql`
+      CREATE TABLE IF NOT EXISTS asset_scan_jobs (
+        id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+        blob_path text NOT NULL UNIQUE,
+        kind text NOT NULL,
+        status text NOT NULL DEFAULT 'pending',
+        result jsonb,
+        requested_by uuid REFERENCES users(id) ON DELETE SET NULL,
+        created_at timestamptz NOT NULL DEFAULT now(),
+        updated_at timestamptz NOT NULL DEFAULT now()
+      );
+    `;
+    await sql`CREATE INDEX IF NOT EXISTS asset_scan_jobs_status_idx ON asset_scan_jobs(status)`;
+
+    console.log('✅ Asset scan jobs ensured');
+  } catch (err) {
+    console.warn('⚠️  Could not ensure asset scan jobs (tables may not exist yet):', err.message || err);
+  }
+}
+
+async function ensureAffiliatesSchema(sql) {
+  try {
+    console.log('🔧 Ensuring affiliates schema...');
+    await sql`CREATE EXTENSION IF NOT EXISTS pgcrypto`;
+
+    await sql`
+      CREATE TABLE IF NOT EXISTS affiliate_partners (
+        id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+        name text NOT NULL,
+        status text NOT NULL DEFAULT 'active',
+        contact_email text,
+        website_url text,
+        default_commission_bps int NOT NULL DEFAULT 500,
+        payout_notes text,
+        created_at timestamptz NOT NULL DEFAULT now(),
+        updated_at timestamptz NOT NULL DEFAULT now()
+      );
+    `;
+    await sql`CREATE INDEX IF NOT EXISTS affiliate_partners_status_idx ON affiliate_partners(status)`;
+
+    await sql`
+      CREATE TABLE IF NOT EXISTS affiliate_codes (
+        id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+        partner_id uuid NOT NULL REFERENCES affiliate_partners(id) ON DELETE CASCADE,
+        code text NOT NULL UNIQUE,
+        status text NOT NULL DEFAULT 'active',
+        commission_bps int,
+        max_uses int,
+        starts_at timestamptz,
+        ends_at timestamptz,
+        meta jsonb,
+        created_at timestamptz NOT NULL DEFAULT now(),
+        updated_at timestamptz NOT NULL DEFAULT now()
+      );
+    `;
+    await sql`CREATE INDEX IF NOT EXISTS affiliate_codes_partner_idx ON affiliate_codes(partner_id)`;
+    await sql`CREATE INDEX IF NOT EXISTS affiliate_codes_status_idx ON affiliate_codes(status)`;
+
+    await sql`
+      CREATE TABLE IF NOT EXISTS affiliate_attributions (
+        id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+        code_id uuid NOT NULL REFERENCES affiliate_codes(id) ON DELETE CASCADE,
+        user_id uuid REFERENCES users(id) ON DELETE SET NULL,
+        order_id uuid REFERENCES orders(id) ON DELETE SET NULL,
+        ip_hash text,
+        user_agent_hash text,
+        created_at timestamptz NOT NULL DEFAULT now()
+      );
+    `;
+    await sql`CREATE INDEX IF NOT EXISTS affiliate_attributions_code_idx ON affiliate_attributions(code_id)`;
+    await sql`CREATE INDEX IF NOT EXISTS affiliate_attributions_order_idx ON affiliate_attributions(order_id)`;
+    await sql`CREATE INDEX IF NOT EXISTS affiliate_attributions_user_idx ON affiliate_attributions(user_id)`;
+
+    await sql`
+      CREATE TABLE IF NOT EXISTS affiliate_commission_events (
+        id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+        partner_id uuid NOT NULL REFERENCES affiliate_partners(id) ON DELETE CASCADE,
+        attribution_id uuid REFERENCES affiliate_attributions(id) ON DELETE SET NULL,
+        order_id uuid REFERENCES orders(id) ON DELETE SET NULL,
+        amount_cents int NOT NULL,
+        status text NOT NULL DEFAULT 'pending',
+        reason text,
+        meta jsonb,
+        created_at timestamptz NOT NULL DEFAULT now()
+      );
+    `;
+    await sql`CREATE INDEX IF NOT EXISTS affiliate_commission_events_partner_idx ON affiliate_commission_events(partner_id)`;
+    await sql`CREATE INDEX IF NOT EXISTS affiliate_commission_events_order_idx ON affiliate_commission_events(order_id)`;
+    await sql`CREATE INDEX IF NOT EXISTS affiliate_commission_events_status_idx ON affiliate_commission_events(status)`;
+
+    await sql`
+      CREATE TABLE IF NOT EXISTS affiliate_payouts (
+        id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+        partner_id uuid NOT NULL REFERENCES affiliate_partners(id) ON DELETE CASCADE,
+        amount_cents int NOT NULL,
+        status text NOT NULL DEFAULT 'draft',
+        requested_by uuid REFERENCES users(id) ON DELETE SET NULL,
+        requested_at timestamptz,
+        approved_by uuid REFERENCES users(id) ON DELETE SET NULL,
+        approved_at timestamptz,
+        paid_at timestamptz,
+        meta jsonb,
+        created_at timestamptz NOT NULL DEFAULT now(),
+        updated_at timestamptz NOT NULL DEFAULT now()
+      );
+    `;
+    await sql`CREATE INDEX IF NOT EXISTS affiliate_payouts_partner_idx ON affiliate_payouts(partner_id)`;
+    await sql`CREATE INDEX IF NOT EXISTS affiliate_payouts_status_idx ON affiliate_payouts(status)`;
+
+    await sql`
+      CREATE TABLE IF NOT EXISTS affiliate_fraud_rules (
+        id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+        kind text NOT NULL,
+        enabled boolean NOT NULL DEFAULT true,
+        config jsonb NOT NULL,
+        created_at timestamptz NOT NULL DEFAULT now(),
+        updated_at timestamptz NOT NULL DEFAULT now()
+      );
+    `;
+
+    console.log('✅ Affiliates schema ensured');
+  } catch (err) {
+    console.warn('⚠️  Could not ensure affiliates schema (tables may not exist yet):', err.message || err);
+  }
+}
+
+async function runEnsures(sql) {
+  await ensureInternalNotesColumn(sql);
+  await ensureSupportSchema(sql);
+  await ensureSellerApplicationStatusEvents(sql);
+  await ensureSellerActions(sql);
+  await ensureSellerCompliance(sql);
+  await ensureSellerKycDocuments(sql);
+  await ensureSellerPageVersions(sql);
+  await ensureCatalogAdminSchema(sql);
+  await ensureCommissionRates(sql);
+  await ensureSettingsTable(sql);
+  await ensureFeatureFlags(sql);
+  await ensureManagedEmailTemplates(sql);
+  await ensureGdprCompliance(sql);
+  await ensureProductLocks(sql);
+  await ensureCommunicationSchema(sql);
+  await ensureUserPermissionsSchema(sql);
+  await ensureReservedNamesSchema(sql);
+  await ensureRateLimitsSchema(sql);
+  await ensureAdminAlertsSchema(sql);
+  await ensureBackupRunsSchema(sql);
+  await ensureDeveloperSchema(sql);
+  await ensureSupportConsoleSchema(sql);
+  await ensureContentSchema(sql);
+
+  // New modules (safe to re-run)
+  await ensurePromotionsGovernanceSchema(sql);
+  await ensurePromotionVersionsSchema(sql);
+  await ensureAssetScanJobsSchema(sql);
+  await ensureAffiliatesSchema(sql);
+}
+
 async function ensureContentSchema(sql) {
   try {
     console.log('🔧 Ensuring content schema (blog/pages/help)...');
@@ -1587,67 +1796,42 @@ async function runMigration() {
     }
 
     // Always attempt safe, idempotent schema tweaks
-    await ensureInternalNotesColumn(sql);
-    await ensureSupportSchema(sql);
-    await ensureSellerApplicationStatusEvents(sql);
-      await ensureSellerActions(sql);
-    await ensureSellerCompliance(sql);
-    await ensureSellerKycDocuments(sql);
-    await ensureSellerPageVersions(sql);
-    await ensureCatalogAdminSchema(sql);
-    await ensureCommissionRates(sql);
-    await ensureSettingsTable(sql);
-    await ensureFeatureFlags(sql);
-    await ensureManagedEmailTemplates(sql);
-    await ensureGdprCompliance(sql);
-    await ensureProductLocks(sql);
-    await ensureCommunicationSchema(sql);
-    await ensureUserPermissionsSchema(sql);
-    await ensureReservedNamesSchema(sql);
-    await ensureRateLimitsSchema(sql);
-    await ensureAdminAlertsSchema(sql);
-    await ensureBackupRunsSchema(sql);
-    await ensureDeveloperSchema(sql);
-    await ensureSupportConsoleSchema(sql);
-    await ensureContentSchema(sql);
+    await runEnsures(sql);
 
     // Check if orders table already exists
     console.log('🔍 Checking if orders table exists...');
     const tableExists = await checkOrdersTable(sql);
     
-    if (tableExists) {
-      console.log('✅ Orders table already exists!');
-      console.log('✅ Migration already applied. Skipping migration scripts.');
-      await sql.end();
-      process.exit(0);
-    }
+    if (!tableExists) {
+      console.log('🔧 Orders table not found. Running Drizzle migrations...');
+      const db = drizzle(sql);
 
-    console.log('� Orders table not found. Running Drizzle migrations...');
-    const db = drizzle(sql);
-    
-    try {
-      const migrationsFolder = path.join(process.cwd(), 'drizzle');
-      await migrate(db, { migrationsFolder });
-      console.log('✅ Migrations completed successfully!');
-    } catch (migrateErr) {
-      console.warn('⚠️  Migration script error:', migrateErr.message);
-      
-      // Even if migration script fails, check if table exists now
-      console.log('🔍 Double-checking if orders table was created...');
-      const tableExistsNow = await checkOrdersTable(sql);
-      
-      if (tableExistsNow) {
+      try {
+        const migrationsFolder = path.join(process.cwd(), 'drizzle');
+        await migrate(db, { migrationsFolder });
+        console.log('✅ Migrations completed successfully!');
+      } catch (migrateErr) {
+        console.warn('⚠️  Migration script error:', migrateErr.message);
+
+        // Even if migration script fails, check if table exists now
+        console.log('🔍 Double-checking if orders table was created...');
+        const tableExistsNow = await checkOrdersTable(sql);
+
+        if (!tableExistsNow) {
+          // If still no table, try to create tables directly
+          console.log('📋 Attempting direct table creation...');
+          require('./create-tables.js');
+          await sql.end();
+          process.exit(0);
+        }
+
         console.log('✅ Orders table exists - continuing despite migration error');
-        await sql.end();
-        process.exit(0);
       }
-      
-      // If still no table, try to create tables directly
-      console.log('📋 Attempting direct table creation...');
-      const createTablesScript = require('./create-tables.js');
-      // Let create-tables.js handle it
-      await sql.end();
-      process.exit(0);
+
+      // Re-run ensures now that base tables exist
+      await runEnsures(sql);
+    } else {
+      console.log('✅ Orders table already exists! Skipping migration scripts.');
     }
 
     await sql.end();

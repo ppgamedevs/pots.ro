@@ -728,6 +728,14 @@ export const promotions = pgTable("promotions", {
   sellerId: uuid("seller_id").references(() => sellers.id, { onDelete: "cascade" }),
   targetCategorySlug: text("target_category_slug"),
   targetProductId: uuid("target_product_id").references(() => products.id, { onDelete: "cascade" }),
+  meta: jsonb("meta").$type<Record<string, any>>(),
+  approvalStatus: text("approval_status").notNull().default('approved').$type<'draft' | 'pending_approval' | 'approved' | 'rejected' | 'disabled'>(),
+  approvalRequestedBy: uuid("approval_requested_by").references(() => users.id, { onDelete: "set null" }),
+  approvalRequestedAt: timestamp("approval_requested_at", { withTimezone: true }),
+  approvedBy: uuid("approved_by").references(() => users.id, { onDelete: "set null" }),
+  approvedAt: timestamp("approved_at", { withTimezone: true }),
+  changeNote: text("change_note"),
+  version: integer("version").notNull().default(1),
   createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
   updatedAt: timestamp("updated_at", { withTimezone: true }).defaultNow().notNull(),
 }, (table) => ({
@@ -736,6 +744,120 @@ export const promotions = pgTable("promotions", {
   promotionsTypeIdx: index("promotions_type_idx").on(table.type),
   promotionsTargetIdx: index("promotions_target_idx").on(table.targetCategorySlug, table.targetProductId),
 }));
+
+export const promotionVersions = pgTable('promotion_versions', {
+  id: uuid('id').primaryKey().defaultRandom(),
+  promotionId: uuid('promotion_id').notNull().references(() => promotions.id, { onDelete: 'cascade' }),
+  version: integer('version').notNull(),
+  snapshot: jsonb('snapshot').notNull(),
+  createdBy: uuid('created_by').references(() => users.id, { onDelete: 'set null' }),
+  createdAt: timestamp('created_at', { withTimezone: true }).defaultNow().notNull(),
+}, (table) => ({
+  promotionVersionsPromotionIdx: index('promotion_versions_promotion_idx').on(table.promotionId),
+  promotionVersionsVersionIdx: index('promotion_versions_version_idx').on(table.promotionId, table.version),
+}));
+
+export const assetScanJobs = pgTable('asset_scan_jobs', {
+  id: uuid('id').primaryKey().defaultRandom(),
+  blobPath: text('blob_path').notNull().unique(),
+  kind: text('kind').notNull(),
+  status: text('status').notNull().default('pending').$type<'pending' | 'clean' | 'quarantined' | 'failed'>(),
+  result: jsonb('result'),
+  requestedBy: uuid('requested_by').references(() => users.id, { onDelete: 'set null' }),
+  createdAt: timestamp('created_at', { withTimezone: true }).defaultNow().notNull(),
+  updatedAt: timestamp('updated_at', { withTimezone: true }).defaultNow().notNull(),
+}, (table) => ({
+  assetScanJobsStatusIdx: index('asset_scan_jobs_status_idx').on(table.status),
+}));
+
+// Affiliates (admin-managed; does not imply public coupon support)
+export const affiliatePartners = pgTable('affiliate_partners', {
+  id: uuid('id').primaryKey().defaultRandom(),
+  name: text('name').notNull(),
+  status: text('status').notNull().default('active').$type<'active' | 'disabled'>(),
+  contactEmail: text('contact_email'),
+  websiteUrl: text('website_url'),
+  defaultCommissionBps: integer('default_commission_bps').notNull().default(500),
+  payoutNotes: text('payout_notes'),
+  createdAt: timestamp('created_at', { withTimezone: true }).defaultNow().notNull(),
+  updatedAt: timestamp('updated_at', { withTimezone: true }).defaultNow().notNull(),
+}, (table) => ({
+  affiliatePartnersStatusIdx: index('affiliate_partners_status_idx').on(table.status),
+}));
+
+export const affiliateCodes = pgTable('affiliate_codes', {
+  id: uuid('id').primaryKey().defaultRandom(),
+  partnerId: uuid('partner_id').notNull().references(() => affiliatePartners.id, { onDelete: 'cascade' }),
+  code: text('code').notNull().unique(),
+  status: text('status').notNull().default('active').$type<'active' | 'disabled'>(),
+  commissionBps: integer('commission_bps'),
+  maxUses: integer('max_uses'),
+  startsAt: timestamp('starts_at', { withTimezone: true }),
+  endsAt: timestamp('ends_at', { withTimezone: true }),
+  meta: jsonb('meta'),
+  createdAt: timestamp('created_at', { withTimezone: true }).defaultNow().notNull(),
+  updatedAt: timestamp('updated_at', { withTimezone: true }).defaultNow().notNull(),
+}, (table) => ({
+  affiliateCodesPartnerIdx: index('affiliate_codes_partner_idx').on(table.partnerId),
+  affiliateCodesStatusIdx: index('affiliate_codes_status_idx').on(table.status),
+}));
+
+export const affiliateAttributions = pgTable('affiliate_attributions', {
+  id: uuid('id').primaryKey().defaultRandom(),
+  codeId: uuid('code_id').notNull().references(() => affiliateCodes.id, { onDelete: 'cascade' }),
+  userId: uuid('user_id').references(() => users.id, { onDelete: 'set null' }),
+  orderId: uuid('order_id').references(() => orders.id, { onDelete: 'set null' }),
+  ipHash: text('ip_hash'),
+  userAgentHash: text('user_agent_hash'),
+  createdAt: timestamp('created_at', { withTimezone: true }).defaultNow().notNull(),
+}, (table) => ({
+  affiliateAttributionsCodeIdx: index('affiliate_attributions_code_idx').on(table.codeId),
+  affiliateAttributionsOrderIdx: index('affiliate_attributions_order_idx').on(table.orderId),
+  affiliateAttributionsUserIdx: index('affiliate_attributions_user_idx').on(table.userId),
+}));
+
+export const affiliateCommissionEvents = pgTable('affiliate_commission_events', {
+  id: uuid('id').primaryKey().defaultRandom(),
+  partnerId: uuid('partner_id').notNull().references(() => affiliatePartners.id, { onDelete: 'cascade' }),
+  attributionId: uuid('attribution_id').references(() => affiliateAttributions.id, { onDelete: 'set null' }),
+  orderId: uuid('order_id').references(() => orders.id, { onDelete: 'set null' }),
+  amountCents: integer('amount_cents').notNull(),
+  status: text('status').notNull().default('pending').$type<'pending' | 'approved' | 'void' | 'paid'>(),
+  reason: text('reason'),
+  meta: jsonb('meta'),
+  createdAt: timestamp('created_at', { withTimezone: true }).defaultNow().notNull(),
+}, (table) => ({
+  affiliateCommissionEventsPartnerIdx: index('affiliate_commission_events_partner_idx').on(table.partnerId),
+  affiliateCommissionEventsOrderIdx: index('affiliate_commission_events_order_idx').on(table.orderId),
+  affiliateCommissionEventsStatusIdx: index('affiliate_commission_events_status_idx').on(table.status),
+}));
+
+export const affiliatePayouts = pgTable('affiliate_payouts', {
+  id: uuid('id').primaryKey().defaultRandom(),
+  partnerId: uuid('partner_id').notNull().references(() => affiliatePartners.id, { onDelete: 'cascade' }),
+  amountCents: integer('amount_cents').notNull(),
+  status: text('status').notNull().default('draft').$type<'draft' | 'pending_approval' | 'approved' | 'rejected' | 'paid'>(),
+  requestedBy: uuid('requested_by').references(() => users.id, { onDelete: 'set null' }),
+  requestedAt: timestamp('requested_at', { withTimezone: true }),
+  approvedBy: uuid('approved_by').references(() => users.id, { onDelete: 'set null' }),
+  approvedAt: timestamp('approved_at', { withTimezone: true }),
+  paidAt: timestamp('paid_at', { withTimezone: true }),
+  meta: jsonb('meta'),
+  createdAt: timestamp('created_at', { withTimezone: true }).defaultNow().notNull(),
+  updatedAt: timestamp('updated_at', { withTimezone: true }).defaultNow().notNull(),
+}, (table) => ({
+  affiliatePayoutsPartnerIdx: index('affiliate_payouts_partner_idx').on(table.partnerId),
+  affiliatePayoutsStatusIdx: index('affiliate_payouts_status_idx').on(table.status),
+}));
+
+export const affiliateFraudRules = pgTable('affiliate_fraud_rules', {
+  id: uuid('id').primaryKey().defaultRandom(),
+  kind: text('kind').notNull(),
+  enabled: boolean('enabled').notNull().default(true),
+  config: jsonb('config').notNull(),
+  createdAt: timestamp('created_at', { withTimezone: true }).defaultNow().notNull(),
+  updatedAt: timestamp('updated_at', { withTimezone: true }).defaultNow().notNull(),
+});
 
 // Cart tables
 export const carts = pgTable("carts", {

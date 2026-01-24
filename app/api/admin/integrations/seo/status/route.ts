@@ -4,6 +4,8 @@ import { db } from '@/db';
 import { settings, products, categories, sellers } from '@/db/schema/core';
 import { eq, and, count, sql } from 'drizzle-orm';
 
+export const dynamic = 'force-dynamic';
+
 /**
  * SEO Status API
  * Returns sitemap/robots status, last run metadata, and URL counts
@@ -14,18 +16,20 @@ export async function GET(req: NextRequest) {
 
     const baseUrl = process.env.NEXT_PUBLIC_APP_URL || 'https://floristmarket.ro';
 
-    // 1. Get last regeneration timestamp from settings
-    let lastRegenAt: string | null = null;
-    try {
-      const [regenRow] = await db
-        .select({ value: settings.value })
-        .from(settings)
-        .where(eq(settings.key, 'seo_last_sitemap_regen'))
-        .limit(1);
-      lastRegenAt = regenRow?.value ?? null;
-    } catch {
-      // Setting might not exist
+    async function getSetting(key: string): Promise<string | null> {
+      try {
+        const [row] = await db.select({ value: settings.value }).from(settings).where(eq(settings.key, key)).limit(1);
+        return row?.value ?? null;
+      } catch {
+        return null;
+      }
     }
+
+    // 1. Get last run metadata from settings
+    const lastSitemapRegenAt = await getSetting('seo_last_sitemap_regen');
+    const lastPingAt = await getSetting('seo_last_ping');
+    const lastRobotsRegenAt = await getSetting('seo_last_robots_regen');
+    const lastRobotsValidateAt = await getSetting('seo_last_robots_validate');
 
     // 2. Get URL counts for each sitemap type
     const [productsCount] = await db
@@ -88,25 +92,14 @@ export async function GET(req: NextRequest) {
       note: 'Generated dynamically by Next.js metadata API',
     };
 
-    // 5. Get last ping timestamp
-    let lastPingAt: string | null = null;
-    try {
-      const [pingRow] = await db
-        .select({ value: settings.value })
-        .from(settings)
-        .where(eq(settings.key, 'seo_last_ping'))
-        .limit(1);
-      lastPingAt = pingRow?.value ?? null;
-    } catch {
-      // Setting might not exist
-    }
-
     return NextResponse.json({
       ok: true,
       status: {
         baseUrl,
-        lastRegenAt,
+        lastSitemapRegenAt,
         lastPingAt,
+        lastRobotsRegenAt,
+        lastRobotsValidateAt,
         sitemapEndpoints,
         robotsInfo,
         summary: {

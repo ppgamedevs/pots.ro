@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { Package, Users, ShoppingBag, DollarSign, Settings, FileText, UserCog, Tags, CreditCard, Webhook, Percent, Shield, Megaphone, LayoutDashboard, Headphones, Wrench, Code2, HardDrive, Plug } from "lucide-react";
+import { Package, Users, ShoppingBag, DollarSign, Settings, FileText, UserCog, Tags, CreditCard, Webhook, Percent, Shield, Megaphone, LayoutDashboard, Headphones, Wrench, Code2, HardDrive, Plug, Handshake, BadgePercent } from "lucide-react";
 import { db } from "@/db";
 import { orders, products, sellerApplications } from "@/db/schema/core";
 import { and, eq, gte, ne, sql } from "drizzle-orm";
@@ -128,6 +128,20 @@ export default async function AdminDashboardPage() {
       href: "/admin/communication",
       icon: Megaphone,
       color: "bg-rose-600",
+    },
+    {
+      title: "Promotions",
+      description: "Discounts + Banners (approvals, anti-stacking, rollout/rollback)",
+      href: "/admin/promotions",
+      icon: BadgePercent,
+      color: "bg-fuchsia-700",
+    },
+    {
+      title: "Affiliates",
+      description: "Partners, codes, payouts, fraud rules (prevent self-dealing)",
+      href: "/admin/affiliates",
+      icon: Handshake,
+      color: "bg-emerald-800",
     },
     {
       title: "Security",

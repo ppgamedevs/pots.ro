@@ -98,54 +98,62 @@ export async function POST(request: NextRequest) {
     const subtotalCents = cartItemsResult.reduce((sum: number, item: any) => sum + (item.priceCents * item.qty), 0);
 
     // Apply promotions/discounts
+    // Security/integrity: only approved promotions can be applied.
+    // Anti-abuse: choose best single promo per line item and prevent order-level fixed-value stacking.
     let totalDiscountCents = 0;
     const now = new Date();
-    
-    // Get applicable promotions for each item
-    for (const item of cartItemsResult) {
-      const applicablePromotions = await db
-        .select()
-        .from(promotions)
-        .where(
-          and(
-            eq(promotions.active, true),
-            eq(promotions.type, 'discount'),
-            lte(promotions.startAt, now),
-            gte(promotions.endAt, now),
-            or(
-              isNull(promotions.sellerId), // Global promotion
-              eq(promotions.sellerId, item.seller.id), // Seller-specific
-              isNull(promotions.targetCategorySlug), // Global
-              and(
-                isNotNull(promotions.targetCategorySlug),
-                eq(promotions.targetCategorySlug, item.category?.slug || '')
-              ), // Category-specific
-              isNull(promotions.targetProductId), // Global
-              eq(promotions.targetProductId, item.productId) // Product-specific
-            )
-          )
-        )
-        .orderBy(promotions.createdAt)
-        .limit(1);
 
-      if (applicablePromotions.length > 0) {
-        const promotion = applicablePromotions[0];
-        const itemSubtotalCents = item.priceCents * item.qty;
-        
+    const allActiveDiscountPromotions = await db
+      .select()
+      .from(promotions)
+      .where(
+        and(
+          eq(promotions.active, true),
+          eq(promotions.type, 'discount'),
+          eq(promotions.approvalStatus, 'approved'),
+          lte(promotions.startAt, now),
+          gte(promotions.endAt, now)
+        )
+      );
+
+    const orderLevelFixedValueCandidates: number[] = [];
+
+    for (const item of cartItemsResult) {
+      const itemSubtotalCents = item.priceCents * item.qty;
+
+      const eligible = allActiveDiscountPromotions.filter((p: any) => {
+        const sellerOk = !p.sellerId || String(p.sellerId) === String(item.seller.id);
+        const categoryOk = !p.targetCategorySlug || p.targetCategorySlug === String(item.category?.slug || '');
+        const productOk = !p.targetProductId || String(p.targetProductId) === String(item.productId);
+        return sellerOk && categoryOk && productOk;
+      });
+
+      let bestItemLevelDiscountCents = 0;
+
+      for (const promotion of eligible) {
         if (promotion.percent) {
-          // Percentage discount
-          const discountCents = Math.round(itemSubtotalCents * promotion.percent / 100);
-          totalDiscountCents += discountCents;
-        } else if (promotion.value) {
-          // Fixed value discount (applied once per order for global/category promotions)
-          if (!promotion.targetProductId) {
-            totalDiscountCents += promotion.value;
+          const discountCents = Math.round((itemSubtotalCents * promotion.percent) / 100);
+          bestItemLevelDiscountCents = Math.max(bestItemLevelDiscountCents, Math.min(discountCents, itemSubtotalCents));
+          continue;
+        }
+
+        if (promotion.value) {
+          // If product-specific, treat fixed value as item-level (capped by line subtotal).
+          // Otherwise treat fixed value as order-level (applied once per order) to avoid stacking abuse.
+          if (promotion.targetProductId) {
+            bestItemLevelDiscountCents = Math.max(bestItemLevelDiscountCents, Math.min(promotion.value, itemSubtotalCents));
           } else {
-            // Product-specific discount
-            totalDiscountCents += Math.min(promotion.value, itemSubtotalCents);
+            orderLevelFixedValueCandidates.push(Math.min(promotion.value, itemSubtotalCents));
           }
         }
       }
+
+      totalDiscountCents += bestItemLevelDiscountCents;
+    }
+
+    if (orderLevelFixedValueCandidates.length > 0) {
+      const bestOrderFixed = Math.max(...orderLevelFixedValueCandidates);
+      totalDiscountCents += bestOrderFixed;
     }
 
     // Compute shipping server-side (do not trust client-provided fee)

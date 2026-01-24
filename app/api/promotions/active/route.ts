@@ -3,6 +3,8 @@ import { db } from '@/db';
 import { promotions } from '@/db/schema/core';
 import { and, eq, gte, lte, isNull, or } from 'drizzle-orm';
 
+export const dynamic = 'force-dynamic';
+
 // GET /api/promotions/active
 export async function GET(request: NextRequest) {
   try {
@@ -17,6 +19,7 @@ export async function GET(request: NextRequest) {
     const conditions = [
       eq(promotions.active, true),
       eq(promotions.type, 'banner'),
+      eq(promotions.approvalStatus, 'approved'),
       lte(promotions.startAt, now),
       gte(promotions.endAt, now)
     ];
