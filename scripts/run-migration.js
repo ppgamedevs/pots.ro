@@ -1112,6 +1112,111 @@ async function ensureSupportConsoleSchema(sql) {
   }
 }
 
+async function ensureDeveloperSchema(sql) {
+  try {
+    console.log('🔧 Ensuring developer schema (API keys + outbound webhooks)...');
+
+    // Create enums (idempotent)
+    await sql`
+      DO $$
+      BEGIN
+        IF NOT EXISTS (SELECT 1 FROM pg_type WHERE typname = 'api_key_status') THEN
+          CREATE TYPE api_key_status AS ENUM ('active', 'revoked', 'expired');
+        END IF;
+        IF NOT EXISTS (SELECT 1 FROM pg_type WHERE typname = 'webhook_endpoint_status') THEN
+          CREATE TYPE webhook_endpoint_status AS ENUM ('active', 'paused', 'disabled');
+        END IF;
+      END $$;
+    `;
+
+    // Developer API keys table
+    await sql`
+      CREATE TABLE IF NOT EXISTS developer_api_keys (
+        id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+        name text NOT NULL,
+        prefix text NOT NULL,
+        key_hash text NOT NULL,
+        scopes jsonb NOT NULL DEFAULT '[]',
+        status api_key_status NOT NULL DEFAULT 'active',
+        last_used_at timestamptz,
+        last_used_ip text,
+        expires_at timestamptz,
+        created_by uuid NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+        revoked_at timestamptz,
+        revoked_by uuid REFERENCES users(id) ON DELETE SET NULL,
+        revoked_reason text,
+        created_at timestamptz NOT NULL DEFAULT now(),
+        updated_at timestamptz NOT NULL DEFAULT now()
+      )
+    `;
+
+    await sql`CREATE INDEX IF NOT EXISTS developer_api_keys_prefix_idx ON developer_api_keys(prefix)`;
+    await sql`CREATE INDEX IF NOT EXISTS developer_api_keys_status_idx ON developer_api_keys(status)`;
+    await sql`CREATE INDEX IF NOT EXISTS developer_api_keys_created_by_idx ON developer_api_keys(created_by)`;
+    await sql`CREATE INDEX IF NOT EXISTS developer_api_keys_last_used_idx ON developer_api_keys(last_used_at)`;
+
+    // Developer webhook endpoints table
+    await sql`
+      CREATE TABLE IF NOT EXISTS developer_webhook_endpoints (
+        id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+        name text NOT NULL,
+        url text NOT NULL,
+        description text,
+        status webhook_endpoint_status NOT NULL DEFAULT 'active',
+        secret_hash text NOT NULL,
+        secret_prefix text NOT NULL,
+        secret_created_at timestamptz NOT NULL DEFAULT now(),
+        events jsonb NOT NULL DEFAULT '[]',
+        headers jsonb,
+        retry_policy jsonb DEFAULT '{"maxAttempts": 3, "backoffMs": 1000}',
+        last_delivery_at timestamptz,
+        last_delivery_status text,
+        consecutive_failures integer NOT NULL DEFAULT 0,
+        disabled_reason text,
+        created_by uuid NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+        created_at timestamptz NOT NULL DEFAULT now(),
+        updated_at timestamptz NOT NULL DEFAULT now()
+      )
+    `;
+
+    await sql`CREATE INDEX IF NOT EXISTS developer_webhook_endpoints_status_idx ON developer_webhook_endpoints(status)`;
+    await sql`CREATE INDEX IF NOT EXISTS developer_webhook_endpoints_created_by_idx ON developer_webhook_endpoints(created_by)`;
+    await sql`CREATE INDEX IF NOT EXISTS developer_webhook_endpoints_url_idx ON developer_webhook_endpoints(url)`;
+
+    // Developer webhook deliveries table (outbound delivery log + retry queue)
+    await sql`
+      CREATE TABLE IF NOT EXISTS developer_webhook_deliveries (
+        id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+        endpoint_id uuid NOT NULL REFERENCES developer_webhook_endpoints(id) ON DELETE CASCADE,
+        event_type text NOT NULL,
+        event_id text NOT NULL,
+        payload jsonb NOT NULL,
+        status text NOT NULL DEFAULT 'pending',
+        attempt_count integer NOT NULL DEFAULT 0,
+        max_attempts integer NOT NULL DEFAULT 3,
+        next_attempt_at timestamptz,
+        last_attempt_at timestamptz,
+        last_status_code integer,
+        last_error text,
+        last_response_body text,
+        duration_ms integer,
+        created_at timestamptz NOT NULL DEFAULT now(),
+        completed_at timestamptz
+      )
+    `;
+
+    await sql`CREATE INDEX IF NOT EXISTS developer_webhook_deliveries_endpoint_idx ON developer_webhook_deliveries(endpoint_id)`;
+    await sql`CREATE INDEX IF NOT EXISTS developer_webhook_deliveries_status_idx ON developer_webhook_deliveries(status)`;
+    await sql`CREATE INDEX IF NOT EXISTS developer_webhook_deliveries_event_idx ON developer_webhook_deliveries(event_type)`;
+    await sql`CREATE INDEX IF NOT EXISTS developer_webhook_deliveries_next_attempt_idx ON developer_webhook_deliveries(next_attempt_at) WHERE status = 'pending'`;
+    await sql`CREATE UNIQUE INDEX IF NOT EXISTS developer_webhook_deliveries_event_id_uq ON developer_webhook_deliveries(endpoint_id, event_id)`;
+
+    console.log('✅ Developer schema ensured');
+  } catch (err) {
+    console.warn('⚠️  Could not ensure developer schema:', err.message || err);
+  }
+}
+
 async function ensureContentSchema(sql) {
   try {
     console.log('🔧 Ensuring content schema (blog/pages/help)...');
@@ -1502,6 +1607,7 @@ async function runMigration() {
     await ensureRateLimitsSchema(sql);
     await ensureAdminAlertsSchema(sql);
     await ensureBackupRunsSchema(sql);
+    await ensureDeveloperSchema(sql);
     await ensureSupportConsoleSchema(sql);
     await ensureContentSchema(sql);
 

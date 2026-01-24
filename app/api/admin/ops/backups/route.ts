@@ -47,20 +47,20 @@ export async function GET(req: NextRequest) {
       .orderBy(desc(backupRuns.createdAt))
       .limit(50);
 
-    const data: BackupRunRow[] = rows.map((r) => ({
+    const data: BackupRunRow[] = rows.map((r: Record<string, unknown>) => ({
       id: String(r.id),
       source: (r.source ?? 'ci') as BackupRunRow['source'],
       status: (r.status ?? 'success') as BackupRunRow['status'],
-      backupPath: (r.backupPath as any) ?? null,
-      metaPath: (r.metaPath as any) ?? null,
-      sizeBytes: (r.sizeBytes as any) ?? null,
-      checksumSha256: (r.checksumSha256 as any) ?? null,
-      environment: (r.environment as any) ?? null,
-      dbName: (r.dbName as any) ?? null,
-      createdBy: (r.createdBy as any) ?? null,
-      errorMessage: (r.errorMessage as any) ?? null,
-      createdAt: new Date(r.createdAt as any).toISOString(),
-      updatedAt: new Date(r.updatedAt as any).toISOString(),
+      backupPath: (r.backupPath as string | null) ?? null,
+      metaPath: (r.metaPath as string | null) ?? null,
+      sizeBytes: (r.sizeBytes as number | null) ?? null,
+      checksumSha256: (r.checksumSha256 as string | null) ?? null,
+      environment: (r.environment as string | null) ?? null,
+      dbName: (r.dbName as string | null) ?? null,
+      createdBy: (r.createdBy as string | null) ?? null,
+      errorMessage: (r.errorMessage as string | null) ?? null,
+      createdAt: new Date(r.createdAt as string).toISOString(),
+      updatedAt: new Date(r.updatedAt as string).toISOString(),
     }));
 
     return NextResponse.json({ ok: true, backups: data });

@@ -1385,6 +1385,104 @@ export const eventsRaw = pgTable("events_raw", {
   eventsDateIdx: index("events_date_idx").on(table.createdAt),
 }));
 
+// ============================================================================
+// DEVELOPER / API KEYS / OUTBOUND WEBHOOKS SCHEMA
+// ============================================================================
+
+// Developer API key status enum
+export const apiKeyStatusEnum = pgEnum('api_key_status', ['active', 'revoked', 'expired']);
+
+// Developer API keys (hashed; plaintext shown once at creation)
+export const developerApiKeys = pgTable(
+  "developer_api_keys",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    name: text("name").notNull(),
+    prefix: text("prefix").notNull(), // first 8 chars for identification (e.g., "pk_live_a1b2c3d4")
+    keyHash: text("key_hash").notNull(), // scrypt hash of the full key
+    scopes: jsonb("scopes").notNull().$type<string[]>().default([]),
+    status: apiKeyStatusEnum("status").notNull().default("active"),
+    lastUsedAt: timestamp("last_used_at", { withTimezone: true }),
+    lastUsedIp: text("last_used_ip"),
+    expiresAt: timestamp("expires_at", { withTimezone: true }),
+    createdBy: uuid("created_by").notNull().references(() => users.id, { onDelete: "cascade" }),
+    revokedAt: timestamp("revoked_at", { withTimezone: true }),
+    revokedBy: uuid("revoked_by").references(() => users.id, { onDelete: "set null" }),
+    revokedReason: text("revoked_reason"),
+    createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
+    updatedAt: timestamp("updated_at", { withTimezone: true }).defaultNow().notNull(),
+  },
+  (table) => ({
+    developerApiKeysPrefixIdx: index("developer_api_keys_prefix_idx").on(table.prefix),
+    developerApiKeysStatusIdx: index("developer_api_keys_status_idx").on(table.status),
+    developerApiKeysCreatedByIdx: index("developer_api_keys_created_by_idx").on(table.createdBy),
+    developerApiKeysLastUsedIdx: index("developer_api_keys_last_used_idx").on(table.lastUsedAt),
+  })
+);
+
+// Developer webhook endpoint status enum
+export const webhookEndpointStatusEnum = pgEnum('webhook_endpoint_status', ['active', 'paused', 'disabled']);
+
+// Developer webhook endpoints (outbound)
+export const developerWebhookEndpoints = pgTable(
+  "developer_webhook_endpoints",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    name: text("name").notNull(),
+    url: text("url").notNull(),
+    description: text("description"),
+    status: webhookEndpointStatusEnum("status").notNull().default("active"),
+    secretHash: text("secret_hash").notNull(), // HMAC signing secret (hashed for storage; plaintext shown once)
+    secretPrefix: text("secret_prefix").notNull(), // first 8 chars for identification
+    secretCreatedAt: timestamp("secret_created_at", { withTimezone: true }).defaultNow().notNull(),
+    events: jsonb("events").notNull().$type<string[]>().default([]), // subscribed event types
+    headers: jsonb("headers").$type<Record<string, string>>(), // custom headers to include
+    retryPolicy: jsonb("retry_policy").$type<{ maxAttempts: number; backoffMs: number }>().default({ maxAttempts: 3, backoffMs: 1000 }),
+    lastDeliveryAt: timestamp("last_delivery_at", { withTimezone: true }),
+    lastDeliveryStatus: text("last_delivery_status").$type<"success" | "failed">(),
+    consecutiveFailures: integer("consecutive_failures").notNull().default(0),
+    disabledReason: text("disabled_reason"),
+    createdBy: uuid("created_by").notNull().references(() => users.id, { onDelete: "cascade" }),
+    createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
+    updatedAt: timestamp("updated_at", { withTimezone: true }).defaultNow().notNull(),
+  },
+  (table) => ({
+    developerWebhookEndpointsStatusIdx: index("developer_webhook_endpoints_status_idx").on(table.status),
+    developerWebhookEndpointsCreatedByIdx: index("developer_webhook_endpoints_created_by_idx").on(table.createdBy),
+    developerWebhookEndpointsUrlIdx: index("developer_webhook_endpoints_url_idx").on(table.url),
+  })
+);
+
+// Outbound webhook delivery log + retry queue
+export const developerWebhookDeliveries = pgTable(
+  "developer_webhook_deliveries",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    endpointId: uuid("endpoint_id").notNull().references(() => developerWebhookEndpoints.id, { onDelete: "cascade" }),
+    eventType: text("event_type").notNull(),
+    eventId: text("event_id").notNull(), // deduplication key
+    payload: jsonb("payload").notNull(),
+    status: text("status").notNull().default("pending").$type<"pending" | "success" | "failed" | "cancelled">(),
+    attemptCount: integer("attempt_count").notNull().default(0),
+    maxAttempts: integer("max_attempts").notNull().default(3),
+    nextAttemptAt: timestamp("next_attempt_at", { withTimezone: true }),
+    lastAttemptAt: timestamp("last_attempt_at", { withTimezone: true }),
+    lastStatusCode: integer("last_status_code"),
+    lastError: text("last_error"),
+    lastResponseBody: text("last_response_body"),
+    durationMs: integer("duration_ms"),
+    createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
+    completedAt: timestamp("completed_at", { withTimezone: true }),
+  },
+  (table) => ({
+    developerWebhookDeliveriesEndpointIdx: index("developer_webhook_deliveries_endpoint_idx").on(table.endpointId),
+    developerWebhookDeliveriesStatusIdx: index("developer_webhook_deliveries_status_idx").on(table.status),
+    developerWebhookDeliveriesEventIdx: index("developer_webhook_deliveries_event_idx").on(table.eventType),
+    developerWebhookDeliveriesNextAttemptIdx: index("developer_webhook_deliveries_next_attempt_idx").on(table.nextAttemptAt).where(sql`status = 'pending'`),
+    developerWebhookDeliveriesEventIdUq: uniqueIndex("developer_webhook_deliveries_event_id_uq").on(table.endpointId, table.eventId),
+  })
+);
+
 // Backup runs table (restore points index; backup artifacts live in Vercel Blob)
 export const backupRuns = pgTable(
   "backup_runs",

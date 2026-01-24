@@ -56,10 +56,10 @@ export async function GET(
     }
 
     // Verifică dacă fișierul există și obține URL-ul semnat
-    const url = await getDownloadUrl(filePath, { token });
+    const url = await getDownloadUrl(filePath);
 
     // Obține metadatele fișierului
-    const metadata = await head(filePath, { token });
+    const metadata = await head(filePath);
 
     // Verifică tipul de fișier
     if (metadata.contentType && !PRIVATE_FILE_TYPES.includes(metadata.contentType)) {
