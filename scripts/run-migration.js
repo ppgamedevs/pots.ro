@@ -874,6 +874,201 @@ async function ensureAdminAlertsSchema(sql) {
     console.warn('⚠️  Could not ensure admin alerts schema:', err.message || err);
   }
 }
+
+async function ensureSupportConsoleSchema(sql) {
+  try {
+    console.log('🔧 Ensuring support console schema...');
+
+    // Create enums (idempotent)
+    await sql`
+      DO $$
+      BEGIN
+        IF NOT EXISTS (SELECT 1 FROM pg_type WHERE typname = 'support_thread_status') THEN
+          CREATE TYPE support_thread_status AS ENUM ('open', 'assigned', 'waiting', 'resolved', 'closed');
+        END IF;
+        IF NOT EXISTS (SELECT 1 FROM pg_type WHERE typname = 'support_thread_source') THEN
+          CREATE TYPE support_thread_source AS ENUM ('buyer_seller', 'seller_support', 'chatbot', 'whatsapp');
+        END IF;
+        IF NOT EXISTS (SELECT 1 FROM pg_type WHERE typname = 'message_moderation_status') THEN
+          CREATE TYPE message_moderation_status AS ENUM ('visible', 'hidden', 'redacted', 'deleted');
+        END IF;
+      END $$;
+    `;
+
+    // Support threads unified inbox table
+    await sql`
+      CREATE TABLE IF NOT EXISTS support_threads (
+        id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+        source support_thread_source NOT NULL,
+        source_id uuid NOT NULL,
+        order_id uuid REFERENCES orders(id) ON DELETE SET NULL,
+        seller_id uuid REFERENCES sellers(id) ON DELETE SET NULL,
+        buyer_id uuid REFERENCES users(id) ON DELETE SET NULL,
+        status support_thread_status NOT NULL DEFAULT 'open',
+        assigned_to_user_id uuid REFERENCES users(id) ON DELETE SET NULL,
+        priority support_ticket_priority NOT NULL DEFAULT 'normal',
+        subject text,
+        last_message_at timestamptz,
+        last_message_preview text,
+        message_count integer NOT NULL DEFAULT 0,
+        sla_deadline timestamptz,
+        sla_breach boolean NOT NULL DEFAULT false,
+        created_at timestamptz NOT NULL DEFAULT now(),
+        updated_at timestamptz NOT NULL DEFAULT now()
+      )
+    `;
+
+    // Indexes for support_threads
+    await sql`CREATE INDEX IF NOT EXISTS support_threads_source_idx ON support_threads(source, source_id)`;
+    await sql`CREATE UNIQUE INDEX IF NOT EXISTS support_threads_source_id_unique ON support_threads(source, source_id)`;
+    await sql`CREATE INDEX IF NOT EXISTS support_threads_status_idx ON support_threads(status)`;
+    await sql`CREATE INDEX IF NOT EXISTS support_threads_assigned_idx ON support_threads(assigned_to_user_id)`;
+    await sql`CREATE INDEX IF NOT EXISTS support_threads_order_idx ON support_threads(order_id)`;
+    await sql`CREATE INDEX IF NOT EXISTS support_threads_seller_idx ON support_threads(seller_id)`;
+    await sql`CREATE INDEX IF NOT EXISTS support_threads_buyer_idx ON support_threads(buyer_id)`;
+    await sql`CREATE INDEX IF NOT EXISTS support_threads_last_message_idx ON support_threads(last_message_at)`;
+    await sql`CREATE INDEX IF NOT EXISTS support_threads_sla_deadline_idx ON support_threads(sla_deadline) WHERE sla_breach = false AND status NOT IN ('resolved', 'closed')`;
+    await sql`CREATE INDEX IF NOT EXISTS support_threads_priority_status_idx ON support_threads(priority, status)`;
+
+    // Support thread tags table
+    await sql`
+      CREATE TABLE IF NOT EXISTS support_thread_tags (
+        id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+        thread_id uuid NOT NULL REFERENCES support_threads(id) ON DELETE CASCADE,
+        tag text NOT NULL,
+        created_at timestamptz NOT NULL DEFAULT now()
+      )
+    `;
+
+    await sql`CREATE INDEX IF NOT EXISTS support_thread_tags_thread_idx ON support_thread_tags(thread_id)`;
+    await sql`CREATE INDEX IF NOT EXISTS support_thread_tags_tag_idx ON support_thread_tags(tag)`;
+    await sql`CREATE UNIQUE INDEX IF NOT EXISTS support_thread_tags_unique ON support_thread_tags(thread_id, tag)`;
+
+    // Message moderation overlay table
+    await sql`
+      CREATE TABLE IF NOT EXISTS message_moderation (
+        id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+        message_id uuid NOT NULL UNIQUE,
+        status message_moderation_status NOT NULL DEFAULT 'visible',
+        redacted_body text,
+        reason text,
+        moderated_by_user_id uuid REFERENCES users(id) ON DELETE SET NULL,
+        moderated_at timestamptz,
+        is_internal_note boolean NOT NULL DEFAULT false,
+        internal_note_body text,
+        internal_note_by_user_id uuid REFERENCES users(id) ON DELETE SET NULL,
+        internal_note_at timestamptz,
+        created_at timestamptz NOT NULL DEFAULT now(),
+        updated_at timestamptz NOT NULL DEFAULT now()
+      )
+    `;
+
+    await sql`CREATE UNIQUE INDEX IF NOT EXISTS message_moderation_message_idx ON message_moderation(message_id)`;
+    await sql`CREATE INDEX IF NOT EXISTS message_moderation_status_idx ON message_moderation(status) WHERE status != 'visible'`;
+    await sql`CREATE INDEX IF NOT EXISTS message_moderation_moderated_by_idx ON message_moderation(moderated_by_user_id)`;
+
+    // Extended conversation flags table
+    await sql`
+      CREATE TABLE IF NOT EXISTS conversation_flags_extended (
+        id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+        conversation_id uuid NOT NULL UNIQUE REFERENCES conversations(id) ON DELETE CASCADE,
+        fraud_suspected boolean NOT NULL DEFAULT false,
+        fraud_reason text,
+        fraud_detected_at timestamptz,
+        fraud_detected_by_user_id uuid REFERENCES users(id) ON DELETE SET NULL,
+        escalated_to_user_id uuid REFERENCES users(id) ON DELETE SET NULL,
+        escalated_at timestamptz,
+        escalation_reason text,
+        evidence_json jsonb DEFAULT '{}',
+        created_at timestamptz NOT NULL DEFAULT now(),
+        updated_at timestamptz NOT NULL DEFAULT now()
+      )
+    `;
+
+    await sql`CREATE UNIQUE INDEX IF NOT EXISTS conversation_flags_ext_conv_idx ON conversation_flags_extended(conversation_id)`;
+    await sql`CREATE INDEX IF NOT EXISTS conversation_flags_ext_fraud_idx ON conversation_flags_extended(fraud_suspected) WHERE fraud_suspected = true`;
+    await sql`CREATE INDEX IF NOT EXISTS conversation_flags_ext_escalated_idx ON conversation_flags_extended(escalated_to_user_id) WHERE escalated_to_user_id IS NOT NULL`;
+
+    // Chatbot queue table
+    await sql`
+      CREATE TABLE IF NOT EXISTS chatbot_queue (
+        id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+        thread_id uuid REFERENCES support_threads(id) ON DELETE CASCADE,
+        conversation_id uuid,
+        user_id uuid REFERENCES users(id) ON DELETE SET NULL,
+        status text NOT NULL DEFAULT 'pending',
+        intent text,
+        confidence decimal(5, 4),
+        last_bot_response text,
+        user_query text,
+        handoff_reason text,
+        assigned_to_user_id uuid REFERENCES users(id) ON DELETE SET NULL,
+        resolved_by_user_id uuid REFERENCES users(id) ON DELETE SET NULL,
+        resolved_at timestamptz,
+        prompt_injection_suspected boolean NOT NULL DEFAULT false,
+        created_at timestamptz NOT NULL DEFAULT now(),
+        updated_at timestamptz NOT NULL DEFAULT now()
+      )
+    `;
+
+    await sql`CREATE INDEX IF NOT EXISTS chatbot_queue_status_idx ON chatbot_queue(status)`;
+    await sql`CREATE INDEX IF NOT EXISTS chatbot_queue_thread_idx ON chatbot_queue(thread_id)`;
+    await sql`CREATE INDEX IF NOT EXISTS chatbot_queue_assigned_idx ON chatbot_queue(assigned_to_user_id)`;
+    await sql`CREATE INDEX IF NOT EXISTS chatbot_queue_user_idx ON chatbot_queue(user_id)`;
+    await sql`CREATE INDEX IF NOT EXISTS chatbot_queue_pending_idx ON chatbot_queue(created_at) WHERE status = 'pending'`;
+
+    // WhatsApp message events table
+    await sql`
+      CREATE TABLE IF NOT EXISTS whatsapp_message_events (
+        id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+        whatsapp_message_id text NOT NULL,
+        thread_id uuid REFERENCES support_threads(id) ON DELETE SET NULL,
+        user_id uuid REFERENCES users(id) ON DELETE SET NULL,
+        phone_number text,
+        template_name text,
+        direction text NOT NULL,
+        status text NOT NULL,
+        status_timestamp timestamptz,
+        error_code text,
+        error_message text,
+        payload_json jsonb DEFAULT '{}',
+        created_at timestamptz NOT NULL DEFAULT now()
+      )
+    `;
+
+    await sql`CREATE INDEX IF NOT EXISTS whatsapp_events_message_idx ON whatsapp_message_events(whatsapp_message_id)`;
+    await sql`CREATE INDEX IF NOT EXISTS whatsapp_events_thread_idx ON whatsapp_message_events(thread_id)`;
+    await sql`CREATE INDEX IF NOT EXISTS whatsapp_events_status_idx ON whatsapp_message_events(status)`;
+    await sql`CREATE INDEX IF NOT EXISTS whatsapp_events_created_idx ON whatsapp_message_events(created_at)`;
+    await sql`CREATE INDEX IF NOT EXISTS whatsapp_events_phone_idx ON whatsapp_message_events(phone_number)`;
+
+    // Canned replies table
+    await sql`
+      CREATE TABLE IF NOT EXISTS support_canned_replies (
+        id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+        slug text NOT NULL UNIQUE,
+        title text NOT NULL,
+        body text NOT NULL,
+        category text,
+        language text NOT NULL DEFAULT 'ro',
+        created_by_user_id uuid REFERENCES users(id) ON DELETE SET NULL,
+        is_active boolean NOT NULL DEFAULT true,
+        usage_count integer NOT NULL DEFAULT 0,
+        created_at timestamptz NOT NULL DEFAULT now(),
+        updated_at timestamptz NOT NULL DEFAULT now()
+      )
+    `;
+
+    await sql`CREATE UNIQUE INDEX IF NOT EXISTS support_canned_replies_slug_idx ON support_canned_replies(slug)`;
+    await sql`CREATE INDEX IF NOT EXISTS support_canned_replies_category_idx ON support_canned_replies(category)`;
+    await sql`CREATE INDEX IF NOT EXISTS support_canned_replies_active_idx ON support_canned_replies(is_active) WHERE is_active = true`;
+
+    console.log('✅ Support console schema ensured');
+  } catch (err) {
+    console.warn('⚠️  Could not ensure support console schema:', err.message || err);
+  }
+}
+
 async function ensureSupportSchema(sql) {
   try {
     console.log('🔧 Ensuring support schema (notes/tickets/conversations)...');
@@ -1043,6 +1238,7 @@ async function runMigration() {
     await ensureReservedNamesSchema(sql);
     await ensureRateLimitsSchema(sql);
     await ensureAdminAlertsSchema(sql);
+    await ensureSupportConsoleSchema(sql);
 
     // Check if orders table already exists
     console.log('🔍 Checking if orders table exists...');

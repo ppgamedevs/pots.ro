@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { Package, Users, ShoppingBag, DollarSign, Settings, FileText, UserCog, Tags, CreditCard, Webhook, Percent, Shield, Megaphone, LayoutDashboard } from "lucide-react";
+import { Package, Users, ShoppingBag, DollarSign, Settings, FileText, UserCog, Tags, CreditCard, Webhook, Percent, Shield, Megaphone, LayoutDashboard, Headphones } from "lucide-react";
 import { db } from "@/db";
 import { orders, products, sellerApplications } from "@/db/schema/core";
 import { and, eq, gte, ne, sql } from "drizzle-orm";
@@ -114,6 +114,13 @@ export default async function AdminDashboardPage() {
       href: "/admin/webhooks",
       icon: Webhook,
       color: "bg-sky-600",
+    },
+    {
+      title: "Support Console",
+      description: "Unified inbox, moderation, flags, chatbot queue",
+      href: "/admin/support",
+      icon: Headphones,
+      color: "bg-cyan-600",
     },
     {
       title: "Communication",

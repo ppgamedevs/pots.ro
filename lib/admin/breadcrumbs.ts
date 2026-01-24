@@ -48,6 +48,10 @@ export const ADMIN_ROUTE_CONFIG: Record<string, { label: string; parent?: string
     label: 'Webhooks',
     parent: '/admin',
   },
+  '/admin/support': {
+    label: 'Support Console',
+    parent: '/admin',
+  },
   '/admin/communication': {
     label: 'Communication',
     parent: '/admin',

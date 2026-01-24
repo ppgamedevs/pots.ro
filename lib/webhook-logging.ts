@@ -2,7 +2,7 @@ import { db } from '@/db';
 import { webhookLogs } from '@/db/schema/core';
 import { createAlert, AlertSeverity, AlertSource } from '@/lib/admin/alerts';
 
-export type WebhookSource = 'payments' | 'shipping' | 'invoices' | 'orders' | 'refunds' | 'payouts';
+export type WebhookSource = 'payments' | 'shipping' | 'invoices' | 'orders' | 'refunds' | 'payouts' | 'whatsapp' | 'chatbot';
 export type WebhookResult = 'ok' | 'duplicate' | 'error';
 
 export interface WebhookLogData {

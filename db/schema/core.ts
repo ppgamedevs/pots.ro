@@ -1180,6 +1180,169 @@ export const adminAlerts = pgTable("admin_alerts", {
   adminAlertsCreatedIdx: index("admin_alerts_created_idx").on(table.createdAt),
 }));
 
+// ============================================================================
+// SUPPORT CONSOLE SCHEMA
+// ============================================================================
+
+// Enums for support console
+export const supportThreadStatusEnum = pgEnum('support_thread_status', ['open', 'assigned', 'waiting', 'resolved', 'closed']);
+export const supportThreadSourceEnum = pgEnum('support_thread_source', ['buyer_seller', 'seller_support', 'chatbot', 'whatsapp']);
+export const messageModerationStatusEnum = pgEnum('message_moderation_status', ['visible', 'hidden', 'redacted', 'deleted']);
+
+// Unified support threads index table (Option B - single table aggregating all sources)
+export const supportThreads = pgTable("support_threads", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  source: supportThreadSourceEnum("source").notNull(), // 'buyer_seller', 'seller_support', 'chatbot', 'whatsapp'
+  sourceId: uuid("source_id").notNull(), // conversation.id, ticket.id, etc.
+  orderId: uuid("order_id").references(() => orders.id, { onDelete: "set null" }),
+  sellerId: uuid("seller_id").references(() => sellers.id, { onDelete: "set null" }),
+  buyerId: uuid("buyer_id").references(() => users.id, { onDelete: "set null" }),
+  status: supportThreadStatusEnum("status").notNull().default("open"),
+  assignedToUserId: uuid("assigned_to_user_id").references(() => users.id, { onDelete: "set null" }),
+  priority: supportTicketPriorityEnum("priority").notNull().default("normal"),
+  subject: text("subject"), // derived from first message or ticket title
+  lastMessageAt: timestamp("last_message_at", { withTimezone: true }),
+  lastMessagePreview: text("last_message_preview"), // truncated last message
+  messageCount: integer("message_count").notNull().default(0),
+  slaDeadline: timestamp("sla_deadline", { withTimezone: true }),
+  slaBreach: boolean("sla_breach").notNull().default(false),
+  createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
+  updatedAt: timestamp("updated_at", { withTimezone: true }).defaultNow().notNull(),
+}, (table) => ({
+  supportThreadsSourceIdx: index("support_threads_source_idx").on(table.source, table.sourceId),
+  supportThreadsSourceIdUnique: uniqueIndex("support_threads_source_id_unique").on(table.source, table.sourceId),
+  supportThreadsStatusIdx: index("support_threads_status_idx").on(table.status),
+  supportThreadsAssignedIdx: index("support_threads_assigned_idx").on(table.assignedToUserId),
+  supportThreadsOrderIdx: index("support_threads_order_idx").on(table.orderId),
+  supportThreadsSellerIdx: index("support_threads_seller_idx").on(table.sellerId),
+  supportThreadsBuyerIdx: index("support_threads_buyer_idx").on(table.buyerId),
+  supportThreadsLastMessageIdx: index("support_threads_last_message_idx").on(table.lastMessageAt),
+  supportThreadsSlaDeadlineIdx: index("support_threads_sla_deadline_idx").on(table.slaDeadline).where(sql`sla_breach = false AND status NOT IN ('resolved', 'closed')`),
+  supportThreadsPriorityStatusIdx: index("support_threads_priority_status_idx").on(table.priority, table.status),
+}));
+
+// Tags for support threads (for categorization/filtering)
+export const supportThreadTags = pgTable("support_thread_tags", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  threadId: uuid("thread_id").notNull().references(() => supportThreads.id, { onDelete: "cascade" }),
+  tag: text("tag").notNull(),
+  createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
+}, (table) => ({
+  supportThreadTagsThreadIdx: index("support_thread_tags_thread_idx").on(table.threadId),
+  supportThreadTagsTagIdx: index("support_thread_tags_tag_idx").on(table.tag),
+  supportThreadTagsUnique: uniqueIndex("support_thread_tags_unique").on(table.threadId, table.tag),
+}));
+
+// Message moderation overlay table (keeps original message intact)
+export const messageModeration = pgTable("message_moderation", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  messageId: uuid("message_id").notNull().unique(), // references messages.id but without FK for flexibility
+  status: messageModerationStatusEnum("status").notNull().default("visible"),
+  redactedBody: text("redacted_body"), // displayed body after redaction (original kept in messages)
+  reason: text("reason"), // why hidden/redacted/deleted
+  moderatedByUserId: uuid("moderated_by_user_id").references(() => users.id, { onDelete: "set null" }),
+  moderatedAt: timestamp("moderated_at", { withTimezone: true }),
+  // For internal notes
+  isInternalNote: boolean("is_internal_note").notNull().default(false),
+  internalNoteBody: text("internal_note_body"), // admin-only note attached to this message
+  internalNoteByUserId: uuid("internal_note_by_user_id").references(() => users.id, { onDelete: "set null" }),
+  internalNoteAt: timestamp("internal_note_at", { withTimezone: true }),
+  createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
+  updatedAt: timestamp("updated_at", { withTimezone: true }).defaultNow().notNull(),
+}, (table) => ({
+  messageModerationMessageIdx: uniqueIndex("message_moderation_message_idx").on(table.messageId),
+  messageModerationStatusIdx: index("message_moderation_status_idx").on(table.status).where(sql`status != 'visible'`),
+  messageModerationModeratedByIdx: index("message_moderation_moderated_by_idx").on(table.moderatedByUserId),
+}));
+
+// Extended conversation flags (bypass/fraud detection)
+export const conversationFlagsExtended = pgTable("conversation_flags_extended", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  conversationId: uuid("conversation_id").notNull().unique().references(() => conversations.id, { onDelete: "cascade" }),
+  fraudSuspected: boolean("fraud_suspected").notNull().default(false),
+  fraudReason: text("fraud_reason"),
+  fraudDetectedAt: timestamp("fraud_detected_at", { withTimezone: true }),
+  fraudDetectedByUserId: uuid("fraud_detected_by_user_id").references(() => users.id, { onDelete: "set null" }),
+  escalatedToUserId: uuid("escalated_to_user_id").references(() => users.id, { onDelete: "set null" }),
+  escalatedAt: timestamp("escalated_at", { withTimezone: true }),
+  escalationReason: text("escalation_reason"),
+  evidenceJson: jsonb("evidence_json").default({}), // screenshots, logs, etc.
+  createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
+  updatedAt: timestamp("updated_at", { withTimezone: true }).defaultNow().notNull(),
+}, (table) => ({
+  conversationFlagsExtConvIdx: uniqueIndex("conversation_flags_ext_conv_idx").on(table.conversationId),
+  conversationFlagsExtFraudIdx: index("conversation_flags_ext_fraud_idx").on(table.fraudSuspected).where(sql`fraud_suspected = true`),
+  conversationFlagsExtEscalatedIdx: index("conversation_flags_ext_escalated_idx").on(table.escalatedToUserId).where(sql`escalated_to_user_id IS NOT NULL`),
+}));
+
+// Chatbot queue for items awaiting handoff or review
+export const chatbotQueue = pgTable("chatbot_queue", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  threadId: uuid("thread_id").references(() => supportThreads.id, { onDelete: "cascade" }),
+  conversationId: uuid("conversation_id"), // original chatbot conversation
+  userId: uuid("user_id").references(() => users.id, { onDelete: "set null" }),
+  status: text("status").notNull().default("pending").$type<'pending' | 'processing' | 'handed_off' | 'resolved' | 'rejected'>(),
+  intent: text("intent"), // detected intent from chatbot
+  confidence: decimal("confidence", { precision: 5, scale: 4 }), // bot confidence score
+  lastBotResponse: text("last_bot_response"),
+  userQuery: text("user_query"), // last user message
+  handoffReason: text("handoff_reason"),
+  assignedToUserId: uuid("assigned_to_user_id").references(() => users.id, { onDelete: "set null" }),
+  resolvedByUserId: uuid("resolved_by_user_id").references(() => users.id, { onDelete: "set null" }),
+  resolvedAt: timestamp("resolved_at", { withTimezone: true }),
+  promptInjectionSuspected: boolean("prompt_injection_suspected").notNull().default(false),
+  createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
+  updatedAt: timestamp("updated_at", { withTimezone: true }).defaultNow().notNull(),
+}, (table) => ({
+  chatbotQueueStatusIdx: index("chatbot_queue_status_idx").on(table.status),
+  chatbotQueueThreadIdx: index("chatbot_queue_thread_idx").on(table.threadId),
+  chatbotQueueAssignedIdx: index("chatbot_queue_assigned_idx").on(table.assignedToUserId),
+  chatbotQueueUserIdx: index("chatbot_queue_user_idx").on(table.userId),
+  chatbotQueuePendingIdx: index("chatbot_queue_pending_idx").on(table.createdAt).where(sql`status = 'pending'`),
+}));
+
+// WhatsApp message events (delivery tracking, template usage)
+export const whatsappMessageEvents = pgTable("whatsapp_message_events", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  whatsappMessageId: text("whatsapp_message_id").notNull(), // Meta's message ID
+  threadId: uuid("thread_id").references(() => supportThreads.id, { onDelete: "set null" }),
+  userId: uuid("user_id").references(() => users.id, { onDelete: "set null" }),
+  phoneNumber: text("phone_number"), // recipient phone (hashed/masked in prod)
+  templateName: text("template_name"), // if sent via template
+  direction: text("direction").notNull().$type<'inbound' | 'outbound'>(),
+  status: text("status").notNull().$type<'sent' | 'delivered' | 'read' | 'failed' | 'received'>(),
+  statusTimestamp: timestamp("status_timestamp", { withTimezone: true }),
+  errorCode: text("error_code"),
+  errorMessage: text("error_message"),
+  payloadJson: jsonb("payload_json").default({}), // redacted webhook payload
+  createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
+}, (table) => ({
+  whatsappEventsMessageIdx: index("whatsapp_events_message_idx").on(table.whatsappMessageId),
+  whatsappEventsThreadIdx: index("whatsapp_events_thread_idx").on(table.threadId),
+  whatsappEventsStatusIdx: index("whatsapp_events_status_idx").on(table.status),
+  whatsappEventsCreatedIdx: index("whatsapp_events_created_idx").on(table.createdAt),
+  whatsappEventsPhoneIdx: index("whatsapp_events_phone_idx").on(table.phoneNumber),
+}));
+
+// Canned replies for support agents
+export const supportCannedReplies = pgTable("support_canned_replies", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  slug: text("slug").notNull().unique(),
+  title: text("title").notNull(),
+  body: text("body").notNull(),
+  category: text("category"), // 'greeting', 'closing', 'refund', 'shipping', etc.
+  language: text("language").notNull().default("ro"),
+  createdByUserId: uuid("created_by_user_id").references(() => users.id, { onDelete: "set null" }),
+  isActive: boolean("is_active").notNull().default(true),
+  usageCount: integer("usage_count").notNull().default(0),
+  createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
+  updatedAt: timestamp("updated_at", { withTimezone: true }).defaultNow().notNull(),
+}, (table) => ({
+  supportCannedRepliesSlugIdx: uniqueIndex("support_canned_replies_slug_idx").on(table.slug),
+  supportCannedRepliesCategoryIdx: index("support_canned_replies_category_idx").on(table.category),
+  supportCannedRepliesActiveIdx: index("support_canned_replies_active_idx").on(table.isActive).where(sql`is_active = true`),
+}));
+
 // SQL for triggers and additional indexes
 export const createTriggersAndIndexes = sql`
   -- Add foreign key constraint for categories self-reference
