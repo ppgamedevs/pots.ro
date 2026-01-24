@@ -23,7 +23,14 @@ export async function GET(req: NextRequest) {
     console.log('📦 Starting negative stock check cron job...');
 
     // Găsește produsele cu stoc negativ (active sau draft)
-    const negativeStockProducts = await db
+    const negativeStockProducts: Array<{
+      id: string;
+      title: string;
+      slug: string;
+      stock: number;
+      sellerId: string;
+      sellerName: string | null;
+    }> = await db
       .select({
         id: products.id,
         title: products.title,

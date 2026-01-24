@@ -3,7 +3,7 @@ import { db } from "@/db";
 import { reservedNames } from "@/db/schema/core";
 import { eq, asc } from "drizzle-orm";
 import { requireRole } from "@/lib/authz";
-import { writeAdminAudit } from "@/lib/admin/audit";
+import { writeAdminAudit } from "@/lib/admin-audit";
 import { z } from "zod";
 
 export const dynamic = 'force-dynamic';
@@ -97,7 +97,7 @@ export async function POST(req: NextRequest) {
     console.error("Error adding reserved name:", error);
     if (error instanceof z.ZodError) {
       return NextResponse.json(
-        { error: "Date invalide", details: error.issues },
+        { error: "Date invalide", details: (error as any).issues ?? (error as any).errors ?? [] },
         { status: 400 }
       );
     }

@@ -23,6 +23,9 @@ export const userStatusEnum = pgEnum('user_status', ['active', 'suspended', 'del
 export const supportTicketStatusEnum = pgEnum('support_ticket_status', ['open', 'in_progress', 'waiting_on_seller', 'resolved', 'closed']);
 export const supportTicketPriorityEnum = pgEnum('support_ticket_priority', ['low', 'normal', 'high', 'urgent']);
 
+// Content / CMS enums
+export const contentStatusEnum = pgEnum('content_status', ['draft', 'published', 'scheduled', 'archived']);
+
 // Admin alerts enums
 export const alertStatusEnum = pgEnum('alert_status', ['open', 'acknowledged', 'resolved', 'snoozed']);
 export const alertSeverityEnum = pgEnum('alert_severity', ['low', 'medium', 'high', 'critical']);
@@ -131,6 +134,236 @@ export const sellerPageVersions = pgTable(
     sellerPageVersionsVersionIdx: uniqueIndex('seller_page_versions_seller_version_uq').on(table.sellerId, table.version),
     sellerPageVersionsStatusIdx: index('seller_page_versions_status_idx').on(table.sellerId, table.status),
     sellerPageVersionsPublishedIdx: index('seller_page_versions_published_idx').on(table.sellerId, table.publishedAt),
+  })
+);
+
+// Content authors (blog/help)
+export const contentAuthors = pgTable(
+  'content_authors',
+  {
+    id: uuid('id').primaryKey().defaultRandom(),
+    slug: text('slug').notNull().unique(),
+    name: text('name').notNull(),
+    email: text('email'),
+    avatarUrl: text('avatar_url'),
+    bioMd: text('bio_md'),
+    isActive: boolean('is_active').notNull().default(true),
+    createdBy: uuid('created_by').references(() => users.id, { onDelete: 'set null' }),
+    createdAt: timestamp('created_at', { withTimezone: true }).defaultNow().notNull(),
+    updatedAt: timestamp('updated_at', { withTimezone: true }).defaultNow().notNull(),
+  },
+  (table) => ({
+    contentAuthorsSlugIdx: index('content_authors_slug_idx').on(table.slug),
+    contentAuthorsActiveIdx: index('content_authors_active_idx').on(table.isActive),
+  })
+);
+
+// Blog posts (published snapshot + workflow)
+export const blogPosts = pgTable(
+  'blog_posts',
+  {
+    id: uuid('id').primaryKey().defaultRandom(),
+    slug: text('slug').notNull().unique(),
+    slugLocked: boolean('slug_locked').notNull().default(false),
+    authorId: uuid('author_id').references(() => contentAuthors.id, { onDelete: 'set null' }),
+    title: text('title').notNull(),
+    excerpt: text('excerpt'),
+    coverUrl: text('cover_url'),
+    bodyMd: text('body_md'),
+    seoTitle: text('seo_title'),
+    seoDesc: text('seo_desc'),
+    status: contentStatusEnum('status').notNull().default('draft'),
+    publishedAt: timestamp('published_at', { withTimezone: true }),
+    scheduledAt: timestamp('scheduled_at', { withTimezone: true }),
+    createdBy: uuid('created_by').references(() => users.id, { onDelete: 'set null' }),
+    updatedBy: uuid('updated_by').references(() => users.id, { onDelete: 'set null' }),
+    createdAt: timestamp('created_at', { withTimezone: true }).defaultNow().notNull(),
+    updatedAt: timestamp('updated_at', { withTimezone: true }).defaultNow().notNull(),
+  },
+  (table) => ({
+    blogPostsSlugIdx: index('blog_posts_slug_idx').on(table.slug),
+    blogPostsStatusIdx: index('blog_posts_status_idx').on(table.status),
+    blogPostsAuthorIdx: index('blog_posts_author_idx').on(table.authorId),
+    blogPostsPublishedIdx: index('blog_posts_published_idx').on(table.publishedAt),
+    blogPostsScheduledIdx: index('blog_posts_scheduled_idx').on(table.scheduledAt),
+  })
+);
+
+// Blog post versions (draft/publish history + rollback)
+export const blogPostVersions = pgTable(
+  'blog_post_versions',
+  {
+    id: uuid('id').primaryKey().defaultRandom(),
+    postId: uuid('post_id').notNull().references(() => blogPosts.id, { onDelete: 'cascade' }),
+    version: integer('version').notNull(),
+    status: text('status').notNull().default('draft').$type<'draft' | 'published'>(),
+    authorId: uuid('author_id').references(() => contentAuthors.id, { onDelete: 'set null' }),
+    title: text('title').notNull(),
+    excerpt: text('excerpt'),
+    coverUrl: text('cover_url'),
+    bodyMd: text('body_md'),
+    seoTitle: text('seo_title'),
+    seoDesc: text('seo_desc'),
+    createdBy: uuid('created_by').references(() => users.id, { onDelete: 'set null' }),
+    createdAt: timestamp('created_at', { withTimezone: true }).defaultNow().notNull(),
+    publishedBy: uuid('published_by').references(() => users.id, { onDelete: 'set null' }),
+    publishedAt: timestamp('published_at', { withTimezone: true }),
+    meta: jsonb('meta'),
+  },
+  (table) => ({
+    blogPostVersionsPostIdx: index('blog_post_versions_post_idx').on(table.postId),
+    blogPostVersionsVersionUq: uniqueIndex('blog_post_versions_post_version_uq').on(table.postId, table.version),
+    blogPostVersionsStatusIdx: index('blog_post_versions_status_idx').on(table.postId, table.status),
+    blogPostVersionsPublishedIdx: index('blog_post_versions_published_idx').on(table.postId, table.publishedAt),
+  })
+);
+
+// Static pages (legal/help pages managed in admin)
+export const staticPages = pgTable(
+  'static_pages',
+  {
+    key: text('key').primaryKey(), // e.g. 'termeni' | 'confidentialitate'
+    title: text('title').notNull(),
+    bodyMd: text('body_md'),
+    status: contentStatusEnum('status').notNull().default('draft'),
+    publishedAt: timestamp('published_at', { withTimezone: true }),
+    scheduledAt: timestamp('scheduled_at', { withTimezone: true }),
+    createdBy: uuid('created_by').references(() => users.id, { onDelete: 'set null' }),
+    updatedBy: uuid('updated_by').references(() => users.id, { onDelete: 'set null' }),
+    createdAt: timestamp('created_at', { withTimezone: true }).defaultNow().notNull(),
+    updatedAt: timestamp('updated_at', { withTimezone: true }).defaultNow().notNull(),
+  },
+  (table) => ({
+    staticPagesStatusIdx: index('static_pages_status_idx').on(table.status),
+    staticPagesPublishedIdx: index('static_pages_published_idx').on(table.publishedAt),
+  })
+);
+
+export const staticPageVersions = pgTable(
+  'static_page_versions',
+  {
+    id: uuid('id').primaryKey().defaultRandom(),
+    pageKey: text('page_key').notNull().references(() => staticPages.key, { onDelete: 'cascade' }),
+    version: integer('version').notNull(),
+    status: text('status').notNull().default('draft').$type<'draft' | 'published'>(),
+    title: text('title').notNull(),
+    bodyMd: text('body_md'),
+    createdBy: uuid('created_by').references(() => users.id, { onDelete: 'set null' }),
+    createdAt: timestamp('created_at', { withTimezone: true }).defaultNow().notNull(),
+    publishedBy: uuid('published_by').references(() => users.id, { onDelete: 'set null' }),
+    publishedAt: timestamp('published_at', { withTimezone: true }),
+    meta: jsonb('meta'),
+  },
+  (table) => ({
+    staticPageVersionsPageIdx: index('static_page_versions_page_idx').on(table.pageKey),
+    staticPageVersionsUq: uniqueIndex('static_page_versions_page_version_uq').on(table.pageKey, table.version),
+    staticPageVersionsStatusIdx: index('static_page_versions_status_idx').on(table.pageKey, table.status),
+    staticPageVersionsPublishedIdx: index('static_page_versions_published_idx').on(table.pageKey, table.publishedAt),
+  })
+);
+
+// Help center categories
+export const helpCategories = pgTable(
+  'help_categories',
+  {
+    id: uuid('id').primaryKey().defaultRandom(),
+    slug: text('slug').notNull().unique(),
+    title: text('title').notNull(),
+    description: text('description'),
+    position: integer('position').notNull().default(0),
+    isActive: boolean('is_active').notNull().default(true),
+    createdAt: timestamp('created_at', { withTimezone: true }).defaultNow().notNull(),
+    updatedAt: timestamp('updated_at', { withTimezone: true }).defaultNow().notNull(),
+  },
+  (table) => ({
+    helpCategoriesSlugIdx: index('help_categories_slug_idx').on(table.slug),
+    helpCategoriesActiveIdx: index('help_categories_active_idx').on(table.isActive),
+  })
+);
+
+// Help center articles (published snapshot)
+export const helpArticles = pgTable(
+  'help_articles',
+  {
+    id: uuid('id').primaryKey().defaultRandom(),
+    categoryId: uuid('category_id').notNull().references(() => helpCategories.id, { onDelete: 'cascade' }),
+    slug: text('slug').notNull(),
+    slugLocked: boolean('slug_locked').notNull().default(false),
+    title: text('title').notNull(),
+    summary: text('summary'),
+    bodyMd: text('body_md'),
+    status: contentStatusEnum('status').notNull().default('draft'),
+    publishedAt: timestamp('published_at', { withTimezone: true }),
+    scheduledAt: timestamp('scheduled_at', { withTimezone: true }),
+    createdBy: uuid('created_by').references(() => users.id, { onDelete: 'set null' }),
+    updatedBy: uuid('updated_by').references(() => users.id, { onDelete: 'set null' }),
+    createdAt: timestamp('created_at', { withTimezone: true }).defaultNow().notNull(),
+    updatedAt: timestamp('updated_at', { withTimezone: true }).defaultNow().notNull(),
+  },
+  (table) => ({
+    helpArticlesCategoryIdx: index('help_articles_category_idx').on(table.categoryId),
+    helpArticlesSlugUq: uniqueIndex('help_articles_category_slug_uq').on(table.categoryId, table.slug),
+    helpArticlesStatusIdx: index('help_articles_status_idx').on(table.status),
+    helpArticlesPublishedIdx: index('help_articles_published_idx').on(table.publishedAt),
+  })
+);
+
+export const helpArticleVersions = pgTable(
+  'help_article_versions',
+  {
+    id: uuid('id').primaryKey().defaultRandom(),
+    articleId: uuid('article_id').notNull().references(() => helpArticles.id, { onDelete: 'cascade' }),
+    version: integer('version').notNull(),
+    status: text('status').notNull().default('draft').$type<'draft' | 'published'>(),
+    categoryId: uuid('category_id').references(() => helpCategories.id, { onDelete: 'set null' }),
+    slug: text('slug').notNull(),
+    title: text('title').notNull(),
+    summary: text('summary'),
+    bodyMd: text('body_md'),
+    createdBy: uuid('created_by').references(() => users.id, { onDelete: 'set null' }),
+    createdAt: timestamp('created_at', { withTimezone: true }).defaultNow().notNull(),
+    publishedBy: uuid('published_by').references(() => users.id, { onDelete: 'set null' }),
+    publishedAt: timestamp('published_at', { withTimezone: true }),
+    meta: jsonb('meta'),
+  },
+  (table) => ({
+    helpArticleVersionsArticleIdx: index('help_article_versions_article_idx').on(table.articleId),
+    helpArticleVersionsUq: uniqueIndex('help_article_versions_article_version_uq').on(table.articleId, table.version),
+    helpArticleVersionsPublishedIdx: index('help_article_versions_published_idx').on(table.articleId, table.publishedAt),
+  })
+);
+
+export const helpArticleTags = pgTable(
+  'help_article_tags',
+  {
+    articleId: uuid('article_id').notNull().references(() => helpArticles.id, { onDelete: 'cascade' }),
+    tag: text('tag').notNull(),
+    createdAt: timestamp('created_at', { withTimezone: true }).defaultNow().notNull(),
+  },
+  (table) => ({
+    helpArticleTagsArticleIdx: index('help_article_tags_article_idx').on(table.articleId),
+    helpArticleTagsTagIdx: index('help_article_tags_tag_idx').on(table.tag),
+    helpArticleTagsUq: uniqueIndex('help_article_tags_article_tag_uq').on(table.articleId, table.tag),
+  })
+);
+
+// Minimal Help Center analytics/events
+export const helpAnalyticsEvents = pgTable(
+  'help_analytics_events',
+  {
+    id: uuid('id').primaryKey().defaultRandom(),
+    eventType: text('event_type').notNull().$type<'view' | 'search' | 'feedback'>(),
+    articleId: uuid('article_id').references(() => helpArticles.id, { onDelete: 'set null' }),
+    query: text('query'),
+    userId: uuid('user_id').references(() => users.id, { onDelete: 'set null' }),
+    sessionId: text('session_id'),
+    meta: jsonb('meta'),
+    createdAt: timestamp('created_at', { withTimezone: true }).defaultNow().notNull(),
+  },
+  (table) => ({
+    helpAnalyticsEventsTypeIdx: index('help_analytics_events_type_idx').on(table.eventType),
+    helpAnalyticsEventsArticleIdx: index('help_analytics_events_article_idx').on(table.articleId),
+    helpAnalyticsEventsCreatedIdx: index('help_analytics_events_created_idx').on(table.createdAt),
   })
 );
 

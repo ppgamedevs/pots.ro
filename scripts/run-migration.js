@@ -1069,6 +1069,226 @@ async function ensureSupportConsoleSchema(sql) {
   }
 }
 
+async function ensureContentSchema(sql) {
+  try {
+    console.log('🔧 Ensuring content schema (blog/pages/help)...');
+
+    await sql`CREATE EXTENSION IF NOT EXISTS pgcrypto`;
+
+    // Enum: content_status
+    await sql`
+      DO $$
+      BEGIN
+        CREATE TYPE content_status AS ENUM ('draft', 'published', 'scheduled', 'archived');
+      EXCEPTION
+        WHEN duplicate_object THEN NULL;
+      END $$;
+    `;
+
+    // Authors
+    await sql`
+      CREATE TABLE IF NOT EXISTS content_authors (
+        id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+        slug text NOT NULL UNIQUE,
+        name text NOT NULL,
+        email text,
+        avatar_url text,
+        bio_md text,
+        is_active boolean NOT NULL DEFAULT true,
+        created_by uuid REFERENCES users(id) ON DELETE SET NULL,
+        created_at timestamptz NOT NULL DEFAULT now(),
+        updated_at timestamptz NOT NULL DEFAULT now()
+      );
+    `;
+    await sql`CREATE INDEX IF NOT EXISTS content_authors_slug_idx ON content_authors(slug);`;
+    await sql`CREATE INDEX IF NOT EXISTS content_authors_active_idx ON content_authors(is_active);`;
+
+    // Blog posts (snapshot)
+    await sql`
+      CREATE TABLE IF NOT EXISTS blog_posts (
+        id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+        slug text NOT NULL UNIQUE,
+        slug_locked boolean NOT NULL DEFAULT false,
+        author_id uuid REFERENCES content_authors(id) ON DELETE SET NULL,
+        title text NOT NULL,
+        excerpt text,
+        cover_url text,
+        body_md text,
+        seo_title text,
+        seo_desc text,
+        status content_status NOT NULL DEFAULT 'draft',
+        published_at timestamptz,
+        scheduled_at timestamptz,
+        created_by uuid REFERENCES users(id) ON DELETE SET NULL,
+        updated_by uuid REFERENCES users(id) ON DELETE SET NULL,
+        created_at timestamptz NOT NULL DEFAULT now(),
+        updated_at timestamptz NOT NULL DEFAULT now()
+      );
+    `;
+    await sql`CREATE INDEX IF NOT EXISTS blog_posts_slug_idx ON blog_posts(slug);`;
+    await sql`CREATE INDEX IF NOT EXISTS blog_posts_status_idx ON blog_posts(status);`;
+    await sql`CREATE INDEX IF NOT EXISTS blog_posts_author_idx ON blog_posts(author_id);`;
+    await sql`CREATE INDEX IF NOT EXISTS blog_posts_published_idx ON blog_posts(published_at);`;
+    await sql`CREATE INDEX IF NOT EXISTS blog_posts_scheduled_idx ON blog_posts(scheduled_at);`;
+
+    // Blog post versions
+    await sql`
+      CREATE TABLE IF NOT EXISTS blog_post_versions (
+        id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+        post_id uuid NOT NULL REFERENCES blog_posts(id) ON DELETE CASCADE,
+        version int NOT NULL,
+        status text NOT NULL DEFAULT 'draft',
+        author_id uuid REFERENCES content_authors(id) ON DELETE SET NULL,
+        title text NOT NULL,
+        excerpt text,
+        cover_url text,
+        body_md text,
+        seo_title text,
+        seo_desc text,
+        created_by uuid REFERENCES users(id) ON DELETE SET NULL,
+        created_at timestamptz NOT NULL DEFAULT now(),
+        published_by uuid REFERENCES users(id) ON DELETE SET NULL,
+        published_at timestamptz,
+        meta jsonb
+      );
+    `;
+    await sql`CREATE INDEX IF NOT EXISTS blog_post_versions_post_idx ON blog_post_versions(post_id);`;
+    await sql`CREATE UNIQUE INDEX IF NOT EXISTS blog_post_versions_post_version_uq ON blog_post_versions(post_id, version);`;
+    await sql`CREATE INDEX IF NOT EXISTS blog_post_versions_status_idx ON blog_post_versions(post_id, status);`;
+    await sql`CREATE INDEX IF NOT EXISTS blog_post_versions_published_idx ON blog_post_versions(post_id, published_at);`;
+
+    // Static pages
+    await sql`
+      CREATE TABLE IF NOT EXISTS static_pages (
+        key text PRIMARY KEY,
+        title text NOT NULL,
+        body_md text,
+        status content_status NOT NULL DEFAULT 'draft',
+        published_at timestamptz,
+        scheduled_at timestamptz,
+        created_by uuid REFERENCES users(id) ON DELETE SET NULL,
+        updated_by uuid REFERENCES users(id) ON DELETE SET NULL,
+        created_at timestamptz NOT NULL DEFAULT now(),
+        updated_at timestamptz NOT NULL DEFAULT now()
+      );
+    `;
+    await sql`CREATE INDEX IF NOT EXISTS static_pages_status_idx ON static_pages(status);`;
+    await sql`CREATE INDEX IF NOT EXISTS static_pages_published_idx ON static_pages(published_at);`;
+
+    await sql`
+      CREATE TABLE IF NOT EXISTS static_page_versions (
+        id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+        page_key text NOT NULL REFERENCES static_pages(key) ON DELETE CASCADE,
+        version int NOT NULL,
+        status text NOT NULL DEFAULT 'draft',
+        title text NOT NULL,
+        body_md text,
+        created_by uuid REFERENCES users(id) ON DELETE SET NULL,
+        created_at timestamptz NOT NULL DEFAULT now(),
+        published_by uuid REFERENCES users(id) ON DELETE SET NULL,
+        published_at timestamptz,
+        meta jsonb
+      );
+    `;
+    await sql`CREATE INDEX IF NOT EXISTS static_page_versions_page_idx ON static_page_versions(page_key);`;
+    await sql`CREATE UNIQUE INDEX IF NOT EXISTS static_page_versions_page_version_uq ON static_page_versions(page_key, version);`;
+    await sql`CREATE INDEX IF NOT EXISTS static_page_versions_status_idx ON static_page_versions(page_key, status);`;
+    await sql`CREATE INDEX IF NOT EXISTS static_page_versions_published_idx ON static_page_versions(page_key, published_at);`;
+
+    // Help Center
+    await sql`
+      CREATE TABLE IF NOT EXISTS help_categories (
+        id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+        slug text NOT NULL UNIQUE,
+        title text NOT NULL,
+        description text,
+        position int NOT NULL DEFAULT 0,
+        is_active boolean NOT NULL DEFAULT true,
+        created_at timestamptz NOT NULL DEFAULT now(),
+        updated_at timestamptz NOT NULL DEFAULT now()
+      );
+    `;
+    await sql`CREATE INDEX IF NOT EXISTS help_categories_slug_idx ON help_categories(slug);`;
+    await sql`CREATE INDEX IF NOT EXISTS help_categories_active_idx ON help_categories(is_active);`;
+
+    await sql`
+      CREATE TABLE IF NOT EXISTS help_articles (
+        id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+        category_id uuid NOT NULL REFERENCES help_categories(id) ON DELETE CASCADE,
+        slug text NOT NULL,
+        slug_locked boolean NOT NULL DEFAULT false,
+        title text NOT NULL,
+        summary text,
+        body_md text,
+        status content_status NOT NULL DEFAULT 'draft',
+        published_at timestamptz,
+        scheduled_at timestamptz,
+        created_by uuid REFERENCES users(id) ON DELETE SET NULL,
+        updated_by uuid REFERENCES users(id) ON DELETE SET NULL,
+        created_at timestamptz NOT NULL DEFAULT now(),
+        updated_at timestamptz NOT NULL DEFAULT now()
+      );
+    `;
+    await sql`CREATE INDEX IF NOT EXISTS help_articles_category_idx ON help_articles(category_id);`;
+    await sql`CREATE UNIQUE INDEX IF NOT EXISTS help_articles_category_slug_uq ON help_articles(category_id, slug);`;
+    await sql`CREATE INDEX IF NOT EXISTS help_articles_status_idx ON help_articles(status);`;
+    await sql`CREATE INDEX IF NOT EXISTS help_articles_published_idx ON help_articles(published_at);`;
+
+    await sql`
+      CREATE TABLE IF NOT EXISTS help_article_versions (
+        id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+        article_id uuid NOT NULL REFERENCES help_articles(id) ON DELETE CASCADE,
+        version int NOT NULL,
+        status text NOT NULL DEFAULT 'draft',
+        category_id uuid REFERENCES help_categories(id) ON DELETE SET NULL,
+        slug text NOT NULL,
+        title text NOT NULL,
+        summary text,
+        body_md text,
+        created_by uuid REFERENCES users(id) ON DELETE SET NULL,
+        created_at timestamptz NOT NULL DEFAULT now(),
+        published_by uuid REFERENCES users(id) ON DELETE SET NULL,
+        published_at timestamptz,
+        meta jsonb
+      );
+    `;
+    await sql`CREATE INDEX IF NOT EXISTS help_article_versions_article_idx ON help_article_versions(article_id);`;
+    await sql`CREATE UNIQUE INDEX IF NOT EXISTS help_article_versions_article_version_uq ON help_article_versions(article_id, version);`;
+    await sql`CREATE INDEX IF NOT EXISTS help_article_versions_published_idx ON help_article_versions(article_id, published_at);`;
+
+    await sql`
+      CREATE TABLE IF NOT EXISTS help_article_tags (
+        article_id uuid NOT NULL REFERENCES help_articles(id) ON DELETE CASCADE,
+        tag text NOT NULL,
+        created_at timestamptz NOT NULL DEFAULT now()
+      );
+    `;
+    await sql`CREATE INDEX IF NOT EXISTS help_article_tags_article_idx ON help_article_tags(article_id);`;
+    await sql`CREATE INDEX IF NOT EXISTS help_article_tags_tag_idx ON help_article_tags(tag);`;
+    await sql`CREATE UNIQUE INDEX IF NOT EXISTS help_article_tags_article_tag_uq ON help_article_tags(article_id, tag);`;
+
+    await sql`
+      CREATE TABLE IF NOT EXISTS help_analytics_events (
+        id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+        event_type text NOT NULL,
+        article_id uuid REFERENCES help_articles(id) ON DELETE SET NULL,
+        query text,
+        user_id uuid REFERENCES users(id) ON DELETE SET NULL,
+        session_id text,
+        meta jsonb,
+        created_at timestamptz NOT NULL DEFAULT now()
+      );
+    `;
+    await sql`CREATE INDEX IF NOT EXISTS help_analytics_events_type_idx ON help_analytics_events(event_type);`;
+    await sql`CREATE INDEX IF NOT EXISTS help_analytics_events_article_idx ON help_analytics_events(article_id);`;
+    await sql`CREATE INDEX IF NOT EXISTS help_analytics_events_created_idx ON help_analytics_events(created_at);`;
+
+    console.log('✅ Content schema ensured');
+  } catch (err) {
+    console.warn('⚠️  Could not ensure content schema:', err.message || err);
+  }
+}
+
 async function ensureSupportSchema(sql) {
   try {
     console.log('🔧 Ensuring support schema (notes/tickets/conversations)...');
@@ -1239,6 +1459,7 @@ async function runMigration() {
     await ensureRateLimitsSchema(sql);
     await ensureAdminAlertsSchema(sql);
     await ensureSupportConsoleSchema(sql);
+    await ensureContentSchema(sql);
 
     // Check if orders table already exists
     console.log('🔍 Checking if orders table exists...');

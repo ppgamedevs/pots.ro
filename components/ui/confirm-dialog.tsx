@@ -12,7 +12,7 @@ export type ConfirmDialogProps = {
   description?: string | React.ReactNode;
   confirmText?: string;    // ex: "Delete"
   cancelText?: string;     // ex: "Cancel"
-  variant?: "danger" | "default";
+  variant?: "danger" | "destructive" | "default";
   loading?: boolean;
   onConfirm: () => Promise<void> | void;
   onOpenChange: (v: boolean) => void;
@@ -45,7 +45,7 @@ export function ConfirmDialog({
   const confirmBtnClass = clsx(
     "inline-flex items-center justify-center h-10 px-4 rounded-xl text-sm font-medium transition",
     "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand focus-visible:ring-offset-2 ring-offset-white dark:ring-offset-slate-950",
-    variant === "danger"
+    variant === "danger" || variant === "destructive"
       ? "bg-red-600 text-white hover:bg-red-700 disabled:opacity-60"
       : "bg-brand text-white hover:bg-brand-dark disabled:opacity-60"
   );
