@@ -8,6 +8,7 @@ import { resolveSellerId } from '@/lib/server/resolve-seller-id';
 import { emailService } from '@/lib/email';
 import { SITE_URL } from '@/lib/env';
 import { SellerStatusUpdateEmail, getSellerStatusUpdateSubject } from '@/lib/email/templates/SellerStatusUpdate';
+import { createAlert } from '@/lib/admin/alerts';
 
 export const dynamic = 'force-dynamic';
 
@@ -77,6 +78,30 @@ export async function POST(req: NextRequest, { params }: { params: { id: string 
       }
     } catch (err) {
       console.error('Could not send seller status email:', err);
+    }
+
+    // Create alert for seller suspension (for visibility)
+    if (nextStatus === 'suspended') {
+      try {
+        await createAlert({
+          source: 'seller_suspended',
+          type: 'manual_suspension',
+          severity: 'medium',
+          dedupeKey: `seller:suspended:${sellerId}`,
+          entityType: 'seller',
+          entityId: sellerId,
+          title: `Seller suspendat: ${updated.brandName}`,
+          details: {
+            sellerId,
+            brandName: updated.brandName,
+            slug: updated.slug,
+            reason: data.message,
+            suspendedBy: userId,
+          },
+        });
+      } catch (err) {
+        console.error('Could not create suspension alert:', err);
+      }
     }
 
     return NextResponse.json({

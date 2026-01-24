@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { Package, Users, ShoppingBag, DollarSign, Settings, FileText, UserCog, Tags, CreditCard, Webhook, Percent, Shield, Megaphone } from "lucide-react";
+import { Package, Users, ShoppingBag, DollarSign, Settings, FileText, UserCog, Tags, CreditCard, Webhook, Percent, Shield, Megaphone, LayoutDashboard } from "lucide-react";
 import { db } from "@/db";
 import { orders, products, sellerApplications } from "@/db/schema/core";
 import { and, eq, gte, ne, sql } from "drizzle-orm";
@@ -45,6 +45,13 @@ export default async function AdminDashboardPage() {
   const stats = await getQuickStats();
 
   const menuItems = [
+    {
+      title: "Overview",
+      description: "KPI-uri și alerte pentru platformă",
+      href: "/admin/overview",
+      icon: LayoutDashboard,
+      color: "bg-indigo-600",
+    },
     {
       title: "Catalog",
       description: "Categorii, structura catalogului și organizare",

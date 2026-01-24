@@ -38,6 +38,14 @@ const RATE_LIMITS: Record<string, RateLimitConfig> = {
       return `messages:${userId}`;
     },
   },
+  admin_exports: {
+    windowMs: 60 * 1000, // 1 minut
+    maxRequests: 5, // 5 exports pe minut per admin
+    keyGenerator: (req) => {
+      const userId = req.headers.get('x-user-id') || 'anonymous';
+      return `admin_exports:${userId}`;
+    },
+  },
 };
 
 type AbuseLists = {

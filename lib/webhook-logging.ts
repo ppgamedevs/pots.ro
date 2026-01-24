@@ -1,5 +1,6 @@
 import { db } from '@/db';
 import { webhookLogs } from '@/db/schema/core';
+import { createAlert, AlertSeverity, AlertSource } from '@/lib/admin/alerts';
 
 export type WebhookSource = 'payments' | 'shipping' | 'invoices' | 'orders' | 'refunds' | 'payouts';
 export type WebhookResult = 'ok' | 'duplicate' | 'error';
@@ -143,6 +144,32 @@ export async function logWebhookError(
     },
     result: 'error',
   });
+
+  // Create admin alert for webhook failure
+  try {
+    const alertSource: AlertSource = source === 'payments' ? 'payment_error' : 'webhook_failure';
+    const severity: AlertSeverity = source === 'payments' ? 'high' : 'medium';
+    const dedupeKey = `webhook:${source}:${ref || 'unknown'}:${error.message.slice(0, 50)}`;
+
+    await createAlert({
+      source: alertSource,
+      type: `${source}_webhook_error`,
+      severity,
+      dedupeKey,
+      entityType: 'webhook',
+      entityId: ref,
+      title: `Webhook ${source} eșuat: ${error.message.slice(0, 100)}`,
+      details: {
+        source,
+        ref,
+        errorMessage: error.message,
+        provider: payload?.provider,
+      },
+    });
+  } catch (alertError) {
+    console.error('Failed to create alert for webhook error:', alertError);
+    // Don't throw - alert creation should not break the main flow
+  }
 }
 
 export async function logWebhookDuplicate(

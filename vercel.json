@@ -8,6 +8,14 @@
     {
       "path": "/api/cron/ship-to-delivered",
       "schedule": "0 6 * * *"
+    },
+    {
+      "path": "/api/cron/negative-stock",
+      "schedule": "0 7 * * *"
+    },
+    {
+      "path": "/api/cron/alerts-reopen",
+      "schedule": "*/5 * * * *"
     }
   ]
 }

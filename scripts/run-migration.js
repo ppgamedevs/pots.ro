@@ -796,6 +796,84 @@ async function ensureRateLimitsSchema(sql) {
     console.warn('⚠️  Could not ensure rate limits schema:', err.message || err);
   }
 }
+
+async function ensureAdminAlertsSchema(sql) {
+  try {
+    console.log('🔧 Ensuring admin alerts schema...');
+
+    // Create enums (idempotent)
+    await sql`
+      DO $$
+      BEGIN
+        IF NOT EXISTS (SELECT 1 FROM pg_type WHERE typname = 'alert_status') THEN
+          CREATE TYPE alert_status AS ENUM ('open', 'acknowledged', 'resolved', 'snoozed');
+        END IF;
+        IF NOT EXISTS (SELECT 1 FROM pg_type WHERE typname = 'alert_severity') THEN
+          CREATE TYPE alert_severity AS ENUM ('low', 'medium', 'high', 'critical');
+        END IF;
+      END $$;
+    `;
+
+    // Create admin_alerts table
+    await sql`
+      CREATE TABLE IF NOT EXISTS admin_alerts (
+        id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+        source text NOT NULL,
+        type text NOT NULL,
+        severity alert_severity NOT NULL DEFAULT 'medium',
+        dedupe_key text NOT NULL,
+        entity_type text,
+        entity_id text,
+        title text NOT NULL,
+        details jsonb DEFAULT '{}',
+        status alert_status NOT NULL DEFAULT 'open',
+        assigned_to_user_id uuid REFERENCES users(id) ON DELETE SET NULL,
+        snoozed_until timestamptz,
+        resolved_at timestamptz,
+        resolved_by_user_id uuid REFERENCES users(id) ON DELETE SET NULL,
+        linked_ticket_id uuid REFERENCES support_tickets(id) ON DELETE SET NULL,
+        created_at timestamptz NOT NULL DEFAULT now(),
+        updated_at timestamptz NOT NULL DEFAULT now()
+      )
+    `;
+
+    // Partial unique index for deduplication (only one open/acknowledged/snoozed per dedupe_key)
+    await sql`
+      CREATE UNIQUE INDEX IF NOT EXISTS admin_alerts_dedupe_key_status_idx
+      ON admin_alerts(dedupe_key)
+      WHERE status IN ('open', 'acknowledged', 'snoozed')
+    `;
+
+    await sql`
+      CREATE INDEX IF NOT EXISTS admin_alerts_status_idx
+      ON admin_alerts(status)
+    `;
+
+    await sql`
+      CREATE INDEX IF NOT EXISTS admin_alerts_severity_idx
+      ON admin_alerts(severity)
+    `;
+
+    await sql`
+      CREATE INDEX IF NOT EXISTS admin_alerts_source_idx
+      ON admin_alerts(source)
+    `;
+
+    await sql`
+      CREATE INDEX IF NOT EXISTS admin_alerts_assigned_idx
+      ON admin_alerts(assigned_to_user_id)
+    `;
+
+    await sql`
+      CREATE INDEX IF NOT EXISTS admin_alerts_created_idx
+      ON admin_alerts(created_at)
+    `;
+
+    console.log('✅ Admin alerts schema ensured');
+  } catch (err) {
+    console.warn('⚠️  Could not ensure admin alerts schema:', err.message || err);
+  }
+}
 async function ensureSupportSchema(sql) {
   try {
     console.log('🔧 Ensuring support schema (notes/tickets/conversations)...');
@@ -964,6 +1042,7 @@ async function runMigration() {
     await ensureUserPermissionsSchema(sql);
     await ensureReservedNamesSchema(sql);
     await ensureRateLimitsSchema(sql);
+    await ensureAdminAlertsSchema(sql);
 
     // Check if orders table already exists
     console.log('🔍 Checking if orders table exists...');

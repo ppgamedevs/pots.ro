@@ -23,6 +23,10 @@ export const userStatusEnum = pgEnum('user_status', ['active', 'suspended', 'del
 export const supportTicketStatusEnum = pgEnum('support_ticket_status', ['open', 'in_progress', 'waiting_on_seller', 'resolved', 'closed']);
 export const supportTicketPriorityEnum = pgEnum('support_ticket_priority', ['low', 'normal', 'high', 'urgent']);
 
+// Admin alerts enums
+export const alertStatusEnum = pgEnum('alert_status', ['open', 'acknowledged', 'resolved', 'snoozed']);
+export const alertSeverityEnum = pgEnum('alert_severity', ['low', 'medium', 'high', 'critical']);
+
 // Users table for passwordless auth
 export const users = pgTable("users", {
   id: uuid("id").primaryKey().defaultRandom(),
@@ -1146,6 +1150,34 @@ export const eventsRaw = pgTable("events_raw", {
   eventsProductIdx: index("events_product_idx").on(table.productId),
   eventsSellerIdx: index("events_seller_idx").on(table.sellerId),
   eventsDateIdx: index("events_date_idx").on(table.createdAt),
+}));
+
+// Admin alerts table for unified incident management
+export const adminAlerts = pgTable("admin_alerts", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  source: text("source").notNull(), // 'webhook_failure', 'payment_error', 'stock_negative', 'seller_suspended', 'message_spike'
+  type: text("type").notNull(), // sub-type e.g. 'netopia_timeout', 'stripe_declined'
+  severity: alertSeverityEnum("severity").notNull().default("medium"),
+  dedupeKey: text("dedupe_key").notNull(), // unique per open alert, e.g. 'stock:product:uuid'
+  entityType: text("entity_type"), // 'order', 'product', 'seller', 'webhook', etc.
+  entityId: text("entity_id"), // UUID or external ref
+  title: text("title").notNull(),
+  details: jsonb("details").default({}), // extra context (error message, counts, etc.)
+  status: alertStatusEnum("status").notNull().default("open"),
+  assignedToUserId: uuid("assigned_to_user_id").references(() => users.id, { onDelete: "set null" }),
+  snoozedUntil: timestamp("snoozed_until", { withTimezone: true }),
+  resolvedAt: timestamp("resolved_at", { withTimezone: true }),
+  resolvedByUserId: uuid("resolved_by_user_id").references(() => users.id, { onDelete: "set null" }),
+  linkedTicketId: uuid("linked_ticket_id").references(() => supportTickets.id, { onDelete: "set null" }),
+  createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
+  updatedAt: timestamp("updated_at", { withTimezone: true }).defaultNow().notNull(),
+}, (table) => ({
+  adminAlertsDedupeKeyStatusIdx: uniqueIndex("admin_alerts_dedupe_key_status_idx").on(table.dedupeKey).where(sql`status IN ('open', 'acknowledged', 'snoozed')`),
+  adminAlertsStatusIdx: index("admin_alerts_status_idx").on(table.status),
+  adminAlertsSeverityIdx: index("admin_alerts_severity_idx").on(table.severity),
+  adminAlertsSourceIdx: index("admin_alerts_source_idx").on(table.source),
+  adminAlertsAssignedIdx: index("admin_alerts_assigned_idx").on(table.assignedToUserId),
+  adminAlertsCreatedIdx: index("admin_alerts_created_idx").on(table.createdAt),
 }));
 
 // SQL for triggers and additional indexes
