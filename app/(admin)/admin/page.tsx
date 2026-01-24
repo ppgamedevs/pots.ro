@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { Package, Users, ShoppingBag, DollarSign, Settings, FileText, UserCog, Tags, CreditCard, Webhook, Percent, Shield, Megaphone, LayoutDashboard, Headphones, Wrench, Code2, HardDrive } from "lucide-react";
+import { Package, Users, ShoppingBag, DollarSign, Settings, FileText, UserCog, Tags, CreditCard, Webhook, Percent, Shield, Megaphone, LayoutDashboard, Headphones, Wrench, Code2, HardDrive, Plug } from "lucide-react";
 import { db } from "@/db";
 import { orders, products, sellerApplications } from "@/db/schema/core";
 import { and, eq, gte, ne, sql } from "drizzle-orm";
@@ -170,6 +170,13 @@ export default async function AdminDashboardPage() {
       href: "/admin/developer",
       icon: Code2,
       color: "bg-zinc-900",
+    },
+    {
+      title: "Integrations",
+      description: "Netopia payments, Storage/Blob, SEO sitemaps",
+      href: "/admin/integrations",
+      icon: Plug,
+      color: "bg-violet-700",
     },
     {
       title: "Ops",

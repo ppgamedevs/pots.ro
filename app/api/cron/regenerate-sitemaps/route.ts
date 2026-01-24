@@ -17,11 +17,13 @@ export async function GET(request: NextRequest) {
 
     console.log('Starting sitemap regeneration...');
 
-    // Regenerare sitemap-uri prin revalidare
+    // Regenerare sitemap-uri prin revalidare (canonical *.xml routes)
     const sitemapUrls = [
-      '/sitemaps/products',
-      '/sitemaps/sellers', 
-      '/sitemaps/categories'
+      '/sitemaps/products.xml',
+      '/sitemaps/sellers.xml', 
+      '/sitemaps/categories.xml',
+      '/sitemaps/blog.xml',
+      '/sitemap.xml'
     ];
 
     const results = [];
