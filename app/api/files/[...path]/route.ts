@@ -1,5 +1,8 @@
 import { getDownloadUrl, head } from '@vercel/blob';
 import { NextRequest, NextResponse } from 'next/server';
+import { requireRole } from '@/lib/authz';
+import { writeAdminAudit } from '@/lib/admin/audit';
+import { getClientIP, getUserAgent } from '@/lib/auth/crypto';
 
 // Tipuri de fișiere private permise
 const PRIVATE_FILE_TYPES = [
@@ -16,18 +19,6 @@ export async function GET(
   { params }: { params: { path: string[] } }
 ) {
   try {
-    // TODO: Implementează autentificarea și autorizarea aici
-    // const session = await getServerSession(authOptions);
-    // if (!session) {
-    //   return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-    // }
-
-    // TODO: Verifică permisiunile pentru fișierul specific
-    // const hasAccess = await checkFileAccess(session.user.id, filePath);
-    // if (!hasAccess) {
-    //   return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
-    // }
-
     const filePath = params.path.join('/');
     
     if (!filePath) {
@@ -37,13 +28,38 @@ export async function GET(
       );
     }
 
+    // Basic path hardening
+    if (filePath.includes('..')) {
+      return NextResponse.json({ error: 'Invalid file path' }, { status: 400 });
+    }
+
+    // Backups are strictly admin-only.
+    const isBackup = filePath.startsWith('backups/');
+    let actor: { id: string; role: string } | null = null;
+    if (isBackup) {
+      try {
+        const user = await requireRole(request, ['admin']);
+        actor = { id: user.id, role: user.role };
+      } catch (err) {
+        const message = err instanceof Error ? err.message : 'Unauthorized';
+        const status = message === 'Forbidden' ? 403 : 401;
+        return NextResponse.json({ error: message }, { status });
+      }
+    }
+
+    const token = process.env.BLOB_READ_WRITE_TOKEN;
+    if (!token) {
+      return NextResponse.json(
+        { error: 'Blob token not configured' },
+        { status: 500 }
+      );
+    }
+
     // Verifică dacă fișierul există și obține URL-ul semnat
-    const url = await getDownloadUrl(filePath);
+    const url = await getDownloadUrl(filePath, { token });
 
     // Obține metadatele fișierului
-    const metadata = await head(filePath, {
-      token: process.env.BLOB_READ_WRITE_TOKEN,
-    });
+    const metadata = await head(filePath, { token });
 
     // Verifică tipul de fișier
     if (metadata.contentType && !PRIVATE_FILE_TYPES.includes(metadata.contentType)) {
@@ -51,6 +67,23 @@ export async function GET(
         { error: 'File type not allowed' },
         { status: 403 }
       );
+    }
+
+    if (isBackup && actor) {
+      await writeAdminAudit({
+        actorId: actor.id,
+        actorRole: actor.role,
+        action: 'ops.backup.download',
+        entityType: 'backup',
+        entityId: filePath,
+        message: `Downloaded backup artifact: ${filePath}`,
+        meta: {
+          ip: getClientIP(request.headers),
+          ua: getUserAgent(request.headers),
+          contentType: metadata.contentType ?? null,
+          size: metadata.size ?? null,
+        },
+      });
     }
 
     // Redirect către URL-ul semnat (expiră automat)
@@ -85,11 +118,25 @@ export async function HEAD(
       return new NextResponse(null, { status: 400 });
     }
 
-    // TODO: Implementează autentificarea și autorizarea aici
-    
-    const metadata = await head(filePath, {
-      token: process.env.BLOB_READ_WRITE_TOKEN,
-    });
+    if (filePath.includes('..')) {
+      return new NextResponse(null, { status: 400 });
+    }
+
+    const isBackup = filePath.startsWith('backups/');
+    if (isBackup) {
+      try {
+        await requireRole(request, ['admin']);
+      } catch {
+        return new NextResponse(null, { status: 401 });
+      }
+    }
+
+    const token = process.env.BLOB_READ_WRITE_TOKEN;
+    if (!token) {
+      return new NextResponse(null, { status: 500 });
+    }
+
+    const metadata = await head(filePath, { token });
 
     return new NextResponse(null, {
       status: 200,

@@ -875,6 +875,49 @@ async function ensureAdminAlertsSchema(sql) {
   }
 }
 
+async function ensureBackupRunsSchema(sql) {
+  try {
+    console.log('🔧 Ensuring backup runs schema...');
+
+    await sql`
+      CREATE TABLE IF NOT EXISTS backup_runs (
+        id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+        source text NOT NULL DEFAULT 'ci',
+        status text NOT NULL DEFAULT 'success',
+        backup_path text UNIQUE,
+        meta_path text,
+        size_bytes bigint,
+        checksum_sha256 text,
+        environment text,
+        db_name text,
+        created_by uuid REFERENCES users(id) ON DELETE SET NULL,
+        error_message text,
+        created_at timestamptz NOT NULL DEFAULT now(),
+        updated_at timestamptz NOT NULL DEFAULT now()
+      )
+    `;
+
+    await sql`
+      CREATE INDEX IF NOT EXISTS backup_runs_created_idx
+      ON backup_runs(created_at)
+    `;
+
+    await sql`
+      CREATE INDEX IF NOT EXISTS backup_runs_status_idx
+      ON backup_runs(status)
+    `;
+
+    await sql`
+      CREATE INDEX IF NOT EXISTS backup_runs_source_idx
+      ON backup_runs(source)
+    `;
+
+    console.log('✅ Backup runs schema ensured');
+  } catch (err) {
+    console.warn('⚠️  Could not ensure backup runs schema:', err.message || err);
+  }
+}
+
 async function ensureSupportConsoleSchema(sql) {
   try {
     console.log('🔧 Ensuring support console schema...');
@@ -1458,6 +1501,7 @@ async function runMigration() {
     await ensureReservedNamesSchema(sql);
     await ensureRateLimitsSchema(sql);
     await ensureAdminAlertsSchema(sql);
+    await ensureBackupRunsSchema(sql);
     await ensureSupportConsoleSchema(sql);
     await ensureContentSchema(sql);
 

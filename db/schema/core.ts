@@ -1385,6 +1385,31 @@ export const eventsRaw = pgTable("events_raw", {
   eventsDateIdx: index("events_date_idx").on(table.createdAt),
 }));
 
+// Backup runs table (restore points index; backup artifacts live in Vercel Blob)
+export const backupRuns = pgTable(
+  "backup_runs",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    source: text("source").notNull().default("ci").$type<"ci" | "manual" | "cron">(),
+    status: text("status").notNull().default("success").$type<"requested" | "running" | "success" | "failed">(),
+    backupPath: text("backup_path").unique(),
+    metaPath: text("meta_path"),
+    sizeBytes: bigint("size_bytes", { mode: "number" }),
+    checksumSha256: text("checksum_sha256"),
+    environment: text("environment"),
+    dbName: text("db_name"),
+    createdBy: uuid("created_by").references(() => users.id, { onDelete: "set null" }),
+    errorMessage: text("error_message"),
+    createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
+    updatedAt: timestamp("updated_at", { withTimezone: true }).defaultNow().notNull(),
+  },
+  (table) => ({
+    backupRunsCreatedIdx: index("backup_runs_created_idx").on(table.createdAt),
+    backupRunsStatusIdx: index("backup_runs_status_idx").on(table.status),
+    backupRunsSourceIdx: index("backup_runs_source_idx").on(table.source),
+  })
+);
+
 // Admin alerts table for unified incident management
 export const adminAlerts = pgTable("admin_alerts", {
   id: uuid("id").primaryKey().defaultRandom(),

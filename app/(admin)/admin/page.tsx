@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { Package, Users, ShoppingBag, DollarSign, Settings, FileText, UserCog, Tags, CreditCard, Webhook, Percent, Shield, Megaphone, LayoutDashboard, Headphones } from "lucide-react";
+import { Package, Users, ShoppingBag, DollarSign, Settings, FileText, UserCog, Tags, CreditCard, Webhook, Percent, Shield, Megaphone, LayoutDashboard, Headphones, Wrench } from "lucide-react";
 import { db } from "@/db";
 import { orders, products, sellerApplications } from "@/db/schema/core";
 import { and, eq, gte, ne, sql } from "drizzle-orm";
@@ -163,6 +163,13 @@ export default async function AdminDashboardPage() {
       href: "/admin/settings",
       icon: Settings,
       color: "bg-gray-500",
+    },
+    {
+      title: "Ops",
+      description: "Logs, backups, migrations (admin-only)",
+      href: "/admin/ops",
+      icon: Wrench,
+      color: "bg-neutral-800",
     },
   ];
 
