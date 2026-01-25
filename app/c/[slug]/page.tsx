@@ -132,10 +132,9 @@ async function getCategoryProducts(
         slug: products.slug,
         title: products.title,
         priceCents: products.priceCents,
-        oldPriceCents: products.oldPriceCents,
-        images: products.images,
-        stockQty: products.stockQty,
-        tags: products.tags,
+        imageUrl: products.imageUrl,
+        stock: products.stock,
+        attributes: products.attributes,
         sellerName: sellers.brandName,
       })
       .from(products)
@@ -146,28 +145,27 @@ async function getCategoryProducts(
       .offset(offset);
 
     const items: Product[] = rows.map((row) => {
-      const imagesRaw = row.images as any[];
-      const images = Array.isArray(imagesRaw)
-        ? imagesRaw.map((img: any, idx: number) => ({
-            src: typeof img === "string" ? img : img?.url || img?.src || "/placeholder.svg",
-            alt: typeof img === "string" ? row.title : img?.alt || `${row.title} - ${idx + 1}`,
-          }))
+      const attrs = (row.attributes as any) || {};
+      const oldPriceCents = attrs.oldPriceCents;
+      
+      const images = row.imageUrl 
+        ? [{ src: row.imageUrl, alt: row.title }] 
         : [{ src: "/placeholder.svg", alt: row.title }];
 
       const badges: string[] = [];
-      if (row.oldPriceCents && row.oldPriceCents > row.priceCents) badges.push("reducere");
-      if (row.stockQty && row.stockQty <= 3 && row.stockQty > 0) badges.push("stoc redus");
+      if (oldPriceCents && oldPriceCents > row.priceCents) badges.push("reducere");
+      if (row.stock && row.stock <= 3 && row.stock > 0) badges.push("stoc redus");
 
       return {
         id: row.id,
         slug: row.slug,
         title: row.title,
         price: row.priceCents / 100,
-        oldPrice: row.oldPriceCents ? row.oldPriceCents / 100 : undefined,
+        oldPrice: oldPriceCents ? oldPriceCents / 100 : undefined,
         images,
         seller: { name: row.sellerName || "Vânzător" },
         badges: badges.length > 0 ? badges : undefined,
-        stock: row.stockQty ?? 10,
+        stock: row.stock ?? 10,
       };
     });
 
