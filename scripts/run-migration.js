@@ -1288,6 +1288,85 @@ async function ensureAssetScanJobsSchema(sql) {
   }
 }
 
+async function ensureInvoicesSchema(sql) {
+  try {
+    console.log('🔧 Ensuring invoices schema updates...');
+    
+    // Check if invoices table exists first
+    const [tableExists] = await sql`
+      SELECT EXISTS (
+        SELECT 1 FROM information_schema.tables 
+        WHERE table_schema = 'public' AND table_name = 'invoices'
+      ) as exists;
+    `;
+    
+    if (!tableExists?.exists) {
+      console.log('ℹ️  Invoices table does not exist yet, skipping schema updates');
+      return;
+    }
+    
+    // Add new columns to invoices table if they don't exist
+    await sql`
+      DO $$
+      BEGIN
+        IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name = 'invoices' AND column_name = 'error_message') THEN
+          ALTER TABLE invoices ADD COLUMN error_message text;
+        END IF;
+        IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name = 'invoices' AND column_name = 'voided_by') THEN
+          ALTER TABLE invoices ADD COLUMN voided_by uuid REFERENCES users(id) ON DELETE SET NULL;
+        END IF;
+        IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name = 'invoices' AND column_name = 'voided_at') THEN
+          ALTER TABLE invoices ADD COLUMN voided_at timestamptz;
+        END IF;
+        IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name = 'invoices' AND column_name = 'void_reason') THEN
+          ALTER TABLE invoices ADD COLUMN void_reason text;
+        END IF;
+        IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name = 'invoices' AND column_name = 'meta') THEN
+          ALTER TABLE invoices ADD COLUMN meta jsonb;
+        END IF;
+        IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name = 'invoices' AND column_name = 'updated_at') THEN
+          ALTER TABLE invoices ADD COLUMN updated_at timestamptz DEFAULT now();
+        END IF;
+      END $$;
+    `;
+
+    // Check if columns exist before creating indexes
+    const [hasStatus] = await sql`
+      SELECT EXISTS (
+        SELECT 1 FROM information_schema.columns 
+        WHERE table_name = 'invoices' AND column_name = 'status'
+      ) as exists;
+    `;
+    const [hasType] = await sql`
+      SELECT EXISTS (
+        SELECT 1 FROM information_schema.columns 
+        WHERE table_name = 'invoices' AND column_name = 'type'
+      ) as exists;
+    `;
+    const [hasIssuer] = await sql`
+      SELECT EXISTS (
+        SELECT 1 FROM information_schema.columns 
+        WHERE table_name = 'invoices' AND column_name = 'issuer'
+      ) as exists;
+    `;
+    
+    if (hasStatus?.exists) {
+      await sql`CREATE INDEX IF NOT EXISTS invoices_status_idx ON invoices(status)`;
+    }
+    if (hasType?.exists) {
+      await sql`CREATE INDEX IF NOT EXISTS invoices_type_idx ON invoices(type)`;
+    }
+    if (hasIssuer?.exists) {
+      await sql`CREATE INDEX IF NOT EXISTS invoices_issuer_idx ON invoices(issuer)`;
+    }
+    await sql`CREATE INDEX IF NOT EXISTS invoices_order_id_idx ON invoices(order_id)`;
+
+    console.log('✅ Invoices schema updates complete');
+  } catch (error) {
+    console.error('❌ Error ensuring invoices schema:', error.message);
+  }
+}
+
 async function ensureAffiliatesSchema(sql) {
   try {
     console.log('🔧 Ensuring affiliates schema...');
@@ -1424,6 +1503,7 @@ async function runEnsures(sql) {
   await ensurePromotionVersionsSchema(sql);
   await ensureAssetScanJobsSchema(sql);
   await ensureAffiliatesSchema(sql);
+  await ensureInvoicesSchema(sql);
 }
 
 async function ensureContentSchema(sql) {

@@ -1,7 +1,7 @@
 'use client';
 
 import Link from 'next/link';
-import { CreditCard, HardDrive, Globe, ArrowLeft } from 'lucide-react';
+import { CreditCard, HardDrive, Globe, ArrowLeft, FileText } from 'lucide-react';
 
 const integrations = [
   {
@@ -10,6 +10,13 @@ const integrations = [
     href: '/admin/integrations/payments/netopia',
     icon: CreditCard,
     color: 'bg-emerald-600',
+  },
+  {
+    title: 'Invoicing / SmartBill',
+    description: 'Invoice provider status, credentials health, test connection, retry failed invoices',
+    href: '/admin/integrations/invoicing',
+    icon: FileText,
+    color: 'bg-indigo-600',
   },
   {
     title: 'Storage / Blob',

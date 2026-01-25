@@ -1198,14 +1198,21 @@ export const invoices = pgTable("invoices", {
   currency: text("currency").notNull().default("RON"),
   issuer: text("issuer").notNull().$type<'smartbill' | 'facturis' | 'mock' | 'seller'>(),
   status: text("status").notNull().$type<'issued' | 'voided' | 'error'>(),
+  errorMessage: text("error_message"), // last issuing error message (if status=error)
+  voidedBy: uuid("voided_by").references(() => users.id, { onDelete: "set null" }),
+  voidedAt: timestamp("voided_at", { withTimezone: true }),
+  voidReason: text("void_reason"),
+  meta: jsonb("meta").$type<Record<string, any>>(), // extra provider metadata
   // Pentru factura vânzătorului (când type = 'seller')
   sellerInvoiceNumber: text("seller_invoice_number"), // Numărul facturii emise de vânzător
   uploadedBy: uuid("uploaded_by").references(() => users.id), // User-ul care a încărcat factura
   uploadedAt: timestamp("uploaded_at", { withTimezone: true }), // Când a fost încărcată
   createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
+  updatedAt: timestamp("updated_at", { withTimezone: true }).defaultNow().notNull(),
 }, (table) => ({
   invoicesOrderUnique: uniqueIndex("invoices_order_unique").on(table.orderId, table.type), // Permite multiple facturi per comandă (comision + seller)
   invoicesCreatedIdx: index("invoices_created_idx").on(table.createdAt),
+  invoicesStatusIdx: index("invoices_status_idx").on(table.status),
 }));
 
 // Email events table
