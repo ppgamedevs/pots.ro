@@ -41,18 +41,16 @@ async function getProduct(slug: string): Promise<ProductData | null> {
       .select({
         id: products.id,
         slug: products.slug,
-        name: products.name,
+        title: products.title,
         description: products.description,
         priceCents: products.priceCents,
-        oldPriceCents: products.oldPriceCents,
-        images: products.images,
-        stockQty: products.stockQty,
+        imageUrl: products.imageUrl,
+        stock: products.stock,
         status: products.status,
-        tags: products.tags,
         attributes: products.attributes,
         sellerId: products.sellerId,
         categoryId: products.categoryId,
-        sellerName: sellers.storeName,
+        sellerName: sellers.brandName,
         sellerSlug: sellers.slug,
         categoryName: categories.name,
         categorySlug: categories.slug,
@@ -65,34 +63,32 @@ async function getProduct(slug: string): Promise<ProductData | null> {
 
     if (!row) return null;
 
-    const imagesRaw = row.images as any[];
-    const images = Array.isArray(imagesRaw)
-      ? imagesRaw.map((img: any, idx: number) => ({
-          src: typeof img === "string" ? img : img?.url || img?.src || "/placeholder.svg",
-          alt: typeof img === "string" ? row.name : img?.alt || `${row.name} - imagine ${idx + 1}`,
-        }))
-      : [{ src: "/placeholder.svg", alt: row.name }];
+    const attrs = (row.attributes as any) || {};
+    const oldPriceCents = attrs.oldPriceCents;
+    const images = row.imageUrl 
+      ? [{ src: row.imageUrl, alt: row.title }] 
+      : [{ src: "/placeholder.svg", alt: row.title }];
 
-    const attributesRaw = row.attributes as any;
+    const attributesRaw = attrs.specs || [];
     const attributes = Array.isArray(attributesRaw)
       ? attributesRaw.map((a: any) => ({ label: a.label || a.name || "", value: String(a.value || "") }))
       : [];
 
-    const stockQty = row.stockQty ?? 0;
+    const stockQty = row.stock ?? 0;
     const stockLabel =
       stockQty > 10 ? "În stoc" : stockQty > 0 ? `Doar ${stockQty} în stoc` : "Stoc epuizat";
 
     const badges: string[] = [];
-    if (row.oldPriceCents && row.oldPriceCents > row.priceCents) badges.push("reducere");
+    if (oldPriceCents && oldPriceCents > row.priceCents) badges.push("reducere");
     if (stockQty > 0 && stockQty <= 3) badges.push("stoc redus");
 
     return {
       id: row.id,
       slug: row.slug,
-      title: row.name,
+      title: row.title,
       description: row.description || "",
       priceCents: row.priceCents,
-      oldPriceCents: row.oldPriceCents,
+      oldPriceCents: oldPriceCents,
       images,
       seller: {
         id: row.sellerId,
@@ -111,7 +107,7 @@ async function getProduct(slug: string): Promise<ProductData | null> {
         name: row.categoryName || "Produse",
         slug: row.categorySlug || "",
       },
-      tags: (row.tags as string[]) || [],
+      tags: attrs.tags || [],
     };
   } catch (error) {
     console.error("Error fetching product:", error);
