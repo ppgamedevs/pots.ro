@@ -1,307 +1,373 @@
-"use client";
-
-import { useEffect, useState } from "react";
-import { useParams, useRouter, useSearchParams } from "next/navigation";
-import { generateCategoryLDJSON } from "@/lib/seo/meta-catalog";
-import { CategoryHeader } from "@/components/catalog/CategoryHeader";
-import { FiltersBar } from "@/components/catalog/FiltersBar";
-import { SortDropdown } from "@/components/catalog/SortDropdown";
-import { ProductGrid } from "@/components/catalog/ProductGrid";
-import { Pagination } from "@/components/catalog/Pagination";
-import { CategoryHeaderSkeleton, FiltersBarSkeleton, ProductGridSkeleton } from "@/components/common/Skeletons";
+import { Metadata } from "next";
+import { notFound, redirect } from "next/navigation";
+import { db } from "@/db";
+import { products, categories, sellers } from "@/db/schema/core";
+import { eq, and, sql, count, desc, asc } from "drizzle-orm";
+import { SITE_NAME, SITE_URL } from "@/lib/constants";
+import { PLPClient } from "./client";
 
 // Types
 interface Product {
   id: string;
   slug: string;
   title: string;
-  description: string;
   price: number;
   oldPrice?: number;
-  images: {
-    src: string;
-    alt: string;
-  }[];
-  seller: {
-    name: string;
-    href: string;
-  };
-  stockLabel: string;
-  stock?: number; // Stock quantity
+  images: { src: string; alt: string }[];
+  seller: { name: string };
   badges?: string[];
-  rating?: number;
-  reviewCount?: number;
-  attributes: {
-    label: string;
-    value: string;
-  }[];
-  category: string;
-  tags: string[];
+  stock?: number;
 }
 
 interface Facet {
   key: string;
   label: string;
-  type: 'checkbox' | 'range' | 'select';
-  options: {
-    value: string;
-    label: string;
-    count: number;
-  }[];
+  type: "checkbox" | "range" | "select";
+  options: { value: string; label: string; count: number }[];
 }
 
-interface CategoryResponse {
-  items: Product[];
-  total: number;
-  facets: Facet[];
-  currentPage: number;
-  totalPages: number;
-  redirectTo?: string;
+interface CategoryData {
+  id: string;
+  name: string;
+  slug: string;
+  description: string | null;
+  image: string | null;
+  productCount: number;
 }
 
-const sortOptions = [
-  { label: 'Relevanță', value: 'relevance' },
-  { label: 'Preț crescător', value: 'price_asc' },
-  { label: 'Preț descrescător', value: 'price_desc' },
-  { label: 'Noutăți', value: 'newest' },
-  { label: 'Rating', value: 'rating' }
-];
+const ITEMS_PER_PAGE = 24;
 
-export default function Category() {
-  const params = useParams();
-  const searchParams = useSearchParams();
-  const router = useRouter();
-  const categorySlug = params.slug as string;
-  
-  const [categoryData, setCategoryData] = useState<CategoryResponse | null>(null);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
-  const [selectedFilters, setSelectedFilters] = useState<Record<string, string[]>>({});
-  const [sortBy, setSortBy] = useState('relevance');
+// Category info fallbacks
+const categoryInfo: Record<string, { subtitle: string; image?: string }> = {
+  ghivece: {
+    subtitle: "Descoperă o gamă variată de ghivece pentru plante, de la modele moderne la clasice.",
+    image: "/placeholder.svg",
+  },
+  cutii: {
+    subtitle: "Cutii elegante pentru aranjamente florale, cadouri sau decor.",
+    image: "/images/cutii-elegante-rosii.jpg",
+  },
+  accesorii: {
+    subtitle: "Toate accesoriile necesare pentru grădinărit și aranjamente florale.",
+    image: "/placeholder.svg",
+  },
+  ambalaje: {
+    subtitle: "Ambalaje eco-friendly pentru flori și cadouri.",
+    image: "/placeholder.svg",
+  },
+};
 
-  // Get category info
-  const getCategoryInfo = (slug: string) => {
-    const categories: Record<string, { title: string; subtitle: string; image?: string }> = {
-      'ghivece': {
-        title: 'Ghivece',
-        subtitle: 'Descoperă o gamă variată de ghivece pentru plante, de la modele moderne la clasice, perfecte pentru orice stil de decor.',
-        image: '/placeholder.svg'
-      },
-      'cutii': {
-        title: 'Cutii',
-        subtitle: 'Cutii elegante pentru aranjamente florale, cadouri sau decor. Materiale naturale și designuri rafinate.',
-        image: '/images/cutii-elegante-rosii.jpg'
-      },
-      'accesorii': {
-        title: 'Accesorii',
-        subtitle: 'Toate accesoriile necesare pentru grădinărit și aranjamente florale. Unelte, panglici și multe altele.',
-        image: '/placeholder.svg'
-      },
-      'ambalaje': {
-        title: 'Ambalaje',
-        subtitle: 'Ambalaje eco-friendly pentru flori și cadouri. Materiale reciclabile și designuri moderne.',
-        image: '/placeholder.svg'
-      }
+async function getCategory(slug: string): Promise<CategoryData | null> {
+  try {
+    const [row] = await db
+      .select({
+        id: categories.id,
+        name: categories.name,
+        slug: categories.slug,
+        description: categories.description,
+        image: categories.image,
+      })
+      .from(categories)
+      .where(eq(categories.slug, slug))
+      .limit(1);
+
+    if (!row) return null;
+
+    // Get product count
+    const [countResult] = await db
+      .select({ count: count() })
+      .from(products)
+      .where(and(eq(products.categoryId, row.id), eq(products.status, "active")));
+
+    return {
+      ...row,
+      productCount: countResult?.count || 0,
     };
-    
-    return categories[slug] || {
-      title: slug.charAt(0).toUpperCase() + slug.slice(1),
-      subtitle: 'Descoperă produsele din această categorie'
+  } catch (error) {
+    console.error("Error fetching category:", error);
+    return null;
+  }
+}
+
+async function getCategoryProducts(
+  categoryId: string,
+  page: number,
+  sort: string,
+  filters: Record<string, string[]>
+): Promise<{ items: Product[]; total: number; totalPages: number; facets: Facet[] }> {
+  try {
+    const offset = (page - 1) * ITEMS_PER_PAGE;
+
+    // Build order by
+    let orderBy: any[] = [desc(products.createdAt)];
+    if (sort === "price_asc") orderBy = [asc(products.priceCents)];
+    if (sort === "price_desc") orderBy = [desc(products.priceCents)];
+    if (sort === "newest") orderBy = [desc(products.createdAt)];
+
+    // Build where conditions
+    const conditions = [eq(products.categoryId, categoryId), eq(products.status, "active")];
+
+    // Price filter
+    if (filters.price?.length) {
+      const [minStr, maxStr] = filters.price[0].split("-");
+      const min = parseInt(minStr) * 100;
+      const max = parseInt(maxStr) * 100;
+      if (!isNaN(min)) conditions.push(sql`${products.priceCents} >= ${min}`);
+      if (!isNaN(max)) conditions.push(sql`${products.priceCents} <= ${max}`);
+    }
+
+    // Count total
+    const [countResult] = await db
+      .select({ count: count() })
+      .from(products)
+      .where(and(...conditions));
+    const total = countResult?.count || 0;
+
+    // Get products
+    const rows = await db
+      .select({
+        id: products.id,
+        slug: products.slug,
+        name: products.name,
+        priceCents: products.priceCents,
+        oldPriceCents: products.oldPriceCents,
+        images: products.images,
+        stockQty: products.stockQty,
+        tags: products.tags,
+        sellerName: sellers.storeName,
+      })
+      .from(products)
+      .leftJoin(sellers, eq(products.sellerId, sellers.id))
+      .where(and(...conditions))
+      .orderBy(...orderBy)
+      .limit(ITEMS_PER_PAGE)
+      .offset(offset);
+
+    const items: Product[] = rows.map((row) => {
+      const imagesRaw = row.images as any[];
+      const images = Array.isArray(imagesRaw)
+        ? imagesRaw.map((img: any, idx: number) => ({
+            src: typeof img === "string" ? img : img?.url || img?.src || "/placeholder.svg",
+            alt: typeof img === "string" ? row.name : img?.alt || `${row.name} - ${idx + 1}`,
+          }))
+        : [{ src: "/placeholder.svg", alt: row.name }];
+
+      const badges: string[] = [];
+      if (row.oldPriceCents && row.oldPriceCents > row.priceCents) badges.push("reducere");
+      if (row.stockQty && row.stockQty <= 3 && row.stockQty > 0) badges.push("stoc redus");
+
+      return {
+        id: row.id,
+        slug: row.slug,
+        title: row.name,
+        price: row.priceCents / 100,
+        oldPrice: row.oldPriceCents ? row.oldPriceCents / 100 : undefined,
+        images,
+        seller: { name: row.sellerName || "Vânzător" },
+        badges: badges.length > 0 ? badges : undefined,
+        stock: row.stockQty ?? 10,
+      };
+    });
+
+    // Generate facets
+    const facets: Facet[] = [
+      {
+        key: "price",
+        label: "Preț",
+        type: "range",
+        options: [
+          { value: "0-50", label: "0 - 50 RON", count: 0 },
+          { value: "50-100", label: "50 - 100 RON", count: 0 },
+          { value: "100-200", label: "100 - 200 RON", count: 0 },
+          { value: "200-500", label: "200 - 500 RON", count: 0 },
+        ],
+      },
+    ];
+
+    return {
+      items,
+      total,
+      totalPages: Math.ceil(total / ITEMS_PER_PAGE),
+      facets,
     };
-  };
+  } catch (error) {
+    console.error("Error fetching category products:", error);
+    return { items: [], total: 0, totalPages: 0, facets: [] };
+  }
+}
 
-  // Extract stable values from searchParams to prevent infinite loops
-  // Browser extensions (e.g., SetIcon) can cause DOM mutations that trigger React re-renders,
-  // which creates a new searchParams object reference even if values haven't changed.
-  const pageParam = searchParams.get('page') || '1';
-  const sortParam = searchParams.get('sort') || 'relevance';
-  const filtersParam = searchParams.get('filters') || '{}';
+export async function generateMetadata({
+  params,
+}: {
+  params: Promise<{ slug: string }>;
+}): Promise<Metadata> {
+  const { slug } = await params;
+  const category = await getCategory(slug);
 
-  useEffect(() => {
-    // Guard: Prevent fetch if already loading or if slug is empty
-    if (!categorySlug) return;
-
-    const fetchCategoryData = async () => {
-      try {
-        setLoading(true);
-        
-        setSortBy(sortParam);
-        setSelectedFilters(JSON.parse(filtersParam));
-        
-        const response = await fetch(
-          `/api/catalog/category?slug=${categorySlug}&page=${pageParam}&sort=${sortParam}&filters=${encodeURIComponent(filtersParam)}`
-        );
-        
-        if (!response.ok) {
-          throw new Error('Categoria nu a fost găsită');
-        }
-        
-        const data = (await response.json()) as CategoryResponse;
-
-        if (data?.redirectTo) {
-          const qs = typeof window !== 'undefined' ? window.location.search : '';
-          router.replace(`/c/${data.redirectTo}${qs}`);
-          return;
-        }
-
-        setCategoryData(data);
-      } catch (err) {
-        setError(err instanceof Error ? err.message : 'Eroare la încărcarea categoriei');
-      } finally {
-        setLoading(false);
-      }
+  if (!category) {
+    return {
+      title: "Categorie negăsită",
+      description: "Categoria căutată nu există pe FloristMarket.ro",
     };
-
-    fetchCategoryData();
-    // Dependencies: Use stable primitive values instead of searchParams object
-    // This prevents re-fetching when browser extensions cause DOM mutations
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [categorySlug, pageParam, sortParam, filtersParam]);
-
-  const handleFilterChange = (filters: Record<string, string[]>) => {
-    setSelectedFilters(filters);
-    // Update URL params
-    const newSearchParams = new URLSearchParams(searchParams);
-    newSearchParams.set('filters', JSON.stringify(filters));
-    newSearchParams.set('page', '1'); // Reset to first page
-    window.history.pushState(null, '', `?${newSearchParams.toString()}`);
-  };
-
-  const handleSortChange = (sort: string) => {
-    setSortBy(sort);
-    const newSearchParams = new URLSearchParams(searchParams);
-    newSearchParams.set('sort', sort);
-    newSearchParams.set('page', '1'); // Reset to first page
-    window.history.pushState(null, '', `?${newSearchParams.toString()}`);
-  };
-
-  const handlePageChange = (page: number) => {
-    const newSearchParams = new URLSearchParams(searchParams);
-    newSearchParams.set('page', page.toString());
-    window.history.pushState(null, '', `?${newSearchParams.toString()}`);
-  };
-
-
-  const categoryInfo = getCategoryInfo(categorySlug);
-
-  if (loading) {
-    return (
-      <main className="min-h-screen bg-bg">
-        <CategoryHeaderSkeleton />
-        <FiltersBarSkeleton />
-        <div className="max-w-7xl mx-auto px-4 py-8">
-          <ProductGridSkeleton count={12} />
-        </div>
-      </main>
-    );
   }
 
-  if (error || !categoryData) {
-    return (
-      <main className="min-h-screen bg-bg flex items-center justify-center">
-        <div className="text-center">
-          <h1 className="text-2xl font-semibold text-ink mb-2">Categoria nu a fost găsită</h1>
-          <p className="text-muted mb-4">Categoria pe care o căutați nu există.</p>
-          <a href="/" className="text-primary hover:text-primary/80">
-            Înapoi la homepage
-          </a>
-        </div>
-      </main>
-    );
+  const info = categoryInfo[slug] || { subtitle: `Produse din categoria ${category.name}` };
+  const title = `${category.name} | ${SITE_NAME} - Marketplace pentru Floriști`;
+  const description =
+    category.description ||
+    info.subtitle ||
+    `Descoperă ${category.productCount} produse ${category.name.toLowerCase()} pe ${SITE_NAME}. Livrare rapidă în toată România.`;
+  const canonical = `${SITE_URL}/c/${category.slug}`;
+
+  return {
+    title,
+    description,
+    alternates: {
+      canonical,
+    },
+    openGraph: {
+      title,
+      description,
+      type: "website",
+      siteName: SITE_NAME,
+      url: canonical,
+      locale: "ro_RO",
+      images: [
+        {
+          url: info.image ? `${SITE_URL}${info.image}` : `${SITE_URL}/og-category-default.jpg`,
+          width: 1200,
+          height: 630,
+          alt: category.name,
+        },
+      ],
+    },
+    twitter: {
+      card: "summary_large_image",
+      title,
+      description,
+    },
+  };
+}
+
+function generateCollectionSchema(category: CategoryData, products: Product[]) {
+  return {
+    "@context": "https://schema.org",
+    "@type": "CollectionPage",
+    name: category.name,
+    description: category.description || categoryInfo[category.slug]?.subtitle,
+    url: `${SITE_URL}/c/${category.slug}`,
+    isPartOf: {
+      "@type": "WebSite",
+      name: SITE_NAME,
+      url: SITE_URL,
+    },
+    mainEntity: {
+      "@type": "ItemList",
+      numberOfItems: category.productCount,
+      itemListElement: products.slice(0, 10).map((product, index) => ({
+        "@type": "ListItem",
+        position: index + 1,
+        item: {
+          "@type": "Product",
+          name: product.title,
+          url: `${SITE_URL}/p/${product.slug}`,
+          image: product.images[0]?.src,
+          offers: {
+            "@type": "Offer",
+            price: product.price.toFixed(2),
+            priceCurrency: "RON",
+            availability:
+              (product.stock ?? 10) > 0
+                ? "https://schema.org/InStock"
+                : "https://schema.org/OutOfStock",
+          },
+        },
+      })),
+    },
+  };
+}
+
+function generateBreadcrumbSchema(category: CategoryData) {
+  return {
+    "@context": "https://schema.org",
+    "@type": "BreadcrumbList",
+    itemListElement: [
+      {
+        "@type": "ListItem",
+        position: 1,
+        name: "Acasă",
+        item: SITE_URL,
+      },
+      {
+        "@type": "ListItem",
+        position: 2,
+        name: category.name,
+        item: `${SITE_URL}/c/${category.slug}`,
+      },
+    ],
+  };
+}
+
+export default async function CategoryPage({
+  params,
+  searchParams,
+}: {
+  params: Promise<{ slug: string }>;
+  searchParams: Promise<{ page?: string; sort?: string; filters?: string }>;
+}) {
+  const { slug } = await params;
+  const { page: pageStr, sort, filters: filtersStr } = await searchParams;
+
+  const category = await getCategory(slug);
+
+  if (!category) {
+    notFound();
   }
+
+  const page = parseInt(pageStr || "1", 10);
+  const sortBy = sort || "relevance";
+  let filters: Record<string, string[]> = {};
+  try {
+    filters = filtersStr ? JSON.parse(filtersStr) : {};
+  } catch {
+    filters = {};
+  }
+
+  const { items, total, totalPages, facets } = await getCategoryProducts(
+    category.id,
+    page,
+    sortBy,
+    filters
+  );
+
+  const info = categoryInfo[slug] || { subtitle: `Produse din categoria ${category.name}` };
+
+  const collectionSchema = generateCollectionSchema(category, items);
+  const breadcrumbSchema = generateBreadcrumbSchema(category);
 
   return (
     <>
-      {/* LD+JSON */}
       <script
         type="application/ld+json"
-        dangerouslySetInnerHTML={{
-          __html: JSON.stringify(generateCategoryLDJSON(categoryInfo, categoryData.total))
-        }}
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(collectionSchema) }}
       />
-      
-      <main className="min-h-screen bg-bg">
-        {/* Category Header */}
-        <CategoryHeader
-          title={categoryInfo.title}
-          subtitle={categoryInfo.subtitle}
-          image={categoryInfo.image ? { src: categoryInfo.image, alt: categoryInfo.title } : undefined}
-          productCount={categoryData.total}
-        />
-
-        {/* Filters Bar */}
-        <FiltersBar
-          facets={categoryData.facets}
-          selected={selectedFilters}
-          onChange={handleFilterChange}
-        />
-
-        {/* Controls */}
-        <div className="bg-bg border-b border-line">
-          <div className="max-w-7xl mx-auto px-4 py-4">
-            <div className="flex flex-col sm:flex-row items-center justify-between gap-4">
-              {/* Results Count */}
-              <div className="text-sm text-muted">
-                {categoryData.total} produse găsite
-              </div>
-
-              {/* Sort Dropdown */}
-              <SortDropdown
-                value={sortBy}
-                onChange={handleSortChange}
-                options={sortOptions}
-              />
-            </div>
-          </div>
-        </div>
-
-        {/* Products Grid */}
-        <div className="max-w-7xl mx-auto px-4 py-8">
-          {categoryData.items.length > 0 ? (
-            <>
-              <ProductGrid items={categoryData.items.map(item => ({
-                id: item.id,
-                image: item.images[0],
-                title: item.title,
-                seller: item.seller.name,
-                price: item.price,
-                oldPrice: item.oldPrice,
-                badge: item.badges?.[0] as 'nou' | 'reducere' | 'stoc redus' | undefined,
-                href: `/p/${item.slug}`,
-                stockQty: item.stock ?? 10 // Use real stock or default to 10
-              }))} />
-              
-              {/* Pagination */}
-              <Pagination
-                page={categoryData.currentPage}
-                totalPages={categoryData.totalPages}
-                onPageChange={handlePageChange}
-                totalItems={categoryData.total}
-              />
-            </>
-          ) : (
-            <div className="text-center py-12">
-              <h3 className="text-lg font-semibold text-ink mb-2">
-                Nu am găsit rezultate
-              </h3>
-              <p className="text-muted mb-4">
-                Încearcă să ajustezi filtrele sau să cauți altceva.
-              </p>
-              <button
-                onClick={() => {
-                  setSelectedFilters({});
-                  const newSearchParams = new URLSearchParams(searchParams);
-                  newSearchParams.delete('filters');
-                  window.history.pushState(null, '', `?${newSearchParams.toString()}`);
-                }}
-                className="text-primary hover:text-primary/80"
-              >
-                Șterge toate filtrele
-              </button>
-            </div>
-          )}
-        </div>
-      </main>
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(breadcrumbSchema) }}
+      />
+      <PLPClient
+        category={{
+          title: category.name,
+          subtitle: category.description || info.subtitle,
+          image: info.image,
+          slug: category.slug,
+        }}
+        initialItems={items}
+        totalProducts={total}
+        facets={facets}
+        currentPage={page}
+        totalPages={totalPages}
+      />
     </>
   );
 }

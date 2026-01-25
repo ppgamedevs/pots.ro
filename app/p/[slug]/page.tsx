@@ -1,300 +1,322 @@
-"use client";
-
-import { useEffect, useState } from "react";
-import { useParams } from "next/navigation";
-import { useToast } from "@/lib/hooks/use-toast";
-import { mutate as globalMutate } from "swr";
-import { generateProductLDJSON } from "@/lib/seo/meta-catalog";
-import { PDPGallery } from "@/components/product/PDPGallery";
-import { PDPInfo } from "@/components/product/PDPInfo";
-import { PDPActions } from "@/components/product/PDPActions";
-import { PDPSpecs } from "@/components/product/PDPSpecs";
-import { PDPShipping } from "@/components/product/PDPShipping";
-import { PDPStickyBar } from "@/components/product/PDPStickyBar";
-import { ProductGrid } from "@/components/catalog/ProductGrid";
-import { PDPGallerySkeleton, PDPInfoSkeleton, PDPActionsSkeleton } from "@/components/common/Skeletons";
+import { Metadata } from "next";
+import { notFound } from "next/navigation";
+import { db } from "@/db";
+import { products, sellers, categories } from "@/db/schema/core";
+import { eq, and } from "drizzle-orm";
+import { SITE_NAME, SITE_URL } from "@/lib/constants";
+import { PDPClient } from "./client";
 
 // Types
-interface Product {
+interface ProductData {
   id: string;
   slug: string;
   title: string;
   description: string;
-  price: number;
-  oldPrice?: number;
-  images: {
-    src: string;
-    alt: string;
-  }[];
+  priceCents: number;
+  oldPriceCents: number | null;
+  images: { src: string; alt: string }[];
   seller: {
+    id: string;
     name: string;
+    slug: string;
     href: string;
   };
+  stockQty: number;
   stockLabel: string;
-  badges?: string[];
-  rating?: number;
-  reviewCount?: number;
-  attributes: {
-    label: string;
-    value: string;
-  }[];
-  category: string;
+  badges: string[];
+  rating: number | null;
+  reviewCount: number;
+  attributes: { label: string; value: string }[];
+  category: {
+    id: string;
+    name: string;
+    slug: string;
+  };
   tags: string[];
 }
 
-interface ProductResponse {
-  product: Product;
-  similar: Product[];
+async function getProduct(slug: string): Promise<ProductData | null> {
+  try {
+    const [row] = await db
+      .select({
+        id: products.id,
+        slug: products.slug,
+        name: products.name,
+        description: products.description,
+        priceCents: products.priceCents,
+        oldPriceCents: products.oldPriceCents,
+        images: products.images,
+        stockQty: products.stockQty,
+        status: products.status,
+        tags: products.tags,
+        attributes: products.attributes,
+        sellerId: products.sellerId,
+        categoryId: products.categoryId,
+        sellerName: sellers.storeName,
+        sellerSlug: sellers.slug,
+        categoryName: categories.name,
+        categorySlug: categories.slug,
+      })
+      .from(products)
+      .leftJoin(sellers, eq(products.sellerId, sellers.id))
+      .leftJoin(categories, eq(products.categoryId, categories.id))
+      .where(and(eq(products.slug, slug), eq(products.status, "active")))
+      .limit(1);
+
+    if (!row) return null;
+
+    const imagesRaw = row.images as any[];
+    const images = Array.isArray(imagesRaw)
+      ? imagesRaw.map((img: any, idx: number) => ({
+          src: typeof img === "string" ? img : img?.url || img?.src || "/placeholder.svg",
+          alt: typeof img === "string" ? row.name : img?.alt || `${row.name} - imagine ${idx + 1}`,
+        }))
+      : [{ src: "/placeholder.svg", alt: row.name }];
+
+    const attributesRaw = row.attributes as any;
+    const attributes = Array.isArray(attributesRaw)
+      ? attributesRaw.map((a: any) => ({ label: a.label || a.name || "", value: String(a.value || "") }))
+      : [];
+
+    const stockQty = row.stockQty ?? 0;
+    const stockLabel =
+      stockQty > 10 ? "În stoc" : stockQty > 0 ? `Doar ${stockQty} în stoc` : "Stoc epuizat";
+
+    const badges: string[] = [];
+    if (row.oldPriceCents && row.oldPriceCents > row.priceCents) badges.push("reducere");
+    if (stockQty > 0 && stockQty <= 3) badges.push("stoc redus");
+
+    return {
+      id: row.id,
+      slug: row.slug,
+      title: row.name,
+      description: row.description || "",
+      priceCents: row.priceCents,
+      oldPriceCents: row.oldPriceCents,
+      images,
+      seller: {
+        id: row.sellerId,
+        name: row.sellerName || "Vânzător",
+        slug: row.sellerSlug || "",
+        href: `/s/${row.sellerSlug || ""}`,
+      },
+      stockQty,
+      stockLabel,
+      badges,
+      rating: null,
+      reviewCount: 0,
+      attributes,
+      category: {
+        id: row.categoryId || "",
+        name: row.categoryName || "Produse",
+        slug: row.categorySlug || "",
+      },
+      tags: (row.tags as string[]) || [],
+    };
+  } catch (error) {
+    console.error("Error fetching product:", error);
+    return null;
+  }
 }
 
-export default function PDP() {
-  const params = useParams();
-  const slug = params.slug as string;
-  const { toast } = useToast();
-  
-  const [productData, setProductData] = useState<ProductResponse | null>(null);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
-  const [freeShippingThreshold, setFreeShippingThreshold] = useState(200);
+export async function generateMetadata({
+  params,
+}: {
+  params: Promise<{ slug: string }>;
+}): Promise<Metadata> {
+  const { slug } = await params;
+  const product = await getProduct(slug);
 
-  useEffect(() => {
-    let cancelled = false;
-
-    const fetchShippingSettings = async () => {
-      try {
-        const res = await fetch('/api/settings/shipping-fee', { cache: 'no-store' });
-        if (!res.ok) return;
-        const data = await res.json();
-        const threshold = Number(data?.freeShippingThresholdRON);
-        if (!cancelled && Number.isFinite(threshold)) {
-          setFreeShippingThreshold(threshold);
-        }
-      } catch {
-        // non-blocking
-      }
+  if (!product) {
+    return {
+      title: "Produs negăsit",
+      description: "Produsul căutat nu a fost găsit pe FloristMarket.ro",
     };
+  }
 
-    fetchShippingSettings();
-    return () => {
-      cancelled = true;
-    };
-  }, []);
+  const price = (product.priceCents / 100).toFixed(2);
+  const title = `${product.title} | ${product.seller.name} | ${SITE_NAME}`;
+  const description =
+    product.description.length > 155
+      ? product.description.substring(0, 152) + "..."
+      : product.description || `${product.title} disponibil pe ${SITE_NAME}. Preț: ${price} RON. Livrare rapidă în toată România.`;
+  const canonical = `${SITE_URL}/p/${product.slug}`;
+  const ogImage = product.images[0]?.src || "/og-product-default.jpg";
 
-  useEffect(() => {
-    // Guard: Prevent fetch if slug is empty
-    if (!slug) return;
-
-    let isMounted = true; // Track if component is still mounted
-    let abortController: AbortController | null = null;
-
-    const fetchProduct = async () => {
-      try {
-        setLoading(true);
-        setError(null);
-        
-        // Create abort controller to cancel request if component unmounts
-        abortController = new AbortController();
-        
-        const response = await fetch(`/api/catalog/product?slug=${slug}`, {
-          signal: abortController.signal,
-          cache: 'no-store',
-        });
-        
-        if (!isMounted) return; // Don't update state if unmounted
-        
-        if (!response.ok) {
-          throw new Error('Produsul nu a fost găsit');
-        }
-        
-        const data = await response.json();
-        if (isMounted) {
-          setProductData(data);
-        }
-      } catch (err) {
-        // Ignore abort errors (component unmounted or new request started)
-        if (err instanceof Error && err.name === 'AbortError') {
-          return;
-        }
-        if (isMounted) {
-          setError(err instanceof Error ? err.message : 'Eroare la încărcarea produsului');
-        }
-      } finally {
-        if (isMounted) {
-          setLoading(false);
-        }
-      }
-    };
-
-    fetchProduct();
-
-    // Cleanup: Cancel request and mark as unmounted
-    return () => {
-      isMounted = false;
-      if (abortController) {
-        abortController.abort();
-      }
-    };
-  }, [slug]); // Only re-fetch when slug actually changes
-
-  const handleAddToCart = async (quantity: number) => {
-    if (!productData?.product) return;
-
-    try {
-      const response = await fetch('/api/cart/add', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
+  return {
+    title,
+    description,
+    alternates: {
+      canonical,
+    },
+    openGraph: {
+      title,
+      description,
+      type: "website",
+      siteName: SITE_NAME,
+      url: canonical,
+      locale: "ro_RO",
+      images: [
+        {
+          url: ogImage.startsWith("http") ? ogImage : `${SITE_URL}${ogImage}`,
+          width: 1200,
+          height: 630,
+          alt: product.title,
         },
-        credentials: 'include',
-        body: JSON.stringify({
-          product_id: productData.product.id,
-          qty: quantity
-        }),
-      });
-
-      if (!response.ok) {
-        const error = await response.json().catch(() => ({ error: 'Unknown error' }));
-        console.error('Add to cart error:', error);
-        toast(error.error || "Nu s-a putut adăuga produsul în coș.", "error");
-        return;
-      }
-
-      const result = await response.json();
-      console.log('Add to cart success:', result);
-      
-      // Fetch fresh cart data and update all subscribers globally
-      const freshCart = await fetch('/api/cart', { 
-        credentials: 'include', 
-        cache: 'no-store',
-        headers: { 'Cache-Control': 'no-cache' }
-      }).then(res => res.json());
-      await globalMutate('/api/cart', freshCart, false);
-      
-      toast(`Produsul a fost adăugat în coș (${quantity} bucăți).`, "success");
-    } catch (error) {
-      console.error('Add to cart exception:', error);
-      toast("Nu s-a putut adăuga produsul în coș.", "error");
-    }
+      ],
+    },
+    twitter: {
+      card: "summary_large_image",
+      title,
+      description,
+      images: [ogImage.startsWith("http") ? ogImage : `${SITE_URL}${ogImage}`],
+    },
+    other: {
+      "product:price:amount": price,
+      "product:price:currency": "RON",
+      "product:brand": product.seller.name,
+      "product:category": product.category.name,
+    },
   };
+}
 
+function generateProductSchema(product: ProductData) {
+  const price = product.priceCents / 100;
+  const availability =
+    product.stockQty > 0 ? "https://schema.org/InStock" : "https://schema.org/OutOfStock";
 
-  if (loading) {
-    return (
-      <main className="min-h-screen bg-bg">
-        <div className="max-w-7xl mx-auto px-4 py-8">
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-            <PDPGallerySkeleton />
-            <div className="space-y-6">
-              <PDPInfoSkeleton />
-              <PDPActionsSkeleton />
-            </div>
-          </div>
-        </div>
-      </main>
-    );
+  return {
+    "@context": "https://schema.org",
+    "@type": "Product",
+    name: product.title,
+    description: product.description,
+    image: product.images.map((img) =>
+      img.src.startsWith("http") ? img.src : `${SITE_URL}${img.src}`
+    ),
+    sku: product.id,
+    brand: {
+      "@type": "Brand",
+      name: product.seller.name,
+    },
+    offers: {
+      "@type": "Offer",
+      url: `${SITE_URL}/p/${product.slug}`,
+      priceCurrency: "RON",
+      price: price.toFixed(2),
+      availability,
+      seller: {
+        "@type": "Organization",
+        name: product.seller.name,
+        url: `${SITE_URL}/s/${product.seller.slug}`,
+      },
+      shippingDetails: {
+        "@type": "OfferShippingDetails",
+        shippingDestination: {
+          "@type": "DefinedRegion",
+          addressCountry: "RO",
+        },
+        deliveryTime: {
+          "@type": "ShippingDeliveryTime",
+          handlingTime: {
+            "@type": "QuantitativeValue",
+            minValue: 1,
+            maxValue: 2,
+            unitCode: "DAY",
+          },
+          transitTime: {
+            "@type": "QuantitativeValue",
+            minValue: 1,
+            maxValue: 3,
+            unitCode: "DAY",
+          },
+        },
+      },
+    },
+    category: product.category.name,
+    additionalProperty: product.attributes.map((attr) => ({
+      "@type": "PropertyValue",
+      name: attr.label,
+      value: attr.value,
+    })),
+  };
+}
+
+function generateBreadcrumbSchema(product: ProductData) {
+  return {
+    "@context": "https://schema.org",
+    "@type": "BreadcrumbList",
+    itemListElement: [
+      {
+        "@type": "ListItem",
+        position: 1,
+        name: "Acasă",
+        item: SITE_URL,
+      },
+      {
+        "@type": "ListItem",
+        position: 2,
+        name: product.category.name,
+        item: `${SITE_URL}/c/${product.category.slug}`,
+      },
+      {
+        "@type": "ListItem",
+        position: 3,
+        name: product.title,
+        item: `${SITE_URL}/p/${product.slug}`,
+      },
+    ],
+  };
+}
+
+export default async function ProductPage({
+  params,
+}: {
+  params: Promise<{ slug: string }>;
+}) {
+  const { slug } = await params;
+  const product = await getProduct(slug);
+
+  if (!product) {
+    notFound();
   }
 
-  if (error || !productData) {
-    return (
-      <main className="min-h-screen bg-bg flex items-center justify-center">
-        <div className="text-center">
-          <h1 className="text-2xl font-semibold text-ink mb-2">Produsul nu a fost găsit</h1>
-          <p className="text-muted mb-4">Produsul pe care îl căutați nu există sau a fost eliminat.</p>
-          <a href="/" className="text-primary hover:text-primary/80">
-            Înapoi la homepage
-          </a>
-        </div>
-      </main>
-    );
-  }
+  const productSchema = generateProductSchema(product);
+  const breadcrumbSchema = generateBreadcrumbSchema(product);
 
-  const { product, similar } = productData;
+  // Transform to client format
+  const clientProduct = {
+    id: product.id,
+    slug: product.slug,
+    title: product.title,
+    description: product.description,
+    price: product.priceCents / 100,
+    oldPrice: product.oldPriceCents ? product.oldPriceCents / 100 : undefined,
+    images: product.images,
+    seller: {
+      name: product.seller.name,
+      href: product.seller.href,
+    },
+    stockLabel: product.stockLabel,
+    stockQty: product.stockQty,
+    badges: product.badges,
+    rating: product.rating ?? undefined,
+    reviewCount: product.reviewCount,
+    attributes: product.attributes,
+    category: product.category.name,
+    tags: product.tags,
+  };
 
   return (
     <>
-      {/* LD+JSON */}
       <script
         type="application/ld+json"
-        dangerouslySetInnerHTML={{
-          __html: JSON.stringify(generateProductLDJSON(product))
-        }}
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(productSchema) }}
       />
-      
-      <main className="min-h-screen bg-bg">
-        <div className="max-w-7xl mx-auto px-4 py-8">
-          {/* Main Product Section */}
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 mb-12">
-            {/* Left Column - Gallery */}
-            <div>
-              <PDPGallery 
-                images={product.images}
-                alt={product.title}
-              />
-            </div>
-
-            {/* Right Column - Info & Actions */}
-            <div className="space-y-6">
-              <PDPInfo
-                title={product.title}
-                seller={product.seller}
-                price={product.price}
-                oldPrice={product.oldPrice}
-                stockLabel={product.stockLabel}
-                badges={product.badges}
-                rating={product.rating}
-                reviewCount={product.reviewCount}
-              />
-
-              <PDPActions
-                quantity={1}
-                onAdd={handleAddToCart}
-                maxQuantity={10}
-              />
-
-              <PDPShipping
-                carriers={["Cargus"]}
-                eta="1-3 zile"
-                freeShippingThreshold={freeShippingThreshold}
-                currentPrice={product.price}
-              />
-            </div>
-          </div>
-
-          {/* Specifications */}
-          <div className="mb-12">
-            <PDPSpecs
-              description={product.description}
-              attributes={product.attributes}
-            />
-          </div>
-
-          {/* Similar Products */}
-          {similar.length > 0 && (
-            <div>
-              <h2 className="text-2xl font-semibold text-ink mb-6">Produse similare</h2>
-              <ProductGrid items={similar.map(item => ({
-                id: item.id,
-                image: item.images[0],
-                title: item.title,
-                seller: item.seller.name,
-                price: item.price,
-                oldPrice: item.oldPrice,
-                badge: item.badges?.[0] as 'nou' | 'reducere' | 'stoc redus' | undefined,
-                href: `/p/${item.slug}`
-              }))} />
-            </div>
-          )}
-        </div>
-      </main>
-
-      {/* Sticky Bar */}
-      <PDPStickyBar
-        price={product.price}
-        oldPrice={product.oldPrice}
-        cta="Adaugă în coș"
-        onClick={() => handleAddToCart(1)}
-        stockLabel={product.stockLabel}
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(breadcrumbSchema) }}
       />
+      <PDPClient product={clientProduct} />
     </>
   );
 }

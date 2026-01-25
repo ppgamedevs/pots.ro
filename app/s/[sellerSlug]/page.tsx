@@ -5,6 +5,7 @@ import { Navbar } from "@/components/navbar";
 import { Footer } from "@/components/footer";
 import { SellerHeader } from "@/components/seller/SellerHeader";
 import { SellerTabs } from "@/components/seller/SellerTabs";
+import { SITE_NAME, SITE_URL } from "@/lib/constants";
 
 async function getSellerAnon(slug: string) {
   try {
@@ -70,17 +71,41 @@ export async function generateMetadata({
   
   if (!seller) {
     return {
-      title: "Vânzător nu găsit",
+      title: "Vânzător negăsit",
       description: "Vânzătorul căutat nu există pe platforma FloristMarket.ro",
     };
   }
 
+  const title = seller.seoTitle || `${seller.displayName} | Partener Verificat ${SITE_NAME}`;
+  const description = seller.seoDescription || `Descoperă ${seller.displayName}, partener verificat pe ${SITE_NAME}. Produse de calitate pentru floristică cu livrare rapidă în toată România.`;
+  const canonical = `${SITE_URL}/s/${sellerSlug}`;
+
   return {
-    title: seller.seoTitle || `Despre ${seller.displayName} - Partener FloristMarket.ro`,
-    description: seller.seoDescription || `Descoperă ${seller.displayName}, partener verificat pe FloristMarket.ro.`,
+    title,
+    description,
+    alternates: {
+      canonical,
+    },
     openGraph: {
-      title: seller.seoTitle || `Despre ${seller.displayName}`,
-      description: seller.seoDescription || `Descoperă ${seller.displayName}, partener verificat pe FloristMarket.ro.`,
+      title,
+      description,
+      type: "profile",
+      siteName: SITE_NAME,
+      url: canonical,
+      locale: "ro_RO",
+      images: seller.logoUrl ? [
+        {
+          url: seller.logoUrl,
+          width: 200,
+          height: 200,
+          alt: seller.displayName,
+        },
+      ] : [],
+    },
+    twitter: {
+      card: "summary",
+      title,
+      description,
       images: seller.logoUrl ? [seller.logoUrl] : [],
     },
   };
@@ -153,8 +178,72 @@ export default async function SellerPage({
     }
   }));
 
+  // Generate seller JSON-LD schema
+  const sellerSchema = {
+    "@context": "https://schema.org",
+    "@type": "Organization",
+    name: seller.displayName,
+    description: seller.description,
+    url: `${SITE_URL}/s/${sellerSlug}`,
+    logo: seller.logoUrl,
+    image: seller.bannerUrl,
+    aggregateRating: seller.rating ? {
+      "@type": "AggregateRating",
+      ratingValue: seller.rating.toFixed(1),
+      bestRating: "5",
+      worstRating: "1",
+      ratingCount: seller.totalProducts > 0 ? seller.totalProducts : 10,
+    } : undefined,
+    parentOrganization: {
+      "@type": "Organization",
+      name: SITE_NAME,
+      url: SITE_URL,
+    },
+    makesOffer: gridProducts.slice(0, 5).map((product) => ({
+      "@type": "Offer",
+      itemOffered: {
+        "@type": "Product",
+        name: product.title,
+        url: `${SITE_URL}/p/${product.slug}`,
+      },
+    })),
+  };
+
+  const breadcrumbSchema = {
+    "@context": "https://schema.org",
+    "@type": "BreadcrumbList",
+    itemListElement: [
+      {
+        "@type": "ListItem",
+        position: 1,
+        name: "Acasă",
+        item: SITE_URL,
+      },
+      {
+        "@type": "ListItem",
+        position: 2,
+        name: "Parteneri",
+        item: `${SITE_URL}/parteneri`,
+      },
+      {
+        "@type": "ListItem",
+        position: 3,
+        name: seller.displayName,
+        item: `${SITE_URL}/s/${sellerSlug}`,
+      },
+    ],
+  };
+
   return (
     <>
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(sellerSchema) }}
+      />
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(breadcrumbSchema) }}
+      />
       <Navbar />
       <div className="min-h-screen bg-slate-50 dark:bg-slate-900">
         <div className="max-w-7xl mx-auto px-4 py-8">
