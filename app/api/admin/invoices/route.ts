@@ -109,7 +109,7 @@ export async function GET(req: NextRequest) {
         voidReason: invoices.voidReason,
         sellerInvoiceNumber: invoices.sellerInvoiceNumber,
         sellerId: orders.sellerId,
-        sellerName: sellers.storeName,
+        sellerName: sellers.brandName,
         createdAt: invoices.createdAt,
         updatedAt: invoices.updatedAt,
       })
