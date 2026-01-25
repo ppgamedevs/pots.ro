@@ -98,6 +98,10 @@ export async function POST(request: NextRequest) {
       threadId = newThread.id;
     }
 
+    if (!threadId) {
+      throw new Error('Failed to ensure support thread for webchat session');
+    }
+
     // Store customer message in thread transcript (idempotent if client_message_id is provided)
     const customerInsert = clientMessageId
       ? db

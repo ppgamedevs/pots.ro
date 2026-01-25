@@ -17,7 +17,7 @@ export async function POST(request: NextRequest, context: Params) {
     if (!user) {
       return NextResponse.json({ error: "Authentication required" }, { status: 401 });
     }
-    if (!(["admin", "support"] as const).includes(user.role)) {
+    if (user.role !== "admin" && user.role !== "support") {
       return NextResponse.json({ error: "Forbidden" }, { status: 403 });
     }
 
