@@ -100,7 +100,7 @@ export async function POST(
         email: buyer?.email,
         address: address,
       },
-      items: items.map(item => ({
+      items: items.map((item: typeof items[number]) => ({
         name: item.name || 'Produs',
         qty: item.qty,
         unitPrice: item.unitPriceCents / 100,
