@@ -144,7 +144,7 @@ async function getCategoryProducts(
       .limit(ITEMS_PER_PAGE)
       .offset(offset);
 
-    const items: Product[] = rows.map((row) => {
+    const items: Product[] = rows.map((row: typeof rows[number]) => {
       const attrs = (row.attributes as any) || {};
       const oldPriceCents = attrs.oldPriceCents;
       
