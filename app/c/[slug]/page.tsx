@@ -130,13 +130,13 @@ async function getCategoryProducts(
       .select({
         id: products.id,
         slug: products.slug,
-        name: products.name,
+        title: products.title,
         priceCents: products.priceCents,
         oldPriceCents: products.oldPriceCents,
         images: products.images,
         stockQty: products.stockQty,
         tags: products.tags,
-        sellerName: sellers.storeName,
+        sellerName: sellers.brandName,
       })
       .from(products)
       .leftJoin(sellers, eq(products.sellerId, sellers.id))
@@ -150,9 +150,9 @@ async function getCategoryProducts(
       const images = Array.isArray(imagesRaw)
         ? imagesRaw.map((img: any, idx: number) => ({
             src: typeof img === "string" ? img : img?.url || img?.src || "/placeholder.svg",
-            alt: typeof img === "string" ? row.name : img?.alt || `${row.name} - ${idx + 1}`,
+            alt: typeof img === "string" ? row.title : img?.alt || `${row.title} - ${idx + 1}`,
           }))
-        : [{ src: "/placeholder.svg", alt: row.name }];
+        : [{ src: "/placeholder.svg", alt: row.title }];
 
       const badges: string[] = [];
       if (row.oldPriceCents && row.oldPriceCents > row.priceCents) badges.push("reducere");
@@ -161,7 +161,7 @@ async function getCategoryProducts(
       return {
         id: row.id,
         slug: row.slug,
-        title: row.name,
+        title: row.title,
         price: row.priceCents / 100,
         oldPrice: row.oldPriceCents ? row.oldPriceCents / 100 : undefined,
         images,
