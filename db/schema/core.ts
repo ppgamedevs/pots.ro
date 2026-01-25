@@ -1718,6 +1718,23 @@ export const supportThreadTags = pgTable("support_thread_tags", {
   supportThreadTagsUnique: uniqueIndex("support_thread_tags_unique").on(table.threadId, table.tag),
 }));
 
+// Messages for unified support threads (used for chatbot/whatsapp threads)
+export const supportThreadMessages = pgTable(
+  "support_thread_messages",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    threadId: uuid("thread_id").notNull().references(() => supportThreads.id, { onDelete: "cascade" }),
+    authorId: uuid("author_id").references(() => users.id, { onDelete: "set null" }),
+    authorRole: text("author_role").notNull(), // 'customer' | 'support' | 'bot' | 'system'
+    body: text("body").notNull(),
+    createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
+  },
+  (table) => ({
+    supportThreadMessagesThreadIdx: index("support_thread_messages_thread_idx").on(table.threadId),
+    supportThreadMessagesCreatedIdx: index("support_thread_messages_created_idx").on(table.threadId, table.createdAt),
+  })
+);
+
 // Message moderation overlay table (keeps original message intact)
 export const messageModeration = pgTable("message_moderation", {
   id: uuid("id").primaryKey().defaultRandom(),

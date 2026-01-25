@@ -9,13 +9,22 @@ import { cn } from '@/lib/utils';
 
 const SUPPORT_AGENT_NAME = 'Elena S.';
 const SUPPORT_AGENT_INITIALS = 'ES';
+const BOT_NAME = 'Chatbot virtual';
+const BOT_INITIALS = 'AI';
 const SUPPORT_HOURS_LABEL = '09:00–18:00';
+const SUPPORT_TIMEZONE = 'Europe/Bucharest';
 const SUPPORT_START_HOUR = 9;
 const SUPPORT_END_HOUR = 18;
 
-function isWithinSupportHours(now: Date): boolean {
-  const h = now.getHours();
-  const m = now.getMinutes();
+function isWithinSupportHoursRo(now: Date): boolean {
+  const parts = new Intl.DateTimeFormat('en-GB', {
+    timeZone: SUPPORT_TIMEZONE,
+    hour: '2-digit',
+    minute: '2-digit',
+    hour12: false,
+  }).formatToParts(now);
+  const h = Number(parts.find((p) => p.type === 'hour')?.value ?? '0');
+  const m = Number(parts.find((p) => p.type === 'minute')?.value ?? '0');
   const afterStart = h > SUPPORT_START_HOUR || (h === SUPPORT_START_HOUR && m >= 0);
   const beforeEnd = h < SUPPORT_END_HOUR || (h === SUPPORT_END_HOUR && m === 0);
   return afterStart && beforeEnd;
@@ -43,6 +52,15 @@ interface ChatWidgetProps {
   className?: string;
 }
 
+function newUuid(): string {
+  try {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    return (globalThis as any).crypto?.randomUUID?.() ?? `msg_${Date.now()}_${Math.random().toString(36).slice(2)}`;
+  } catch {
+    return `msg_${Date.now()}_${Math.random().toString(36).slice(2)}`;
+  }
+}
+
 // Global function to open chat
 declare global {
   interface Window {
@@ -55,10 +73,21 @@ export function ChatWidget({ className }: ChatWidgetProps) {
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [inputValue, setInputValue] = useState('');
   const [isLoading, setIsLoading] = useState(false);
-  const [sessionId] = useState(() => `session_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`);
+  const [sessionId] = useState(() => {
+    try {
+      // Prefer UUID for server-side correlation (queue/thread)
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      return (globalThis as any).crypto?.randomUUID?.() ?? `session_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+    } catch {
+      return `session_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+    }
+  });
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
   const [now, setNow] = useState(() => new Date());
+  const [mode, setMode] = useState<'human' | 'bot'>('bot');
+  const [noticeShown, setNoticeShown] = useState(false);
+  const [humanAckShown, setHumanAckShown] = useState(false);
 
   // Auto-scroll to bottom when new messages arrive
   useEffect(() => {
@@ -87,14 +116,68 @@ export function ChatWidget({ className }: ChatWidgetProps) {
     }
   }, [isOpen]);
 
+  // Poll for new messages while chat is open (agent replies)
+  useEffect(() => {
+    if (!isOpen) return;
+
+    let cancelled = false;
+    const poll = async () => {
+      try {
+        const response = await fetch(`/api/chat/session?session_id=${sessionId}`, { cache: 'no-store' });
+        if (!response.ok) return;
+        const data = await response.json();
+        if (cancelled) return;
+
+        const serverMode = data?.mode === 'human' ? 'human' : 'bot';
+        setMode(serverMode);
+
+        const incoming = Array.isArray(data?.messages) ? data.messages : [];
+        if (incoming.length > 0) {
+          setMessages((prev) => {
+            const existingIds = new Set(prev.map((m) => m.id));
+            const appended = (incoming as Array<{ id: string; text: string; sender: 'user' | 'bot'; timestamp: string | Date; order_id?: string }>).filter(
+              (m) => !existingIds.has(m.id)
+            );
+            if (appended.length === 0) return prev;
+            const merged = [
+              ...prev,
+              ...appended.map((m) => ({
+                ...m,
+                timestamp: m.timestamp instanceof Date ? m.timestamp : new Date(m.timestamp),
+              })),
+            ];
+            merged.sort((a, b) => a.timestamp.getTime() - b.timestamp.getTime());
+            return merged;
+          });
+        }
+      } catch {
+        // ignore polling errors
+      }
+    };
+
+    // quick first poll, then interval
+    void poll();
+    const t = window.setInterval(poll, 4000);
+    return () => {
+      cancelled = true;
+      window.clearInterval(t);
+    };
+  }, [isOpen, sessionId]);
+
   const loadChatHistory = async () => {
     try {
       const response = await fetch(`/api/chat/session?session_id=${sessionId}`);
       if (response.ok) {
         const data = await response.json();
-        if (data.messages && data.messages.length > 0) {
+        const serverMode = data?.mode === 'human' ? 'human' : 'bot';
+        setMode(serverMode);
+
+        const serverNotice = typeof data?.notice === 'string' ? data.notice : null;
+        const incoming = Array.isArray(data?.messages) ? data.messages : [];
+
+        if (incoming.length > 0) {
           setMessages(
-            (data.messages as Array<{ id: string; text: string; sender: 'user' | 'bot'; timestamp: string | Date; order_id?: string }>).map(
+            (incoming as Array<{ id: string; text: string; sender: 'user' | 'bot'; timestamp: string | Date; order_id?: string }>).map(
               (m) => ({
                 ...m,
                 timestamp: m.timestamp instanceof Date ? m.timestamp : new Date(m.timestamp),
@@ -102,25 +185,29 @@ export function ChatWidget({ className }: ChatWidgetProps) {
             )
           );
         } else {
-          // Add welcome message
+          // If outside hours, show the required notice once.
+          if (serverMode === 'bot' && serverNotice && !noticeShown) {
+            addMessage(serverNotice, 'bot');
+            setNoticeShown(true);
+          }
+
           addMessage(
-            `Salut! Sunt ${SUPPORT_AGENT_NAME} din echipa de suport FloristMarket.\n\nProgram: ${SUPPORT_HOURS_LABEL}. Spune-mi cu ce te pot ajuta (comenzi, livrare, retur, factură).`,
+            serverMode === 'human'
+              ? `Salut! Sunt ${SUPPORT_AGENT_NAME} din echipa de suport FloristMarket. Spune-mi cu ce te pot ajuta (comenzi, livrare, retur, factură).`
+              : `Salut! Sunt chatbot-ul virtual FloristMarket. Program suport uman: ${SUPPORT_HOURS_LABEL}. Cu ce te pot ajuta?`,
             'bot'
           );
         }
       }
     } catch (error) {
       console.error('Error loading chat history:', error);
-      addMessage(
-        `Salut! Sunt ${SUPPORT_AGENT_NAME} din echipa de suport FloristMarket.\n\nProgram: ${SUPPORT_HOURS_LABEL}. Spune-mi cu ce te pot ajuta (comenzi, livrare, retur, factură).`,
-        'bot'
-      );
+      addMessage(`Salut! Program suport: ${SUPPORT_HOURS_LABEL}. Cu ce te pot ajuta?`, 'bot');
     }
   };
 
   const addMessage = (text: string, sender: 'user' | 'bot', orderId?: string) => {
     const newMessage: ChatMessage = {
-      id: `msg_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
+      id: newUuid(),
       text,
       sender,
       timestamp: new Date(),
@@ -136,8 +223,13 @@ export function ChatWidget({ className }: ChatWidgetProps) {
     setInputValue('');
     setIsLoading(true);
 
+    const clientMessageId = newUuid();
+
     // Add user message immediately
-    addMessage(userMessage, 'user');
+    setMessages((prev) => [
+      ...prev,
+      { id: clientMessageId, text: userMessage, sender: 'user', timestamp: new Date() },
+    ]);
 
     try {
       const response = await fetch('/api/chat/webhook', {
@@ -147,13 +239,42 @@ export function ChatWidget({ className }: ChatWidgetProps) {
         },
         body: JSON.stringify({
           message: userMessage,
-          session_id: sessionId
+          session_id: sessionId,
+          conversation_id: sessionId,
+          client_message_id: clientMessageId,
         })
       });
 
       if (response.ok) {
         const data = await response.json();
-        addMessage(data.response, 'bot', data.order_id);
+        const serverMode = data?.mode === 'human' ? 'human' : 'bot';
+        setMode(serverMode);
+
+        if (serverMode === 'bot' && typeof data?.notice === 'string' && !noticeShown) {
+          addMessage(data.notice, 'bot');
+          setNoticeShown(true);
+        }
+
+        if (serverMode === 'human') {
+          if (!humanAckShown) {
+            addMessage(
+              `Mulțumim! Ești conectat(ă) la suportul uman (${SUPPORT_AGENT_NAME}). Un agent îți răspunde cât mai curând.`,
+              'bot'
+            );
+            setHumanAckShown(true);
+          }
+        } else {
+          const botText = typeof data?.response === 'string' ? data.response : 'Ne pare rău, nu am un răspuns acum.';
+          const botMessageId = typeof data?.bot_message_id === 'string' ? data.bot_message_id : undefined;
+          if (botMessageId) {
+            setMessages((prev) => {
+              if (prev.some((m) => m.id === botMessageId)) return prev;
+              return [...prev, { id: botMessageId, text: botText, sender: 'bot', timestamp: new Date(), order_id: data.order_id }];
+            });
+          } else {
+            addMessage(botText, 'bot', data.order_id);
+          }
+        }
       } else {
         addMessage('Ne pare rău, a apărut o problemă. Te rugăm să încerci din nou.', 'bot');
       }
@@ -172,7 +293,10 @@ export function ChatWidget({ className }: ChatWidgetProps) {
     }
   };
 
-  const supportOnline = isWithinSupportHours(now);
+  const supportOnline = isWithinSupportHoursRo(now);
+  const headerName = mode === 'human' ? SUPPORT_AGENT_NAME : BOT_NAME;
+  const headerInitials = mode === 'human' ? SUPPORT_AGENT_INITIALS : BOT_INITIALS;
+  const headerRoleLabel = mode === 'human' ? 'Suport' : 'Asistent virtual';
   const quickReplies = [
     'Unde este comanda mea?',
     'Vreau să fac un retur',
@@ -201,17 +325,17 @@ export function ChatWidget({ className }: ChatWidgetProps) {
             <div className="flex items-center justify-between px-4 py-3 border-b border-white/10 bg-gradient-to-r from-primary via-primary to-emerald-700 text-white">
               <div className="flex items-center gap-3 min-w-0">
                 <div className="h-10 w-10 rounded-full bg-white/15 ring-1 ring-white/25 flex items-center justify-center text-sm font-semibold tracking-tight">
-                  {SUPPORT_AGENT_INITIALS}
+                  {headerInitials}
                 </div>
                 <div className="min-w-0">
                   <div className="flex items-center gap-2 min-w-0">
-                    <span className="truncate font-semibold leading-none">{SUPPORT_AGENT_NAME}</span>
-                    <span className="text-xs text-white/80">Suport</span>
+                    <span className="truncate font-semibold leading-none">{headerName}</span>
+                    <span className="text-xs text-white/80">{headerRoleLabel}</span>
                   </div>
                   <div className="mt-1 flex items-center gap-2 text-[11px] text-white/85">
                     <span className="inline-flex items-center gap-1">
-                      <span className={cn("h-1.5 w-1.5 rounded-full", supportOnline ? "bg-emerald-300" : "bg-white/40")} />
-                      {supportOnline ? 'Online acum' : 'Offline acum'}
+                      <span className={cn("h-1.5 w-1.5 rounded-full", mode === 'human' ? (supportOnline ? "bg-emerald-300" : "bg-white/40") : "bg-emerald-300")} />
+                      {mode === 'human' ? (supportOnline ? 'Online acum' : 'Offline acum') : 'Răspuns automat'}
                     </span>
                     <span className="text-white/45">•</span>
                     <span className="inline-flex items-center gap-1">
@@ -266,7 +390,7 @@ export function ChatWidget({ className }: ChatWidgetProps) {
                 >
                   {message.sender === 'bot' && (
                     <div className="flex-shrink-0 w-9 h-9 rounded-full bg-white ring-1 ring-black/5 shadow-sm flex items-center justify-center text-[11px] font-semibold text-primary">
-                      {SUPPORT_AGENT_INITIALS}
+                      {mode === 'human' ? SUPPORT_AGENT_INITIALS : BOT_INITIALS}
                     </div>
                   )}
                   
@@ -294,7 +418,7 @@ export function ChatWidget({ className }: ChatWidgetProps) {
               {isLoading && (
                 <div className="flex gap-2 justify-start">
                   <div className="flex-shrink-0 w-9 h-9 rounded-full bg-white ring-1 ring-black/5 shadow-sm flex items-center justify-center text-[11px] font-semibold text-primary">
-                    {SUPPORT_AGENT_INITIALS}
+                    {mode === 'human' ? SUPPORT_AGENT_INITIALS : BOT_INITIALS}
                   </div>
                   <div className="bg-white rounded-2xl px-3 py-2 text-sm shadow-sm ring-1 ring-black/5">
                     <div className="flex gap-1">

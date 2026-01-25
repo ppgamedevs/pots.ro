@@ -7,6 +7,7 @@ import {
   messageModeration,
   supportTickets,
   supportTicketMessages,
+  supportThreadMessages,
   users,
 } from "@/db/schema/core";
 import { and, eq, desc, asc } from "drizzle-orm";
@@ -168,9 +169,48 @@ export async function GET(request: NextRequest, context: Params) {
         }));
       }
     } else if (thread.source === "chatbot" || thread.source === "whatsapp") {
-      // These would have their own message sources
-      // For now, return empty (to be implemented with chatbot/whatsapp integration)
-      threadMessages = [];
+      type SupportThreadMessage = {
+        id: string;
+        senderId: string;
+        body: string;
+        createdAt: Date;
+        senderName: string | null;
+        senderEmail: string | null;
+        authorRole: string;
+      };
+
+      const supportMessages: SupportThreadMessage[] = await db
+        .select({
+          id: supportThreadMessages.id,
+          senderId: supportThreadMessages.authorId,
+          body: supportThreadMessages.body,
+          createdAt: supportThreadMessages.createdAt,
+          senderName: users.name,
+          senderEmail: users.email,
+          authorRole: supportThreadMessages.authorRole,
+        })
+        .from(supportThreadMessages)
+        .leftJoin(users, eq(supportThreadMessages.authorId, users.id))
+        .where(eq(supportThreadMessages.threadId, thread.id))
+        .orderBy(asc(supportThreadMessages.createdAt));
+
+      threadMessages = supportMessages.map((msg) => ({
+        id: msg.id,
+        senderId: msg.senderId || "system",
+        body: msg.body,
+        createdAt: msg.createdAt,
+        senderName: msg.senderName,
+        senderEmail:
+          msg.senderEmail ||
+          (msg.authorRole === "customer"
+            ? "customer@webchat"
+            : msg.authorRole === "support"
+              ? "support@floristmarket"
+              : "bot@floristmarket"),
+        displayBody: msg.body,
+        moderation: null,
+        authorRole: msg.authorRole,
+      }));
     }
 
     // Audit the view (for sensitive data access tracking)

@@ -214,6 +214,8 @@ function InboxTab() {
   const [selectedThread, setSelectedThread] = useState<SupportThread | null>(null);
   const [threadMessages, setThreadMessages] = useState<ThreadMessage[]>([]);
   const [loadingMessages, setLoadingMessages] = useState(false);
+  const [replyBody, setReplyBody] = useState("");
+  const [sendingReply, setSendingReply] = useState(false);
 
   const loadThreads = useCallback(async () => {
     try {
@@ -250,10 +252,40 @@ function InboxTab() {
       const json = await res.json();
       if (!res.ok) throw new Error(json?.error || "Failed to load messages");
       setThreadMessages(json.messages || []);
+      setReplyBody("");
     } catch (e: any) {
       toast.error(e?.message || "Error loading messages");
     } finally {
       setLoadingMessages(false);
+    }
+  };
+
+  const sendThreadReply = async () => {
+    if (!selectedThread) return;
+    if (!replyBody.trim()) return;
+
+    if (!(selectedThread.source === "chatbot" || selectedThread.source === "whatsapp")) {
+      toast.error("Reply is only enabled for Chatbot/WhatsApp threads right now.");
+      return;
+    }
+
+    setSendingReply(true);
+    try {
+      const res = await fetch(`/api/admin/support/threads/${selectedThread.id}/reply`, {
+        method: "POST",
+        credentials: "include",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ body: replyBody.trim() }),
+      });
+      const json = await res.json();
+      if (!res.ok) throw new Error(json?.error || "Failed to send reply");
+      toast.success("Reply sent");
+      setReplyBody("");
+      await loadThreadMessages(selectedThread);
+    } catch (e: any) {
+      toast.error(e?.message || "Error sending reply");
+    } finally {
+      setSendingReply(false);
     }
   };
 
@@ -557,11 +589,40 @@ function InboxTab() {
                           </div>
                         )}
                         {/* Moderation actions */}
-                        <MessageModerationActions messageId={msg.id} currentModeration={msg.moderation} />
+                        {selectedThread.source === "buyer_seller" && (
+                          <MessageModerationActions messageId={msg.id} currentModeration={msg.moderation} />
+                        )}
                       </div>
                     ))
                   )}
                 </div>
+
+                {(selectedThread.source === "chatbot" || selectedThread.source === "whatsapp") && (
+                  <div className="space-y-2">
+                    <Label>Reply to customer</Label>
+                    <Textarea
+                      value={replyBody}
+                      onChange={(e) => setReplyBody(e.target.value)}
+                      placeholder="Write a reply as Support…"
+                      rows={3}
+                    />
+                    <div className="flex items-center justify-end gap-2">
+                      <Button
+                        variant="secondary"
+                        onClick={() => loadThreadMessages(selectedThread)}
+                        disabled={loadingMessages || sendingReply}
+                      >
+                        Refresh
+                      </Button>
+                      <Button
+                        onClick={sendThreadReply}
+                        disabled={sendingReply || !replyBody.trim()}
+                      >
+                        {sendingReply ? "Sending…" : "Send"}
+                      </Button>
+                    </div>
+                  </div>
+                )}
               </div>
             )}
           </CardContent>
