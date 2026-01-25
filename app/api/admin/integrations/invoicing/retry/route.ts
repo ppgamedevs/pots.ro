@@ -54,7 +54,7 @@ export async function POST(req: NextRequest) {
       .limit(limit);
 
     // Filter out seller invoices (they can't be regenerated)
-    const retryable = failedInvoices.filter(inv => inv.issuer !== 'seller');
+    const retryable = failedInvoices.filter((inv: typeof failedInvoices[number]) => inv.issuer !== 'seller');
 
     if (retryable.length === 0) {
       return NextResponse.json({
