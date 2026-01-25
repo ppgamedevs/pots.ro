@@ -47,7 +47,7 @@ async function getVerifiedSellers(): Promise<SellerWithCount[]> {
 
     // Get product counts for each seller
     const sellersWithCounts = await Promise.all(
-      sellersData.map(async (seller) => {
+      sellersData.map(async (seller: typeof sellersData[number]) => {
         const [countResult] = await db
           .select({ count: count() })
           .from(products)
