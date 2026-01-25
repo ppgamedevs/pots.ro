@@ -195,7 +195,7 @@ export async function GET(req: NextRequest) {
           issuedLast24h: Number(last24hIssued?.count ?? 0),
           issuedLast7d: Number(last7dIssued?.count ?? 0),
         },
-        recentErrors: recentErrors.map(e => ({
+        recentErrors: recentErrors.map((e: typeof recentErrors[number]) => ({
           id: e.id,
           orderId: e.orderId,
           type: e.type,
@@ -203,7 +203,7 @@ export async function GET(req: NextRequest) {
           errorMessage: e.errorMessage,
           createdAt: e.createdAt?.toISOString() ?? null,
         })),
-        recentInvoices: recentInvoices.map(inv => ({
+        recentInvoices: recentInvoices.map((inv: typeof recentInvoices[number]) => ({
           id: inv.id,
           orderId: inv.orderId,
           type: inv.type,
