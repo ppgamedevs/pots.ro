@@ -82,7 +82,7 @@ export async function POST(
     // Get order items with product details
     const items = await db
       .select({
-        name: products.name,
+        name: products.title,
         qty: orderItems.qty,
         unitPriceCents: orderItems.unitPriceCents,
       })
