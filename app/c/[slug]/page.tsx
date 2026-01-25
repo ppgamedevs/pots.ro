@@ -77,7 +77,7 @@ async function getCategory(slug: string): Promise<CategoryData | null> {
       .from(products)
       .where(and(eq(products.categoryId, row.id), eq(products.status, "active")));
 
-    const info = CATEGORY_INFO[slug as keyof typeof CATEGORY_INFO];
+    const info = categoryInfo[slug];
 
     return {
       ...row,
