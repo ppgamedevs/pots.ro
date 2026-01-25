@@ -64,8 +64,6 @@ async function getCategory(slug: string): Promise<CategoryData | null> {
         id: categories.id,
         name: categories.name,
         slug: categories.slug,
-        description: categories.description,
-        image: categories.image,
       })
       .from(categories)
       .where(eq(categories.slug, slug))
@@ -79,8 +77,12 @@ async function getCategory(slug: string): Promise<CategoryData | null> {
       .from(products)
       .where(and(eq(products.categoryId, row.id), eq(products.status, "active")));
 
+    const info = CATEGORY_INFO[slug as keyof typeof CATEGORY_INFO];
+
     return {
       ...row,
+      description: info?.subtitle,
+      image: info?.image,
       productCount: countResult?.count || 0,
     };
   } catch (error) {
