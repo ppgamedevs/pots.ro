@@ -24,7 +24,7 @@ export const metadata: Metadata = {
 
 interface SellerWithCount {
   id: string;
-  storeName: string;
+  brandName: string;
   slug: string;
   logoUrl: string | null;
   verified: boolean;
@@ -36,7 +36,7 @@ async function getVerifiedSellers(): Promise<SellerWithCount[]> {
     const sellersData = await db
       .select({
         id: sellers.id,
-        storeName: sellers.storeName,
+        brandName: sellers.brandName,
         slug: sellers.slug,
         logoUrl: sellers.logoUrl,
         verified: sellers.verified,
@@ -100,7 +100,7 @@ export default async function ParteneriPage() {
       position: index + 1,
       item: {
         "@type": "Organization",
-        name: seller.storeName,
+        name: seller.brandName,
         url: `${SITE_URL}/s/${seller.slug}`,
         logo: seller.logoUrl,
       },
@@ -172,19 +172,19 @@ export default async function ParteneriPage() {
                         {seller.logoUrl ? (
                           <Image
                             src={seller.logoUrl}
-                            alt={`${seller.storeName} logo`}
+                            alt={`${seller.brandName} logo`}
                             fill
                             className="object-cover"
                           />
                         ) : (
                           <div className="w-full h-full flex items-center justify-center text-2xl font-bold text-slate-400">
-                            {seller.storeName.charAt(0)}
+                            {seller.brandName.charAt(0)}
                           </div>
                         )}
                       </div>
                       <div className="min-w-0">
                         <h3 className="text-lg font-semibold text-ink group-hover:text-primary transition-colors truncate">
-                          {seller.storeName}
+                          {seller.brandName}
                         </h3>
                         <div className="flex items-center gap-2">
                           {seller.verified && (
