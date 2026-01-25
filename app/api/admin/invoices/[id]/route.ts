@@ -44,7 +44,7 @@ export async function GET(
         orderCurrency: orders.currency,
         orderStatus: orders.status,
         // Seller details
-        sellerName: sellers.storeName,
+        sellerName: sellers.brandName,
       })
       .from(invoices)
       .leftJoin(orders, eq(invoices.orderId, orders.id))
