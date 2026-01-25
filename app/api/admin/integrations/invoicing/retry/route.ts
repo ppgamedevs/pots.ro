@@ -74,7 +74,7 @@ export async function POST(req: NextRequest) {
       entityId: 'invoicing',
       message: `Bulk invoice retry requested for ${retryable.length} invoices`,
       meta: {
-        invoiceIds: retryable.map(inv => inv.id),
+        invoiceIds: retryable.map((inv: typeof retryable[number]) => inv.id),
         issuer: issuer || 'all',
         requestedCount: retryable.length,
         skippedCount: failedInvoices.length - retryable.length,
@@ -88,7 +88,7 @@ export async function POST(req: NextRequest) {
       message: `Found ${retryable.length} invoices eligible for retry`,
       queued: retryable.length,
       skipped: failedInvoices.length - retryable.length,
-      invoices: retryable.map(inv => ({
+      invoices: retryable.map((inv: typeof retryable[number]) => ({
         id: inv.id,
         orderId: inv.orderId,
         type: inv.type,
