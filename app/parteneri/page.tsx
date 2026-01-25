@@ -39,11 +39,11 @@ async function getVerifiedSellers(): Promise<SellerWithCount[]> {
         brandName: sellers.brandName,
         slug: sellers.slug,
         logoUrl: sellers.logoUrl,
-        verified: sellers.verified,
+        verifiedBadge: sellers.verifiedBadge,
       })
       .from(sellers)
       .where(eq(sellers.status, 'active'))
-      .orderBy(desc(sellers.verified), desc(sellers.createdAt));
+      .orderBy(desc(sellers.verifiedBadge), desc(sellers.createdAt));
 
     // Get product counts for each seller
     const sellersWithCounts = await Promise.all(
@@ -55,7 +55,7 @@ async function getVerifiedSellers(): Promise<SellerWithCount[]> {
         
         return {
           ...seller,
-          verified: seller.verified ?? false,
+          verified: seller.verifiedBadge ?? false,
           productCount: countResult?.count || 0,
         };
       })
