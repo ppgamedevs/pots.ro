@@ -22,6 +22,7 @@ import {
 } from "drizzle-orm";
 import { getCurrentUser } from "@/lib/auth-helpers";
 import { writeAdminAudit } from "@/lib/admin/audit";
+import { logThreadModeration } from "@/lib/support/moderation-history";
 
 export const dynamic = "force-dynamic";
 
@@ -146,10 +147,8 @@ export async function GET(request: NextRequest) {
 
     if (filters.status && filters.status.length > 0) {
       conditions.push(inArray(supportThreads.status, filters.status));
-    } else {
-      // Default: show active threads (not resolved/closed)
-      conditions.push(inArray(supportThreads.status, ["open", "assigned", "waiting"]));
     }
+    // No status filter = "All" (frontend omits param when "All" is selected)
 
     if (filters.source && filters.source.length > 0) {
       conditions.push(inArray(supportThreads.source, filters.source));
@@ -295,7 +294,7 @@ export async function GET(request: NextRequest) {
     const buyerIds = [...new Set(threads.map((t: ThreadRow) => t.buyerId).filter(Boolean))] as string[];
 
     const sellerMap = new Map<string, { brandName: string; slug: string }>();
-    const buyerMap = new Map<string, { name: string | null; email: string }>();
+    const buyerMap = new Map<string, { name: string | null; email: string; role: string }>();
 
     if (sellerIds.length > 0) {
       const sellerInfo = await db
@@ -305,12 +304,20 @@ export async function GET(request: NextRequest) {
       sellerInfo.forEach((s: { id: string; brandName: string; slug: string }) => sellerMap.set(s.id, { brandName: s.brandName, slug: s.slug }));
     }
 
+    const roleLabels: Record<string, string> = {
+      buyer: "Cumpărător",
+      seller: "Vânzător",
+      support: "Support",
+      admin: "Admin",
+    };
     if (buyerIds.length > 0) {
       const buyerInfo = await db
-        .select({ id: users.id, name: users.name, email: users.email })
+        .select({ id: users.id, name: users.name, email: users.email, role: users.role })
         .from(users)
         .where(inArray(users.id, buyerIds));
-      buyerInfo.forEach((b: { id: string; name: string | null; email: string }) => buyerMap.set(b.id, { name: b.name, email: b.email }));
+      buyerInfo.forEach((b: { id: string; name: string | null; email: string; role: string }) =>
+        buyerMap.set(b.id, { name: b.name, email: b.email, role: b.role })
+      );
     }
 
     // Get tags for all threads
@@ -332,16 +339,32 @@ export async function GET(request: NextRequest) {
     // Enrich threads with additional info
     type EnrichedThread = ThreadRow & {
       seller: { brandName: string; slug: string } | null | undefined;
-      buyer: { name: string | null; email: string } | null | undefined;
+      buyer: { name: string | null; email: string; role?: string } | null | undefined;
       tags: string[];
+      displaySubject?: string | null;
     };
-    
-    const data: EnrichedThread[] = threads.map((thread: ThreadRow) => ({
-      ...thread,
-      seller: thread.sellerId ? sellerMap.get(thread.sellerId) : null,
-      buyer: thread.buyerId ? buyerMap.get(thread.buyerId) : null,
-      tags: tagsMap.get(thread.id) || [],
-    }));
+
+    const data: EnrichedThread[] = threads.map((thread: ThreadRow) => {
+      const buyer = thread.buyerId ? buyerMap.get(thread.buyerId) : null;
+      let displaySubject: string | null = null;
+      if (thread.source === "chatbot" || thread.source === "whatsapp") {
+        if (thread.buyerId && buyer) {
+          const label = buyer.role && roleLabels[buyer.role]
+            ? roleLabels[buyer.role]
+            : (buyer.email || buyer.name || "—");
+          displaySubject = `Webchat: ${label}`;
+        } else {
+          displaySubject = thread.subject?.startsWith("Webchat:") ? thread.subject : "Webchat: Vizitator";
+        }
+      }
+      return {
+        ...thread,
+        seller: thread.sellerId ? sellerMap.get(thread.sellerId) : null,
+        buyer: thread.buyerId ? buyerMap.get(thread.buyerId) : null,
+        tags: tagsMap.get(thread.id) || [],
+        ...(displaySubject != null ? { displaySubject } : {}),
+      };
+    });
 
     // Export as CSV if requested (admin only)
     if (exportCsv) {
@@ -381,7 +404,7 @@ export async function GET(request: NextRequest) {
             t.source,
             t.status,
             t.priority,
-            `"${(t.subject || "").replace(/"/g, '""')}"`,
+            `"${((t.displaySubject ?? t.subject) || "").replace(/"/g, '""')}"`,
             `"${(t.seller?.brandName || "").replace(/"/g, '""')}"`,
             `"${(t.buyer?.email || "").replace(/"/g, '""')}"`,
             `"${(t.assignedToEmail || "Unassigned").replace(/"/g, '""')}"`,
@@ -462,6 +485,17 @@ export async function POST(request: NextRequest) {
           meta: { assignToUserId },
         });
 
+        await logThreadModeration({
+          actorId: user.id,
+          actorName: user.name || user.email,
+          actorRole: user.role as "admin" | "support",
+          actionType: assignToUserId ? "thread.assign" : "thread.unassign",
+          threadId,
+          reason: null,
+          note: assignToUserId ? `Assigned to ${assignToUserId}` : "Unassigned",
+          metadata: { prevAssigneeId: thread.assignedToUserId, newAssigneeId: assignToUserId },
+        });
+
         return NextResponse.json({ success: true, message: "Thread assigned" });
       }
 
@@ -508,6 +542,17 @@ export async function POST(request: NextRequest) {
           entityId: threadId,
           message: `Changed thread priority to ${priority}`,
           meta: { prevPriority: thread.priority, newPriority: priority },
+        });
+
+        await logThreadModeration({
+          actorId: user.id,
+          actorName: user.name || user.email,
+          actorRole: user.role as "admin" | "support",
+          actionType: "thread.priorityChange",
+          threadId,
+          reason: null,
+          note: `Priority changed from ${thread.priority} to ${priority}`,
+          metadata: { prevPriority: thread.priority, newPriority: priority },
         });
 
         return NextResponse.json({ success: true, message: "Priority updated" });

@@ -1,7 +1,8 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import { toast } from "sonner";
+import { useUser } from "@/lib/hooks/useUser";
 import { AdminPageWrapper } from "@/components/admin/AdminPageWrapper";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -63,6 +64,7 @@ interface SupportThread {
   seller: { brandName: string; slug: string } | null;
   buyer: { name: string | null; email: string } | null;
   tags: string[];
+  displaySubject?: string | null;
   order?: { orderNumber: string; status: string } | null;
 }
 
@@ -82,6 +84,7 @@ interface ThreadMessage {
   createdAt: string;
   senderName: string | null;
   senderEmail: string;
+  authorDisplayLabel?: string;
   displayBody: string;
   moderation: {
     status: string;
@@ -265,6 +268,7 @@ export default function AdminSupportPage() {
 // INBOX TAB
 // ============================================================================
 function InboxTab() {
+  const { user } = useUser();
   const [threads, setThreads] = useState<SupportThread[]>([]);
   const [loading, setLoading] = useState(true);
   const [total, setTotal] = useState(0);
@@ -288,20 +292,19 @@ function InboxTab() {
   const [noteBody, setNoteBody] = useState("");
   const [addingNote, setAddingNote] = useState(false);
   const [sla, setSla] = useState<{ slaDeadline: string | null; slaBreach: boolean } | null>(null);
-  const [moderationEvents, setModerationEvents] = useState<
-    {
-      messageId: string;
-      messagePreview?: string;
-      status: string;
-      reason?: string;
-      moderatedBy: { id: string; name: string | null; email: string | null } | null;
-      moderatedAt?: string;
-    }[]
-  >([]);
+  const priorityOptimisticUntilRef = useRef<{ threadId: string; priority: SupportThread["priority"]; until: number } | null>(null);
+  const assigneeOptimisticUntilRef = useRef<{ threadId: string; assignedToUserId: string | null; assignedToEmail: string | null; status: SupportThread["status"]; until: number } | null>(null);
+  const selectedThreadRef = useRef<SupportThread | null>(null);
+  const pendingRefreshRef = useRef<{ list: boolean; thread: boolean }>({ list: false, thread: false });
+  const refreshTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
-  const loadThreads = useCallback(async () => {
+  useEffect(() => {
+    selectedThreadRef.current = selectedThread;
+  }, [selectedThread]);
+
+  const loadThreads = useCallback(async (opts?: { silent?: boolean }) => {
     try {
-      setLoading(true);
+      if (!opts?.silent) setLoading(true);
       const params = new URLSearchParams();
       params.set("page", String(page));
       params.set("limit", "25");
@@ -321,12 +324,37 @@ function InboxTab() {
       const res = await fetch(url, { credentials: "include" });
       const json = await res.json();
       if (!res.ok) throw new Error(json?.error || "Failed to load");
-      setThreads(json.data || []);
+      let updatedThreads = json.data || [];
+      const optPriority = priorityOptimisticUntilRef.current;
+      if (optPriority && Date.now() < optPriority.until) {
+        updatedThreads = updatedThreads.map((t: SupportThread) => {
+          if (t.id === optPriority.threadId) {
+            return { ...t, priority: optPriority.priority };
+          }
+          return t;
+        });
+      }
+      const optAssignee = assigneeOptimisticUntilRef.current;
+      if (optAssignee && Date.now() < optAssignee.until) {
+        updatedThreads = updatedThreads.map((t: SupportThread) => {
+          if (t.id === optAssignee.threadId) {
+            return {
+              ...t,
+              assignedToUserId: optAssignee.assignedToUserId,
+              assignedToEmail: optAssignee.assignedToEmail,
+              assignedToName: null,
+              status: optAssignee.status,
+            };
+          }
+          return t;
+        });
+      }
+      setThreads(updatedThreads);
       setTotal(json.total || 0);
     } catch (e: any) {
-      toast.error(e?.message || "Error loading threads");
+      if (!opts?.silent) toast.error(e?.message || "Error loading threads");
     } finally {
-      setLoading(false);
+      if (!opts?.silent) setLoading(false);
     }
   }, [page, statusFilter, sourceFilter, priorityFilter, searchQuery, myQueueFilter]);
 
@@ -334,30 +362,107 @@ function InboxTab() {
     loadThreads();
   }, [loadThreads]);
 
+  const refreshThreadMessagesSilent = useCallback(async () => {
+    const current = selectedThreadRef.current;
+    if (!current) return;
+    const threadId = current.id;
+    try {
+      const [detailRes, notesRes, slaRes] = await Promise.all([
+        fetch(`/api/admin/support/threads/${threadId}`, { credentials: "include" }),
+        fetch(`/api/admin/support/threads/${threadId}/notes`, { credentials: "include" }),
+        fetch(`/api/admin/support/threads/${threadId}/sla`, { credentials: "include" }),
+      ]);
+      const detailJson = await detailRes.json();
+      const notesJson = await notesRes.json();
+      const slaJson = slaRes.ok ? await slaRes.json() : null;
+      if (!detailRes.ok) return;
+      if (selectedThreadRef.current?.id !== threadId) return;
+      const sel = selectedThreadRef.current;
+      setThreadMessages(detailJson.messages || []);
+      let nextDetail: SupportThread = detailJson.thread
+        ? { ...sel, ...detailJson.thread }
+        : sel;
+      const optPriority = priorityOptimisticUntilRef.current;
+      if (
+        optPriority?.threadId === sel.id &&
+        Date.now() < optPriority.until &&
+        nextDetail
+      ) {
+        nextDetail = { ...nextDetail, priority: optPriority.priority };
+      }
+      const optAssignee = assigneeOptimisticUntilRef.current;
+      if (
+        optAssignee?.threadId === sel.id &&
+        Date.now() < optAssignee.until &&
+        nextDetail
+      ) {
+        nextDetail = {
+          ...nextDetail,
+          assignedToUserId: optAssignee.assignedToUserId,
+          assignedToEmail: optAssignee.assignedToEmail,
+          assignedToName: null,
+          status: optAssignee.status,
+        };
+      }
+      setDetailThread(nextDetail);
+      if (notesRes.ok) setThreadNotes(notesJson.notes || []);
+      setSla(slaJson ? { slaDeadline: slaJson.slaDeadline ?? null, slaBreach: !!slaJson.slaBreach } : null);
+    } catch {
+      /* ignore */
+    }
+  }, []);
+
+  const runRefreshJob = useCallback(() => {
+    const pending = pendingRefreshRef.current;
+    pendingRefreshRef.current = { list: false, thread: false };
+    refreshTimeoutRef.current = null;
+    if (pending.list) loadThreads({ silent: true });
+    if (pending.thread && selectedThreadRef.current) refreshThreadMessagesSilent();
+  }, [loadThreads, refreshThreadMessagesSilent]);
+
+  const scheduleRefresh = useCallback((opts: { list?: boolean; thread?: boolean }) => {
+    if (opts.list) pendingRefreshRef.current = { ...pendingRefreshRef.current, list: true };
+    if (opts.thread) pendingRefreshRef.current = { ...pendingRefreshRef.current, thread: true };
+    if (refreshTimeoutRef.current) clearTimeout(refreshTimeoutRef.current);
+    refreshTimeoutRef.current = setTimeout(runRefreshJob, 280);
+  }, [runRefreshJob]);
+
+  useEffect(() => {
+    const onVisible = () => {
+      if (typeof document !== "undefined" && document.visibilityState === "visible") {
+        scheduleRefresh({ list: true, thread: true });
+      }
+    };
+    document.addEventListener("visibilitychange", onVisible);
+    return () => document.removeEventListener("visibilitychange", onVisible);
+  }, [scheduleRefresh]);
+
+  useEffect(() => {
+    return () => {
+      if (refreshTimeoutRef.current) clearTimeout(refreshTimeoutRef.current);
+    };
+  }, []);
+
   const loadThreadMessages = async (thread: SupportThread) => {
     setSelectedThread(thread);
     setDetailThread(null);
     setThreadNotes([]);
     setSla(null);
-    setModerationEvents([]);
     setLoadingMessages(true);
     try {
-      const [detailRes, notesRes, slaRes, modRes] = await Promise.all([
+      const [detailRes, notesRes, slaRes] = await Promise.all([
         fetch(`/api/admin/support/threads/${thread.id}`, { credentials: "include" }),
         fetch(`/api/admin/support/threads/${thread.id}/notes`, { credentials: "include" }),
         fetch(`/api/admin/support/threads/${thread.id}/sla`, { credentials: "include" }),
-        fetch(`/api/admin/support/threads/${thread.id}/moderation`, { credentials: "include" }),
       ]);
       const detailJson = await detailRes.json();
       const notesJson = await notesRes.json();
       const slaJson = slaRes.ok ? await slaRes.json() : null;
-      const modJson = modRes.ok ? await modRes.json() : { events: [] };
       if (!detailRes.ok) throw new Error(detailJson?.error || "Failed to load messages");
       setThreadMessages(detailJson.messages || []);
       setDetailThread(detailJson.thread ? { ...thread, ...detailJson.thread } : thread);
       setThreadNotes(notesRes.ok ? notesJson.notes || [] : []);
       setSla(slaJson ? { slaDeadline: slaJson.slaDeadline ?? null, slaBreach: !!slaJson.slaBreach } : null);
-      setModerationEvents(Array.isArray(modJson.events) ? modJson.events : []);
       setReplyBody("");
       setNoteBody("");
     } catch (e: any) {
@@ -380,6 +485,7 @@ function InboxTab() {
     }
   };
 
+
   const handlePatchStatus = async (threadId: string, status: string) => {
     try {
       const res = await fetch(`/api/admin/support/threads/${threadId}/status`, {
@@ -390,19 +496,75 @@ function InboxTab() {
       });
       const json = await res.json();
       if (!res.ok) throw new Error(json?.error || "Failed");
-      toast.success("Status updated");
-      loadThreads();
+      const s = status as SupportThread["status"];
+      setThreads((prev) =>
+        prev.map((t) => (t.id === threadId ? { ...t, status: s } : t))
+      );
       if (selectedThread?.id === threadId) {
-        const s = status as SupportThread["status"];
         setSelectedThread((t) => (t ? { ...t, status: s } : null));
         setDetailThread((t) => (t ? { ...t, status: s } : null));
       }
+      toast.success("Status updated");
+      scheduleRefresh({ list: true, thread: true });
     } catch (e: any) {
       toast.error(e?.message || "Error");
     }
   };
 
   const handlePatchAssignee = async (threadId: string, assigneeId: string | null) => {
+    const prevThread = threads.find((t) => t.id === threadId);
+    const prevSelected = selectedThread?.id === threadId ? selectedThread : null;
+    const prevDetail = detailThread?.id === threadId ? detailThread : null;
+    const newStatus: SupportThread["status"] = assigneeId ? "assigned" : "open";
+    const isUnassign = !assigneeId || assigneeId === null;
+    const resolvedAssigneeId = assigneeId === "me" && user ? user.id : assigneeId;
+    const resolvedAssigneeEmail = assigneeId === "me" && user ? user.email : null;
+    
+    assigneeOptimisticUntilRef.current = {
+      threadId,
+      assignedToUserId: isUnassign ? null : resolvedAssigneeId,
+      assignedToEmail: isUnassign ? null : resolvedAssigneeEmail,
+      status: newStatus,
+      until: Date.now() + 4000,
+    };
+    
+    setThreads((prev) =>
+      prev.map((t) =>
+        t.id === threadId
+          ? {
+              ...t,
+              assignedToUserId: isUnassign ? null : resolvedAssigneeId,
+              assignedToName: null,
+              assignedToEmail: isUnassign ? null : resolvedAssigneeEmail,
+              status: newStatus,
+            }
+          : t
+      )
+    );
+    if (selectedThread?.id === threadId) {
+      setSelectedThread((t) =>
+        t
+          ? {
+              ...t,
+              assignedToUserId: isUnassign ? null : resolvedAssigneeId,
+              assignedToName: null,
+              assignedToEmail: isUnassign ? null : resolvedAssigneeEmail,
+              status: newStatus,
+            }
+          : null
+      );
+      setDetailThread((t) =>
+        t
+          ? {
+              ...t,
+              assignedToUserId: isUnassign ? null : resolvedAssigneeId,
+              assignedToName: null,
+              assignedToEmail: isUnassign ? null : resolvedAssigneeEmail,
+              status: newStatus,
+            }
+          : null
+      );
+    }
     try {
       const res = await fetch(`/api/admin/support/threads/${threadId}/assignee`, {
         method: "PATCH",
@@ -411,18 +573,23 @@ function InboxTab() {
         body: JSON.stringify({ assigneeId }),
       });
       const json = await res.json();
-      if (!res.ok) throw new Error(json?.error || "Failed");
+      if (!res.ok) {
+        assigneeOptimisticUntilRef.current = null;
+        throw new Error(json?.error || "Failed");
+      }
       toast.success(assigneeId ? "Assigned" : "Unassigned");
-      loadThreads();
-      if (selectedThread?.id === threadId) {
-        setSelectedThread((t) =>
-          t ? { ...t, assignedToUserId: assigneeId, assignedToName: null, assignedToEmail: null } : null
-        );
-        setDetailThread((t) =>
-          t ? { ...t, assignedToUserId: assigneeId, assignedToName: null, assignedToEmail: null } : null
+      scheduleRefresh({ list: true, thread: true });
+    } catch (e: any) {
+      assigneeOptimisticUntilRef.current = null;
+      if (prevThread) {
+        setThreads((prev) =>
+          prev.map((t) => (t.id === threadId ? prevThread : t))
         );
       }
-    } catch (e: any) {
+      if (prevSelected) {
+        setSelectedThread(prevSelected);
+        setDetailThread(prevDetail);
+      }
       toast.error(e?.message || "Error");
     }
   };
@@ -442,6 +609,7 @@ function InboxTab() {
       toast.success("Note added");
       setNoteBody("");
       await fetchNotes();
+      scheduleRefresh({ thread: true });
     } catch (e: any) {
       toast.error(e?.message || "Error");
     } finally {
@@ -470,7 +638,7 @@ function InboxTab() {
       if (!res.ok) throw new Error(json?.error || "Failed to send reply");
       toast.success("Reply sent");
       setReplyBody("");
-      await loadThreadMessages(selectedThread);
+      scheduleRefresh({ list: true, thread: true });
     } catch (e: any) {
       toast.error(e?.message || "Error sending reply");
     } finally {
@@ -492,6 +660,43 @@ function InboxTab() {
   };
 
   const handleThreadAction = async (threadId: string, action: string, params: any = {}) => {
+    if (action === "priority" && typeof params.priority === "string") {
+      const p = params.priority as SupportThread["priority"];
+      const prev = selectedThread?.id === threadId ? (detailThread ?? selectedThread)?.priority : undefined;
+      priorityOptimisticUntilRef.current = { threadId, priority: p, until: Date.now() + 4000 };
+      setThreads((ps) =>
+        ps.map((t) => (t.id === threadId ? { ...t, priority: p } : t))
+      );
+      if (selectedThread?.id === threadId) {
+        setSelectedThread((t) => (t ? { ...t, priority: p } : null));
+        setDetailThread((t) => (t ? { ...t, priority: p } : null));
+      }
+      try {
+        const res = await fetch("/api/admin/support/threads", {
+          method: "POST",
+          credentials: "include",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ threadId, action, ...params }),
+        });
+        const json = await res.json();
+        if (!res.ok) throw new Error(json?.error || "Action failed");
+        toast.success(json.message || "Success");
+        scheduleRefresh({ list: true, thread: true });
+      } catch (e: any) {
+        priorityOptimisticUntilRef.current = null;
+        if (typeof prev !== "undefined") {
+          setThreads((ps) =>
+            ps.map((t) => (t.id === threadId ? { ...t, priority: prev } : t))
+          );
+          if (selectedThread?.id === threadId) {
+            setSelectedThread((t) => (t ? { ...t, priority: prev } : null));
+            setDetailThread((t) => (t ? { ...t, priority: prev } : null));
+          }
+        }
+        toast.error(e?.message || "Error");
+      }
+      return;
+    }
     try {
       const res = await fetch("/api/admin/support/threads", {
         method: "POST",
@@ -502,11 +707,16 @@ function InboxTab() {
       const json = await res.json();
       if (!res.ok) throw new Error(json?.error || "Action failed");
       toast.success(json.message || "Success");
-      loadThreads();
+      scheduleRefresh({ list: true, thread: true });
     } catch (e: any) {
       toast.error(e?.message || "Error");
     }
   };
+
+  const runRefreshNow = useCallback(() => {
+    loadThreads();
+    if (selectedThreadRef.current) refreshThreadMessagesSilent();
+  }, [loadThreads, refreshThreadMessagesSilent]);
 
   return (
     <div className="space-y-3">
@@ -521,7 +731,7 @@ function InboxTab() {
               <div className="flex items-center justify-between">
                 <CardTitle className="text-lg">Support Threads</CardTitle>
               <div className="flex gap-2">
-                <Button variant="outline" size="sm" onClick={loadThreads}>
+                <Button variant="outline" size="sm" onClick={runRefreshNow}>
                   <RefreshCcw className="h-4 w-4" />
                 </Button>
                 <Button variant="outline" size="sm" onClick={handleExport}>
@@ -632,7 +842,7 @@ function InboxTab() {
                           )}
                         </div>
                         <p className="font-medium text-sm truncate">
-                          {thread.subject || "No subject"}
+                          {thread.displaySubject ?? thread.subject ?? "No subject"}
                         </p>
                         <p className="text-xs text-muted-foreground truncate mt-1">
                           {thread.lastMessagePreview || "No messages"}
@@ -818,7 +1028,7 @@ function InboxTab() {
                       >
                         <div className="flex items-center justify-between mb-1">
                           <span className="font-medium text-xs">
-                            {msg.senderName || msg.senderEmail?.split("@")[0] || "Unknown"}
+                            {msg.authorDisplayLabel ?? msg.senderName ?? msg.senderEmail?.split("@")[0] ?? "—"}
                           </span>
                           <span className="text-xs text-muted-foreground">
                             {formatDate(msg.createdAt)}
@@ -846,72 +1056,18 @@ function InboxTab() {
                             {!["hidden", "deleted", "redacted"].includes(msg.moderation?.status ?? "") && (
                               <PIIQuickActions
                                 messageId={msg.id}
-                                onSuccess={() => selectedThread && loadThreadMessages(selectedThread)}
+                                onSuccess={() => scheduleRefresh({ thread: true })}
                               />
                             )}
                             <MessageModerationActions
                               messageId={msg.id}
                               currentModeration={msg.moderation}
-                              onModerationSuccess={() => selectedThread && loadThreadMessages(selectedThread)}
+                              onModerationSuccess={() => scheduleRefresh({ thread: true })}
                             />
                           </div>
                         )}
                       </div>
                     ))
-                  )}
-                </div>
-
-                {/* Moderation history */}
-                <div className="space-y-2">
-                  <Label className="text-xs font-medium text-muted-foreground">
-                    Moderation history (Who / When / Why)
-                  </Label>
-                  {moderationEvents.length === 0 ? (
-                    <p className="text-sm text-muted-foreground py-2">No moderation events</p>
-                  ) : (
-                    <div className="rounded-lg border border-slate-200 dark:border-white/10 overflow-hidden">
-                      <Table>
-                        <TableHeader>
-                          <TableRow>
-                            <TableHead className="text-left text-xs">Preview</TableHead>
-                            <TableHead className="text-left text-xs">Action</TableHead>
-                            <TableHead className="text-left text-xs">Reason</TableHead>
-                            <TableHead className="text-left text-xs">Who</TableHead>
-                            <TableHead className="text-left text-xs">When</TableHead>
-                          </TableRow>
-                        </TableHeader>
-                        <TableBody>
-                          {moderationEvents.map((ev) => (
-                            <TableRow key={ev.messageId}>
-                              <TableCell className="text-xs py-2 max-w-[120px] truncate">
-                                {ev.messagePreview ?? "—"}
-                              </TableCell>
-                              <TableCell className="text-xs py-2">
-                                <Badge
-                                  variant="secondary"
-                                  className={
-                                    ev.status === "deleted" || ev.status === "hidden"
-                                      ? "bg-red-100 text-red-800"
-                                      : "bg-yellow-100 text-yellow-800"
-                                  }
-                                >
-                                  {ev.status}
-                                </Badge>
-                              </TableCell>
-                              <TableCell className="text-xs py-2 max-w-[100px] truncate">
-                                {ev.reason ?? "—"}
-                              </TableCell>
-                              <TableCell className="text-xs py-2">
-                                {ev.moderatedBy?.name || ev.moderatedBy?.email || "—"}
-                              </TableCell>
-                              <TableCell className="text-xs py-2">
-                                {ev.moderatedAt ? formatDate(ev.moderatedAt) : "—"}
-                              </TableCell>
-                            </TableRow>
-                          ))}
-                        </TableBody>
-                      </Table>
-                    </div>
                   )}
                 </div>
 

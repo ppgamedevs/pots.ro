@@ -1856,6 +1856,59 @@ export const supportCannedReplies = pgTable("support_canned_replies", {
   supportCannedRepliesActiveIdx: index("support_canned_replies_active_idx").on(table.isActive).where(sql`is_active = true`),
 }));
 
+// Support Moderation History - immutable audit trail for all moderation actions
+export const supportModerationHistory = pgTable(
+  "support_moderation_history",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    // Who: Actor information
+    actorId: uuid("actor_id").references(() => users.id, { onDelete: "set null" }),
+    actorName: text("actor_name"), // Cached name for display (user.name or "Bot" or "System")
+    actorRole: text("actor_role").$type<"admin" | "support" | "bot" | "system">(),
+    // What: Action details
+    actionType: text("action_type").notNull().$type<
+      | "message.hide"
+      | "message.delete"
+      | "message.redact"
+      | "message.restore"
+      | "message.addNote"
+      | "message.redactPII"
+      | "thread.statusChange"
+      | "thread.priorityChange"
+      | "thread.assign"
+      | "thread.unassign"
+      | "thread.escalate"
+      | "thread.deescalate"
+      | "user.block"
+      | "user.unblock"
+      | "other"
+    >(),
+    // Where: Entity information
+    entityType: text("entity_type").notNull().$type<"message" | "thread" | "user" | "conversation">(),
+    entityId: text("entity_id").notNull(), // UUID as text for flexibility
+    threadId: uuid("thread_id").references(() => supportThreads.id, { onDelete: "set null" }), // For filtering by thread
+    // Why: Reason and notes
+    reason: text("reason"), // Predefined reason code (e.g., "spam", "harassment", "pii_exposure")
+    note: text("note"), // Free-form note from moderator
+    // Additional metadata
+    metadata: jsonb("metadata").default({}), // Additional context (e.g., previous status, redacted patterns, etc.)
+    // When: Timestamp (immutable, no updatedAt)
+    createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
+  },
+  (table) => ({
+    supportModerationHistoryThreadIdx: index("support_moderation_history_thread_idx").on(table.threadId),
+    supportModerationHistoryEntityIdx: index("support_moderation_history_entity_idx").on(table.entityType, table.entityId),
+    supportModerationHistoryActorIdx: index("support_moderation_history_actor_idx").on(table.actorId),
+    supportModerationHistoryActionIdx: index("support_moderation_history_action_idx").on(table.actionType),
+    supportModerationHistoryCreatedIdx: index("support_moderation_history_created_idx").on(table.createdAt),
+    supportModerationHistoryCompositeIdx: index("support_moderation_history_composite_idx").on(
+      table.threadId,
+      table.actionType,
+      table.createdAt
+    ),
+  })
+);
+
 // SQL for triggers and additional indexes
 export const createTriggersAndIndexes = sql`
   -- Add foreign key constraint for categories self-reference

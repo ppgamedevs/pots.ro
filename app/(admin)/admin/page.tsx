@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { Package, Users, ShoppingBag, DollarSign, Settings, FileText, UserCog, Tags, CreditCard, Webhook, Percent, Shield, Megaphone, LayoutDashboard, Headphones, Wrench, Code2, HardDrive, Plug, Handshake, BadgePercent } from "lucide-react";
+import { Package, Users, ShoppingBag, DollarSign, Settings, FileText, UserCog, Tags, CreditCard, Webhook, Percent, Shield, Megaphone, LayoutDashboard, Headphones, Wrench, Code2, HardDrive, Plug, Handshake, BadgePercent, History } from "lucide-react";
 import { db } from "@/db";
 import { orders, products, sellerApplications } from "@/db/schema/core";
 import { and, eq, gte, ne, sql } from "drizzle-orm";
@@ -121,6 +121,13 @@ export default async function AdminDashboardPage() {
       href: "/support",
       icon: Headphones,
       color: "bg-cyan-600",
+    },
+    {
+      title: "Moderation History",
+      description: "Istoric acțiuni moderare support (Who / When / Why), filtre și export audit.",
+      href: "/admin/moderation-history",
+      icon: History,
+      color: "bg-orange-600",
     },
     {
       title: "Communication",

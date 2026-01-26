@@ -6,10 +6,12 @@ import {
   conversations,
   users,
   orders,
+  supportThreads,
 } from "@/db/schema/core";
 import { and, eq, desc, sql, or, isNotNull } from "drizzle-orm";
 import { getCurrentUser } from "@/lib/auth-helpers";
 import { writeAdminAudit } from "@/lib/admin/audit";
+import { logThreadModeration } from "@/lib/support/moderation-history";
 
 export const dynamic = "force-dynamic";
 
@@ -329,6 +331,30 @@ export async function POST(request: NextRequest) {
           meta: { escalateToUserId, escalationReason },
         });
 
+        // Find threadId for this conversation
+        let threadId: string | null = null;
+        try {
+          const [thread] = await db
+            .select({ id: supportThreads.id })
+            .from(supportThreads)
+            .where(eq(supportThreads.sourceId, conversationId))
+            .limit(1);
+          threadId = thread?.id || null;
+        } catch {
+          threadId = null;
+        }
+
+        await logThreadModeration({
+          actorId: user.id,
+          actorName: user.name || user.email,
+          actorRole: user.role as "admin" | "support",
+          actionType: "thread.escalate",
+          threadId: threadId || conversationId, // Fallback to conversationId if thread not found
+          reason: null,
+          note: escalationReason || `Escalated to ${escalateToUserId}`,
+          metadata: { escalateToUserId, escalationReason, conversationId },
+        });
+
         return NextResponse.json({ success: true, message: "Conversation escalated" });
       }
 
@@ -357,6 +383,30 @@ export async function POST(request: NextRequest) {
           entityId: conversationId,
           message: "De-escalated conversation",
           meta: { prevEscalatedTo },
+        });
+
+        // Find threadId for this conversation
+        let threadId: string | null = null;
+        try {
+          const [thread] = await db
+            .select({ id: supportThreads.id })
+            .from(supportThreads)
+            .where(eq(supportThreads.sourceId, conversationId))
+            .limit(1);
+          threadId = thread?.id || null;
+        } catch {
+          threadId = null;
+        }
+
+        await logThreadModeration({
+          actorId: user.id,
+          actorName: user.name || user.email,
+          actorRole: user.role as "admin" | "support",
+          actionType: "thread.deescalate",
+          threadId: threadId || conversationId, // Fallback to conversationId if thread not found
+          reason: null,
+          note: `De-escalated from ${prevEscalatedTo}`,
+          metadata: { prevEscalatedTo, conversationId },
         });
 
         return NextResponse.json({ success: true, message: "Conversation de-escalated" });

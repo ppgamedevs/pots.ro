@@ -4,6 +4,7 @@ import { supportThreads } from "@/db/schema/core";
 import { eq } from "drizzle-orm";
 import { getCurrentUser } from "@/lib/auth-helpers";
 import { writeAdminAudit } from "@/lib/admin/audit";
+import { logThreadModeration } from "@/lib/support/moderation-history";
 
 export const dynamic = "force-dynamic";
 
@@ -57,6 +58,17 @@ export async function PATCH(request: NextRequest, context: Params) {
       entityId: threadId,
       message: `Changed thread status to ${status}`,
       meta: { prevStatus: thread.status, newStatus: status },
+    });
+
+    await logThreadModeration({
+      actorId: user.id,
+      actorName: user.name || user.email,
+      actorRole: user.role as "admin" | "support",
+      actionType: "thread.statusChange",
+      threadId,
+      reason: null,
+      note: `Status changed from ${thread.status} to ${status}`,
+      metadata: { prevStatus: thread.status, newStatus: status },
     });
 
     return NextResponse.json({ success: true });

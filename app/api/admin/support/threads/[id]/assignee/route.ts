@@ -4,6 +4,7 @@ import { supportThreads } from "@/db/schema/core";
 import { eq } from "drizzle-orm";
 import { getCurrentUser } from "@/lib/auth-helpers";
 import { writeAdminAudit } from "@/lib/admin/audit";
+import { logThreadModeration } from "@/lib/support/moderation-history";
 
 export const dynamic = "force-dynamic";
 
@@ -66,6 +67,17 @@ export async function PATCH(request: NextRequest, context: Params) {
       entityId: threadId,
       message: newAssigneeId ? `Assigned thread to ${newAssigneeId}` : "Unassigned thread",
       meta: { assigneeId: newAssigneeId },
+    });
+
+    await logThreadModeration({
+      actorId: user.id,
+      actorName: user.name || user.email,
+      actorRole: user.role as "admin" | "support",
+      actionType: newAssigneeId ? "thread.assign" : "thread.unassign",
+      threadId,
+      reason: null,
+      note: newAssigneeId ? `Assigned to ${newAssigneeId}` : "Unassigned",
+      metadata: { prevAssigneeId: thread.assignedToUserId, newAssigneeId },
     });
 
     return NextResponse.json({ success: true });

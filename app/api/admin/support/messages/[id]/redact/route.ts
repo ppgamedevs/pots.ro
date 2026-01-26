@@ -1,10 +1,11 @@
 import { NextRequest, NextResponse } from "next/server";
 import { db } from "@/db";
-import { messageModeration, messages } from "@/db/schema/core";
+import { messageModeration, messages, supportThreads } from "@/db/schema/core";
 import { eq } from "drizzle-orm";
 import { getCurrentUser } from "@/lib/auth-helpers";
 import { writeAdminAudit } from "@/lib/admin/audit";
 import { redactPII } from "@/lib/support/pii-redact";
+import { logMessageModeration } from "@/lib/support/moderation-history";
 
 export const dynamic = "force-dynamic";
 
@@ -32,13 +33,28 @@ export async function POST(request: NextRequest, context: Params) {
     const pattern: RedactPattern = VALID_PATTERNS.includes(raw as RedactPattern) ? (raw as RedactPattern) : "all";
 
     const [message] = await db
-      .select({ id: messages.id, body: messages.body })
+      .select({ id: messages.id, body: messages.body, conversationId: messages.conversationId })
       .from(messages)
       .where(eq(messages.id, messageId))
       .limit(1);
 
     if (!message) {
       return NextResponse.json({ error: "Message not found" }, { status: 404 });
+    }
+
+    // Try to find threadId from conversationId
+    let threadId: string | null = null;
+    if (message.conversationId) {
+      try {
+        const [thread] = await db
+          .select({ id: supportThreads.id })
+          .from(supportThreads)
+          .where(eq(supportThreads.sourceId, message.conversationId))
+          .limit(1);
+        threadId = thread?.id || null;
+      } catch {
+        threadId = null;
+      }
     }
 
     const patterns = pattern === "all" ? undefined : [pattern];
@@ -84,6 +100,18 @@ export async function POST(request: NextRequest, context: Params) {
       entityId: messageId,
       message: "PII quick redaction",
       meta: { pattern },
+    });
+
+    await logMessageModeration({
+      actorId: user.id,
+      actorName: user.name || user.email,
+      actorRole: user.role as "admin" | "support",
+      actionType: "message.redactPII",
+      messageId,
+      threadId,
+      reason: `PII redaction (pattern: ${pattern})`,
+      note: null,
+      metadata: { pattern, prevStatus: existing?.status || "visible" },
     });
 
     return NextResponse.json({ success: true, redactedBody });

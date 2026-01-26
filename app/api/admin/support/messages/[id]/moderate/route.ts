@@ -1,10 +1,11 @@
 import { NextRequest, NextResponse } from "next/server";
 import { db } from "@/db";
-import { messageModeration, messages, users } from "@/db/schema/core";
+import { messageModeration, messages, users, supportThreads } from "@/db/schema/core";
 import { eq } from "drizzle-orm";
 import { getCurrentUser } from "@/lib/auth-helpers";
 import { writeAdminAudit } from "@/lib/admin/audit";
 import { autoRedactPII } from "@/lib/support/pii-redact";
+import { logMessageModeration } from "@/lib/support/moderation-history";
 
 export const dynamic = "force-dynamic";
 
@@ -123,6 +124,21 @@ export async function POST(request: NextRequest, context: Params) {
       return NextResponse.json({ error: "Message not found" }, { status: 404 });
     }
 
+    // Try to find threadId from conversationId (for buyer_seller threads)
+    let threadId: string | null = null;
+    if (message.conversationId) {
+      try {
+        const [thread] = await db
+          .select({ id: supportThreads.id })
+          .from(supportThreads)
+          .where(eq(supportThreads.sourceId, message.conversationId))
+          .limit(1);
+        threadId = thread?.id || null;
+      } catch {
+        threadId = null;
+      }
+    }
+
     // Get or create moderation overlay
     let [existing] = await db
       .select()
@@ -166,6 +182,18 @@ export async function POST(request: NextRequest, context: Params) {
           meta: { reason: reasonTrimmed },
         });
 
+        await logMessageModeration({
+          actorId: user.id,
+          actorName: user.name || user.email,
+          actorRole: user.role as "admin" | "support",
+          actionType: "message.hide",
+          messageId,
+          threadId,
+          reason: reasonTrimmed || null,
+          note: null,
+          metadata: { prevStatus: existing?.status || "visible" },
+        });
+
         return NextResponse.json({ success: true, message: "Message hidden" });
       }
 
@@ -207,6 +235,18 @@ export async function POST(request: NextRequest, context: Params) {
           entityId: messageId,
           message: "Soft-deleted message",
           meta: { reason: reasonTrimmed },
+        });
+
+        await logMessageModeration({
+          actorId: user.id,
+          actorName: user.name || user.email,
+          actorRole: user.role as "admin" | "support",
+          actionType: "message.delete",
+          messageId,
+          threadId,
+          reason: reasonTrimmed || null,
+          note: null,
+          metadata: { prevStatus: existing?.status || "visible" },
         });
 
         return NextResponse.json({ success: true, message: "Message deleted" });
@@ -267,6 +307,18 @@ export async function POST(request: NextRequest, context: Params) {
           meta: { reason: reasonTrimmed, autoRedact },
         });
 
+        await logMessageModeration({
+          actorId: user.id,
+          actorName: user.name || user.email,
+          actorRole: user.role as "admin" | "support",
+          actionType: "message.redact",
+          messageId,
+          threadId,
+          reason: reasonTrimmed || null,
+          note: null,
+          metadata: { autoRedact, prevStatus: existing?.status || "visible" },
+        });
+
         return NextResponse.json({
           success: true,
           message: "Message redacted",
@@ -308,6 +360,18 @@ export async function POST(request: NextRequest, context: Params) {
           meta: { reason, prevStatus: existing.status },
         });
 
+        await logMessageModeration({
+          actorId: user.id,
+          actorName: user.name || user.email,
+          actorRole: user.role as "admin" | "support",
+          actionType: "message.restore",
+          messageId,
+          threadId,
+          reason: reason || null,
+          note: null,
+          metadata: { prevStatus: existing.status },
+        });
+
         return NextResponse.json({ success: true, message: "Message restored" });
       }
 
@@ -347,6 +411,18 @@ export async function POST(request: NextRequest, context: Params) {
           entityId: messageId,
           message: "Added internal note",
           meta: { noteLength: internalNote.trim().length },
+        });
+
+        await logMessageModeration({
+          actorId: user.id,
+          actorName: user.name || user.email,
+          actorRole: user.role as "admin" | "support",
+          actionType: "message.addNote",
+          messageId,
+          threadId,
+          reason: null,
+          note: internalNote.trim(),
+          metadata: {},
         });
 
         return NextResponse.json({ success: true, message: "Internal note added" });
