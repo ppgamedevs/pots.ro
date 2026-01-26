@@ -204,7 +204,7 @@ export default function SellerProductsClient({
               <SelectItem value="active">Active</SelectItem>
               <SelectItem value="pending">Pending</SelectItem>
               <SelectItem value="inactive">Inactive</SelectItem>
-              <SelectItem value="">Toate</SelectItem>
+              <SelectItem value="all">Toate</SelectItem>
             </SelectContent>
           </Select>
         </div>

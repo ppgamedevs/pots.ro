@@ -4,6 +4,7 @@ import { messageModeration, messages, users } from "@/db/schema/core";
 import { eq } from "drizzle-orm";
 import { getCurrentUser } from "@/lib/auth-helpers";
 import { writeAdminAudit } from "@/lib/admin/audit";
+import { autoRedactPII } from "@/lib/support/pii-redact";
 
 export const dynamic = "force-dynamic";
 
@@ -14,29 +15,7 @@ interface Params {
   params: Promise<{ id: string }>;
 }
 
-// Simple PII redaction patterns
-const PII_PATTERNS = [
-  // Phone numbers (Romanian and international)
-  { regex: /(\+?\d{1,3}[-.\s]?)?\(?\d{2,4}\)?[-.\s]?\d{3}[-.\s]?\d{3,4}/g, replace: "[PHONE]" },
-  // Email addresses
-  { regex: /[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}/g, replace: "[EMAIL]" },
-  // IBAN
-  { regex: /[A-Z]{2}\d{2}[A-Z0-9]{4,30}/gi, replace: "[IBAN]" },
-  // Credit card numbers
-  { regex: /\b\d{4}[-\s]?\d{4}[-\s]?\d{4}[-\s]?\d{4}\b/g, replace: "[CARD]" },
-  // CNP (Romanian personal ID)
-  { regex: /\b[1-8]\d{2}(0[1-9]|1[0-2])(0[1-9]|[12]\d|3[01])\d{6}\b/g, replace: "[CNP]" },
-  // CUI/CIF (Romanian company ID)
-  { regex: /\b(RO)?\d{2,10}\b/gi, replace: "[CUI]" },
-];
-
-function autoRedactPII(text: string): string {
-  let result = text;
-  for (const pattern of PII_PATTERNS) {
-    result = result.replace(pattern.regex, pattern.replace);
-  }
-  return result;
-}
+/** RBAC: hide, addNote = admin + support; delete, redact, restore = admin only. */
 
 export async function GET(request: NextRequest, context: Params) {
   try {
@@ -125,6 +104,14 @@ export async function POST(request: NextRequest, context: Params) {
       return NextResponse.json({ error: "Action required" }, { status: 400 });
     }
 
+    const reasonTrimmed = typeof reason === "string" ? reason.trim() : "";
+    if (["hide", "delete", "redact"].includes(action) && !reasonTrimmed) {
+      return NextResponse.json(
+        { error: "Reason is required for hide, delete, and redact" },
+        { status: 400 }
+      );
+    }
+
     // Verify message exists
     const [message] = await db
       .select()
@@ -153,7 +140,7 @@ export async function POST(request: NextRequest, context: Params) {
             .update(messageModeration)
             .set({
               status: "hidden" as ModerationStatus,
-              reason: reason || existing.reason,
+              reason: reasonTrimmed,
               moderatedByUserId: user.id,
               moderatedAt: now,
               updatedAt: now,
@@ -163,7 +150,7 @@ export async function POST(request: NextRequest, context: Params) {
           await db.insert(messageModeration).values({
             messageId,
             status: "hidden" as ModerationStatus,
-            reason,
+            reason: reasonTrimmed,
             moderatedByUserId: user.id,
             moderatedAt: now,
           });
@@ -176,7 +163,7 @@ export async function POST(request: NextRequest, context: Params) {
           entityType: "message",
           entityId: messageId,
           message: "Hid message from public view",
-          meta: { reason },
+          meta: { reason: reasonTrimmed },
         });
 
         return NextResponse.json({ success: true, message: "Message hidden" });
@@ -196,7 +183,7 @@ export async function POST(request: NextRequest, context: Params) {
             .update(messageModeration)
             .set({
               status: "deleted" as ModerationStatus,
-              reason: reason || existing.reason,
+              reason: reasonTrimmed,
               moderatedByUserId: user.id,
               moderatedAt: now,
               updatedAt: now,
@@ -206,7 +193,7 @@ export async function POST(request: NextRequest, context: Params) {
           await db.insert(messageModeration).values({
             messageId,
             status: "deleted" as ModerationStatus,
-            reason,
+            reason: reasonTrimmed,
             moderatedByUserId: user.id,
             moderatedAt: now,
           });
@@ -219,7 +206,7 @@ export async function POST(request: NextRequest, context: Params) {
           entityType: "message",
           entityId: messageId,
           message: "Soft-deleted message",
-          meta: { reason },
+          meta: { reason: reasonTrimmed },
         });
 
         return NextResponse.json({ success: true, message: "Message deleted" });
@@ -253,7 +240,7 @@ export async function POST(request: NextRequest, context: Params) {
             .set({
               status: "redacted" as ModerationStatus,
               redactedBody: finalRedactedBody,
-              reason: reason || existing.reason,
+              reason: reasonTrimmed,
               moderatedByUserId: user.id,
               moderatedAt: now,
               updatedAt: now,
@@ -264,7 +251,7 @@ export async function POST(request: NextRequest, context: Params) {
             messageId,
             status: "redacted" as ModerationStatus,
             redactedBody: finalRedactedBody,
-            reason,
+            reason: reasonTrimmed,
             moderatedByUserId: user.id,
             moderatedAt: now,
           });
@@ -277,7 +264,7 @@ export async function POST(request: NextRequest, context: Params) {
           entityType: "message",
           entityId: messageId,
           message: "Redacted PII from message",
-          meta: { reason, autoRedact },
+          meta: { reason: reasonTrimmed, autoRedact },
         });
 
         return NextResponse.json({

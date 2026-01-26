@@ -3,7 +3,7 @@
 import { useState, useEffect, useRef } from "react";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
-import { User, LogOut, Settings, Heart, ShoppingBag } from "lucide-react";
+import { User, LogOut, Settings, Heart, ShoppingBag, Headphones, LayoutDashboard } from "lucide-react";
 import { useUser } from "@/lib/hooks/useUser";
 
 export function UserMenu() {
@@ -134,14 +134,34 @@ export function UserMenu() {
               </>
             )}
             
-            {(user.role === 'admin' || user.role === 'support') && (
+            {user.role === 'admin' && (
+              <>
+                <Link
+                  href="/admin"
+                  className="flex items-center gap-2 px-3 py-2 text-sm text-ink hover:bg-bg-soft rounded transition-micro"
+                  onClick={() => setIsOpen(false)}
+                >
+                  <LayoutDashboard className="h-4 w-4" />
+                  Admin Panel
+                </Link>
+                <Link
+                  href="/support"
+                  className="flex items-center gap-2 px-3 py-2 text-sm text-ink hover:bg-bg-soft rounded transition-micro"
+                  onClick={() => setIsOpen(false)}
+                >
+                  <Headphones className="h-4 w-4" />
+                  Support Panel
+                </Link>
+              </>
+            )}
+            {user.role === 'support' && (
               <Link
-                href="/admin"
+                href="/support"
                 className="flex items-center gap-2 px-3 py-2 text-sm text-ink hover:bg-bg-soft rounded transition-micro"
                 onClick={() => setIsOpen(false)}
               >
-                <User className="h-4 w-4" />
-                Admin Panel
+                <Headphones className="h-4 w-4" />
+                Support Panel
               </Link>
             )}
             

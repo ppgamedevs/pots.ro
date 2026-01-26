@@ -119,14 +119,14 @@ export function OrderFiltersComponent({ role, onFiltersChange }: OrderFiltersPro
               Status
             </label>
             <Select
-              value={filters.status || ''}
-              onValueChange={(value) => updateFilters({ status: value as OrderStatus || undefined, page: 1 })}
+              value={filters.status || 'all'}
+              onValueChange={(value) => updateFilters({ status: value === 'all' ? undefined : (value as OrderStatus), page: 1 })}
             >
               <SelectTrigger>
                 <SelectValue placeholder="All statuses" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="">All statuses</SelectItem>
+                <SelectItem value="all">All statuses</SelectItem>
                 {ORDER_STATUSES.map((status) => (
                   <SelectItem key={status.value} value={status.value}>
                     {status.label}
@@ -169,14 +169,14 @@ export function OrderFiltersComponent({ role, onFiltersChange }: OrderFiltersPro
                 Carrier
               </label>
               <Select
-                value={filters.carrier || ''}
-                onValueChange={(value) => updateFilters({ carrier: value || undefined, page: 1 })}
+                value={filters.carrier || 'all'}
+                onValueChange={(value) => updateFilters({ carrier: value === 'all' ? undefined : value, page: 1 })}
               >
                 <SelectTrigger>
                   <SelectValue placeholder="All carriers" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="">All carriers</SelectItem>
+                  <SelectItem value="all">All carriers</SelectItem>
                   {CARRIERS.map((carrier) => (
                     <SelectItem key={carrier.value} value={carrier.value}>
                       {carrier.label}

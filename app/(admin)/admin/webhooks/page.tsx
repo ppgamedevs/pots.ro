@@ -23,8 +23,8 @@ type WebhookLogRow = {
 export default function AdminWebhooksPage() {
   const [rows, setRows] = useState<WebhookLogRow[]>([]);
   const [loading, setLoading] = useState(true);
-  const [source, setSource] = useState<string>('');
-  const [result, setResult] = useState<string>('');
+  const [source, setSource] = useState<string>('all');
+  const [result, setResult] = useState<string>('all');
   const [ref, setRef] = useState<string>('');
   const [from, setFrom] = useState<string>('');
   const [to, setTo] = useState<string>('');
@@ -37,8 +37,8 @@ export default function AdminWebhooksPage() {
     const sp = new URLSearchParams();
     sp.set('page', '1');
     sp.set('pageSize', '50');
-    if (source) sp.set('source', source);
-    if (result) sp.set('result', result);
+    if (source && source !== 'all') sp.set('source', source);
+    if (result && result !== 'all') sp.set('result', result);
     if (ref.trim()) sp.set('ref', ref.trim());
     if (from) sp.set('from', from);
     if (to) sp.set('to', to);
@@ -133,7 +133,7 @@ export default function AdminWebhooksPage() {
           <Select value={source} onValueChange={setSource}>
             <SelectTrigger className="w-48"><SelectValue placeholder="Source" /></SelectTrigger>
             <SelectContent>
-              <SelectItem value="">Toate</SelectItem>
+              <SelectItem value="all">Toate</SelectItem>
               <SelectItem value="payments">payments</SelectItem>
               <SelectItem value="orders">orders</SelectItem>
               <SelectItem value="shipping">shipping</SelectItem>
@@ -145,7 +145,7 @@ export default function AdminWebhooksPage() {
           <Select value={result} onValueChange={setResult}>
             <SelectTrigger className="w-40"><SelectValue placeholder="Result" /></SelectTrigger>
             <SelectContent>
-              <SelectItem value="">Toate</SelectItem>
+              <SelectItem value="all">Toate</SelectItem>
               <SelectItem value="ok">ok</SelectItem>
               <SelectItem value="duplicate">duplicate</SelectItem>
               <SelectItem value="error">error</SelectItem>

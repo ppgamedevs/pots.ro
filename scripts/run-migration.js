@@ -987,6 +987,18 @@ async function ensureSupportConsoleSchema(sql) {
     await sql`CREATE INDEX IF NOT EXISTS support_thread_tags_tag_idx ON support_thread_tags(tag)`;
     await sql`CREATE UNIQUE INDEX IF NOT EXISTS support_thread_tags_unique ON support_thread_tags(thread_id, tag)`;
 
+    // Thread-level internal notes (staff-only)
+    await sql`
+      CREATE TABLE IF NOT EXISTS support_internal_notes (
+        id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+        thread_id uuid NOT NULL REFERENCES support_threads(id) ON DELETE CASCADE,
+        body text NOT NULL,
+        author_id uuid REFERENCES users(id) ON DELETE SET NULL,
+        created_at timestamptz NOT NULL DEFAULT now()
+      )
+    `;
+    await sql`CREATE INDEX IF NOT EXISTS support_internal_notes_thread_idx ON support_internal_notes(thread_id)`;
+
     // Support thread messages (for chatbot/whatsapp transcripts + agent replies)
     await sql`
       CREATE TABLE IF NOT EXISTS support_thread_messages (

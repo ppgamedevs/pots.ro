@@ -48,10 +48,6 @@ export const ADMIN_ROUTE_CONFIG: Record<string, { label: string; parent?: string
     label: 'Webhooks',
     parent: '/admin',
   },
-  '/admin/support': {
-    label: 'Support Console',
-    parent: '/admin',
-  },
   '/admin/communication': {
     label: 'Communication',
     parent: '/admin',
@@ -150,6 +146,12 @@ export function generateAdminBreadcrumbs(pathname: string, customLabel?: string)
 
   // Acasă este întotdeauna primul
   items.push({ name: 'Acasă', href: '/' });
+
+  // Support: rută separată, fără Admin
+  if (pathname === '/support' || pathname.startsWith('/support/')) {
+    items.push({ name: 'Support Console', href: '/support' });
+    return items;
+  }
 
   // Nu adăugăm breadcrumbs pentru pagina principală admin
   if (pathname === '/admin') {

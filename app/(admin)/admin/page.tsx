@@ -118,7 +118,7 @@ export default async function AdminDashboardPage() {
     {
       title: "Support Console",
       description: "Unified inbox, moderation, flags, chatbot queue",
-      href: "/admin/support",
+      href: "/support",
       icon: Headphones,
       color: "bg-cyan-600",
     },

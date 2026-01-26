@@ -1718,6 +1718,17 @@ export const supportThreadTags = pgTable("support_thread_tags", {
   supportThreadTagsUnique: uniqueIndex("support_thread_tags_unique").on(table.threadId, table.tag),
 }));
 
+// Thread-level internal notes (staff-only; never exposed to users)
+export const supportInternalNotes = pgTable("support_internal_notes", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  threadId: uuid("thread_id").notNull().references(() => supportThreads.id, { onDelete: "cascade" }),
+  body: text("body").notNull(),
+  authorId: uuid("author_id").references(() => users.id, { onDelete: "set null" }),
+  createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
+}, (table) => ({
+  supportInternalNotesThreadIdx: index("support_internal_notes_thread_idx").on(table.threadId),
+}));
+
 // Messages for unified support threads (used for chatbot/whatsapp threads)
 export const supportThreadMessages = pgTable(
   "support_thread_messages",

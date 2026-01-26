@@ -261,7 +261,7 @@ function AlertRow({
               )}
               {alert.linkedTicketId && (
                 <Link
-                  href={`/admin/support/tickets/${alert.linkedTicketId}`}
+                  href={`/support${alert.linkedTicketId ? `?ticket=${alert.linkedTicketId}` : ""}`}
                   className="w-full px-4 py-2 text-left text-sm hover:bg-gray-50 flex items-center gap-2"
                 >
                   <ExternalLink className="h-4 w-4" /> Vezi Ticket

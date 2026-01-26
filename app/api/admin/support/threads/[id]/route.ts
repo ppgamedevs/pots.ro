@@ -9,8 +9,10 @@ import {
   supportTicketMessages,
   supportThreadMessages,
   users,
+  orders,
+  sellers,
 } from "@/db/schema/core";
-import { and, eq, desc, asc } from "drizzle-orm";
+import { and, eq, asc, inArray } from "drizzle-orm";
 import { getCurrentUser } from "@/lib/auth-helpers";
 import { writeAdminAudit } from "@/lib/admin/audit";
 
@@ -101,13 +103,23 @@ export async function GET(request: NextRequest, context: Params) {
           ? await db
               .select()
               .from(messageModeration)
-              .where(eq(messageModeration.messageId, messageIds[0])) // TODO: inArray when multiple
+              .where(inArray(messageModeration.messageId, messageIds))
           : [];
 
         const moderationMap = new Map(moderations.map((m: ModerationRecord) => [m.messageId, m]));
+        const moderatorIds = [...new Set(moderations.map((m: ModerationRecord) => m.moderatedByUserId).filter(Boolean))] as string[];
+        type ModeratorRow = { id: string; name: string | null; email: string };
+        const moderatorRows: ModeratorRow[] = moderatorIds.length > 0
+          ? await db
+              .select({ id: users.id, name: users.name, email: users.email })
+              .from(users)
+              .where(inArray(users.id, moderatorIds))
+          : [];
+        const moderatorMap = new Map<string, ModeratorRow>(moderatorRows.map((u: ModeratorRow) => [u.id, u]));
 
         threadMessages = rawMessages.map((msg: RawMessage) => {
           const mod = moderationMap.get(msg.id);
+          const moderator = mod?.moderatedByUserId ? moderatorMap.get(mod.moderatedByUserId) ?? null : null;
           return {
             ...msg,
             moderation: mod
@@ -118,6 +130,7 @@ export async function GET(request: NextRequest, context: Params) {
                   moderatedAt: mod.moderatedAt,
                   isInternalNote: mod.isInternalNote,
                   internalNoteBody: mod.internalNoteBody,
+                  moderator: moderator ? { id: moderator.id, name: moderator.name, email: moderator.email } : null,
                 }
               : null,
             // Show redacted body if message was redacted
@@ -213,6 +226,43 @@ export async function GET(request: NextRequest, context: Params) {
       }));
     }
 
+    // Enrich thread with order, seller, buyer when present
+    let orderInfo: { orderNumber: string; status: string } | null = null;
+    let sellerInfo: { brandName: string; slug: string } | null = null;
+    let buyerInfo: { name: string | null; email: string } | null = null;
+
+    if (thread.orderId) {
+      const [o] = await db
+        .select({ orderNumber: orders.orderNumber, status: orders.status })
+        .from(orders)
+        .where(eq(orders.id, thread.orderId))
+        .limit(1);
+      if (o) orderInfo = { orderNumber: o.orderNumber, status: o.status };
+    }
+    if (thread.sellerId) {
+      const [s] = await db
+        .select({ brandName: sellers.brandName, slug: sellers.slug })
+        .from(sellers)
+        .where(eq(sellers.id, thread.sellerId!))
+        .limit(1);
+      if (s) sellerInfo = { brandName: s.brandName, slug: s.slug };
+    }
+    if (thread.buyerId) {
+      const [b] = await db
+        .select({ name: users.name, email: users.email })
+        .from(users)
+        .where(eq(users.id, thread.buyerId!))
+        .limit(1);
+      if (b) buyerInfo = { name: b.name, email: b.email };
+    }
+
+    const enrichedThread = {
+      ...thread,
+      order: orderInfo,
+      seller: sellerInfo,
+      buyer: buyerInfo,
+    };
+
     // Audit the view (for sensitive data access tracking)
     await writeAdminAudit({
       actorId: user.id,
@@ -225,7 +275,7 @@ export async function GET(request: NextRequest, context: Params) {
     });
 
     return NextResponse.json({
-      thread,
+      thread: enrichedThread,
       messages: threadMessages,
     });
   } catch (error) {

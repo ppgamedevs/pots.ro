@@ -30,9 +30,11 @@ export async function middleware(request: NextRequest) {
   }
   
   // Skip middleware for static files and API routes that don't need auth
+  const isApiAdmin = pathname.startsWith('/api/admin/');
   if (
     pathname.startsWith('/_next') ||
     pathname.startsWith('/api/auth') ||
+    (pathname.startsWith('/api/') && !isApiAdmin) ||
     pathname.startsWith('/static') ||
     pathname.includes('.') ||
     pathname.startsWith('/favicon') ||
@@ -108,18 +110,42 @@ export async function middleware(request: NextRequest) {
     
     if (!session) {
       console.log('[middleware] No valid session found, redirecting to login');
-      // Redirect to login with return URL
+      if (pathname.startsWith('/api/')) {
+        return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+      }
       const loginUrl = new URL('/autentificare', request.url);
       loginUrl.searchParams.set('next', pathname);
       return NextResponse.redirect(loginUrl);
     }
 
-    // Role-gated routes
-    if (pathname === '/admin' || pathname.startsWith('/admin/')) {
-      // Keep demos public (already handled by isPublicRoute)
+    // /api/admin/*: support allowed only for /api/admin/support/**; else 403
+    if (isApiAdmin) {
+      if (session.role !== 'admin' && session.role !== 'support') {
+        return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
+      }
+      if (session.role === 'support' && !pathname.startsWith('/api/admin/support/')) {
+        return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
+      }
+      return NextResponse.next();
+    }
+
+    // /support, /support/*: admin + support only
+    if (pathname === '/support' || pathname.startsWith('/support/')) {
       if (session.role !== 'admin' && session.role !== 'support') {
         return NextResponse.redirect(new URL('/', request.url));
       }
+      return NextResponse.next();
+    }
+
+    // /admin, /admin/*: admin only; support redirect to /support
+    if (pathname === '/admin' || pathname.startsWith('/admin/')) {
+      if (session.role !== 'admin' && session.role !== 'support') {
+        return NextResponse.redirect(new URL('/', request.url));
+      }
+      if (session.role === 'support') {
+        return NextResponse.redirect(new URL('/support', request.url));
+      }
+      return NextResponse.next();
     }
 
     if (pathname.startsWith('/seller/')) {
@@ -145,11 +171,12 @@ export const config = {
   matcher: [
     /*
      * Match all request paths except for the ones starting with:
-     * - api (API routes)
+     * - api (API routes), except /api/admin/* which we enforce in middleware
      * - _next/static (static files)
      * - _next/image (image optimization files)
      * - favicon.ico (favicon file)
      */
     '/((?!api|_next/static|_next/image|favicon.ico).*)',
+    '/api/admin/:path*',
   ],
 };
