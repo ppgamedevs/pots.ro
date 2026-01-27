@@ -14,6 +14,7 @@ import { SiteHeader } from "@/components/site/SiteHeader";
 import { SiteFooter } from "@/components/site/SiteFooter";
 import CookieBanner from "@/components/common/CookieBanner";
 import { ChatWidget } from "@/components/chat/ChatWidget";
+import { SupportThreadChatProvider } from "@/lib/support-thread-chat-context";
 import { SITE_NAME, SITE_URL, SITE_DESCRIPTION, SITE_KEYWORDS, TWITTER_HANDLE, OG_IMAGE_DEFAULT } from "@/lib/constants";
 // import { PerformanceOptimizer, criticalCSS, criticalResources } from "@/components/ui/performance-optimizer";
 
@@ -311,27 +312,29 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         <ThemeProvider>
           <ConfirmProvider>
             <ErrorBoundary>
-              <header>
-                <SiteHeader 
-                  categories={categories}
-                  suggestions={["ghivece ceramica", "cutii rotunde", "ambalaje hârtie"]}
-                />
-              </header>
-              
-              <main>
-                {children}
-              </main>
-              
-              <footer>
-                <SiteFooter 
-                  columns={footerColumns}
-                  payments={payments}
-                  carriers={carriers}
-                />
-              </footer>
-              
-              {/* Chat Widget */}
-              <ChatWidget />
+              <SupportThreadChatProvider>
+                <header>
+                  <SiteHeader 
+                    categories={categories}
+                    suggestions={["ghivece ceramica", "cutii rotunde", "ambalaje hârtie"]}
+                  />
+                </header>
+                
+                <main>
+                  {children}
+                </main>
+                
+                <footer>
+                  <SiteFooter 
+                    columns={footerColumns}
+                    payments={payments}
+                    carriers={carriers}
+                  />
+                </footer>
+                
+                {/* Chat Widget */}
+                <ChatWidget />
+              </SupportThreadChatProvider>
             </ErrorBoundary>
             <Toaster />
             <PerformanceMonitor />

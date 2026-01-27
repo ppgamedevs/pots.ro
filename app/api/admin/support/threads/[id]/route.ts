@@ -117,11 +117,24 @@ export async function GET(request: NextRequest, context: Params) {
           : [];
         const moderatorMap = new Map<string, ModeratorRow>(moderatorRows.map((u: ModeratorRow) => [u.id, u]));
 
+        const roleLabels: Record<string, string> = {
+          buyer: "Cumpărător",
+          seller: "Vânzător",
+          support: "Support",
+          admin: "Admin",
+        };
         threadMessages = rawMessages.map((msg: RawMessage) => {
           const mod = moderationMap.get(msg.id);
           const moderator = mod?.moderatedByUserId ? moderatorMap.get(mod.moderatedByUserId) ?? null : null;
+          const authorDisplayLabel =
+            msg.senderId === conversation!.buyerId
+              ? roleLabels.buyer
+              : msg.senderId === conversation!.sellerId
+                ? roleLabels.seller
+                : msg.senderName || msg.senderEmail?.split("@")[0] || "—";
           return {
             ...msg,
+            authorDisplayLabel,
             moderation: mod
               ? {
                   status: mod.status,
@@ -161,6 +174,13 @@ export async function GET(request: NextRequest, context: Params) {
           senderEmail: string | null;
         };
 
+        const [sellerRow] = await db
+          .select({ userId: sellers.userId })
+          .from(sellers)
+          .where(eq(sellers.id, ticket.sellerId))
+          .limit(1);
+        const sellerUserId = sellerRow?.userId ?? null;
+
         const ticketMessages: TicketMessage[] = await db
           .select({
             id: supportTicketMessages.id,
@@ -175,21 +195,40 @@ export async function GET(request: NextRequest, context: Params) {
           .where(eq(supportTicketMessages.ticketId, ticket.id))
           .orderBy(asc(supportTicketMessages.createdAt));
 
-        threadMessages = ticketMessages.map((msg: TicketMessage) => ({
-          ...msg,
-          moderation: null,
-          displayBody: msg.body,
-        }));
+        const roleLabels: Record<string, string> = {
+          buyer: "Cumpărător",
+          seller: "Vânzător",
+          support: "Support",
+          admin: "Admin",
+        };
+        threadMessages = ticketMessages.map((msg: TicketMessage) => {
+          const authorDisplayLabel =
+            msg.senderId && msg.senderId === sellerUserId ? roleLabels.seller : roleLabels.support;
+          return {
+            ...msg,
+            authorDisplayLabel,
+            moderation: null,
+            displayBody: msg.body,
+          };
+        });
       }
     } else if (thread.source === "chatbot" || thread.source === "whatsapp") {
       type SupportThreadMessage = {
         id: string;
-        senderId: string;
+        senderId: string | null;
         body: string;
         createdAt: Date;
         senderName: string | null;
         senderEmail: string | null;
         authorRole: string;
+        userRole: string | null;
+      };
+
+      const roleLabels: Record<string, string> = {
+        buyer: "Cumpărător",
+        seller: "Vânzător",
+        support: "Support",
+        admin: "Admin",
       };
 
       const supportMessages: SupportThreadMessage[] = await db
@@ -201,29 +240,47 @@ export async function GET(request: NextRequest, context: Params) {
           senderName: users.name,
           senderEmail: users.email,
           authorRole: supportThreadMessages.authorRole,
+          userRole: users.role,
         })
         .from(supportThreadMessages)
         .leftJoin(users, eq(supportThreadMessages.authorId, users.id))
         .where(eq(supportThreadMessages.threadId, thread.id))
         .orderBy(asc(supportThreadMessages.createdAt));
 
-      threadMessages = supportMessages.map((msg) => ({
-        id: msg.id,
-        senderId: msg.senderId || "system",
-        body: msg.body,
-        createdAt: msg.createdAt,
-        senderName: msg.senderName,
-        senderEmail:
-          msg.senderEmail ||
-          (msg.authorRole === "customer"
-            ? "customer@webchat"
-            : msg.authorRole === "support"
-              ? "support@floristmarket"
-              : "bot@floristmarket"),
-        displayBody: msg.body,
-        moderation: null,
-        authorRole: msg.authorRole,
-      }));
+      threadMessages = supportMessages.map((msg) => {
+        let authorDisplayLabel: string;
+        if (msg.authorRole === "customer") {
+          if (!msg.senderId) {
+            authorDisplayLabel = "Vizitator";
+          } else {
+            authorDisplayLabel = (msg.userRole && roleLabels[msg.userRole]) || msg.senderName || msg.senderEmail?.split("@")[0] || "—";
+          }
+        } else if (msg.authorRole === "support") {
+          authorDisplayLabel = roleLabels.support;
+        } else if (msg.authorRole === "bot") {
+          authorDisplayLabel = "Bot";
+        } else {
+          authorDisplayLabel = "System";
+        }
+        return {
+          id: msg.id,
+          senderId: msg.senderId || "system",
+          body: msg.body,
+          createdAt: msg.createdAt,
+          senderName: msg.senderName,
+          senderEmail:
+            msg.senderEmail ||
+            (msg.authorRole === "customer"
+              ? "customer@webchat"
+              : msg.authorRole === "support"
+                ? "support@floristmarket"
+                : "bot@floristmarket"),
+          displayBody: msg.body,
+          moderation: null,
+          authorRole: msg.authorRole,
+          authorDisplayLabel,
+        };
+      });
     }
 
     // Enrich thread with order, seller, buyer when present

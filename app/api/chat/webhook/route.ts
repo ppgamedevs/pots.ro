@@ -6,7 +6,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { db } from '@/db';
 import { chatbotQueue, supportThreadMessages, supportThreads } from '@/db/schema/core';
-import { and, asc, desc, eq, inArray, sql } from 'drizzle-orm';
+import { and, asc, desc, eq, inArray, not, sql } from 'drizzle-orm';
 import { detectIntent } from '@/lib/nlu';
 import { searchOrder, getOrderStatusMessage } from '@/lib/services/order-service';
 import { createTicket, findOpenTicket, updateTicketState, addMessage } from '@/lib/services/ticket-service';
@@ -48,55 +48,117 @@ export async function POST(request: NextRequest) {
     }
 
     const withinSupportHours = isWithinSupportHoursRo();
-    const conversationId: string =
-      (typeof conversation_id === 'string' && UUID_RE.test(conversation_id)
-        ? conversation_id
-        : UUID_RE.test(session_id)
-        ? session_id
-        : crypto.randomUUID());
+    const now = new Date();
+    const isUserIdUuid = typeof user_id === 'string' && UUID_RE.test(user_id);
 
     const clientMessageId: string | null =
       typeof client_message_id === 'string' && UUID_RE.test(client_message_id)
         ? client_message_id
         : null;
 
+    // Resolve conversationId and thread: same user → same open thread; closed → new thread.
+    let conversationId: string;
+    let threadId: string | undefined;
+
+    if (isUserIdUuid) {
+      // Logged-in: find open thread for this user (exclude closed/resolved).
+      const [openThread] = await db
+        .select({ id: supportThreads.id, sourceId: supportThreads.sourceId })
+        .from(supportThreads)
+        .where(
+          and(
+            eq(supportThreads.source, 'chatbot'),
+            eq(supportThreads.buyerId, user_id),
+            not(inArray(supportThreads.status, ['closed', 'resolved']))
+          )
+        )
+        .orderBy(desc(supportThreads.lastMessageAt))
+        .limit(1);
+
+      if (openThread) {
+        threadId = openThread.id;
+        conversationId = openThread.sourceId;
+      } else {
+        conversationId = crypto.randomUUID();
+        const [newThread] = await db
+          .insert(supportThreads)
+          .values({
+            source: 'chatbot',
+            sourceId: conversationId,
+            buyerId: user_id,
+            status: 'open',
+            priority: 'normal',
+            subject: email ? `Webchat: ${email}` : 'Webchat: Vizitator',
+            lastMessageAt: now,
+            lastMessagePreview: String(message).slice(0, 200),
+            messageCount: 0,
+            updatedAt: now,
+          })
+          .returning({ id: supportThreads.id });
+        threadId = newThread.id;
+      }
+    } else {
+      // Anonymous: use client session_id / conversation_id; if thread exists and is closed → new thread.
+      const clientId =
+        typeof conversation_id === 'string' && UUID_RE.test(conversation_id)
+          ? conversation_id
+          : UUID_RE.test(session_id)
+            ? session_id
+            : crypto.randomUUID();
+
+      const [existingThread] = await db
+        .select({ id: supportThreads.id, sourceId: supportThreads.sourceId, status: supportThreads.status })
+        .from(supportThreads)
+        .where(and(eq(supportThreads.source, 'chatbot'), eq(supportThreads.sourceId, clientId)))
+        .limit(1);
+
+      if (existingThread && (existingThread.status === 'closed' || existingThread.status === 'resolved')) {
+        conversationId = crypto.randomUUID();
+        const [newThread] = await db
+          .insert(supportThreads)
+          .values({
+            source: 'chatbot',
+            sourceId: conversationId,
+            buyerId: null,
+            status: 'open',
+            priority: 'normal',
+            subject: email ? `Webchat: ${email}` : 'Webchat: Vizitator',
+            lastMessageAt: now,
+            lastMessagePreview: String(message).slice(0, 200),
+            messageCount: 0,
+            updatedAt: now,
+          })
+          .returning({ id: supportThreads.id });
+        threadId = newThread.id;
+      } else if (existingThread) {
+        threadId = existingThread.id;
+        conversationId = existingThread.sourceId;
+      } else {
+        conversationId = clientId;
+        const [newThread] = await db
+          .insert(supportThreads)
+          .values({
+            source: 'chatbot',
+            sourceId: conversationId,
+            buyerId: null,
+            status: 'open',
+            priority: 'normal',
+            subject: email ? `Webchat: ${email}` : 'Webchat: Vizitator',
+            lastMessageAt: now,
+            lastMessagePreview: String(message).slice(0, 200),
+            messageCount: 0,
+            updatedAt: now,
+          })
+          .returning({ id: supportThreads.id });
+        threadId = newThread.id;
+      }
+    }
+
     // Detect intent and extract entities (used both for bot responses and for tagging human handoff)
     const nluResult = await detectIntent(message);
 
-    console.log('Web chat NLU Result:', nluResult);
-
     let response: string;
     let order_id: string | undefined;
-
-    const now = new Date();
-    const isUserIdUuid = typeof user_id === 'string' && UUID_RE.test(user_id);
-
-    // Ensure a support thread exists for this webchat conversation.
-    const [existingThread] = await db
-      .select({ id: supportThreads.id })
-      .from(supportThreads)
-      .where(and(eq(supportThreads.source, 'chatbot'), eq(supportThreads.sourceId, conversationId)))
-      .limit(1);
-
-    let threadId = existingThread?.id as string | undefined;
-    if (!threadId) {
-      const [newThread] = await db
-        .insert(supportThreads)
-        .values({
-          source: 'chatbot',
-          sourceId: conversationId,
-          buyerId: isUserIdUuid ? user_id : null,
-          status: 'open',
-          priority: 'normal',
-          subject: email ? `Webchat: ${email}` : 'Webchat: Vizitator',
-          lastMessageAt: now,
-          lastMessagePreview: String(message).slice(0, 200),
-          messageCount: 0,
-          updatedAt: now,
-        })
-        .returning({ id: supportThreads.id });
-      threadId = newThread.id;
-    }
 
     if (!threadId) {
       throw new Error('Failed to ensure support thread for webchat session');
@@ -191,6 +253,25 @@ export async function POST(request: NextRequest) {
         accepted: true,
         intent: nluResult.intent,
         confidence: nluResult.confidence,
+        mode: 'human',
+        conversation_id: conversationId,
+      });
+    }
+
+    // Outside hours: if conversation was already taken over by human, do not send bot messages.
+    const [supportReply] = await db
+      .select({ id: supportThreadMessages.id })
+      .from(supportThreadMessages)
+      .where(
+        and(
+          eq(supportThreadMessages.threadId, threadId!),
+          eq(supportThreadMessages.authorRole, 'support')
+        )
+      )
+      .limit(1);
+    if (supportReply?.id) {
+      return NextResponse.json({
+        accepted: true,
         mode: 'human',
         conversation_id: conversationId,
       });

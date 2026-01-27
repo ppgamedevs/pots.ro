@@ -1,5 +1,4 @@
 import { ReactNode } from "react";
-import { Toaster } from "sonner";
 
 export default function SupportLayout({ children }: { children: ReactNode }) {
   return (
@@ -7,7 +6,6 @@ export default function SupportLayout({ children }: { children: ReactNode }) {
       <main role="main" className="container mx-auto px-4 py-8">
         {children}
       </main>
-      <Toaster position="top-right" />
     </div>
   );
 }

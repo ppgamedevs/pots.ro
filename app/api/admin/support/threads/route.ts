@@ -26,7 +26,7 @@ import { logThreadModeration } from "@/lib/support/moderation-history";
 
 export const dynamic = "force-dynamic";
 
-type ThreadStatus = "open" | "assigned" | "waiting" | "resolved" | "closed";
+type ThreadStatus = "open" | "assigned" | "waiting" | "resolved" | "closed" | "active";
 type ThreadSource = "buyer_seller" | "seller_support" | "chatbot" | "whatsapp";
 type ThreadPriority = "low" | "normal" | "high" | "urgent";
 
@@ -51,7 +51,7 @@ function parseFilters(searchParams: URLSearchParams): ThreadFilters {
   const statusParam = searchParams.get("status");
   if (statusParam) {
     const statuses = statusParam.split(",").filter((s) =>
-      ["open", "assigned", "waiting", "resolved", "closed"].includes(s)
+      ["open", "assigned", "waiting", "resolved", "closed", "active"].includes(s)
     ) as ThreadStatus[];
     if (statuses.length > 0) filters.status = statuses;
   }
@@ -501,7 +501,7 @@ export async function POST(request: NextRequest) {
 
       case "status": {
         const { status } = params;
-        if (!["open", "assigned", "waiting", "resolved", "closed"].includes(status)) {
+        if (!["open", "assigned", "waiting", "resolved", "closed", "active"].includes(status)) {
           return NextResponse.json({ error: "Invalid status" }, { status: 400 });
         }
 

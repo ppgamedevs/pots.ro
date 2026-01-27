@@ -1,8 +1,10 @@
 "use client";
 
 import { useState, useEffect, useCallback, useRef } from "react";
+import Link from "next/link";
 import { toast } from "sonner";
 import { useUser } from "@/lib/hooks/useUser";
+import { useSupportThreadChat } from "@/lib/support-thread-chat-context";
 import { AdminPageWrapper } from "@/components/admin/AdminPageWrapper";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -26,6 +28,8 @@ import {
   RefreshCcw,
   Clock,
   User,
+  Users,
+  UserCog,
   Tag,
   ChevronRight,
   Eye,
@@ -38,6 +42,9 @@ import {
   XCircle,
   Loader2,
   MoreHorizontal,
+  Package,
+  ShoppingBag,
+  CreditCard,
 } from "lucide-react";
 
 // Types
@@ -48,7 +55,7 @@ interface SupportThread {
   orderId: string | null;
   sellerId: string | null;
   buyerId: string | null;
-  status: "open" | "assigned" | "waiting" | "resolved" | "closed";
+  status: "open" | "assigned" | "waiting" | "resolved" | "closed" | "active";
   assignedToUserId: string | null;
   assignedToName: string | null;
   assignedToEmail: string | null;
@@ -128,6 +135,7 @@ const statusColors: Record<string, { bg: string; text: string }> = {
   waiting: { bg: "bg-orange-100", text: "text-orange-800" },
   resolved: { bg: "bg-green-100", text: "text-green-800" },
   closed: { bg: "bg-gray-100", text: "text-gray-800" },
+  active: { bg: "bg-teal-100", text: "text-teal-800" },
   pending: { bg: "bg-blue-100", text: "text-blue-800" },
   processing: { bg: "bg-yellow-100", text: "text-yellow-800" },
   handed_off: { bg: "bg-purple-100", text: "text-purple-800" },
@@ -139,6 +147,22 @@ const priorityColors: Record<string, { bg: string; text: string }> = {
   normal: { bg: "bg-blue-100", text: "text-blue-700" },
   high: { bg: "bg-orange-100", text: "text-orange-700" },
   urgent: { bg: "bg-red-100", text: "text-red-700" },
+};
+
+const statusDisplayLabels: Record<SupportThread["status"], string> = {
+  open: "Open",
+  assigned: "Assigned",
+  waiting: "Waiting",
+  resolved: "Resolved",
+  closed: "Closed",
+  active: "Active",
+};
+
+const priorityDisplayLabels: Record<SupportThread["priority"], string> = {
+  low: "Low",
+  normal: "Normal",
+  high: "High",
+  urgent: "Urgent",
 };
 
 function formatDate(dateStr: string | null): string {
@@ -193,6 +217,15 @@ const supportMenuItems = [
   },
 ];
 
+const adminPageLinks = [
+  { title: "Selleri", description: "Informații, produse și suport pentru vânzători", href: "/admin/sellers", icon: Users, color: "bg-teal-500" },
+  { title: "Aplicații vânzători", description: "Cereri de înregistrare vânzători", href: "/admin/seller-applications", icon: Users, color: "bg-blue-500" },
+  { title: "Produse", description: "Vizualizare produse platformă", href: "/admin/products", icon: Package, color: "bg-green-500" },
+  { title: "Comenzi", description: "Monitorizare comenzi", href: "/admin/orders", icon: ShoppingBag, color: "bg-purple-500" },
+  { title: "Payments", description: "Plăți Netopia", href: "/admin/payments", icon: CreditCard, color: "bg-emerald-600" },
+  { title: "Utilizatori", description: "Utilizatori și roluri", href: "/admin/users", icon: UserCog, color: "bg-red-500" },
+];
+
 export default function AdminSupportPage() {
   const [activeTab, setActiveTab] = useState<string>("inbox");
 
@@ -243,6 +276,41 @@ export default function AdminSupportPage() {
         </div>
       </div>
 
+      <div className="mb-8">
+        <h2 className="text-lg font-semibold text-slate-900 dark:text-slate-100 mb-2">
+          Acces pagini Admin (view)
+        </h2>
+        <p className="text-sm text-slate-600 dark:text-slate-400 mb-4">
+          Link-uri către paginile de administrare (vizualizare).
+        </p>
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 gap-4">
+          {adminPageLinks.map((item) => {
+            const Icon = item.icon;
+            return (
+              <Link
+                key={item.href}
+                href={item.href}
+                className="block w-full text-left p-5 rounded-xl border border-slate-200 dark:border-white/10 bg-white dark:bg-slate-900/60 hover:border-slate-300 dark:hover:border-white/20 hover:shadow-md transition-all"
+              >
+                <div className="flex items-start gap-3">
+                  <div className={`${item.color} p-2.5 rounded-lg text-white shrink-0`}>
+                    <Icon className="h-5 w-5" />
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <h3 className="text-base font-semibold text-slate-900 dark:text-slate-100 mb-0.5">
+                      {item.title}
+                    </h3>
+                    <p className="text-xs text-slate-600 dark:text-slate-400 line-clamp-2">
+                      {item.description}
+                    </p>
+                  </div>
+                </div>
+              </Link>
+            );
+          })}
+        </div>
+      </div>
+
       <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-4">
         <TabsContent value="inbox">
           <InboxTab />
@@ -269,6 +337,7 @@ export default function AdminSupportPage() {
 // ============================================================================
 function InboxTab() {
   const { user } = useUser();
+  const { setSupportThreadChat } = useSupportThreadChat();
   const [threads, setThreads] = useState<SupportThread[]>([]);
   const [loading, setLoading] = useState(true);
   const [total, setTotal] = useState(0);
@@ -287,13 +356,11 @@ function InboxTab() {
   const [threadMessages, setThreadMessages] = useState<ThreadMessage[]>([]);
   const [threadNotes, setThreadNotes] = useState<ThreadNote[]>([]);
   const [loadingMessages, setLoadingMessages] = useState(false);
-  const [replyBody, setReplyBody] = useState("");
-  const [sendingReply, setSendingReply] = useState(false);
   const [noteBody, setNoteBody] = useState("");
   const [addingNote, setAddingNote] = useState(false);
-  const [sla, setSla] = useState<{ slaDeadline: string | null; slaBreach: boolean } | null>(null);
   const priorityOptimisticUntilRef = useRef<{ threadId: string; priority: SupportThread["priority"]; until: number } | null>(null);
-  const assigneeOptimisticUntilRef = useRef<{ threadId: string; assignedToUserId: string | null; assignedToEmail: string | null; status: SupportThread["status"]; until: number } | null>(null);
+  const assigneeOptimisticUntilRef = useRef<{ threadId: string; assignedToUserId: string | null; assignedToEmail: string | null; until: number } | null>(null);
+  const statusOptimisticUntilRef = useRef<{ threadId: string; status: SupportThread["status"]; until: number } | null>(null);
   const selectedThreadRef = useRef<SupportThread | null>(null);
   const pendingRefreshRef = useRef<{ list: boolean; thread: boolean }>({ list: false, thread: false });
   const refreshTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -301,6 +368,25 @@ function InboxTab() {
   useEffect(() => {
     selectedThreadRef.current = selectedThread;
   }, [selectedThread]);
+
+  useEffect(() => {
+    if (!setSupportThreadChat) return;
+    setSupportThreadChat({
+      threadMessages,
+      selectedThread: selectedThread ? { id: selectedThread.id, source: selectedThread.source } : null,
+      loadingMessages,
+    });
+  }, [threadMessages, selectedThread, loadingMessages, setSupportThreadChat]);
+
+  useEffect(() => {
+    return () => {
+      setSupportThreadChat?.({
+        threadMessages: [],
+        selectedThread: null,
+        loadingMessages: false,
+      });
+    };
+  }, [setSupportThreadChat]);
 
   const loadThreads = useCallback(async (opts?: { silent?: boolean }) => {
     try {
@@ -343,8 +429,17 @@ function InboxTab() {
               assignedToUserId: optAssignee.assignedToUserId,
               assignedToEmail: optAssignee.assignedToEmail,
               assignedToName: null,
-              status: optAssignee.status,
             };
+          }
+          return t;
+        });
+      }
+      const optStatus = statusOptimisticUntilRef.current;
+      if (optStatus && Date.now() < optStatus.until) {
+        updatedThreads = updatedThreads.map((t: SupportThread) => {
+          if (t.id === optStatus.threadId) {
+            if (t.status === optStatus.status) statusOptimisticUntilRef.current = null;
+            return { ...t, status: optStatus.status };
           }
           return t;
         });
@@ -367,14 +462,12 @@ function InboxTab() {
     if (!current) return;
     const threadId = current.id;
     try {
-      const [detailRes, notesRes, slaRes] = await Promise.all([
+      const [detailRes, notesRes] = await Promise.all([
         fetch(`/api/admin/support/threads/${threadId}`, { credentials: "include" }),
         fetch(`/api/admin/support/threads/${threadId}/notes`, { credentials: "include" }),
-        fetch(`/api/admin/support/threads/${threadId}/sla`, { credentials: "include" }),
       ]);
       const detailJson = await detailRes.json();
       const notesJson = await notesRes.json();
-      const slaJson = slaRes.ok ? await slaRes.json() : null;
       if (!detailRes.ok) return;
       if (selectedThreadRef.current?.id !== threadId) return;
       const sel = selectedThreadRef.current;
@@ -401,12 +494,18 @@ function InboxTab() {
           assignedToUserId: optAssignee.assignedToUserId,
           assignedToEmail: optAssignee.assignedToEmail,
           assignedToName: null,
-          status: optAssignee.status,
         };
+      }
+      const optStatus = statusOptimisticUntilRef.current;
+      if (
+        optStatus?.threadId === sel.id &&
+        Date.now() < optStatus.until &&
+        nextDetail
+      ) {
+        nextDetail = { ...nextDetail, status: optStatus.status };
       }
       setDetailThread(nextDetail);
       if (notesRes.ok) setThreadNotes(notesJson.notes || []);
-      setSla(slaJson ? { slaDeadline: slaJson.slaDeadline ?? null, slaBreach: !!slaJson.slaBreach } : null);
     } catch {
       /* ignore */
     }
@@ -447,27 +546,42 @@ function InboxTab() {
     setSelectedThread(thread);
     setDetailThread(null);
     setThreadNotes([]);
-    setSla(null);
+    setThreadMessages([]);
     setLoadingMessages(true);
     try {
-      const [detailRes, notesRes, slaRes] = await Promise.all([
+      const [detailRes, notesRes] = await Promise.all([
         fetch(`/api/admin/support/threads/${thread.id}`, { credentials: "include" }),
         fetch(`/api/admin/support/threads/${thread.id}/notes`, { credentials: "include" }),
-        fetch(`/api/admin/support/threads/${thread.id}/sla`, { credentials: "include" }),
       ]);
       const detailJson = await detailRes.json();
       const notesJson = await notesRes.json();
-      const slaJson = slaRes.ok ? await slaRes.json() : null;
       if (!detailRes.ok) throw new Error(detailJson?.error || "Failed to load messages");
+      if (selectedThreadRef.current?.id !== thread.id) return;
       setThreadMessages(detailJson.messages || []);
-      setDetailThread(detailJson.thread ? { ...thread, ...detailJson.thread } : thread);
+      let nextDetail: SupportThread = detailJson.thread ? { ...thread, ...detailJson.thread } : thread;
+      const optPriority = priorityOptimisticUntilRef.current;
+      if (optPriority?.threadId === thread.id && Date.now() < optPriority.until) {
+        nextDetail = { ...nextDetail, priority: optPriority.priority };
+      }
+      const optAssignee = assigneeOptimisticUntilRef.current;
+      if (optAssignee?.threadId === thread.id && Date.now() < optAssignee.until) {
+        nextDetail = {
+          ...nextDetail,
+          assignedToUserId: optAssignee.assignedToUserId,
+          assignedToEmail: optAssignee.assignedToEmail,
+          assignedToName: null,
+        };
+      }
+      const optStatus = statusOptimisticUntilRef.current;
+      if (optStatus?.threadId === thread.id && Date.now() < optStatus.until) {
+        nextDetail = { ...nextDetail, status: optStatus.status };
+      }
+      setDetailThread(nextDetail);
       setThreadNotes(notesRes.ok ? notesJson.notes || [] : []);
-      setSla(slaJson ? { slaDeadline: slaJson.slaDeadline ?? null, slaBreach: !!slaJson.slaBreach } : null);
-      setReplyBody("");
       setNoteBody("");
+      setLoadingMessages(false);
     } catch (e: any) {
       toast.error(e?.message || "Error loading messages");
-    } finally {
       setLoadingMessages(false);
     }
   };
@@ -487,6 +601,16 @@ function InboxTab() {
 
 
   const handlePatchStatus = async (threadId: string, status: string) => {
+    const prev = threads.find((t) => t.id === threadId)?.status;
+    const s = status as SupportThread["status"];
+    statusOptimisticUntilRef.current = { threadId, status: s, until: Date.now() + 4000 };
+    setThreads((prevList) =>
+      prevList.map((t) => (t.id === threadId ? { ...t, status: s } : t))
+    );
+    if (selectedThread?.id === threadId) {
+      setSelectedThread((t) => (t ? { ...t, status: s } : null));
+      setDetailThread((t) => (t ? { ...t, status: s } : null));
+    }
     try {
       const res = await fetch(`/api/admin/support/threads/${threadId}/status`, {
         method: "PATCH",
@@ -495,18 +619,23 @@ function InboxTab() {
         body: JSON.stringify({ status }),
       });
       const json = await res.json();
-      if (!res.ok) throw new Error(json?.error || "Failed");
-      const s = status as SupportThread["status"];
-      setThreads((prev) =>
-        prev.map((t) => (t.id === threadId ? { ...t, status: s } : t))
-      );
-      if (selectedThread?.id === threadId) {
-        setSelectedThread((t) => (t ? { ...t, status: s } : null));
-        setDetailThread((t) => (t ? { ...t, status: s } : null));
+      if (!res.ok) {
+        statusOptimisticUntilRef.current = null;
+        throw new Error(json?.error || "Failed");
       }
       toast.success("Status updated");
       scheduleRefresh({ list: true, thread: true });
     } catch (e: any) {
+      statusOptimisticUntilRef.current = null;
+      if (typeof prev !== "undefined") {
+        setThreads((prevList) =>
+          prevList.map((t) => (t.id === threadId ? { ...t, status: prev } : t))
+        );
+        if (selectedThread?.id === threadId) {
+          setSelectedThread((t) => (t ? { ...t, status: prev } : null));
+          setDetailThread((t) => (t ? { ...t, status: prev } : null));
+        }
+      }
       toast.error(e?.message || "Error");
     }
   };
@@ -515,7 +644,6 @@ function InboxTab() {
     const prevThread = threads.find((t) => t.id === threadId);
     const prevSelected = selectedThread?.id === threadId ? selectedThread : null;
     const prevDetail = detailThread?.id === threadId ? detailThread : null;
-    const newStatus: SupportThread["status"] = assigneeId ? "assigned" : "open";
     const isUnassign = !assigneeId || assigneeId === null;
     const resolvedAssigneeId = assigneeId === "me" && user ? user.id : assigneeId;
     const resolvedAssigneeEmail = assigneeId === "me" && user ? user.email : null;
@@ -524,7 +652,6 @@ function InboxTab() {
       threadId,
       assignedToUserId: isUnassign ? null : resolvedAssigneeId,
       assignedToEmail: isUnassign ? null : resolvedAssigneeEmail,
-      status: newStatus,
       until: Date.now() + 4000,
     };
     
@@ -536,7 +663,6 @@ function InboxTab() {
               assignedToUserId: isUnassign ? null : resolvedAssigneeId,
               assignedToName: null,
               assignedToEmail: isUnassign ? null : resolvedAssigneeEmail,
-              status: newStatus,
             }
           : t
       )
@@ -549,7 +675,6 @@ function InboxTab() {
               assignedToUserId: isUnassign ? null : resolvedAssigneeId,
               assignedToName: null,
               assignedToEmail: isUnassign ? null : resolvedAssigneeEmail,
-              status: newStatus,
             }
           : null
       );
@@ -560,7 +685,6 @@ function InboxTab() {
               assignedToUserId: isUnassign ? null : resolvedAssigneeId,
               assignedToName: null,
               assignedToEmail: isUnassign ? null : resolvedAssigneeEmail,
-              status: newStatus,
             }
           : null
       );
@@ -614,35 +738,6 @@ function InboxTab() {
       toast.error(e?.message || "Error");
     } finally {
       setAddingNote(false);
-    }
-  };
-
-  const sendThreadReply = async () => {
-    if (!selectedThread) return;
-    if (!replyBody.trim()) return;
-
-    if (!(selectedThread.source === "chatbot" || selectedThread.source === "whatsapp")) {
-      toast.error("Reply is only enabled for Chatbot/WhatsApp threads right now.");
-      return;
-    }
-
-    setSendingReply(true);
-    try {
-      const res = await fetch(`/api/admin/support/threads/${selectedThread.id}/reply`, {
-        method: "POST",
-        credentials: "include",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ body: replyBody.trim() }),
-      });
-      const json = await res.json();
-      if (!res.ok) throw new Error(json?.error || "Failed to send reply");
-      toast.success("Reply sent");
-      setReplyBody("");
-      scheduleRefresh({ list: true, thread: true });
-    } catch (e: any) {
-      toast.error(e?.message || "Error sending reply");
-    } finally {
-      setSendingReply(false);
     }
   };
 
@@ -723,9 +818,9 @@ function InboxTab() {
       <p className="text-sm text-muted-foreground">
         Inbox • incl. Moderation & Audit
       </p>
-      <div className="grid gap-4 lg:grid-cols-3">
+      <div className="grid gap-4 lg:grid-cols-[minmax(0,1.2fr)_minmax(0,1.5fr)]">
         {/* Thread List */}
-        <div className="lg:col-span-2">
+        <div>
           <Card>
             <CardHeader className="pb-3">
               <div className="flex items-center justify-between">
@@ -819,61 +914,64 @@ function InboxTab() {
                     }`}
                     onClick={() => loadThreadMessages(thread)}
                   >
-                    <div className="flex items-start justify-between gap-2">
-                      <div className="flex-1 min-w-0">
-                        <div className="flex items-center gap-2 mb-1">
-                          <Badge variant="outline" className="text-xs">
-                            {sourceLabels[thread.source] || thread.source}
-                          </Badge>
-                          <Badge
-                            className={`text-xs ${statusColors[thread.status]?.bg} ${statusColors[thread.status]?.text}`}
-                          >
-                            {thread.status}
-                          </Badge>
-                          <Badge
-                            className={`text-xs ${priorityColors[thread.priority]?.bg} ${priorityColors[thread.priority]?.text}`}
-                          >
-                            {thread.priority}
-                          </Badge>
-                          {thread.slaBreach && (
-                            <Badge variant="destructive" className="text-xs">
-                              SLA Breach
-                            </Badge>
-                          )}
-                        </div>
-                        <p className="font-medium text-sm truncate">
-                          {thread.displaySubject ?? thread.subject ?? "No subject"}
-                        </p>
-                        <p className="text-xs text-muted-foreground truncate mt-1">
-                          {thread.lastMessagePreview || "No messages"}
-                        </p>
-                        <div className="flex items-center gap-3 mt-2 text-xs text-muted-foreground">
-                          {thread.buyer && (
-                            <span className="flex items-center gap-1">
-                              <User className="h-3 w-3" />
-                              {thread.buyer.email}
-                            </span>
-                          )}
-                          {thread.seller && (
-                            <span>→ {thread.seller.brandName}</span>
-                          )}
-                          <span className="flex items-center gap-1">
-                            <MessageSquare className="h-3 w-3" />
-                            {thread.messageCount}
+                    <div className="flex items-center gap-2 mb-1 flex-wrap">
+                      <Badge
+                        className={`text-xs ${statusColors[thread.status]?.bg} ${statusColors[thread.status]?.text}`}
+                      >
+                        {statusDisplayLabels[thread.status] ?? thread.status}
+                      </Badge>
+                      <Badge
+                        className={`text-xs ${priorityColors[thread.priority]?.bg} ${priorityColors[thread.priority]?.text}`}
+                      >
+                        {priorityDisplayLabels[thread.priority] ?? thread.priority}
+                      </Badge>
+                      <Badge
+                        className={`text-xs ${
+                          thread.assignedToUserId || thread.assignedToEmail
+                            ? "bg-emerald-100 text-emerald-800 dark:bg-emerald-900/40 dark:text-emerald-300"
+                            : "bg-slate-100 text-slate-600 dark:bg-slate-800 dark:text-slate-400"
+                        }`}
+                      >
+                        {thread.assignedToUserId || thread.assignedToEmail
+                          ? thread.assignedToEmail
+                            ? `Assigned to ${thread.assignedToEmail.split("@")[0]}`
+                            : "Assigned"
+                          : "Unassigned"}
+                      </Badge>
+                    </div>
+                    {thread.slaBreach && (
+                      <div className="flex items-center gap-2 mb-1 flex-wrap">
+                        <Badge variant="destructive" className="text-xs">
+                          SLA Breach
+                        </Badge>
+                      </div>
+                    )}
+                    <p className="font-medium text-sm truncate">
+                      {thread.displaySubject ?? thread.subject ?? "No subject"}
+                    </p>
+                    <p className="text-xs text-muted-foreground truncate mt-1">
+                      {thread.lastMessagePreview || "No messages"}
+                    </p>
+                    <div className="flex items-center justify-between gap-2 mt-2 text-xs text-muted-foreground">
+                      <div className="flex items-center gap-3 min-w-0">
+                        {thread.buyer && (
+                          <span className="flex items-center gap-1 truncate">
+                            <User className="h-3 w-3 shrink-0" />
+                            {thread.buyer.email}
                           </span>
-                        </div>
-                      </div>
-                      <div className="text-right text-xs text-muted-foreground">
-                        <div>{timeAgo(thread.lastMessageAt)}</div>
-                        {thread.assignedToEmail && (
-                          <div className="mt-1 text-primary">
-                            → {thread.assignedToEmail.split("@")[0]}
-                          </div>
                         )}
+                        {thread.seller && (
+                          <span className="shrink-0">→ {thread.seller.brandName}</span>
+                        )}
+                        <span className="flex items-center gap-1 shrink-0">
+                          <MessageSquare className="h-3 w-3" />
+                          {thread.messageCount}
+                        </span>
                       </div>
+                      <span className="shrink-0">{timeAgo(thread.lastMessageAt)}</span>
                     </div>
                     {thread.tags.length > 0 && (
-                      <div className="flex gap-1 mt-2">
+                      <div className="flex gap-1 mt-2 flex-wrap">
                         {thread.tags.map((tag) => (
                           <Badge key={tag} variant="secondary" className="text-xs">
                             {tag}
@@ -914,230 +1012,169 @@ function InboxTab() {
         </Card>
       </div>
 
-      {/* Thread Detail Panel */}
-      <div className="lg:col-span-1">
-        <Card className="sticky top-4">
-          <CardHeader className="pb-3">
-            <CardTitle className="text-lg">Thread Detail</CardTitle>
-          </CardHeader>
-          <CardContent>
-            {!selectedThread ? (
-              <div className="text-center py-8 text-muted-foreground">
-                Select a thread to view details
-              </div>
-            ) : loadingMessages ? (
-              <div className="flex items-center justify-center py-8">
-                <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
-              </div>
-            ) : (
-              <div className="space-y-4">
-                {(() => {
-                  const t = detailThread ?? selectedThread;
-                  return t ? (
-                    <>
-                      {(t.order || t.seller) && (
-                        <div className="rounded-lg border border-slate-200 dark:border-white/10 p-3 text-sm space-y-1">
-                          {t.order && (
-                            <div>
-                              <span className="text-muted-foreground">Order:</span>{" "}
-                              {t.order.orderNumber} ({t.order.status})
+      {/* Conversație */}
+      <Card className="flex flex-col min-h-[400px] max-h-[60vh] lg:max-h-[calc(100vh-12rem)]">
+        <CardHeader className="pb-2">
+          <CardTitle className="text-lg">Conversație</CardTitle>
+        </CardHeader>
+        <CardContent className="flex-1 flex flex-col min-h-0 p-0">
+          {!selectedThread ? (
+            <div className="flex-1 flex items-center justify-center px-4 py-8 text-center text-muted-foreground text-sm">
+              Selectează un thread pentru a vedea mesajele
+            </div>
+          ) : loadingMessages ? (
+            <div className="flex-1 flex items-center justify-center px-4 py-8">
+              <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
+            </div>
+          ) : (
+            <div className="flex-1 flex flex-col min-h-0">
+              {(() => {
+                const t = detailThread ?? selectedThread;
+                return t ? (
+                  <>
+                    <div className="flex flex-wrap gap-2 px-4 pt-4 pb-2 border-b border-slate-200 dark:border-white/10 shrink-0">
+                      <Select
+                        value={t.status}
+                        onValueChange={(status) => handlePatchStatus(t.id, status)}
+                      >
+                        <SelectTrigger className="w-[120px]">
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {(
+                            ["open", "active", "waiting", "resolved", "closed"] as const
+                          ).map((s) => (
+                            <SelectItem key={s} value={s}>
+                              {statusDisplayLabels[s]}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                      <Select
+                        value={t.priority}
+                        onValueChange={(priority) =>
+                          handleThreadAction(t.id, "priority", { priority })
+                        }
+                      >
+                        <SelectTrigger className="w-[100px]">
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {(["low", "normal", "high", "urgent"] as const).map((p) => (
+                            <SelectItem key={p} value={p}>
+                              {priorityDisplayLabels[p]}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => handlePatchAssignee(t.id, t.assignedToUserId ? null : "me")}
+                      >
+                        {t.assignedToUserId ? "Unassign" : "Assign to me"}
+                      </Button>
+                    </div>
+                    <div className="space-y-2 px-4 py-3 border-b border-slate-200 dark:border-white/10 shrink-0">
+                      <Label className="text-xs font-medium text-muted-foreground">Internal notes</Label>
+                      {threadNotes.length > 0 && (
+                        <div className="space-y-2 max-h-32 overflow-y-auto">
+                          {threadNotes.map((n) => (
+                            <div
+                              key={n.id}
+                              className="rounded-lg border border-slate-200 dark:border-white/10 p-2 text-sm bg-slate-50 dark:bg-slate-900/40"
+                            >
+                              <p className="whitespace-pre-wrap">{n.body}</p>
+                              <p className="text-xs text-muted-foreground mt-1">
+                                {n.authorName || n.authorEmail || "—"} · {formatDate(n.createdAt)}
+                              </p>
                             </div>
-                          )}
-                          {t.seller && (
-                            <div>
-                              <span className="text-muted-foreground">Seller:</span>{" "}
-                              {t.seller.brandName} ({t.seller.slug})
-                            </div>
-                          )}
+                          ))}
                         </div>
                       )}
-                      {sla && (sla.slaDeadline || sla.slaBreach) && (
-                        <div className="rounded-lg border border-slate-200 dark:border-white/10 p-3 text-sm space-y-1">
-                          {sla.slaDeadline && (
-                            <div>
-                              <span className="text-muted-foreground">Next response due:</span>{" "}
-                              {formatDate(sla.slaDeadline)}
-                            </div>
-                          )}
-                          {sla.slaBreach && (
-                            <Badge variant="destructive" className="text-xs">SLA breach</Badge>
-                          )}
-                        </div>
-                      )}
-                      {/* Thread Actions */}
-                      <div className="flex flex-wrap gap-2">
-                        <Select
-                          value={t.status}
-                          onValueChange={(status) => handlePatchStatus(t.id, status)}
-                        >
-                          <SelectTrigger className="w-[120px]">
-                            <SelectValue />
-                          </SelectTrigger>
-                          <SelectContent>
-                            <SelectItem value="open">Open</SelectItem>
-                            <SelectItem value="assigned">Assigned</SelectItem>
-                            <SelectItem value="waiting">Waiting</SelectItem>
-                            <SelectItem value="resolved">Resolved</SelectItem>
-                            <SelectItem value="closed">Closed</SelectItem>
-                          </SelectContent>
-                        </Select>
-                        <Select
-                          value={t.priority}
-                          onValueChange={(priority) =>
-                            handleThreadAction(t.id, "priority", { priority })
-                          }
-                        >
-                          <SelectTrigger className="w-[100px]">
-                            <SelectValue />
-                          </SelectTrigger>
-                          <SelectContent>
-                            <SelectItem value="low">Low</SelectItem>
-                            <SelectItem value="normal">Normal</SelectItem>
-                            <SelectItem value="high">High</SelectItem>
-                            <SelectItem value="urgent">Urgent</SelectItem>
-                          </SelectContent>
-                        </Select>
+                      <div className="flex gap-2">
+                        <Textarea
+                          placeholder="Add internal note…"
+                          value={noteBody}
+                          onChange={(e) => setNoteBody(e.target.value)}
+                          rows={2}
+                          className="flex-1"
+                        />
                         <Button
-                          variant="outline"
                           size="sm"
-                          onClick={() => handlePatchAssignee(t.id, t.assignedToUserId ? null : "me")}
+                          onClick={handleAddNote}
+                          disabled={addingNote || !noteBody.trim()}
                         >
-                          {t.assignedToUserId ? "Unassign" : "Assign to me"}
+                          {addingNote ? "…" : "Add"}
                         </Button>
                       </div>
-                    </>
-                  ) : null;
-                })()}
-
-                {/* Messages */}
-                <div className="space-y-3 max-h-[400px] overflow-y-auto">
-                  {threadMessages.length === 0 ? (
-                    <p className="text-sm text-muted-foreground">No messages</p>
-                  ) : (
-                    threadMessages.map((msg) => (
-                      <div
-                        key={msg.id}
-                        className={`p-3 rounded-lg text-sm ${
-                          msg.moderation?.status === "hidden" ||
-                          msg.moderation?.status === "deleted"
-                            ? "bg-red-50 border border-red-200"
-                            : msg.moderation?.status === "redacted"
-                            ? "bg-yellow-50 border border-yellow-200"
-                            : "bg-muted"
-                        }`}
-                      >
-                        <div className="flex items-center justify-between mb-1">
-                          <span className="font-medium text-xs">
-                            {msg.authorDisplayLabel ?? msg.senderName ?? msg.senderEmail?.split("@")[0] ?? "—"}
-                          </span>
-                          <span className="text-xs text-muted-foreground">
-                            {formatDate(msg.createdAt)}
-                          </span>
-                        </div>
-                        <p className="whitespace-pre-wrap">{msg.displayBody}</p>
-                        {msg.moderation?.status && msg.moderation.status !== "visible" && (
-                          <p className="mt-1 text-xs text-muted-foreground">
-                            {msg.moderation.status === "hidden" && "Hidden"}
-                            {msg.moderation.status === "deleted" && "Deleted"}
-                            {msg.moderation.status === "redacted" && "Redacted"}
-                            {" by "}
-                            {msg.moderation.moderator?.name || msg.moderation.moderator?.email || "—"}
-                            {msg.moderation.moderatedAt && ` on ${formatDate(msg.moderation.moderatedAt)}`}
-                          </p>
-                        )}
-                        {msg.moderation?.isInternalNote && msg.moderation.internalNoteBody && (
-                          <div className="mt-2 p-2 bg-blue-50 rounded text-xs text-blue-800">
-                            <strong>Internal Note:</strong> {msg.moderation.internalNoteBody}
-                          </div>
-                        )}
-                        {/* Moderation actions */}
-                        {selectedThread.source === "buyer_seller" && (
-                          <div className="mt-2 flex flex-wrap items-center gap-2">
-                            {!["hidden", "deleted", "redacted"].includes(msg.moderation?.status ?? "") && (
-                              <PIIQuickActions
-                                messageId={msg.id}
-                                onSuccess={() => scheduleRefresh({ thread: true })}
-                              />
-                            )}
-                            <MessageModerationActions
-                              messageId={msg.id}
-                              currentModeration={msg.moderation}
-                              onModerationSuccess={() => scheduleRefresh({ thread: true })}
-                            />
-                          </div>
-                        )}
+                    </div>
+                  </>
+                ) : null;
+              })()}
+              <div className="flex-1 overflow-y-auto px-4 py-4 space-y-3 bg-gradient-to-b from-slate-50 to-white dark:from-slate-900/50 dark:to-slate-900/30 min-h-[200px]">
+                {threadMessages.length === 0 ? (
+                  <p className="text-sm text-muted-foreground">No messages</p>
+                ) : (
+                threadMessages.map((msg) => (
+                  <div
+                    key={msg.id}
+                    className={`p-3 rounded-lg text-sm ${
+                      msg.moderation?.status === "hidden" ||
+                      msg.moderation?.status === "deleted"
+                        ? "bg-red-50 border border-red-200 dark:bg-red-950/30 dark:border-red-900/50"
+                        : msg.moderation?.status === "redacted"
+                        ? "bg-yellow-50 border border-yellow-200 dark:bg-yellow-950/30 dark:border-yellow-900/50"
+                        : "bg-muted"
+                    }`}
+                  >
+                    <div className="flex items-center justify-between mb-1">
+                      <span className="font-medium text-xs">
+                        {msg.authorDisplayLabel ?? msg.senderName ?? msg.senderEmail?.split("@")[0] ?? "—"}
+                      </span>
+                      <span className="text-xs text-muted-foreground">
+                        {formatDate(msg.createdAt)}
+                      </span>
+                    </div>
+                    <p className="whitespace-pre-wrap">{msg.displayBody}</p>
+                    {msg.moderation?.status && msg.moderation.status !== "visible" && (
+                      <p className="mt-1 text-xs text-muted-foreground">
+                        {msg.moderation.status === "hidden" && "Hidden"}
+                        {msg.moderation.status === "deleted" && "Deleted"}
+                        {msg.moderation.status === "redacted" && "Redacted"}
+                        {" by "}
+                        {msg.moderation.moderator?.name || msg.moderation.moderator?.email || "—"}
+                        {msg.moderation.moderatedAt && ` on ${formatDate(msg.moderation.moderatedAt)}`}
+                      </p>
+                    )}
+                    {msg.moderation?.isInternalNote && msg.moderation.internalNoteBody && (
+                      <div className="mt-2 p-2 bg-blue-50 dark:bg-blue-950/30 rounded text-xs text-blue-800 dark:text-blue-200">
+                        <strong>Internal Note:</strong> {msg.moderation.internalNoteBody}
                       </div>
-                    ))
-                  )}
-                </div>
-
-                {/* Internal notes */}
-                <div className="space-y-2">
-                  <Label className="text-xs font-medium text-muted-foreground">Internal notes</Label>
-                  {threadNotes.length > 0 && (
-                    <div className="space-y-2 max-h-32 overflow-y-auto">
-                      {threadNotes.map((n) => (
-                        <div
-                          key={n.id}
-                          className="rounded-lg border border-slate-200 dark:border-white/10 p-2 text-sm bg-slate-50 dark:bg-slate-900/40"
-                        >
-                          <p className="whitespace-pre-wrap">{n.body}</p>
-                          <p className="text-xs text-muted-foreground mt-1">
-                            {n.authorName || n.authorEmail || "—"} · {formatDate(n.createdAt)}
-                          </p>
-                        </div>
-                      ))}
-                    </div>
-                  )}
-                  <div className="flex gap-2">
-                    <Textarea
-                      placeholder="Add internal note…"
-                      value={noteBody}
-                      onChange={(e) => setNoteBody(e.target.value)}
-                      rows={2}
-                      className="flex-1"
-                    />
-                    <Button
-                      size="sm"
-                      onClick={handleAddNote}
-                      disabled={addingNote || !noteBody.trim()}
-                    >
-                      {addingNote ? "…" : "Add"}
-                    </Button>
+                    )}
+                    {selectedThread.source === "buyer_seller" && (
+                      <div className="mt-2 flex flex-wrap items-center gap-2">
+                        {!["hidden", "deleted", "redacted"].includes(msg.moderation?.status ?? "") && (
+                          <PIIQuickActions
+                            messageId={msg.id}
+                            onSuccess={() => scheduleRefresh({ thread: true })}
+                          />
+                        )}
+                        <MessageModerationActions
+                          messageId={msg.id}
+                          currentModeration={msg.moderation}
+                          onModerationSuccess={() => scheduleRefresh({ thread: true })}
+                        />
+                      </div>
+                    )}
                   </div>
-                </div>
-
-                {(selectedThread.source === "chatbot" || selectedThread.source === "whatsapp") && (
-                  <div className="space-y-2">
-                    <Label>Reply to customer</Label>
-                    <Textarea
-                      value={replyBody}
-                      onChange={(e) => setReplyBody(e.target.value)}
-                      placeholder="Write a reply as Support…"
-                      rows={3}
-                    />
-                    <div className="flex items-center justify-end gap-2">
-                      <Button
-                        variant="secondary"
-                        onClick={() => loadThreadMessages(selectedThread)}
-                        disabled={loadingMessages || sendingReply}
-                      >
-                        Refresh
-                      </Button>
-                      <Button
-                        onClick={sendThreadReply}
-                        disabled={sendingReply || !replyBody.trim()}
-                      >
-                        {sendingReply ? "Sending…" : "Send"}
-                      </Button>
-                    </div>
-                  </div>
-                )}
+                ))
+              )}
               </div>
-            )}
-          </CardContent>
-        </Card>
-      </div>
+            </div>
+          )}
+        </CardContent>
+      </Card>
       </div>
     </div>
   );

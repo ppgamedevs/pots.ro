@@ -1,67 +1,51 @@
-import { config as dotenvConfig } from "dotenv";
-import postgres from "postgres";
+import { config } from "dotenv";
+config({ path: ".env.local" });
+config();
+import "../lib/env";
 
-// Load environment variables
-dotenvConfig({ path: ".env.local" });
-dotenvConfig();
+import { Client } from "pg";
 
-async function setAdminRole() {
-  const DATABASE_URL = 
-    process.env.DATABASE_URL ||
-    process.env.POSTGRES_URL_NON_POOLING ||
-    process.env.POSTGRES_POSTGRES_URL_NON_POOLING ||
-    process.env.POSTGRES_POSTGRES_URL ||
-    process.env.POSTGRES_URL;
+const EMAIL = "alex.aka.musat@gmail.com";
 
-  if (!DATABASE_URL) {
-    console.error("❌ No DATABASE_URL found in environment");
+const dbUrl =
+  process.env.DATABASE_URL ||
+  process.env.POSTGRES_URL_NON_POOLING ||
+  process.env.POSTGRES_POSTGRES_URL_NON_POOLING ||
+  process.env.POSTGRES_POSTGRES_URL ||
+  process.env.POSTGRES_URL ||
+  "";
+
+async function main() {
+  if (!dbUrl.trim()) {
+    console.error(
+      "❌ No DB URL. Set one of DATABASE_URL, POSTGRES_URL, POSTGRES_URL_NON_POOLING in .env.local"
+    );
     process.exit(1);
   }
 
-  console.log("🔄 Connecting to database...");
-  const sql = postgres(DATABASE_URL, { max: 1 });
+  const client = new Client({ connectionString: dbUrl });
+  await client.connect();
 
   try {
-    const adminEmail = 'eccostachescu@gmail.com';
-    
-    // Check if user exists
-    const user = await sql`
-      SELECT id, email, role 
-      FROM users 
-      WHERE email = ${adminEmail}
-    `;
+    const res = await client.query(
+      `UPDATE users SET role = 'admin', updated_at = NOW() WHERE email = $1 RETURNING id, email, role`,
+      [EMAIL]
+    );
 
-    if (user.length === 0) {
-      console.log(`\n❌ User ${adminEmail} not found in database`);
-      console.log("User will be created as admin on next login.");
+    if (res.rowCount && res.rowCount > 0 && res.rows[0]) {
+      const row = res.rows[0];
+      console.log(`✅ Updated ${row.email} to role: ${row.role}`);
     } else {
-      console.log(`\n✅ Found user: ${user[0].email}`);
-      console.log(`   Current role: ${user[0].role}`);
-      
-      if (user[0].role === 'admin') {
-        console.log("\n✅ User already has admin role!");
-      } else {
-        // Update role to admin
-        const updated = await sql`
-          UPDATE users 
-          SET role = 'admin', updated_at = NOW()
-          WHERE email = ${adminEmail}
-          RETURNING id, email, role
-        `;
-        
-        console.log(`\n✅ Successfully updated user role to admin!`);
-        console.log(`   Email: ${updated[0].email}`);
-        console.log(`   New role: ${updated[0].role}`);
-        console.log("\n🎉 User ${adminEmail} is now an administrator!");
-      }
+      console.log(`❌ No user found with email: ${EMAIL}`);
     }
-
-  } catch (error) {
-    console.error("❌ Error updating user role:", error);
   } finally {
-    await sql.end();
-    console.log("\n✅ Database connection closed");
+    await client.end();
   }
 }
 
-setAdminRole();
+main()
+  .then(() => process.exit(0))
+  .catch((e) => {
+    console.error(e);
+    process.exit(1);
+  });

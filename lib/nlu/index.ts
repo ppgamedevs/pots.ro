@@ -235,8 +235,12 @@ async function detectIntentLLM(text: string): Promise<NLUResult> {
     };
 
   } catch (error) {
-    console.error('LLM intent detection failed:', error);
-    // Fallback to rule-based detection
+    const msg = error instanceof Error ? error.message : String(error);
+    if (msg.includes('401')) {
+      console.warn('OpenAI API 401 (key missing or invalid). Using rule-based NLU. Set OPENAI_API_KEY for LLM intent detection.');
+    } else {
+      console.error('LLM intent detection failed:', error);
+    }
     return detectIntentRules(text);
   }
 }
@@ -250,6 +254,12 @@ export async function detectIntent(text: string): Promise<NLUResult> {
   
   // If we have high confidence and extracted entities, use it
   if (ruleResult.confidence > 0.8 && ruleResult.entities.order_id) {
+    return ruleResult;
+  }
+  
+  // Skip LLM when OpenAI API key is missing (avoids 401 and noisy logs)
+  const apiKey = process.env.OPENAI_API_KEY?.trim();
+  if (!apiKey) {
     return ruleResult;
   }
   

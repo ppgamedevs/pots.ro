@@ -22,7 +22,7 @@ export async function GET(req: Request) {
       .where(eq(users.id, userId))
       .limit(1);
 
-    if (!user || user.role !== 'admin') {
+    if (!user || (user.role !== 'admin' && user.role !== 'support')) {
       return NextResponse.json({ error: "Forbidden" }, { status: 403 });
     }
 

@@ -1670,7 +1670,7 @@ export const adminAlerts = pgTable("admin_alerts", {
 // ============================================================================
 
 // Enums for support console
-export const supportThreadStatusEnum = pgEnum('support_thread_status', ['open', 'assigned', 'waiting', 'resolved', 'closed']);
+export const supportThreadStatusEnum = pgEnum('support_thread_status', ['open', 'assigned', 'waiting', 'resolved', 'closed', 'active']);
 export const supportThreadSourceEnum = pgEnum('support_thread_source', ['buyer_seller', 'seller_support', 'chatbot', 'whatsapp']);
 export const messageModerationStatusEnum = pgEnum('message_moderation_status', ['visible', 'hidden', 'redacted', 'deleted']);
 

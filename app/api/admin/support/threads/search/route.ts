@@ -126,7 +126,13 @@ export async function GET(request: NextRequest) {
     const buyerIds = [...new Set(threads.map((t) => t.buyerId).filter(Boolean))] as string[];
 
     const sellerMap = new Map<string, { brandName: string; slug: string }>();
-    const buyerMap = new Map<string, { name: string | null; email: string }>();
+    const buyerMap = new Map<string, { name: string | null; email: string; role: string }>();
+    const roleLabels: Record<string, string> = {
+      buyer: "Cumpărător",
+      seller: "Vânzător",
+      support: "Support",
+      admin: "Admin",
+    };
 
     if (sellerIds.length > 0) {
       const sellerInfo = await db
@@ -138,10 +144,12 @@ export async function GET(request: NextRequest) {
 
     if (buyerIds.length > 0) {
       const buyerInfo = await db
-        .select({ id: users.id, name: users.name, email: users.email })
+        .select({ id: users.id, name: users.name, email: users.email, role: users.role })
         .from(users)
         .where(inArray(users.id, buyerIds));
-      buyerInfo.forEach((b: { id: string; name: string | null; email: string }) => buyerMap.set(b.id, { name: b.name, email: b.email }));
+      buyerInfo.forEach((b: { id: string; name: string | null; email: string; role: string }) =>
+        buyerMap.set(b.id, { name: b.name, email: b.email, role: b.role })
+      );
     }
 
     const threadTags = await db
@@ -156,12 +164,27 @@ export async function GET(request: NextRequest) {
       tagsMap.set(tt.threadId, existing);
     });
 
-    const data = threads.map((thread) => ({
-      ...thread,
-      seller: thread.sellerId ? sellerMap.get(thread.sellerId) ?? null : null,
-      buyer: thread.buyerId ? buyerMap.get(thread.buyerId) ?? null : null,
-      tags: tagsMap.get(thread.id) ?? [],
-    }));
+    const data = threads.map((thread) => {
+      const buyer = thread.buyerId ? buyerMap.get(thread.buyerId) ?? null : null;
+      let displaySubject: string | null = null;
+      if (thread.source === "chatbot" || thread.source === "whatsapp") {
+        if (thread.buyerId && buyer) {
+          const label = buyer.role && roleLabels[buyer.role]
+            ? roleLabels[buyer.role]
+            : (buyer.email || buyer.name || "—");
+          displaySubject = `Webchat: ${label}`;
+        } else {
+          displaySubject = thread.subject?.startsWith("Webchat:") ? thread.subject : "Webchat: Vizitator";
+        }
+      }
+      return {
+        ...thread,
+        seller: thread.sellerId ? sellerMap.get(thread.sellerId) ?? null : null,
+        buyer: thread.buyerId ? buyerMap.get(thread.buyerId) ?? null : null,
+        tags: tagsMap.get(thread.id) ?? [],
+        ...(displaySubject != null ? { displaySubject } : {}),
+      };
+    });
 
     return NextResponse.json({ data, total, page, limit });
   } catch (error) {

@@ -927,7 +927,7 @@ async function ensureSupportConsoleSchema(sql) {
       DO $$
       BEGIN
         IF NOT EXISTS (SELECT 1 FROM pg_type WHERE typname = 'support_thread_status') THEN
-          CREATE TYPE support_thread_status AS ENUM ('open', 'assigned', 'waiting', 'resolved', 'closed');
+          CREATE TYPE support_thread_status AS ENUM ('open', 'assigned', 'waiting', 'resolved', 'closed', 'active');
         END IF;
         IF NOT EXISTS (SELECT 1 FROM pg_type WHERE typname = 'support_thread_source') THEN
           CREATE TYPE support_thread_source AS ENUM ('buyer_seller', 'seller_support', 'chatbot', 'whatsapp');
@@ -937,6 +937,8 @@ async function ensureSupportConsoleSchema(sql) {
         END IF;
       END $$;
     `;
+
+    await sql`ALTER TYPE support_thread_status ADD VALUE IF NOT EXISTS 'active'`;
 
     // Support threads unified inbox table
     await sql`
@@ -1132,6 +1134,30 @@ async function ensureSupportConsoleSchema(sql) {
     await sql`CREATE UNIQUE INDEX IF NOT EXISTS support_canned_replies_slug_idx ON support_canned_replies(slug)`;
     await sql`CREATE INDEX IF NOT EXISTS support_canned_replies_category_idx ON support_canned_replies(category)`;
     await sql`CREATE INDEX IF NOT EXISTS support_canned_replies_active_idx ON support_canned_replies(is_active) WHERE is_active = true`;
+
+    // Support moderation history (audit trail for status/priority/assign, message hide/redact, etc.)
+    await sql`
+      CREATE TABLE IF NOT EXISTS support_moderation_history (
+        id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+        actor_id uuid REFERENCES users(id) ON DELETE SET NULL,
+        actor_name text,
+        actor_role text,
+        action_type text NOT NULL,
+        entity_type text NOT NULL,
+        entity_id text NOT NULL,
+        thread_id uuid REFERENCES support_threads(id) ON DELETE SET NULL,
+        reason text,
+        note text,
+        metadata jsonb DEFAULT '{}',
+        created_at timestamptz NOT NULL DEFAULT now()
+      )
+    `;
+    await sql`CREATE INDEX IF NOT EXISTS support_moderation_history_thread_idx ON support_moderation_history(thread_id)`;
+    await sql`CREATE INDEX IF NOT EXISTS support_moderation_history_entity_idx ON support_moderation_history(entity_type, entity_id)`;
+    await sql`CREATE INDEX IF NOT EXISTS support_moderation_history_actor_idx ON support_moderation_history(actor_id)`;
+    await sql`CREATE INDEX IF NOT EXISTS support_moderation_history_action_idx ON support_moderation_history(action_type)`;
+    await sql`CREATE INDEX IF NOT EXISTS support_moderation_history_created_idx ON support_moderation_history(created_at)`;
+    await sql`CREATE INDEX IF NOT EXISTS support_moderation_history_composite_idx ON support_moderation_history(thread_id, action_type, created_at)`;
 
     console.log('✅ Support console schema ensured');
   } catch (err) {

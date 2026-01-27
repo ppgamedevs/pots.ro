@@ -8,7 +8,7 @@ import { logThreadModeration } from "@/lib/support/moderation-history";
 
 export const dynamic = "force-dynamic";
 
-const VALID_STATUSES = ["open", "assigned", "waiting", "resolved", "closed"] as const;
+const VALID_STATUSES = ["open", "assigned", "waiting", "resolved", "closed", "active"] as const;
 
 interface Params {
   params: Promise<{ id: string }>;
@@ -30,7 +30,7 @@ export async function PATCH(request: NextRequest, context: Params) {
     const status = typeof body?.status === "string" ? body.status.trim() : "";
     if (!status || !VALID_STATUSES.includes(status as (typeof VALID_STATUSES)[number])) {
       return NextResponse.json(
-        { error: "Invalid status. Use: open, assigned, waiting, resolved, closed" },
+        { error: "Invalid status. Use: open, assigned, waiting, resolved, closed, active" },
         { status: 400 }
       );
     }

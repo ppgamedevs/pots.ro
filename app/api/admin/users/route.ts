@@ -8,7 +8,7 @@ export const dynamic = 'force-dynamic';
 
 export async function GET(req: NextRequest) {
   try {
-    await requireRole(req, ['admin']);
+    await requireRole(req, ['admin', 'support']);
     const { searchParams } = new URL(req.url);
 
     // Pagination

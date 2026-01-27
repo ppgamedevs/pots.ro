@@ -21,7 +21,7 @@ export async function GET(
   { params }: { params: { id: string } }
 ) {
   try {
-    await requireRole(req, ['admin']);
+    await requireRole(req, ['admin', 'support']);
     const userId = params.id;
 
     const [user] = await db

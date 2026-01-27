@@ -1,7 +1,9 @@
 "use client";
 
 import { useState, useEffect, useRef } from 'react';
-import { MessageCircle, X, Send, Clock } from 'lucide-react';
+import { usePathname } from 'next/navigation';
+import { MessageCircle, X, Send, Clock, Loader2 } from 'lucide-react';
+import { useSupportThreadChat } from '@/lib/support-thread-chat-context';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card, CardContent } from '@/components/ui/card';
@@ -40,6 +42,16 @@ function formatTimeRo(d: Date): string {
   }
 }
 
+function formatThreadDate(dateStr: string | null): string {
+  if (!dateStr) return '-';
+  return new Date(dateStr).toLocaleString('ro-RO', {
+    day: '2-digit',
+    month: 'short',
+    hour: '2-digit',
+    minute: '2-digit',
+  });
+}
+
 interface ChatMessage {
   id: string;
   text: string;
@@ -61,6 +73,35 @@ function newUuid(): string {
   }
 }
 
+const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
+const FM_CHAT_SESSION_KEY = 'fm_chat_session_id';
+
+function createSessionUuid(): string {
+  try {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const u = (globalThis as any).crypto?.randomUUID?.();
+    if (u && UUID_RE.test(u)) return u;
+  } catch {}
+  return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, (c) => {
+    const r = (Math.random() * 16) | 0;
+    const v = c === 'x' ? r : (r & 0x3) | 0x8;
+    return v.toString(16);
+  });
+}
+
+function getOrCreateSessionId(): string {
+  if (typeof window === 'undefined') return createSessionUuid();
+  try {
+    const stored = localStorage.getItem(FM_CHAT_SESSION_KEY);
+    if (stored && UUID_RE.test(stored)) return stored;
+    const id = createSessionUuid();
+    localStorage.setItem(FM_CHAT_SESSION_KEY, id);
+    return id;
+  } catch {
+    return createSessionUuid();
+  }
+}
+
 // Global function to open chat
 declare global {
   interface Window {
@@ -69,25 +110,36 @@ declare global {
 }
 
 export function ChatWidget({ className }: ChatWidgetProps) {
+  const pathname = usePathname();
+  const { snapshot } = useSupportThreadChat();
+  const supportMode = typeof pathname === 'string' && pathname.startsWith('/support') && snapshot.selectedThread != null;
+
   const [isOpen, setIsOpen] = useState(false);
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [inputValue, setInputValue] = useState('');
   const [isLoading, setIsLoading] = useState(false);
-  const [sessionId] = useState(() => {
-    try {
-      // Prefer UUID for server-side correlation (queue/thread)
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      return (globalThis as any).crypto?.randomUUID?.() ?? `session_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
-    } catch {
-      return `session_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
-    }
-  });
+  const [sessionId, setSessionId] = useState<string>(() => getOrCreateSessionId());
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
   const [now, setNow] = useState(() => new Date());
   const [mode, setMode] = useState<'human' | 'bot'>('bot');
   const [noticeShown, setNoticeShown] = useState(false);
   const [humanAckShown, setHumanAckShown] = useState(false);
+  const [userId, setUserId] = useState<string | null>(null);
+
+  // Fetch current user when chat opens (for Vizitator vs role display in support)
+  useEffect(() => {
+    if (!isOpen) return;
+    let cancelled = false;
+    fetch('/api/auth/me', { credentials: 'include', cache: 'no-store' })
+      .then((r) => (cancelled ? null : r.ok ? r.json() : null))
+      .then((data) => {
+        if (cancelled || !data?.user?.id) return;
+        setUserId(data.user.id);
+      })
+      .catch(() => {});
+    return () => { cancelled = true; };
+  }, [isOpen]);
 
   // Auto-scroll to bottom when new messages arrive
   useEffect(() => {
@@ -109,11 +161,9 @@ export function ChatWidget({ className }: ChatWidgetProps) {
     return () => window.clearInterval(t);
   }, [isOpen]);
 
-  // Load chat history on open
+  // Load chat history on open (and on refresh: same sessionId from localStorage => same thread)
   useEffect(() => {
-    if (isOpen && messages.length === 0) {
-      loadChatHistory();
-    }
+    if (isOpen) loadChatHistory();
   }, [isOpen]);
 
   // Poll for new messages while chat is open (agent replies)
@@ -123,7 +173,7 @@ export function ChatWidget({ className }: ChatWidgetProps) {
     let cancelled = false;
     const poll = async () => {
       try {
-        const response = await fetch(`/api/chat/session?session_id=${sessionId}`, { cache: 'no-store' });
+        const response = await fetch(`/api/chat/session?session_id=${sessionId}`, { credentials: 'include', cache: 'no-store' });
         if (!response.ok) return;
         const data = await response.json();
         if (cancelled) return;
@@ -166,7 +216,7 @@ export function ChatWidget({ className }: ChatWidgetProps) {
 
   const loadChatHistory = async () => {
     try {
-      const response = await fetch(`/api/chat/session?session_id=${sessionId}`);
+      const response = await fetch(`/api/chat/session?session_id=${sessionId}`, { credentials: 'include' });
       if (response.ok) {
         const data = await response.json();
         const serverMode = data?.mode === 'human' ? 'human' : 'bot';
@@ -242,13 +292,23 @@ export function ChatWidget({ className }: ChatWidgetProps) {
           session_id: sessionId,
           conversation_id: sessionId,
           client_message_id: clientMessageId,
-        })
+          ...(userId ? { user_id: userId } : {}),
+        }),
+        credentials: 'include',
       });
 
       if (response.ok) {
         const data = await response.json();
         const serverMode = data?.mode === 'human' ? 'human' : 'bot';
         setMode(serverMode);
+
+        const newConvId = typeof data?.conversation_id === 'string' ? data.conversation_id : null;
+        if (newConvId && newConvId !== sessionId && UUID_RE.test(newConvId)) {
+          try {
+            localStorage.setItem(FM_CHAT_SESSION_KEY, newConvId);
+          } catch {}
+          setSessionId(newConvId);
+        }
 
         if (serverMode === 'bot' && typeof data?.notice === 'string' && !noticeShown) {
           addMessage(data.notice, 'bot');
@@ -356,84 +416,137 @@ export function ChatWidget({ className }: ChatWidgetProps) {
 
             {/* Messages */}
             <div className="flex-1 overflow-y-auto px-4 py-4 space-y-3 bg-gradient-to-b from-slate-50 to-white">
-              {messages.length === 0 && !isLoading && (
-                <div className="rounded-2xl border border-line bg-white/90 shadow-sm p-4">
-                  <div className="text-sm font-semibold text-ink">Bun venit 👋</div>
-                  <div className="mt-1 text-sm text-subink">
-                    Spune-mi pe scurt ce ai nevoie (comenzi, livrare, retur, factură). În programul {SUPPORT_HOURS_LABEL} răspundem rapid.
-                  </div>
-                  <div className="mt-3 flex flex-wrap gap-2">
-                    {quickReplies.map((t) => (
-                      <button
-                        key={t}
-                        type="button"
-                        onClick={() => {
-                          setInputValue(t);
-                          inputRef.current?.focus();
-                        }}
-                        className="text-xs px-3 py-1.5 rounded-full border border-line bg-bg-soft hover:bg-white transition-micro"
+              {supportMode ? (
+                <>
+                  {snapshot.loadingMessages ? (
+                    <div className="flex items-center justify-center py-8">
+                      <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
+                    </div>
+                  ) : snapshot.threadMessages.length === 0 ? (
+                    <p className="text-sm text-muted-foreground">No messages</p>
+                  ) : (
+                    snapshot.threadMessages.map((msg) => (
+                      <div
+                        key={msg.id}
+                        className={cn(
+                          'p-3 rounded-lg text-sm',
+                          msg.moderation?.status === 'hidden' || msg.moderation?.status === 'deleted'
+                            ? 'bg-red-50 border border-red-200 dark:bg-red-950/30 dark:border-red-900/50'
+                            : msg.moderation?.status === 'redacted'
+                            ? 'bg-yellow-50 border border-yellow-200 dark:bg-yellow-950/30 dark:border-yellow-900/50'
+                            : 'bg-muted'
+                        )}
                       >
-                        {t}
-                      </button>
-                    ))}
-                  </div>
-                </div>
-              )}
-
-              {messages.map((message) => (
-                <div
-                  key={message.id}
-                  className={cn(
-                    "flex gap-2",
-                    message.sender === 'user' ? 'justify-end' : 'justify-start'
+                        <div className="flex items-center justify-between mb-1">
+                          <span className="font-medium text-xs">
+                            {msg.authorDisplayLabel ?? msg.senderName ?? msg.senderEmail?.split('@')[0] ?? '—'}
+                          </span>
+                          <span className="text-xs text-muted-foreground">
+                            {formatThreadDate(msg.createdAt)}
+                          </span>
+                        </div>
+                        <p className="whitespace-pre-wrap">{msg.displayBody}</p>
+                        {msg.moderation?.status && msg.moderation.status !== 'visible' && (
+                          <p className="mt-1 text-xs text-muted-foreground">
+                            {msg.moderation.status === 'hidden' && 'Hidden'}
+                            {msg.moderation.status === 'deleted' && 'Deleted'}
+                            {msg.moderation.status === 'redacted' && 'Redacted'}
+                            {' by '}
+                            {msg.moderation.moderator?.name || msg.moderation.moderator?.email || '—'}
+                            {msg.moderation.moderatedAt && ` on ${formatThreadDate(msg.moderation.moderatedAt)}`}
+                          </p>
+                        )}
+                        {msg.moderation?.isInternalNote && msg.moderation.internalNoteBody && (
+                          <div className="mt-2 p-2 bg-blue-50 dark:bg-blue-950/30 rounded text-xs text-blue-800 dark:text-blue-200">
+                            <strong>Internal Note:</strong> {msg.moderation.internalNoteBody}
+                          </div>
+                        )}
+                      </div>
+                    ))
                   )}
-                >
-                  {message.sender === 'bot' && (
-                    <div className="flex-shrink-0 w-9 h-9 rounded-full bg-white ring-1 ring-black/5 shadow-sm flex items-center justify-center text-[11px] font-semibold text-primary">
-                      {mode === 'human' ? SUPPORT_AGENT_INITIALS : BOT_INITIALS}
+                </>
+              ) : (
+                <>
+                  {messages.length === 0 && !isLoading && (
+                    <div className="rounded-2xl border border-line bg-white/90 shadow-sm p-4">
+                      <div className="text-sm font-semibold text-ink">Bun venit 👋</div>
+                      <div className="mt-1 text-sm text-subink">
+                        Spune-mi pe scurt ce ai nevoie (comenzi, livrare, retur, factură). În programul {SUPPORT_HOURS_LABEL} răspundem rapid.
+                      </div>
+                      <div className="mt-3 flex flex-wrap gap-2">
+                        {quickReplies.map((t) => (
+                          <button
+                            key={t}
+                            type="button"
+                            onClick={() => {
+                              setInputValue(t);
+                              inputRef.current?.focus();
+                            }}
+                            className="text-xs px-3 py-1.5 rounded-full border border-line bg-bg-soft hover:bg-white transition-micro"
+                          >
+                            {t}
+                          </button>
+                        ))}
+                      </div>
                     </div>
                   )}
-                  
-                  <div className={cn("max-w-[82%]", message.sender === 'user' ? 'items-end' : 'items-start')}>
+
+                  {messages.map((message) => (
                     <div
+                      key={message.id}
                       className={cn(
-                        "rounded-2xl px-3.5 py-2.5 text-sm leading-relaxed shadow-sm ring-1",
-                        message.sender === 'user'
-                          ? "bg-primary text-white ring-black/5"
-                          : "bg-white text-ink ring-black/5"
+                        "flex gap-2",
+                        message.sender === 'user' ? 'justify-end' : 'justify-start'
                       )}
                     >
-                      {message.text}
+                      {message.sender === 'bot' && (
+                        <div className="flex-shrink-0 w-9 h-9 rounded-full bg-white ring-1 ring-black/5 shadow-sm flex items-center justify-center text-[11px] font-semibold text-primary">
+                          {mode === 'human' ? SUPPORT_AGENT_INITIALS : BOT_INITIALS}
+                        </div>
+                      )}
+                      
+                      <div className={cn("max-w-[82%]", message.sender === 'user' ? 'items-end' : 'items-start')}>
+                        <div
+                          className={cn(
+                            "rounded-2xl px-3.5 py-2.5 text-sm leading-relaxed shadow-sm ring-1",
+                            message.sender === 'user'
+                              ? "bg-primary text-white ring-black/5"
+                              : "bg-white text-ink ring-black/5"
+                          )}
+                        >
+                          {message.text}
+                        </div>
+                        <div className={cn(
+                          "mt-1 text-[11px] text-subink",
+                          message.sender === 'user' ? 'text-right' : 'text-left'
+                        )}>
+                          {formatTimeRo(message.timestamp)}
+                        </div>
+                      </div>
                     </div>
-                    <div className={cn(
-                      "mt-1 text-[11px] text-subink",
-                      message.sender === 'user' ? 'text-right' : 'text-left'
-                    )}>
-                      {formatTimeRo(message.timestamp)}
+                  ))}
+                  
+                  {isLoading && (
+                    <div className="flex gap-2 justify-start">
+                      <div className="flex-shrink-0 w-9 h-9 rounded-full bg-white ring-1 ring-black/5 shadow-sm flex items-center justify-center text-[11px] font-semibold text-primary">
+                        {mode === 'human' ? SUPPORT_AGENT_INITIALS : BOT_INITIALS}
+                      </div>
+                      <div className="bg-white rounded-2xl px-3 py-2 text-sm shadow-sm ring-1 ring-black/5">
+                        <div className="flex gap-1">
+                          <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce"></div>
+                          <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce" style={{ animationDelay: '0.1s' }}></div>
+                          <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce" style={{ animationDelay: '0.2s' }}></div>
+                        </div>
+                      </div>
                     </div>
-                  </div>
-                </div>
-              ))}
-              
-              {isLoading && (
-                <div className="flex gap-2 justify-start">
-                  <div className="flex-shrink-0 w-9 h-9 rounded-full bg-white ring-1 ring-black/5 shadow-sm flex items-center justify-center text-[11px] font-semibold text-primary">
-                    {mode === 'human' ? SUPPORT_AGENT_INITIALS : BOT_INITIALS}
-                  </div>
-                  <div className="bg-white rounded-2xl px-3 py-2 text-sm shadow-sm ring-1 ring-black/5">
-                    <div className="flex gap-1">
-                      <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce"></div>
-                      <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce" style={{ animationDelay: '0.1s' }}></div>
-                      <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce" style={{ animationDelay: '0.2s' }}></div>
-                    </div>
-                  </div>
-                </div>
+                  )}
+                </>
               )}
               
               <div ref={messagesEndRef} />
             </div>
 
-            {/* Input */}
+            {/* Input + Send – always visible */}
             <div className="p-3 border-t border-line bg-white/90 backdrop-blur">
               <div className="flex gap-2 items-center">
                 <Input

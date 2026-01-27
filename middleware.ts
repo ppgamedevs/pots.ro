@@ -118,13 +118,24 @@ export async function middleware(request: NextRequest) {
       return NextResponse.redirect(loginUrl);
     }
 
-    // /api/admin/*: support allowed only for /api/admin/support/**; else 403
+    // /api/admin/*: support allowed for /api/admin/support/** and view allowlist; else 403
+    const apiAdminSupportAllowlist = [
+      '/api/admin/support',
+      '/api/admin/sellers',
+      '/api/admin/products',
+      '/api/admin/orders',
+      '/api/admin/payments',
+      '/api/admin/users',
+    ];
     if (isApiAdmin) {
       if (session.role !== 'admin' && session.role !== 'support') {
         return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
       }
-      if (session.role === 'support' && !pathname.startsWith('/api/admin/support/')) {
-        return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
+      if (session.role === 'support') {
+        const allowed = apiAdminSupportAllowlist.some((prefix) => pathname === prefix || pathname.startsWith(prefix + '/'));
+        if (!allowed) {
+          return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
+        }
       }
       return NextResponse.next();
     }
@@ -137,13 +148,17 @@ export async function middleware(request: NextRequest) {
       return NextResponse.next();
     }
 
-    // /admin, /admin/*: admin only; support redirect to /support
+    // /admin, /admin/*: admin always; support only for allowlist (sellers, seller-applications, products, orders, payments, users)
+    const adminSupportAllowlist = ['/admin/sellers', '/admin/seller-applications', '/admin/products', '/admin/orders', '/admin/payments', '/admin/users'];
     if (pathname === '/admin' || pathname.startsWith('/admin/')) {
       if (session.role !== 'admin' && session.role !== 'support') {
         return NextResponse.redirect(new URL('/', request.url));
       }
       if (session.role === 'support') {
-        return NextResponse.redirect(new URL('/support', request.url));
+        const allowed = pathname === '/admin' ? false : adminSupportAllowlist.some((prefix) => pathname === prefix || pathname.startsWith(prefix + '/'));
+        if (!allowed) {
+          return NextResponse.redirect(new URL('/support', request.url));
+        }
       }
       return NextResponse.next();
     }
