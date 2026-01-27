@@ -4,6 +4,7 @@ import { useState, useEffect, useRef } from 'react';
 import { usePathname } from 'next/navigation';
 import { MessageCircle, X, Send, Clock, Loader2 } from 'lucide-react';
 import { useSupportThreadChat } from '@/lib/support-thread-chat-context';
+import { isIncomingMessage } from '@/lib/support-message-utils';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card, CardContent } from '@/components/ui/card';
@@ -415,7 +416,10 @@ export function ChatWidget({ className }: ChatWidgetProps) {
             </div>
 
             {/* Messages */}
-            <div className="flex-1 overflow-y-auto px-4 py-4 space-y-3 bg-gradient-to-b from-slate-50 to-white">
+            <div
+              className="flex-1 overflow-y-auto px-4 py-4 space-y-3 bg-gradient-to-b from-slate-50 to-white"
+              onClick={() => snapshot.markInteraction?.()}
+            >
               {supportMode ? (
                 <>
                   {snapshot.loadingMessages ? (
@@ -425,7 +429,9 @@ export function ChatWidget({ className }: ChatWidgetProps) {
                   ) : snapshot.threadMessages.length === 0 ? (
                     <p className="text-sm text-muted-foreground">No messages</p>
                   ) : (
-                    snapshot.threadMessages.map((msg) => (
+                    snapshot.threadMessages.map((msg) => {
+                      const unread = isIncomingMessage(msg) && (snapshot.unreadMessageIds ?? []).includes(msg.id);
+                      return (
                       <div
                         key={msg.id}
                         className={cn(
@@ -434,6 +440,8 @@ export function ChatWidget({ className }: ChatWidgetProps) {
                             ? 'bg-red-50 border border-red-200 dark:bg-red-950/30 dark:border-red-900/50'
                             : msg.moderation?.status === 'redacted'
                             ? 'bg-yellow-50 border border-yellow-200 dark:bg-yellow-950/30 dark:border-yellow-900/50'
+                            : unread
+                            ? 'bg-blue-50 dark:bg-blue-950/30 border-l-4 border-l-primary animate-unread-pulse'
                             : 'bg-muted'
                         )}
                       >
@@ -462,7 +470,8 @@ export function ChatWidget({ className }: ChatWidgetProps) {
                           </div>
                         )}
                       </div>
-                    ))
+                      );
+                    })
                   )}
                 </>
               ) : (

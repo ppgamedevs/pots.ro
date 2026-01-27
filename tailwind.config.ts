@@ -95,6 +95,20 @@ const config: Config = {
         DEFAULT: "white",
         dark: "#0b1220",
       },
+      keyframes: {
+        "unread-pulse": {
+          "0%, 100%": { opacity: "1" },
+          "50%": { opacity: "0.78" },
+        },
+        "attention-flash": {
+          "0%, 100%": { opacity: "1" },
+          "50%": { opacity: "0.4" },
+        },
+      },
+      animation: {
+        "unread-pulse": "unread-pulse 1.25s ease-in-out infinite",
+        "attention-flash": "attention-flash 0.9s ease-in-out infinite",
+      },
     },
   },
   plugins: [

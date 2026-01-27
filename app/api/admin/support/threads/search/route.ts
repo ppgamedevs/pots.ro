@@ -7,7 +7,7 @@ import {
   sellers,
   orders,
 } from "@/db/schema/core";
-import { eq, desc, inArray, sql } from "drizzle-orm";
+import { and, eq, desc, inArray, sql } from "drizzle-orm";
 import { getCurrentUser } from "@/lib/auth-helpers";
 
 export const dynamic = "force-dynamic";
@@ -33,6 +33,12 @@ export async function GET(request: NextRequest) {
     const offset = (page - 1) * limit;
     const pattern = `%${q}%`;
 
+    const statusParam = searchParams.get("status");
+    const allowedStatuses = ["open", "assigned", "waiting", "resolved", "closed", "active"] as const;
+    const statuses = statusParam
+      ? (statusParam.split(",").map((s) => s.trim()).filter((s) => allowedStatuses.includes(s as typeof allowedStatuses[number])) as typeof allowedStatuses[number][])
+      : [];
+
     const countResult = await db.execute(sql`
       SELECT COUNT(DISTINCT t.id)::int AS count
       FROM support_threads t
@@ -47,7 +53,7 @@ export async function GET(request: NextRequest) {
         OR t.last_message_preview ILIKE ${pattern}
       )
     `);
-    const total = Number((countResult as { rows?: { count?: number }[] })?.rows?.[0]?.count ?? 0);
+    let total = Number((countResult as { rows?: { count?: number }[] })?.rows?.[0]?.count ?? 0);
 
     const idResult = await db.execute(sql`
       SELECT DISTINCT t.id
@@ -63,11 +69,32 @@ export async function GET(request: NextRequest) {
         OR t.last_message_preview ILIKE ${pattern}
       )
       ORDER BY t.last_message_at DESC NULLS LAST
-      LIMIT ${limit}
-      OFFSET ${offset}
     `);
-    const rows = (idResult as { rows?: { id: string }[] })?.rows ?? [];
-    const threadIds = rows.map((r) => r.id);
+    let rows = (idResult as { rows?: { id: string }[] })?.rows ?? [];
+    let threadIds = rows.map((r) => r.id);
+
+    const isOpenPlusWaiting =
+      statuses.length === 2 && statuses.includes("open") && statuses.includes("waiting");
+
+    if (statuses.length > 0 && threadIds.length > 0) {
+      const filtered = await db
+        .select({ id: supportThreads.id })
+        .from(supportThreads)
+        .where(and(inArray(supportThreads.id, threadIds), inArray(supportThreads.status, statuses)));
+      const filteredIds = new Set(filtered.map((r: { id: string }) => r.id));
+      const orderMap = new Map(threadIds.map((id, i) => [id, i]));
+      threadIds = threadIds.filter((id) => filteredIds.has(id)).sort((a, b) => (orderMap.get(a) ?? 0) - (orderMap.get(b) ?? 0));
+      total = threadIds.length;
+      if (!isOpenPlusWaiting) {
+        threadIds = threadIds.slice(offset, offset + limit);
+      }
+    } else if (statuses.length > 0) {
+      threadIds = [];
+      total = 0;
+    } else {
+      total = threadIds.length;
+      threadIds = threadIds.slice(offset, offset + limit);
+    }
 
     if (threadIds.length === 0) {
       return NextResponse.json({ data: [], total, page, limit });
@@ -95,7 +122,7 @@ export async function GET(request: NextRequest) {
       assignedToEmail: string | null;
     };
 
-    const threads: ThreadRow[] = await db
+    const allThreads: ThreadRow[] = await db
       .select({
         id: supportThreads.id,
         source: supportThreads.source,
@@ -119,8 +146,29 @@ export async function GET(request: NextRequest) {
       })
       .from(supportThreads)
       .leftJoin(users, eq(supportThreads.assignedToUserId, users.id))
-      .where(inArray(supportThreads.id, threadIds))
-      .orderBy(desc(supportThreads.lastMessageAt));
+      .where(inArray(supportThreads.id, threadIds));
+
+    let threads: ThreadRow[];
+    if (isOpenPlusWaiting && allThreads.length > 0) {
+      const waiting = allThreads.filter((t) => t.status === "waiting").sort((a, b) => {
+        const aT = a.lastMessageAt?.getTime() ?? 0;
+        const bT = b.lastMessageAt?.getTime() ?? 0;
+        return aT - bT;
+      });
+      const open = allThreads.filter((t) => t.status === "open").sort((a, b) => {
+        const aT = a.lastMessageAt?.getTime() ?? 0;
+        const bT = b.lastMessageAt?.getTime() ?? 0;
+        return bT - aT;
+      });
+      const sorted = [...waiting, ...open];
+      threads = sorted.slice(offset, offset + limit);
+    } else {
+      threads = allThreads.sort((a, b) => {
+        const aT = a.lastMessageAt?.getTime() ?? 0;
+        const bT = b.lastMessageAt?.getTime() ?? 0;
+        return bT - aT;
+      });
+    }
 
     const sellerIds = [...new Set(threads.map((t) => t.sellerId).filter(Boolean))] as string[];
     const buyerIds = [...new Set(threads.map((t) => t.buyerId).filter(Boolean))] as string[];
@@ -155,7 +203,7 @@ export async function GET(request: NextRequest) {
     const threadTags = await db
       .select({ threadId: supportThreadTags.threadId, tag: supportThreadTags.tag })
       .from(supportThreadTags)
-      .where(inArray(supportThreadTags.threadId, threadIds));
+      .where(inArray(supportThreadTags.threadId, threads.map((t) => t.id)));
 
     const tagsMap = new Map<string, string[]>();
     threadTags.forEach((tt: { threadId: string; tag: string }) => {

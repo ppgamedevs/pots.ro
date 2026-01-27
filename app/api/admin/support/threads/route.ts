@@ -224,16 +224,24 @@ export async function GET(request: NextRequest) {
     const total = countRow?.count ?? 0;
 
     // Build sort order
-    const sortColumn =
-      sortBy === "createdAt"
-        ? supportThreads.createdAt
-        : sortBy === "priority"
-        ? supportThreads.priority
-        : sortBy === "slaDeadline"
-        ? supportThreads.slaDeadline
-        : supportThreads.lastMessageAt;
+    const isOpenPlusWaiting =
+      filters.status?.length === 2 &&
+      filters.status.includes("open") &&
+      filters.status.includes("waiting");
 
-    const orderByClause = sortOrder === "asc" ? asc(sortColumn) : desc(sortColumn);
+    const orderByClause = isOpenPlusWaiting
+      ? sql`(CASE WHEN ${supportThreads.status} = 'waiting' THEN 0 ELSE 1 END) ASC, (CASE WHEN ${supportThreads.status} = 'waiting' THEN ${supportThreads.lastMessageAt} END) ASC NULLS LAST, (CASE WHEN ${supportThreads.status} = 'open' THEN ${supportThreads.lastMessageAt} END) DESC NULLS LAST`
+      : (() => {
+          const sortColumn =
+            sortBy === "createdAt"
+              ? supportThreads.createdAt
+              : sortBy === "priority"
+              ? supportThreads.priority
+              : sortBy === "slaDeadline"
+              ? supportThreads.slaDeadline
+              : supportThreads.lastMessageAt;
+          return sortOrder === "asc" ? asc(sortColumn) : desc(sortColumn);
+        })();
 
     // Define thread select result type
     type ThreadRow = {

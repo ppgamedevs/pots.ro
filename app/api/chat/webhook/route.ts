@@ -86,7 +86,7 @@ export async function POST(request: NextRequest) {
             source: 'chatbot',
             sourceId: conversationId,
             buyerId: user_id,
-            status: 'open',
+            status: 'waiting',
             priority: 'normal',
             subject: email ? `Webchat: ${email}` : 'Webchat: Vizitator',
             lastMessageAt: now,
@@ -120,7 +120,7 @@ export async function POST(request: NextRequest) {
             source: 'chatbot',
             sourceId: conversationId,
             buyerId: null,
-            status: 'open',
+            status: 'waiting',
             priority: 'normal',
             subject: email ? `Webchat: ${email}` : 'Webchat: Vizitator',
             lastMessageAt: now,
@@ -141,7 +141,7 @@ export async function POST(request: NextRequest) {
             source: 'chatbot',
             sourceId: conversationId,
             buyerId: null,
-            status: 'open',
+            status: 'waiting',
             priority: 'normal',
             subject: email ? `Webchat: ${email}` : 'Webchat: Vizitator',
             lastMessageAt: now,
@@ -197,6 +197,7 @@ export async function POST(request: NextRequest) {
           lastMessagePreview: String(message).slice(0, 200),
           messageCount: sql`${supportThreads.messageCount} + 1`,
           updatedAt: now,
+          status: 'waiting',
         })
         .where(eq(supportThreads.id, threadId));
     }

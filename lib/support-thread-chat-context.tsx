@@ -32,12 +32,18 @@ export interface SupportThreadChatSnapshot {
   threadMessages: SupportThreadMessage[];
   selectedThread: { id: string; source: string } | null;
   loadingMessages: boolean;
+  unreadMessageIds: string[];
+  lastInteractionAt: number | null;
+  /** Call when user interacts with the conversation (e.g. click messages) to clear unread / stop repeat sound. */
+  markInteraction?: () => void;
 }
 
 const defaultValue: SupportThreadChatSnapshot = {
   threadMessages: [],
   selectedThread: null,
   loadingMessages: false,
+  unreadMessageIds: [],
+  lastInteractionAt: null,
 };
 
 type Setter = (snapshot: SupportThreadChatSnapshot) => void;
@@ -68,3 +74,5 @@ export function SupportThreadChatProvider({ children }: { children: ReactNode })
 export function useSupportThreadChat() {
   return useContext(SupportThreadChatContext);
 }
+
+export { isIncomingMessage } from "@/lib/support-message-utils";

@@ -120,13 +120,14 @@ export default function GlobalSearchTrigger() {
     <>
       <button 
         onClick={() => setOpen(true)} 
-        className="hidden md:inline-flex items-center justify-center relative px-6 py-2 rounded-lg border border-line hover:bg-bg-soft text-ink text-sm transition-micro" 
+        className="hidden md:inline-flex items-center gap-2 px-3 py-2 rounded-lg border border-line hover:bg-bg-soft text-ink text-sm transition-micro" 
         aria-label="Căutare (Ctrl/⌘K)"
       >
+        <span className="i-lucide:search h-4 w-4" />
         Căutare
-        <span className="absolute right-3">
-          <span className="i-lucide:search h-4 w-4" />
-        </span>
+        <kbd className="ml-2 text-muted border border-line rounded px-1.5 py-0.5 text-xs font-mono">
+          Ctrl/⌘K
+        </kbd>
       </button>
 
       {open && (

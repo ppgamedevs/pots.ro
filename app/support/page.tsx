@@ -4,7 +4,7 @@ import { useState, useEffect, useCallback, useRef } from "react";
 import Link from "next/link";
 import { toast } from "sonner";
 import { useUser } from "@/lib/hooks/useUser";
-import { useSupportThreadChat } from "@/lib/support-thread-chat-context";
+import { useSupportThreadChat, isIncomingMessage } from "@/lib/support-thread-chat-context";
 import { AdminPageWrapper } from "@/components/admin/AdminPageWrapper";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -49,7 +49,6 @@ import {
   Volume2,
   VolumeX,
 } from "lucide-react";
-import { isIncomingMessage } from "@/lib/support-thread-chat-context";
 import {
   playNewMessageAlert,
   prepareSupportSound,
