@@ -17,6 +17,7 @@ import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, Di
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { Checkbox } from "@/components/ui/checkbox";
+import { Switch } from "@/components/ui/switch";
 import {
   MessageSquare,
   AlertTriangle,
@@ -45,7 +46,14 @@ import {
   Package,
   ShoppingBag,
   CreditCard,
+  Volume2,
+  VolumeX,
 } from "lucide-react";
+import { isIncomingMessage } from "@/lib/support-thread-chat-context";
+import {
+  playNewMessageAlert,
+  prepareSupportSound,
+} from "@/lib/support-notification-sound";
 
 // Types
 interface SupportThread {
@@ -344,7 +352,7 @@ function InboxTab() {
   const [page, setPage] = useState(1);
 
   // Filters
-  const [statusFilter, setStatusFilter] = useState<string>("open,assigned,waiting");
+  const [statusFilter, setStatusFilter] = useState<string>("open");
   const [sourceFilter, setSourceFilter] = useState<string>("all_sources");
   const [priorityFilter, setPriorityFilter] = useState<string>("all_priority");
   const [searchQuery, setSearchQuery] = useState<string>("");
@@ -358,12 +366,29 @@ function InboxTab() {
   const [loadingMessages, setLoadingMessages] = useState(false);
   const [noteBody, setNoteBody] = useState("");
   const [addingNote, setAddingNote] = useState(false);
+  const [unreadMessageIds, setUnreadMessageIds] = useState<string[]>([]);
+  const [lastInteractionAt, setLastInteractionAt] = useState<number | null>(null);
+  const [soundEnabled, setSoundEnabled] = useState(true);
   const priorityOptimisticUntilRef = useRef<{ threadId: string; priority: SupportThread["priority"]; until: number } | null>(null);
   const assigneeOptimisticUntilRef = useRef<{ threadId: string; assignedToUserId: string | null; assignedToEmail: string | null; until: number } | null>(null);
   const statusOptimisticUntilRef = useRef<{ threadId: string; status: SupportThread["status"]; until: number } | null>(null);
   const selectedThreadRef = useRef<SupportThread | null>(null);
   const pendingRefreshRef = useRef<{ list: boolean; thread: boolean }>({ list: false, thread: false });
   const refreshTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const threadMessagesRef = useRef<ThreadMessage[]>([]);
+  const soundRepeatTimerRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const prevThreadsSnapshotRef = useRef<{ id: string; status: string }[] | null>(null);
+  const lastPlayedForThreadRef = useRef<{ id: string; at: number } | null>(null);
+  const FM_SUPPORT_SOUND_KEY = "fm_support_sound_enabled";
+
+  const markInteraction = useCallback(() => {
+    setLastInteractionAt(Date.now());
+    setUnreadMessageIds([]);
+    if (soundRepeatTimerRef.current) {
+      clearInterval(soundRepeatTimerRef.current);
+      soundRepeatTimerRef.current = null;
+    }
+  }, []);
 
   useEffect(() => {
     selectedThreadRef.current = selectedThread;
@@ -375,8 +400,11 @@ function InboxTab() {
       threadMessages,
       selectedThread: selectedThread ? { id: selectedThread.id, source: selectedThread.source } : null,
       loadingMessages,
+      unreadMessageIds,
+      lastInteractionAt,
+      markInteraction,
     });
-  }, [threadMessages, selectedThread, loadingMessages, setSupportThreadChat]);
+  }, [threadMessages, selectedThread, loadingMessages, unreadMessageIds, lastInteractionAt, markInteraction, setSupportThreadChat]);
 
   useEffect(() => {
     return () => {
@@ -384,9 +412,58 @@ function InboxTab() {
         threadMessages: [],
         selectedThread: null,
         loadingMessages: false,
+        unreadMessageIds: [],
+        lastInteractionAt: null,
       });
     };
   }, [setSupportThreadChat]);
+
+  useEffect(() => {
+    threadMessagesRef.current = threadMessages;
+  }, [threadMessages]);
+
+  useEffect(() => {
+    try {
+      const stored = localStorage.getItem(FM_SUPPORT_SOUND_KEY);
+      if (stored !== null) setSoundEnabled(stored === "true");
+    } catch {
+      /* ignore */
+    }
+  }, []);
+
+  useEffect(() => {
+    prepareSupportSound();
+  }, []);
+
+  const threadMatchesFilters = useCallback(
+    (t: SupportThread) => {
+      if (statusFilter && statusFilter !== "all") {
+        const allowed =
+          statusFilter === "open"
+            ? (["open", "waiting"] as const)
+            : statusFilter.split(",").map((s) => s.trim()).filter(Boolean);
+        if (allowed.length > 0 && !(allowed as readonly string[]).includes(t.status)) return false;
+      }
+      if (sourceFilter && sourceFilter !== "all_sources") {
+        if (t.source !== sourceFilter) return false;
+      }
+      if (priorityFilter && priorityFilter !== "all_priority") {
+        if (t.priority !== priorityFilter) return false;
+      }
+      if (myQueueFilter && user?.id) {
+        if (t.assignedToUserId !== user.id) return false;
+      }
+      return true;
+    },
+    [statusFilter, sourceFilter, priorityFilter, myQueueFilter, user?.id]
+  );
+
+  const clearSelection = useCallback(() => {
+    setSelectedThread(null);
+    setDetailThread(null);
+    setThreadMessages([]);
+    setThreadNotes([]);
+  }, []);
 
   const loadThreads = useCallback(async (opts?: { silent?: boolean }) => {
     try {
@@ -395,7 +472,7 @@ function InboxTab() {
       params.set("page", String(page));
       params.set("limit", "25");
       if (myQueueFilter) params.set("myQueue", "true");
-      if (statusFilter && statusFilter !== "all") params.set("status", statusFilter);
+      if (statusFilter && statusFilter !== "all") params.set("status", statusFilter === "open" ? "open,waiting" : statusFilter);
       if (sourceFilter && sourceFilter !== "all_sources") params.set("source", sourceFilter);
       if (priorityFilter && priorityFilter !== "all_priority") params.set("priority", priorityFilter);
 
@@ -407,7 +484,7 @@ function InboxTab() {
         url = `/api/admin/support/threads?${params}`;
       }
 
-      const res = await fetch(url, { credentials: "include" });
+      const res = await fetch(url, { credentials: "include", cache: "no-store" });
       const json = await res.json();
       if (!res.ok) throw new Error(json?.error || "Failed to load");
       let updatedThreads = json.data || [];
@@ -438,12 +515,34 @@ function InboxTab() {
       if (optStatus && Date.now() < optStatus.until) {
         updatedThreads = updatedThreads.map((t: SupportThread) => {
           if (t.id === optStatus.threadId) {
-            if (t.status === optStatus.status) statusOptimisticUntilRef.current = null;
             return { ...t, status: optStatus.status };
           }
           return t;
         });
       }
+      updatedThreads = updatedThreads.filter((t: SupportThread) => threadMatchesFilters(t));
+
+      const prev = prevThreadsSnapshotRef.current;
+      if (prev !== null && soundEnabled) {
+        const prevMap = new Map(prev.map((p) => [p.id, p.status]));
+        const newWaiting = updatedThreads.filter(
+          (t: SupportThread) =>
+            t.status === "waiting" &&
+            (!prevMap.has(t.id) || prevMap.get(t.id) !== "waiting")
+        );
+        const recentlyPlayed = lastPlayedForThreadRef.current;
+        const skip = recentlyPlayed && Date.now() - recentlyPlayed.at < 30_000 &&
+          newWaiting.some((t: SupportThread) => t.id === recentlyPlayed.id);
+        if (newWaiting.length > 0 && !skip) {
+          prepareSupportSound();
+          playNewMessageAlert();
+        }
+      }
+      prevThreadsSnapshotRef.current = updatedThreads.map((t: SupportThread) => ({
+        id: t.id,
+        status: t.status,
+      }));
+
       setThreads(updatedThreads);
       setTotal(json.total || 0);
     } catch (e: any) {
@@ -451,16 +550,30 @@ function InboxTab() {
     } finally {
       if (!opts?.silent) setLoading(false);
     }
-  }, [page, statusFilter, sourceFilter, priorityFilter, searchQuery, myQueueFilter]);
+  }, [page, statusFilter, sourceFilter, priorityFilter, searchQuery, myQueueFilter, threadMatchesFilters, soundEnabled]);
 
   useEffect(() => {
     loadThreads();
   }, [loadThreads]);
 
+  useEffect(() => {
+    setSelectedThread(null);
+    setDetailThread(null);
+    setThreadMessages([]);
+    setThreadNotes([]);
+    prevThreadsSnapshotRef.current = null;
+    if (soundRepeatTimerRef.current) {
+      clearInterval(soundRepeatTimerRef.current);
+      soundRepeatTimerRef.current = null;
+    }
+  }, [page, statusFilter, sourceFilter, priorityFilter, searchQuery, myQueueFilter]);
+
   const refreshThreadMessagesSilent = useCallback(async () => {
     const current = selectedThreadRef.current;
     if (!current) return;
     const threadId = current.id;
+    const prev = threadMessagesRef.current;
+    const prevIds = new Set(prev.map((m) => m.id));
     try {
       const [detailRes, notesRes] = await Promise.all([
         fetch(`/api/admin/support/threads/${threadId}`, { credentials: "include" }),
@@ -471,7 +584,21 @@ function InboxTab() {
       if (!detailRes.ok) return;
       if (selectedThreadRef.current?.id !== threadId) return;
       const sel = selectedThreadRef.current;
-      setThreadMessages(detailJson.messages || []);
+      const nextMessages: ThreadMessage[] = detailJson.messages || [];
+      const newIncoming = nextMessages.filter(
+        (m) => !prevIds.has(m.id) && isIncomingMessage(m)
+      );
+      const newIncomingIds = newIncoming.map((m) => m.id);
+      const isInitialLoad = prev.length === 0;
+      if (!isInitialLoad && newIncomingIds.length > 0) {
+        if (soundEnabled) {
+          prepareSupportSound();
+          playNewMessageAlert();
+          lastPlayedForThreadRef.current = { id: threadId, at: Date.now() };
+        }
+        setUnreadMessageIds((u) => [...new Set([...u, ...newIncomingIds])]);
+      }
+      setThreadMessages(nextMessages);
       let nextDetail: SupportThread = detailJson.thread
         ? { ...sel, ...detailJson.thread }
         : sel;
@@ -503,13 +630,16 @@ function InboxTab() {
         nextDetail
       ) {
         nextDetail = { ...nextDetail, status: optStatus.status };
+        if (detailJson.thread?.status === optStatus.status) {
+          statusOptimisticUntilRef.current = null;
+        }
       }
       setDetailThread(nextDetail);
       if (notesRes.ok) setThreadNotes(notesJson.notes || []);
     } catch {
       /* ignore */
     }
-  }, []);
+  }, [soundEnabled]);
 
   const runRefreshJob = useCallback(() => {
     const pending = pendingRefreshRef.current;
@@ -539,16 +669,41 @@ function InboxTab() {
   useEffect(() => {
     return () => {
       if (refreshTimeoutRef.current) clearTimeout(refreshTimeoutRef.current);
+      if (soundRepeatTimerRef.current) {
+        clearInterval(soundRepeatTimerRef.current);
+        soundRepeatTimerRef.current = null;
+      }
     };
   }, []);
 
+  const pollIntervalMs = 18_000;
+  useEffect(() => {
+    if (!selectedThread) return;
+    const t = setInterval(refreshThreadMessagesSilent, pollIntervalMs);
+    return () => clearInterval(t);
+  }, [selectedThread?.id, refreshThreadMessagesSilent]);
+
   const loadThreadMessages = async (thread: SupportThread) => {
+    prepareSupportSound();
     setSelectedThread(thread);
     setDetailThread(null);
     setThreadNotes([]);
     setThreadMessages([]);
     setLoadingMessages(true);
     try {
+      if (thread.status === "waiting") {
+        const patchRes = await fetch(`/api/admin/support/threads/${thread.id}/status`, {
+          method: "PATCH",
+          credentials: "include",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ status: "open" }),
+        });
+        if (patchRes.ok) {
+          setThreads((prev) =>
+            prev.map((t) => (t.id === thread.id ? { ...t, status: "open" as const } : t))
+          );
+        }
+      }
       const [detailRes, notesRes] = await Promise.all([
         fetch(`/api/admin/support/threads/${thread.id}`, { credentials: "include" }),
         fetch(`/api/admin/support/threads/${thread.id}/notes`, { credentials: "include" }),
@@ -580,6 +735,7 @@ function InboxTab() {
       setThreadNotes(notesRes.ok ? notesJson.notes || [] : []);
       setNoteBody("");
       setLoadingMessages(false);
+      markInteraction();
     } catch (e: any) {
       toast.error(e?.message || "Error loading messages");
       setLoadingMessages(false);
@@ -603,13 +759,21 @@ function InboxTab() {
   const handlePatchStatus = async (threadId: string, status: string) => {
     const prev = threads.find((t) => t.id === threadId)?.status;
     const s = status as SupportThread["status"];
+    const thread = threads.find((t) => t.id === threadId);
+    const updatedThread = thread ? { ...thread, status: s } : null;
+    const stillMatches = updatedThread ? threadMatchesFilters(updatedThread) : false;
+    const wasSelected = selectedThread?.id === threadId;
+
     statusOptimisticUntilRef.current = { threadId, status: s, until: Date.now() + 4000 };
-    setThreads((prevList) =>
-      prevList.map((t) => (t.id === threadId ? { ...t, status: s } : t))
-    );
-    if (selectedThread?.id === threadId) {
+    setThreads((prevList) => {
+      const updated = prevList.map((t) => (t.id === threadId ? { ...t, status: s } : t));
+      return updated.filter((t) => threadMatchesFilters(t));
+    });
+    if (stillMatches && wasSelected) {
       setSelectedThread((t) => (t ? { ...t, status: s } : null));
       setDetailThread((t) => (t ? { ...t, status: s } : null));
+    } else if (!stillMatches && wasSelected) {
+      clearSelection();
     }
     try {
       const res = await fetch(`/api/admin/support/threads/${threadId}/status`, {
@@ -623,18 +787,26 @@ function InboxTab() {
         statusOptimisticUntilRef.current = null;
         throw new Error(json?.error || "Failed");
       }
+      statusOptimisticUntilRef.current = null;
       toast.success("Status updated");
+      markInteraction();
       scheduleRefresh({ list: true, thread: true });
     } catch (e: any) {
       statusOptimisticUntilRef.current = null;
-      if (typeof prev !== "undefined") {
-        setThreads((prevList) =>
-          prevList.map((t) => (t.id === threadId ? { ...t, status: prev } : t))
-        );
-        if (selectedThread?.id === threadId) {
-          setSelectedThread((t) => (t ? { ...t, status: prev } : null));
-          setDetailThread((t) => (t ? { ...t, status: prev } : null));
-        }
+      if (typeof prev !== "undefined" && thread) {
+        const reverted = { ...thread, status: prev };
+        setThreads((prevList) => {
+          const filtered = prevList.filter((t) => t.id !== threadId);
+          if (threadMatchesFilters(reverted)) {
+            return [...filtered, reverted].sort(
+              (a, b) =>
+                new Date(b.lastMessageAt ?? 0).getTime() -
+                new Date(a.lastMessageAt ?? 0).getTime()
+            );
+          }
+          return filtered;
+        });
+        if (wasSelected) void loadThreadMessages(reverted);
       }
       toast.error(e?.message || "Error");
     }
@@ -642,21 +814,28 @@ function InboxTab() {
 
   const handlePatchAssignee = async (threadId: string, assigneeId: string | null) => {
     const prevThread = threads.find((t) => t.id === threadId);
-    const prevSelected = selectedThread?.id === threadId ? selectedThread : null;
-    const prevDetail = detailThread?.id === threadId ? detailThread : null;
     const isUnassign = !assigneeId || assigneeId === null;
     const resolvedAssigneeId = assigneeId === "me" && user ? user.id : assigneeId;
     const resolvedAssigneeEmail = assigneeId === "me" && user ? user.email : null;
-    
+    const updatedThread = prevThread
+      ? {
+          ...prevThread,
+          assignedToUserId: isUnassign ? null : resolvedAssigneeId,
+          assignedToName: null,
+          assignedToEmail: isUnassign ? null : resolvedAssigneeEmail,
+        }
+      : null;
+    const stillMatches = updatedThread ? threadMatchesFilters(updatedThread) : false;
+    const wasSelected = selectedThread?.id === threadId;
+
     assigneeOptimisticUntilRef.current = {
       threadId,
       assignedToUserId: isUnassign ? null : resolvedAssigneeId,
       assignedToEmail: isUnassign ? null : resolvedAssigneeEmail,
       until: Date.now() + 4000,
     };
-    
-    setThreads((prev) =>
-      prev.map((t) =>
+    setThreads((prev) => {
+      const updated = prev.map((t) =>
         t.id === threadId
           ? {
               ...t,
@@ -665,29 +844,18 @@ function InboxTab() {
               assignedToEmail: isUnassign ? null : resolvedAssigneeEmail,
             }
           : t
-      )
-    );
-    if (selectedThread?.id === threadId) {
+      );
+      return updated.filter((t) => threadMatchesFilters(t));
+    });
+    if (stillMatches && wasSelected) {
       setSelectedThread((t) =>
-        t
-          ? {
-              ...t,
-              assignedToUserId: isUnassign ? null : resolvedAssigneeId,
-              assignedToName: null,
-              assignedToEmail: isUnassign ? null : resolvedAssigneeEmail,
-            }
-          : null
+        t ? { ...t, assignedToUserId: isUnassign ? null : resolvedAssigneeId, assignedToName: null, assignedToEmail: isUnassign ? null : resolvedAssigneeEmail } : null
       );
       setDetailThread((t) =>
-        t
-          ? {
-              ...t,
-              assignedToUserId: isUnassign ? null : resolvedAssigneeId,
-              assignedToName: null,
-              assignedToEmail: isUnassign ? null : resolvedAssigneeEmail,
-            }
-          : null
+        t ? { ...t, assignedToUserId: isUnassign ? null : resolvedAssigneeId, assignedToName: null, assignedToEmail: isUnassign ? null : resolvedAssigneeEmail } : null
       );
+    } else if (!stillMatches && wasSelected) {
+      clearSelection();
     }
     try {
       const res = await fetch(`/api/admin/support/threads/${threadId}/assignee`, {
@@ -702,17 +870,23 @@ function InboxTab() {
         throw new Error(json?.error || "Failed");
       }
       toast.success(assigneeId ? "Assigned" : "Unassigned");
+      markInteraction();
       scheduleRefresh({ list: true, thread: true });
     } catch (e: any) {
       assigneeOptimisticUntilRef.current = null;
       if (prevThread) {
-        setThreads((prev) =>
-          prev.map((t) => (t.id === threadId ? prevThread : t))
-        );
-      }
-      if (prevSelected) {
-        setSelectedThread(prevSelected);
-        setDetailThread(prevDetail);
+        setThreads((prev) => {
+          const filtered = prev.filter((t) => t.id !== threadId);
+          if (threadMatchesFilters(prevThread)) {
+            return [...filtered, prevThread].sort(
+              (a, b) =>
+                new Date(b.lastMessageAt ?? 0).getTime() -
+                new Date(a.lastMessageAt ?? 0).getTime()
+            );
+          }
+          return filtered;
+        });
+        if (wasSelected) void loadThreadMessages(prevThread);
       }
       toast.error(e?.message || "Error");
     }
@@ -733,6 +907,7 @@ function InboxTab() {
       toast.success("Note added");
       setNoteBody("");
       await fetchNotes();
+      markInteraction();
       scheduleRefresh({ thread: true });
     } catch (e: any) {
       toast.error(e?.message || "Error");
@@ -746,7 +921,7 @@ function InboxTab() {
       const params = new URLSearchParams();
       params.set("export", "csv");
       if (myQueueFilter) params.set("myQueue", "true");
-      if (statusFilter && statusFilter !== "all") params.set("status", statusFilter);
+      if (statusFilter && statusFilter !== "all") params.set("status", statusFilter === "open" ? "open,waiting" : statusFilter);
       if (sourceFilter && sourceFilter !== "all_sources") params.set("source", sourceFilter);
       window.open(`/api/admin/support/threads?${params}`, "_blank");
     } catch (e: any) {
@@ -757,14 +932,22 @@ function InboxTab() {
   const handleThreadAction = async (threadId: string, action: string, params: any = {}) => {
     if (action === "priority" && typeof params.priority === "string") {
       const p = params.priority as SupportThread["priority"];
-      const prev = selectedThread?.id === threadId ? (detailThread ?? selectedThread)?.priority : undefined;
+      const thread = threads.find((t) => t.id === threadId);
+      const prev = thread?.priority;
+      const updatedThread = thread ? { ...thread, priority: p } : null;
+      const stillMatches = updatedThread ? threadMatchesFilters(updatedThread) : false;
+      const wasSelected = selectedThread?.id === threadId;
+
       priorityOptimisticUntilRef.current = { threadId, priority: p, until: Date.now() + 4000 };
-      setThreads((ps) =>
-        ps.map((t) => (t.id === threadId ? { ...t, priority: p } : t))
-      );
-      if (selectedThread?.id === threadId) {
+      setThreads((ps) => {
+        const updated = ps.map((t) => (t.id === threadId ? { ...t, priority: p } : t));
+        return updated.filter((t) => threadMatchesFilters(t));
+      });
+      if (stillMatches && wasSelected) {
         setSelectedThread((t) => (t ? { ...t, priority: p } : null));
         setDetailThread((t) => (t ? { ...t, priority: p } : null));
+      } else if (!stillMatches && wasSelected) {
+        clearSelection();
       }
       try {
         const res = await fetch("/api/admin/support/threads", {
@@ -776,17 +959,24 @@ function InboxTab() {
         const json = await res.json();
         if (!res.ok) throw new Error(json?.error || "Action failed");
         toast.success(json.message || "Success");
+        markInteraction();
         scheduleRefresh({ list: true, thread: true });
       } catch (e: any) {
         priorityOptimisticUntilRef.current = null;
-        if (typeof prev !== "undefined") {
-          setThreads((ps) =>
-            ps.map((t) => (t.id === threadId ? { ...t, priority: prev } : t))
-          );
-          if (selectedThread?.id === threadId) {
-            setSelectedThread((t) => (t ? { ...t, priority: prev } : null));
-            setDetailThread((t) => (t ? { ...t, priority: prev } : null));
-          }
+        if (typeof prev !== "undefined" && thread) {
+          const reverted = { ...thread, priority: prev };
+          setThreads((ps) => {
+            const filtered = ps.filter((t) => t.id !== threadId);
+            if (threadMatchesFilters(reverted)) {
+              return [...filtered, reverted].sort(
+                (a, b) =>
+                  new Date(b.lastMessageAt ?? 0).getTime() -
+                  new Date(a.lastMessageAt ?? 0).getTime()
+              );
+            }
+            return filtered;
+          });
+          if (wasSelected) void loadThreadMessages(reverted);
         }
         toast.error(e?.message || "Error");
       }
@@ -802,6 +992,7 @@ function InboxTab() {
       const json = await res.json();
       if (!res.ok) throw new Error(json?.error || "Action failed");
       toast.success(json.message || "Success");
+      markInteraction();
       scheduleRefresh({ list: true, thread: true });
     } catch (e: any) {
       toast.error(e?.message || "Error");
@@ -825,7 +1016,32 @@ function InboxTab() {
             <CardHeader className="pb-3">
               <div className="flex items-center justify-between">
                 <CardTitle className="text-lg">Support Threads</CardTitle>
-              <div className="flex gap-2">
+              <div className="flex items-center gap-2">
+                {(user?.role === "support" || user?.role === "admin") && (
+                  <label className="flex items-center gap-1.5 text-sm text-muted-foreground cursor-pointer">
+                    {soundEnabled ? (
+                      <Volume2 className="h-4 w-4" aria-hidden />
+                    ) : (
+                      <VolumeX className="h-4 w-4" aria-hidden />
+                    )}
+                    <Switch
+                      checked={soundEnabled}
+                      onCheckedChange={(v) => {
+                        setSoundEnabled(v);
+                        try {
+                          localStorage.setItem(FM_SUPPORT_SOUND_KEY, String(v));
+                        } catch {
+                          /* ignore */
+                        }
+                        if (v) {
+                          prepareSupportSound();
+                          playNewMessageAlert();
+                        }
+                      }}
+                      aria-label="Alert sound for new messages"
+                    />
+                  </label>
+                )}
                 <Button variant="outline" size="sm" onClick={runRefreshNow}>
                   <RefreshCcw className="h-4 w-4" />
                 </Button>
@@ -843,25 +1059,36 @@ function InboxTab() {
                 <Input
                   placeholder="Search threads..."
                   value={searchQuery}
-                  onChange={(e) => setSearchQuery(e.target.value)}
+                  onChange={(e) => {
+                    setSearchQuery(e.target.value);
+                    setPage(1);
+                  }}
                   className="pl-8"
                 />
               </div>
-              <Select value={statusFilter} onValueChange={setStatusFilter}>
+              <Select
+                value={statusFilter}
+                onValueChange={(v) => {
+                  setStatusFilter(v);
+                  setPage(1);
+                }}
+              >
                 <SelectTrigger className="w-[140px]">
                   <SelectValue placeholder="Status" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="open,assigned,waiting">Active</SelectItem>
                   <SelectItem value="open">Open</SelectItem>
-                  <SelectItem value="assigned">Assigned</SelectItem>
-                  <SelectItem value="waiting">Waiting</SelectItem>
                   <SelectItem value="resolved">Resolved</SelectItem>
                   <SelectItem value="closed">Closed</SelectItem>
-                  <SelectItem value="all">All</SelectItem>
                 </SelectContent>
               </Select>
-              <Select value={sourceFilter} onValueChange={setSourceFilter}>
+              <Select
+                value={sourceFilter}
+                onValueChange={(v) => {
+                  setSourceFilter(v);
+                  setPage(1);
+                }}
+              >
                 <SelectTrigger className="w-[140px]">
                   <SelectValue placeholder="Source" />
                 </SelectTrigger>
@@ -873,7 +1100,13 @@ function InboxTab() {
                   <SelectItem value="whatsapp">WhatsApp</SelectItem>
                 </SelectContent>
               </Select>
-              <Select value={priorityFilter} onValueChange={setPriorityFilter}>
+              <Select
+                value={priorityFilter}
+                onValueChange={(v) => {
+                  setPriorityFilter(v);
+                  setPage(1);
+                }}
+              >
                 <SelectTrigger className="w-[120px]">
                   <SelectValue placeholder="Priority" />
                 </SelectTrigger>
@@ -888,7 +1121,10 @@ function InboxTab() {
               <label className="flex items-center gap-2 cursor-pointer select-none text-sm">
                 <Checkbox
                   checked={myQueueFilter}
-                  onCheckedChange={(v) => setMyQueueFilter(!!v)}
+                  onCheckedChange={(v) => {
+                    setMyQueueFilter(!!v);
+                    setPage(1);
+                  }}
                 />
                 My queue
               </label>
@@ -909,8 +1145,14 @@ function InboxTab() {
                 {threads.map((thread) => (
                   <div
                     key={thread.id}
-                    className={`p-3 rounded-lg border cursor-pointer transition-colors hover:bg-muted/50 ${
-                      selectedThread?.id === thread.id ? "bg-muted border-primary" : ""
+                    className={`p-3 rounded-lg border cursor-pointer transition-all border-slate-200 dark:border-white/10 ${
+                      thread.status === "waiting"
+                        ? "ring-2 ring-amber-500 ring-offset-2 ring-offset-white dark:ring-offset-slate-900 bg-amber-50 dark:bg-amber-950/40 border-amber-400 animate-attention-flash hover:bg-amber-100 dark:hover:bg-amber-900/50"
+                        : selectedThread?.id === thread.id
+                        ? unreadMessageIds.length > 0
+                          ? "ring-2 ring-blue-500 ring-offset-2 ring-offset-white dark:ring-offset-slate-900 bg-blue-50 dark:bg-blue-950/40 border-blue-400 animate-unread-pulse hover:bg-blue-100 dark:hover:bg-blue-900/50"
+                          : "ring-2 ring-primary ring-offset-2 ring-offset-white dark:ring-offset-slate-900 bg-primary/10 dark:bg-primary/20 border-primary hover:bg-primary/15 dark:hover:bg-primary/25"
+                        : "hover:bg-slate-100 dark:hover:bg-white/5"
                     }`}
                     onClick={() => loadThreadMessages(thread)}
                   >
@@ -1019,9 +1261,7 @@ function InboxTab() {
         </CardHeader>
         <CardContent className="flex-1 flex flex-col min-h-0 p-0">
           {!selectedThread ? (
-            <div className="flex-1 flex items-center justify-center px-4 py-8 text-center text-muted-foreground text-sm">
-              Selectează un thread pentru a vedea mesajele
-            </div>
+            <div className="flex-1 min-h-[200px]" aria-hidden="true" />
           ) : loadingMessages ? (
             <div className="flex-1 flex items-center justify-center px-4 py-8">
               <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
@@ -1042,7 +1282,7 @@ function InboxTab() {
                         </SelectTrigger>
                         <SelectContent>
                           {(
-                            ["open", "active", "waiting", "resolved", "closed"] as const
+                            ["open", "resolved", "closed"] as const
                           ).map((s) => (
                             <SelectItem key={s} value={s}>
                               {statusDisplayLabels[s]}
@@ -1112,11 +1352,16 @@ function InboxTab() {
                   </>
                 ) : null;
               })()}
-              <div className="flex-1 overflow-y-auto px-4 py-4 space-y-3 bg-gradient-to-b from-slate-50 to-white dark:from-slate-900/50 dark:to-slate-900/30 min-h-[200px]">
+              <div
+                className="flex-1 overflow-y-auto px-4 py-4 space-y-3 bg-gradient-to-b from-slate-50 to-white dark:from-slate-900/50 dark:to-slate-900/30 min-h-[200px]"
+                onClick={markInteraction}
+              >
                 {threadMessages.length === 0 ? (
                   <p className="text-sm text-muted-foreground">No messages</p>
                 ) : (
-                threadMessages.map((msg) => (
+                threadMessages.map((msg) => {
+                  const unread = isIncomingMessage(msg) && unreadMessageIds.includes(msg.id);
+                  return (
                   <div
                     key={msg.id}
                     className={`p-3 rounded-lg text-sm ${
@@ -1125,6 +1370,8 @@ function InboxTab() {
                         ? "bg-red-50 border border-red-200 dark:bg-red-950/30 dark:border-red-900/50"
                         : msg.moderation?.status === "redacted"
                         ? "bg-yellow-50 border border-yellow-200 dark:bg-yellow-950/30 dark:border-yellow-900/50"
+                        : unread
+                        ? "bg-blue-50 dark:bg-blue-950/30 border-l-4 border-l-primary animate-unread-pulse"
                         : "bg-muted"
                     }`}
                   >
@@ -1157,18 +1404,25 @@ function InboxTab() {
                         {!["hidden", "deleted", "redacted"].includes(msg.moderation?.status ?? "") && (
                           <PIIQuickActions
                             messageId={msg.id}
-                            onSuccess={() => scheduleRefresh({ thread: true })}
+                            onSuccess={() => {
+                              markInteraction();
+                              scheduleRefresh({ thread: true });
+                            }}
                           />
                         )}
                         <MessageModerationActions
                           messageId={msg.id}
                           currentModeration={msg.moderation}
-                          onModerationSuccess={() => scheduleRefresh({ thread: true })}
+                          onModerationSuccess={() => {
+                            markInteraction();
+                            scheduleRefresh({ thread: true });
+                          }}
                         />
                       </div>
                     )}
                   </div>
-                ))
+                  );
+                })
               )}
               </div>
             </div>
