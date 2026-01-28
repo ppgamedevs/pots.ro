@@ -202,10 +202,24 @@ export async function GET(request: NextRequest) {
       userInfo.forEach((u: { id: string; name: string | null; email: string }) => userMap.set(u.id, { name: u.name, email: u.email }));
     }
 
+    // Get support thread statuses for items that have a linked thread
+    const threadIds = [...new Set(items.map((i: QueueItemRow) => i.threadId).filter(Boolean))] as string[];
+    const threadStatusMap = new Map<string, string>();
+    if (threadIds.length > 0) {
+      const threads = await db
+        .select({ id: supportThreads.id, status: supportThreads.status })
+        .from(supportThreads)
+        .where(inArray(supportThreads.id, threadIds));
+      threads.forEach((t: { id: string; status: string }) => {
+        threadStatusMap.set(t.id, t.status);
+      });
+    }
+
     // Enrich items
     const data = items.map((item) => ({
       ...item,
       user: item.userId ? userMap.get(item.userId) : null,
+      threadStatus: item.threadId ? threadStatusMap.get(item.threadId) ?? null : null,
     }));
 
     // Get stats

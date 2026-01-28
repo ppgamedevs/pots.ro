@@ -210,9 +210,9 @@ export function ChatWidget({ className }: ChatWidgetProps) {
       }
     };
 
-    // quick first poll, then interval
+    // quick first poll, then interval (near real-time)
     void poll();
-    const t = window.setInterval(poll, 4000);
+    const t = window.setInterval(poll, 2000);
     return () => {
       cancelled = true;
       window.clearInterval(t);

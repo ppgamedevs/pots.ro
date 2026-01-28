@@ -1684,6 +1684,8 @@ export const supportThreads = pgTable("support_threads", {
   buyerId: uuid("buyer_id").references(() => users.id, { onDelete: "set null" }),
   status: supportThreadStatusEnum("status").notNull().default("open"),
   assignedToUserId: uuid("assigned_to_user_id").references(() => users.id, { onDelete: "set null" }),
+  closedByUserId: uuid("closed_by_user_id").references(() => users.id, { onDelete: "set null" }),
+  resolvedByUserId: uuid("resolved_by_user_id").references(() => users.id, { onDelete: "set null" }),
   priority: supportTicketPriorityEnum("priority").notNull().default("normal"),
   subject: text("subject"), // derived from first message or ticket title
   lastMessageAt: timestamp("last_message_at", { withTimezone: true }),

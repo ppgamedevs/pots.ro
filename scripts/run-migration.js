@@ -951,6 +951,8 @@ async function ensureSupportConsoleSchema(sql) {
         buyer_id uuid REFERENCES users(id) ON DELETE SET NULL,
         status support_thread_status NOT NULL DEFAULT 'open',
         assigned_to_user_id uuid REFERENCES users(id) ON DELETE SET NULL,
+        closed_by_user_id uuid REFERENCES users(id) ON DELETE SET NULL,
+        resolved_by_user_id uuid REFERENCES users(id) ON DELETE SET NULL,
         priority support_ticket_priority NOT NULL DEFAULT 'normal',
         subject text,
         last_message_at timestamptz,
@@ -974,6 +976,16 @@ async function ensureSupportConsoleSchema(sql) {
     await sql`CREATE INDEX IF NOT EXISTS support_threads_last_message_idx ON support_threads(last_message_at)`;
     await sql`CREATE INDEX IF NOT EXISTS support_threads_sla_deadline_idx ON support_threads(sla_deadline) WHERE sla_breach = false AND status NOT IN ('resolved', 'closed')`;
     await sql`CREATE INDEX IF NOT EXISTS support_threads_priority_status_idx ON support_threads(priority, status)`;
+
+    // New columns for tracking who closed/resolved a thread (idempotent)
+    await sql`
+      ALTER TABLE support_threads
+      ADD COLUMN IF NOT EXISTS closed_by_user_id uuid REFERENCES users(id) ON DELETE SET NULL
+    `;
+    await sql`
+      ALTER TABLE support_threads
+      ADD COLUMN IF NOT EXISTS resolved_by_user_id uuid REFERENCES users(id) ON DELETE SET NULL
+    `;
 
     // Support thread tags table
     await sql`

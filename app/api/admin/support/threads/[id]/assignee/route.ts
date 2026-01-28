@@ -54,7 +54,6 @@ export async function PATCH(request: NextRequest, context: Params) {
       .update(supportThreads)
       .set({
         assignedToUserId: newAssigneeId,
-        status: newAssigneeId ? "assigned" : "open",
         updatedAt: new Date(),
       })
       .where(eq(supportThreads.id, threadId));

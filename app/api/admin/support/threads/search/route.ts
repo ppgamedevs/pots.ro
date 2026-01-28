@@ -7,7 +7,7 @@ import {
   sellers,
   orders,
 } from "@/db/schema/core";
-import { and, eq, desc, inArray, sql } from "drizzle-orm";
+import { and, eq, desc, inArray, or, sql } from "drizzle-orm";
 import { getCurrentUser } from "@/lib/auth-helpers";
 
 export const dynamic = "force-dynamic";
@@ -76,6 +76,8 @@ export async function GET(request: NextRequest) {
     const isOpenPlusWaiting =
       statuses.length === 2 && statuses.includes("open") && statuses.includes("waiting");
 
+  const closedResolvedByUserId = searchParams.get("closedResolvedByUserId")?.trim() ?? "";
+
     if (statuses.length > 0 && threadIds.length > 0) {
       const filtered = await db
         .select({ id: supportThreads.id })
@@ -95,6 +97,30 @@ export async function GET(request: NextRequest) {
       total = threadIds.length;
       threadIds = threadIds.slice(offset, offset + limit);
     }
+
+  if (closedResolvedByUserId && threadIds.length > 0) {
+    const filtered = await db
+      .select({ id: supportThreads.id })
+      .from(supportThreads)
+      .where(
+        and(
+          inArray(supportThreads.id, threadIds),
+          or(
+            eq(supportThreads.closedByUserId, closedResolvedByUserId),
+            eq(supportThreads.resolvedByUserId, closedResolvedByUserId)
+          )
+        )
+      );
+    const filteredIds = new Set(filtered.map((r: { id: string }) => r.id));
+    const orderMap = new Map(threadIds.map((id, i) => [id, i]));
+    threadIds = threadIds
+      .filter((id) => filteredIds.has(id))
+      .sort((a, b) => (orderMap.get(a) ?? 0) - (orderMap.get(b) ?? 0));
+    total = threadIds.length;
+    if (!isOpenPlusWaiting) {
+      threadIds = threadIds.slice(offset, offset + limit);
+    }
+  }
 
     if (threadIds.length === 0) {
       return NextResponse.json({ data: [], total, page, limit });

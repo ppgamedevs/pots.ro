@@ -34,6 +34,7 @@ interface ThreadFilters {
   status?: ThreadStatus[];
   source?: ThreadSource[];
   priority?: ThreadPriority[];
+  closedResolvedByUserId?: string;
   assignedToUserId?: string;
   sellerId?: string;
   buyerId?: string;
@@ -96,6 +97,11 @@ function parseFilters(searchParams: URLSearchParams): ThreadFilters {
 
   const search = searchParams.get("search");
   if (search?.trim()) filters.search = search.trim();
+
+  const closedResolvedByUserId = searchParams.get("closedResolvedByUserId");
+  if (closedResolvedByUserId?.trim()) {
+    filters.closedResolvedByUserId = closedResolvedByUserId.trim();
+  }
 
   const from = searchParams.get("from");
   if (from) {
@@ -213,6 +219,15 @@ export async function GET(request: NextRequest) {
       conditions.push(inArray(supportThreads.id, tagFilteredThreadIds));
     }
 
+    if (filters.closedResolvedByUserId) {
+      conditions.push(
+        or(
+          eq(supportThreads.closedByUserId, filters.closedResolvedByUserId),
+          eq(supportThreads.resolvedByUserId, filters.closedResolvedByUserId)
+        )
+      );
+    }
+
     const whereClause = conditions.length > 0 ? and(...conditions) : undefined;
 
     // Get total count
@@ -253,6 +268,8 @@ export async function GET(request: NextRequest) {
       buyerId: string | null;
       status: string;
       assignedToUserId: string | null;
+      closedByUserId: string | null;
+      resolvedByUserId: string | null;
       priority: string;
       subject: string | null;
       lastMessageAt: Date | null;
@@ -277,6 +294,8 @@ export async function GET(request: NextRequest) {
         buyerId: supportThreads.buyerId,
         status: supportThreads.status,
         assignedToUserId: supportThreads.assignedToUserId,
+        closedByUserId: supportThreads.closedByUserId,
+        resolvedByUserId: supportThreads.resolvedByUserId,
         priority: supportThreads.priority,
         subject: supportThreads.subject,
         lastMessageAt: supportThreads.lastMessageAt,
@@ -300,9 +319,13 @@ export async function GET(request: NextRequest) {
     // Get seller and buyer info separately for better performance
     const sellerIds = [...new Set(threads.map((t: ThreadRow) => t.sellerId).filter(Boolean))] as string[];
     const buyerIds = [...new Set(threads.map((t: ThreadRow) => t.buyerId).filter(Boolean))] as string[];
+    const closedByUserIds = [...new Set(threads.map((t: ThreadRow) => t.closedByUserId).filter(Boolean))] as string[];
+    const resolvedByUserIds = [...new Set(threads.map((t: ThreadRow) => t.resolvedByUserId).filter(Boolean))] as string[];
 
     const sellerMap = new Map<string, { brandName: string; slug: string }>();
     const buyerMap = new Map<string, { name: string | null; email: string; role: string }>();
+    const closedByMap = new Map<string, { id: string; displayId: string | null; name: string | null; email: string; role: string | null }>();
+    const resolvedByMap = new Map<string, { id: string; displayId: string | null; name: string | null; email: string; role: string | null }>();
 
     if (sellerIds.length > 0) {
       const sellerInfo = await db
@@ -328,6 +351,50 @@ export async function GET(request: NextRequest) {
       );
     }
 
+    if (closedByUserIds.length > 0) {
+      const closedByInfo = await db
+        .select({
+          id: users.id,
+          displayId: users.displayId,
+          name: users.name,
+          email: users.email,
+          role: users.role,
+        })
+        .from(users)
+        .where(inArray(users.id, closedByUserIds));
+      closedByInfo.forEach((u: { id: string; displayId: string | null; name: string | null; email: string; role: string | null }) =>
+        closedByMap.set(u.id, {
+          id: u.id,
+          displayId: u.displayId ?? null,
+          name: u.name ?? null,
+          email: u.email,
+          role: u.role,
+        })
+      );
+    }
+
+    if (resolvedByUserIds.length > 0) {
+      const resolvedByInfo = await db
+        .select({
+          id: users.id,
+          displayId: users.displayId,
+          name: users.name,
+          email: users.email,
+          role: users.role,
+        })
+        .from(users)
+        .where(inArray(users.id, resolvedByUserIds));
+      resolvedByInfo.forEach((u: { id: string; displayId: string | null; name: string | null; email: string; role: string | null }) =>
+        resolvedByMap.set(u.id, {
+          id: u.id,
+          displayId: u.displayId ?? null,
+          name: u.name ?? null,
+          email: u.email,
+          role: u.role,
+        })
+      );
+    }
+
     // Get tags for all threads
     const threadIds = threads.map((t: ThreadRow) => t.id);
     const tagsMap = new Map<string, string[]>();
@@ -350,6 +417,8 @@ export async function GET(request: NextRequest) {
       buyer: { name: string | null; email: string; role?: string } | null | undefined;
       tags: string[];
       displaySubject?: string | null;
+      closedBy?: { id: string; displayId: string | null; name: string | null; email: string; role: string | null } | null;
+      resolvedBy?: { id: string; displayId: string | null; name: string | null; email: string; role: string | null } | null;
     };
 
     const data: EnrichedThread[] = threads.map((thread: ThreadRow) => {
@@ -370,6 +439,8 @@ export async function GET(request: NextRequest) {
         seller: thread.sellerId ? sellerMap.get(thread.sellerId) : null,
         buyer: thread.buyerId ? buyerMap.get(thread.buyerId) : null,
         tags: tagsMap.get(thread.id) || [],
+        closedBy: thread.closedByUserId ? closedByMap.get(thread.closedByUserId) ?? null : null,
+        resolvedBy: thread.resolvedByUserId ? resolvedByMap.get(thread.resolvedByUserId) ?? null : null,
         ...(displaySubject != null ? { displaySubject } : {}),
       };
     });
@@ -476,7 +547,6 @@ export async function POST(request: NextRequest) {
           .update(supportThreads)
           .set({
             assignedToUserId: assignToUserId || null,
-            status: assignToUserId ? "assigned" : "open",
             updatedAt: new Date(),
           })
           .where(eq(supportThreads.id, threadId));

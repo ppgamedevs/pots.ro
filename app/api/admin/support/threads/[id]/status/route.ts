@@ -36,7 +36,13 @@ export async function PATCH(request: NextRequest, context: Params) {
     }
 
     const [thread] = await db
-      .select({ id: supportThreads.id, status: supportThreads.status })
+      .select({
+        id: supportThreads.id,
+        status: supportThreads.status,
+        assignedToUserId: supportThreads.assignedToUserId,
+        closedByUserId: supportThreads.closedByUserId,
+        resolvedByUserId: supportThreads.resolvedByUserId,
+      })
       .from(supportThreads)
       .where(eq(supportThreads.id, threadId))
       .limit(1);
@@ -45,9 +51,26 @@ export async function PATCH(request: NextRequest, context: Params) {
       return NextResponse.json({ error: "Thread not found" }, { status: 404 });
     }
 
+    const now = new Date();
+    const nextFields: Partial<typeof supportThreads.$inferInsert> = {
+      status: status as (typeof VALID_STATUSES)[number],
+      updatedAt: now,
+    };
+
+    if ((status === "closed" || status === "resolved") && thread.status !== status) {
+      // Unassign when closing/resolving
+      nextFields.assignedToUserId = null;
+      if (status === "closed") {
+        nextFields.closedByUserId = user.id;
+      }
+      if (status === "resolved") {
+        nextFields.resolvedByUserId = user.id;
+      }
+    }
+
     await db
       .update(supportThreads)
-      .set({ status: status as (typeof VALID_STATUSES)[number], updatedAt: new Date() })
+      .set(nextFields)
       .where(eq(supportThreads.id, threadId));
 
     await writeAdminAudit({

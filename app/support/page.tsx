@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useCallback, useRef } from "react";
+import { useState, useEffect, useCallback, useRef, useMemo } from "react";
 import Link from "next/link";
 import { toast } from "sonner";
 import { useUser } from "@/lib/hooks/useUser";
@@ -16,7 +16,6 @@ import { Tabs, TabsContent } from "@/components/ui/tabs";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger, DialogFooter, DialogClose } from "@/components/ui/dialog";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
-import { Checkbox } from "@/components/ui/checkbox";
 import { Switch } from "@/components/ui/switch";
 import {
   MessageSquare,
@@ -80,6 +79,16 @@ interface SupportThread {
   tags: string[];
   displaySubject?: string | null;
   order?: { orderNumber: string; status: string } | null;
+  closedBy?: { id: string; displayId: string | null; name: string | null; email: string; role: string | null } | null;
+  resolvedBy?: { id: string; displayId: string | null; name: string | null; email: string; role: string | null } | null;
+}
+
+function getUserDisplayLabel(u?: { displayId: string | null; name: string | null; email: string }): string {
+  if (!u) return "";
+  if (u.displayId && u.displayId.trim().length > 0) return u.displayId;
+  if (u.name && u.name.trim().length > 0) return u.name;
+  if (u.email && u.email.trim().length > 0) return u.email;
+  return "";
 }
 
 interface ThreadNote {
@@ -116,6 +125,7 @@ interface ChatbotQueueItem {
   threadId: string | null;
   userId: string | null;
   status: "pending" | "processing" | "handed_off" | "resolved" | "rejected";
+  threadStatus?: SupportThread["status"] | null;
   intent: string | null;
   confidence: string | null;
   lastBotResponse: string | null;
@@ -353,9 +363,8 @@ function InboxTab() {
   // Filters
   const [statusFilter, setStatusFilter] = useState<string>("open");
   const [sourceFilter, setSourceFilter] = useState<string>("all_sources");
-  const [priorityFilter, setPriorityFilter] = useState<string>("all_priority");
   const [searchQuery, setSearchQuery] = useState<string>("");
-  const [myQueueFilter, setMyQueueFilter] = useState<boolean>(false);
+  const [closedResolvedByFilter, setClosedResolvedByFilter] = useState<string>("all_closed_resolved_by");
 
   // Thread detail
   const [selectedThread, setSelectedThread] = useState<SupportThread | null>(null);
@@ -378,7 +387,27 @@ function InboxTab() {
   const soundRepeatTimerRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const prevThreadsSnapshotRef = useRef<{ id: string; status: string }[] | null>(null);
   const lastPlayedForThreadRef = useRef<{ id: string; at: number } | null>(null);
+  const threadDetailRequestIdRef = useRef(0);
   const FM_SUPPORT_SOUND_KEY = "fm_support_sound_enabled";
+
+  const closedResolvedUsers = useMemo(() => {
+    const map = new Map<string, { id: string; label: string }>();
+    for (const t of threads) {
+      if (t.status === "closed" && t.closedBy?.id) {
+        const label = getUserDisplayLabel(t.closedBy);
+        if (label) {
+          map.set(t.closedBy.id, { id: t.closedBy.id, label });
+        }
+      }
+      if (t.status === "resolved" && t.resolvedBy?.id) {
+        const label = getUserDisplayLabel(t.resolvedBy);
+        if (label) {
+          map.set(t.resolvedBy.id, { id: t.resolvedBy.id, label });
+        }
+      }
+    }
+    return Array.from(map.values()).sort((a, b) => a.label.localeCompare(b.label));
+  }, [threads]);
 
   const markInteraction = useCallback(() => {
     setLastInteractionAt(Date.now());
@@ -446,15 +475,15 @@ function InboxTab() {
       if (sourceFilter && sourceFilter !== "all_sources") {
         if (t.source !== sourceFilter) return false;
       }
-      if (priorityFilter && priorityFilter !== "all_priority") {
-        if (t.priority !== priorityFilter) return false;
-      }
-      if (myQueueFilter && user?.id) {
-        if (t.assignedToUserId !== user.id) return false;
+      if (closedResolvedByFilter && closedResolvedByFilter !== "all_closed_resolved_by") {
+        const selectedId = closedResolvedByFilter;
+        const closedId = t.closedBy?.id ?? null;
+        const resolvedId = t.resolvedBy?.id ?? null;
+        if (closedId !== selectedId && resolvedId !== selectedId) return false;
       }
       return true;
     },
-    [statusFilter, sourceFilter, priorityFilter, myQueueFilter, user?.id]
+    [statusFilter, sourceFilter, closedResolvedByFilter, user?.id]
   );
 
   const clearSelection = useCallback(() => {
@@ -470,10 +499,11 @@ function InboxTab() {
       const params = new URLSearchParams();
       params.set("page", String(page));
       params.set("limit", "25");
-      if (myQueueFilter) params.set("myQueue", "true");
       if (statusFilter && statusFilter !== "all") params.set("status", statusFilter === "open" ? "open,waiting" : statusFilter);
       if (sourceFilter && sourceFilter !== "all_sources") params.set("source", sourceFilter);
-      if (priorityFilter && priorityFilter !== "all_priority") params.set("priority", priorityFilter);
+      if (closedResolvedByFilter && closedResolvedByFilter !== "all_closed_resolved_by") {
+        params.set("closedResolvedByUserId", closedResolvedByFilter);
+      }
 
       let url: string;
       if (searchQuery.trim()) {
@@ -549,7 +579,7 @@ function InboxTab() {
     } finally {
       if (!opts?.silent) setLoading(false);
     }
-  }, [page, statusFilter, sourceFilter, priorityFilter, searchQuery, myQueueFilter, threadMatchesFilters, soundEnabled]);
+  }, [page, statusFilter, sourceFilter, closedResolvedByFilter, searchQuery, threadMatchesFilters, soundEnabled]);
 
   useEffect(() => {
     loadThreads();
@@ -565,12 +595,13 @@ function InboxTab() {
       clearInterval(soundRepeatTimerRef.current);
       soundRepeatTimerRef.current = null;
     }
-  }, [page, statusFilter, sourceFilter, priorityFilter, searchQuery, myQueueFilter]);
+  }, [page, statusFilter, sourceFilter, closedResolvedByFilter, searchQuery]);
 
   const refreshThreadMessagesSilent = useCallback(async () => {
     const current = selectedThreadRef.current;
     if (!current) return;
     const threadId = current.id;
+    const requestId = ++threadDetailRequestIdRef.current;
     const prev = threadMessagesRef.current;
     const prevIds = new Set(prev.map((m) => m.id));
     try {
@@ -581,6 +612,7 @@ function InboxTab() {
       const detailJson = await detailRes.json();
       const notesJson = await notesRes.json();
       if (!detailRes.ok) return;
+      if (threadDetailRequestIdRef.current !== requestId) return;
       if (selectedThreadRef.current?.id !== threadId) return;
       const sel = selectedThreadRef.current;
       const nextMessages: ThreadMessage[] = detailJson.messages || [];
@@ -675,44 +707,90 @@ function InboxTab() {
     };
   }, []);
 
-  const pollIntervalMs = 18_000;
+  const pollIntervalMs = 5_000;
   useEffect(() => {
     if (!selectedThread) return;
     const t = setInterval(refreshThreadMessagesSilent, pollIntervalMs);
     return () => clearInterval(t);
   }, [selectedThread?.id, refreshThreadMessagesSilent]);
 
+  // Periodic refresh for thread list to surface new/updated threads near real-time
+  useEffect(() => {
+    const t = setInterval(() => {
+      loadThreads({ silent: true });
+    }, 5_000);
+    return () => clearInterval(t);
+  }, [loadThreads]);
+
   const loadThreadMessages = async (thread: SupportThread) => {
     prepareSupportSound();
-    setSelectedThread(thread);
     setDetailThread(null);
     setThreadNotes([]);
     setThreadMessages([]);
     setLoadingMessages(true);
+    const requestId = ++threadDetailRequestIdRef.current;
+    let workingThread: SupportThread = thread;
     try {
-      if (thread.status === "waiting") {
-        const patchRes = await fetch(`/api/admin/support/threads/${thread.id}/status`, {
+      // On first open of a waiting + (optionally) unassigned thread, move to open
+      if (workingThread.status === "waiting") {
+        const statusRes = await fetch(`/api/admin/support/threads/${workingThread.id}/status`, {
           method: "PATCH",
           credentials: "include",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ status: "open" }),
         });
-        if (patchRes.ok) {
+        if (statusRes.ok) {
+          workingThread = { ...workingThread, status: "open" };
           setThreads((prev) =>
-            prev.map((t) => (t.id === thread.id ? { ...t, status: "open" as const } : t))
+            prev.map((t) => (t.id === workingThread.id ? { ...t, status: "open" as const } : t))
           );
         }
       }
+
+      // Auto-assign to current user if thread is open and unassigned
+      if (workingThread.status === "open" && !workingThread.assignedToUserId && user?.id) {
+        const assigneeRes = await fetch(`/api/admin/support/threads/${workingThread.id}/assignee`, {
+          method: "PATCH",
+          credentials: "include",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ assigneeId: "me" }),
+        });
+        if (assigneeRes.ok) {
+          workingThread = {
+            ...workingThread,
+            assignedToUserId: user.id,
+            assignedToEmail: user.email,
+          };
+          setThreads((prev) =>
+            prev.map((t) =>
+              t.id === workingThread.id
+                ? {
+                    ...t,
+                    assignedToUserId: user.id,
+                    assignedToEmail: user.email,
+                  }
+                : t
+            )
+          );
+        }
+      }
+
+      // Reflect latest optimistic state in selectedThread
+      setSelectedThread(workingThread);
       const [detailRes, notesRes] = await Promise.all([
-        fetch(`/api/admin/support/threads/${thread.id}`, { credentials: "include" }),
-        fetch(`/api/admin/support/threads/${thread.id}/notes`, { credentials: "include" }),
+        fetch(`/api/admin/support/threads/${workingThread.id}`, { credentials: "include" }),
+        fetch(`/api/admin/support/threads/${workingThread.id}/notes`, { credentials: "include" }),
       ]);
       const detailJson = await detailRes.json();
       const notesJson = await notesRes.json();
       if (!detailRes.ok) throw new Error(detailJson?.error || "Failed to load messages");
-      if (selectedThreadRef.current?.id !== thread.id) return;
+      if (threadDetailRequestIdRef.current !== requestId) return;
+      if (selectedThreadRef.current?.id !== workingThread.id) return;
       setThreadMessages(detailJson.messages || []);
-      let nextDetail: SupportThread = detailJson.thread ? { ...thread, ...detailJson.thread } : thread;
+      // Merge server thread data but keep the optimistic status/assignee from workingThread
+      let nextDetail: SupportThread = detailJson.thread
+        ? { ...(detailJson.thread as SupportThread), ...workingThread }
+        : workingThread;
       const optPriority = priorityOptimisticUntilRef.current;
       if (optPriority?.threadId === thread.id && Date.now() < optPriority.until) {
         nextDetail = { ...nextDetail, priority: optPriority.priority };
@@ -788,6 +866,19 @@ function InboxTab() {
       }
       statusOptimisticUntilRef.current = null;
       toast.success("Status updated");
+
+      // If we reopened a closed/resolved, unassigned thread, auto-assign to current user
+      const originalThread = threads.find((t) => t.id === threadId);
+      if (
+        status === "open" &&
+        (prev === "closed" || prev === "resolved") &&
+        originalThread &&
+        !originalThread.assignedToUserId &&
+        user?.id
+      ) {
+        await handlePatchAssignee(threadId, "me");
+      }
+
       markInteraction();
       scheduleRefresh({ list: true, thread: true });
     } catch (e: any) {
@@ -919,9 +1010,11 @@ function InboxTab() {
     try {
       const params = new URLSearchParams();
       params.set("export", "csv");
-      if (myQueueFilter) params.set("myQueue", "true");
       if (statusFilter && statusFilter !== "all") params.set("status", statusFilter === "open" ? "open,waiting" : statusFilter);
       if (sourceFilter && sourceFilter !== "all_sources") params.set("source", sourceFilter);
+      if (closedResolvedByFilter && closedResolvedByFilter !== "all_closed_resolved_by") {
+        params.set("closedResolvedByUserId", closedResolvedByFilter);
+      }
       window.open(`/api/admin/support/threads?${params}`, "_blank");
     } catch (e: any) {
       toast.error("Export failed");
@@ -1008,7 +1101,7 @@ function InboxTab() {
       <p className="text-sm text-muted-foreground">
         Inbox • incl. Moderation & Audit
       </p>
-      <div className="grid gap-4 lg:grid-cols-[minmax(0,1.2fr)_minmax(0,1.5fr)]">
+      <div className="grid gap-4 lg:grid-cols-[minmax(0,1.6fr)_minmax(0,1fr)]">
         {/* Thread List */}
         <div>
           <Card>
@@ -1053,7 +1146,7 @@ function InboxTab() {
 
             {/* Filters */}
             <div className="flex flex-wrap gap-2 mt-3">
-              <div className="relative flex-1 min-w-[200px]">
+              <div className="relative w-[260px] min-w-[220px]">
                 <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
                 <Input
                   placeholder="Search threads..."
@@ -1072,7 +1165,7 @@ function InboxTab() {
                   setPage(1);
                 }}
               >
-                <SelectTrigger className="w-[140px]">
+                <SelectTrigger className="w-[132px]">
                   <SelectValue placeholder="Status" />
                 </SelectTrigger>
                 <SelectContent>
@@ -1082,13 +1175,32 @@ function InboxTab() {
                 </SelectContent>
               </Select>
               <Select
+                value={closedResolvedByFilter}
+                onValueChange={(v) => {
+                  setClosedResolvedByFilter(v);
+                  setPage(1);
+                }}
+              >
+                <SelectTrigger className="w-[172px]">
+                  <SelectValue placeholder="Closed/Resolved by" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all_closed_resolved_by">All users</SelectItem>
+                  {closedResolvedUsers.map((u) => (
+                    <SelectItem key={u.id} value={u.id}>
+                      {u.label}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              <Select
                 value={sourceFilter}
                 onValueChange={(v) => {
                   setSourceFilter(v);
                   setPage(1);
                 }}
               >
-                <SelectTrigger className="w-[140px]">
+                <SelectTrigger className="w-[132px]">
                   <SelectValue placeholder="Source" />
                 </SelectTrigger>
                 <SelectContent>
@@ -1099,34 +1211,6 @@ function InboxTab() {
                   <SelectItem value="whatsapp">WhatsApp</SelectItem>
                 </SelectContent>
               </Select>
-              <Select
-                value={priorityFilter}
-                onValueChange={(v) => {
-                  setPriorityFilter(v);
-                  setPage(1);
-                }}
-              >
-                <SelectTrigger className="w-[120px]">
-                  <SelectValue placeholder="Priority" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all_priority">All</SelectItem>
-                  <SelectItem value="urgent">Urgent</SelectItem>
-                  <SelectItem value="high">High</SelectItem>
-                  <SelectItem value="normal">Normal</SelectItem>
-                  <SelectItem value="low">Low</SelectItem>
-                </SelectContent>
-              </Select>
-              <label className="flex items-center gap-2 cursor-pointer select-none text-sm">
-                <Checkbox
-                  checked={myQueueFilter}
-                  onCheckedChange={(v) => {
-                    setMyQueueFilter(!!v);
-                    setPage(1);
-                  }}
-                />
-                My queue
-              </label>
             </div>
           </CardHeader>
 
@@ -1179,6 +1263,16 @@ function InboxTab() {
                             : "Assigned"
                           : "Unassigned"}
                       </Badge>
+                      {thread.status === "closed" && thread.closedBy && (
+                        <Badge variant="outline" className="text-xs">
+                          Closed by {getUserDisplayLabel(thread.closedBy)}
+                        </Badge>
+                      )}
+                      {thread.status === "resolved" && thread.resolvedBy && (
+                        <Badge variant="outline" className="text-xs">
+                          Resolved by {getUserDisplayLabel(thread.resolvedBy)}
+                        </Badge>
+                      )}
                     </div>
                     {thread.slaBreach && (
                       <div className="flex items-center gap-2 mb-1 flex-wrap">
@@ -1256,7 +1350,19 @@ function InboxTab() {
       {/* Conversație */}
       <Card className="flex flex-col min-h-[400px] max-h-[60vh] lg:max-h-[calc(100vh-12rem)]">
         <CardHeader className="pb-2">
-          <CardTitle className="text-lg">Conversație</CardTitle>
+          <div className="flex items-center justify-between">
+            <CardTitle className="text-lg">Conversație</CardTitle>
+            {(() => {
+              const t = detailThread ?? selectedThread;
+              if (!t || !t.assignedToUserId || !t.assignedToEmail) return null;
+              return (
+                <span className="inline-flex items-center rounded-full border px-2.5 py-0.5 font-semibold transition-colors focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 border-transparent hover:bg-primary/80 text-xs bg-emerald-100 text-emerald-800 dark:bg-emerald-900/40 dark:text-emerald-300">
+                  Assigned to{" "}
+                  {t.assignedToEmail.split("@")[0]}
+                </span>
+              );
+            })()}
+          </div>
         </CardHeader>
         <CardContent className="flex-1 flex flex-col min-h-0 p-0">
           {!selectedThread ? (
@@ -1306,13 +1412,24 @@ function InboxTab() {
                           ))}
                         </SelectContent>
                       </Select>
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        onClick={() => handlePatchAssignee(t.id, t.assignedToUserId ? null : "me")}
-                      >
-                        {t.assignedToUserId ? "Unassign" : "Assign to me"}
-                      </Button>
+                      {/* Assigned info moved to top-right header; removed inline assign/unassign button */}
+                      {(t.status === "closed" || t.status === "resolved") &&
+                        t.assignedToUserId &&
+                        t.assignedToEmail && (
+                          <Badge variant="outline" className="text-xs">
+                            Assigned to {t.assignedToEmail.split("@")[0]}
+                          </Badge>
+                        )}
+                      {t.status === "closed" && t.closedBy && (
+                        <Badge variant="outline" className="text-xs">
+                          Closed by {getUserDisplayLabel(t.closedBy)}
+                        </Badge>
+                      )}
+                      {t.status === "resolved" && t.resolvedBy && (
+                        <Badge variant="outline" className="text-xs">
+                          Resolved by {getUserDisplayLabel(t.resolvedBy)}
+                        </Badge>
+                      )}
                     </div>
                     <div className="space-y-2 px-4 py-3 border-b border-slate-200 dark:border-white/10 shrink-0">
                       <Label className="text-xs font-medium text-muted-foreground">Internal notes</Label>
@@ -1872,10 +1989,10 @@ function ChatbotQueueTab() {
                     <TableCell className="max-w-[200px]">
                       <p className="truncate text-sm">{item.userQuery || "-"}</p>
                     </TableCell>
-                    <TableCell>
+                    <TableCell className="text-sm whitespace-nowrap text-right">
                       {item.confidence ? (
                         <span
-                          className={`text-sm ${
+                          className={`${
                             parseFloat(item.confidence) < 0.5
                               ? "text-red-600"
                               : parseFloat(item.confidence) < 0.8
@@ -1889,19 +2006,30 @@ function ChatbotQueueTab() {
                         "-"
                       )}
                     </TableCell>
-                    <TableCell>
-                      <Badge
-                        className={`${statusColors[item.status]?.bg} ${statusColors[item.status]?.text}`}
-                      >
-                        {item.status}
-                      </Badge>
-                      {item.promptInjectionSuspected && (
-                        <Badge variant="destructive" className="ml-1">
-                          ⚠️
-                        </Badge>
-                      )}
+                    <TableCell className="whitespace-nowrap">
+                      <div className="flex items-center gap-1">
+                        {(() => {
+                          const threadStatus = item.threadStatus as SupportThread["status"] | null | undefined;
+                          const key = (threadStatus ?? item.status) as string;
+                          const label = threadStatus ? (statusDisplayLabels[threadStatus] ?? threadStatus) : key;
+                          return (
+                            <Badge
+                              className={`${statusColors[key]?.bg} ${statusColors[key]?.text}`}
+                            >
+                              {label}
+                            </Badge>
+                          );
+                        })()}
+                        {item.promptInjectionSuspected && (
+                          <Badge variant="destructive">
+                            ⚠️
+                          </Badge>
+                        )}
+                      </div>
                     </TableCell>
-                    <TableCell className="text-sm">{timeAgo(item.createdAt)}</TableCell>
+                    <TableCell className="text-sm whitespace-nowrap">
+                      {timeAgo(item.createdAt)}
+                    </TableCell>
                     <TableCell>
                       <div className="flex gap-1">
                         {item.status === "pending" && (

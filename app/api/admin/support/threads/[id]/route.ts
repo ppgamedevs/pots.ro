@@ -287,6 +287,8 @@ export async function GET(request: NextRequest, context: Params) {
     let orderInfo: { orderNumber: string; status: string } | null = null;
     let sellerInfo: { brandName: string; slug: string } | null = null;
     let buyerInfo: { name: string | null; email: string } | null = null;
+    let closedByInfo: { id: string; displayId: string | null; name: string | null; email: string; role: string | null } | null = null;
+    let resolvedByInfo: { id: string; displayId: string | null; name: string | null; email: string; role: string | null } | null = null;
 
     if (thread.orderId) {
       const [o] = await db
@@ -313,11 +315,59 @@ export async function GET(request: NextRequest, context: Params) {
       if (b) buyerInfo = { name: b.name, email: b.email };
     }
 
+    if (thread.closedByUserId) {
+      const [u] = await db
+        .select({
+          id: users.id,
+          displayId: users.displayId,
+          name: users.name,
+          email: users.email,
+          role: users.role,
+        })
+        .from(users)
+        .where(eq(users.id, thread.closedByUserId))
+        .limit(1);
+      if (u) {
+        closedByInfo = {
+          id: u.id,
+          displayId: u.displayId ?? null,
+          name: u.name ?? null,
+          email: u.email,
+          role: u.role,
+        };
+      }
+    }
+
+    if (thread.resolvedByUserId) {
+      const [u] = await db
+        .select({
+          id: users.id,
+          displayId: users.displayId,
+          name: users.name,
+          email: users.email,
+          role: users.role,
+        })
+        .from(users)
+        .where(eq(users.id, thread.resolvedByUserId))
+        .limit(1);
+      if (u) {
+        resolvedByInfo = {
+          id: u.id,
+          displayId: u.displayId ?? null,
+          name: u.name ?? null,
+          email: u.email,
+          role: u.role,
+        };
+      }
+    }
+
     const enrichedThread = {
       ...thread,
       order: orderInfo,
       seller: sellerInfo,
       buyer: buyerInfo,
+      closedBy: closedByInfo,
+      resolvedBy: resolvedByInfo,
     };
 
     // Audit the view (for sensitive data access tracking)
