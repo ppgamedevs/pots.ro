@@ -860,7 +860,14 @@ function InboxTab() {
       setSelectedThread((t) => (t ? { ...t, status: s } : null));
       setDetailThread((t) => (t ? { ...t, status: s } : null));
     } else if (!stillMatches && wasSelected) {
-      clearSelection();
+      // If we are reopening a closed/resolved thread to OPEN while viewing the
+      // Closed/Resolved filter, keep the conversation panel open instead of
+      // clearing it immediately when the list refresh drops this thread.
+      const isReopenFromClosedOrResolved =
+        s === "open" && (prev === "closed" || prev === "resolved");
+      if (!isReopenFromClosedOrResolved) {
+        clearSelection();
+      }
     }
     try {
       const res = await fetch(`/api/admin/support/threads/${threadId}/status`, {
