@@ -574,9 +574,15 @@ function InboxTab() {
       }));
 
       // Keep the currently selected thread's status stable across list refreshes
-      // to avoid flickering when backend data is slightly behind our optimistic UI.
+      // only for the Open filter (open+waiting) to avoid flickering.
+      // For other filters (e.g. Closed/Resolved), we trust the backend and do not
+      // overwrite statuses, so explicit changes like Open -> Closed/Resolved stick.
       const selected = selectedThreadRef.current;
-      if (selected) {
+      if (
+        selected &&
+        statusFilter === "open" &&
+        (selected.status === "open" || selected.status === "waiting")
+      ) {
         updatedThreads = updatedThreads.map((t: SupportThread) =>
           t.id === selected.id ? { ...t, status: selected.status } : t
         );
