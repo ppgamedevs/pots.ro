@@ -237,6 +237,7 @@ const supportMenuItems = [
 const adminPageLinks = [
   { title: "Selleri", description: "Informații, produse și suport pentru vânzători", href: "/admin/sellers", icon: Users, color: "bg-teal-500" },
   { title: "Aplicații vânzători", description: "Cereri de înregistrare vânzători", href: "/admin/seller-applications", icon: Users, color: "bg-blue-500" },
+  { title: "Onboarding Selleri", description: "Caută selleri blocați în onboarding", href: "/admin/sellers?status=onboarding", icon: Clock, color: "bg-amber-500" },
   { title: "Produse", description: "Vizualizare produse platformă", href: "/admin/products", icon: Package, color: "bg-green-500" },
   { title: "Comenzi", description: "Monitorizare comenzi", href: "/admin/orders", icon: ShoppingBag, color: "bg-purple-500" },
   { title: "Payments", description: "Plăți Netopia", href: "/admin/payments", icon: CreditCard, color: "bg-emerald-600" },

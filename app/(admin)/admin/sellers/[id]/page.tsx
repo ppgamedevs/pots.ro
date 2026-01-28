@@ -15,6 +15,51 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Switch } from '@/components/ui/switch';
 import { toast } from 'sonner';
 
+type SellerOnboardingProgress = {
+  sellerId: string;
+  userId: string;
+  brandName: string;
+  email: string;
+  sellerStatus: 'onboarding' | 'active' | 'suspended';
+  currentStep: string;
+  overallProgress: number;
+  steps: Array<{
+    step: string;
+    status: string;
+    label: string;
+    description: string;
+    requirements: Array<{
+      id: string;
+      label: string;
+      completed: boolean;
+      blockedReason?: string;
+    }>;
+    completedAt?: string;
+  }>;
+  canActivate: boolean;
+  blockedReason?: string;
+  lastUpdatedAt: string;
+  createdAt: string;
+};
+
+type OnboardingApiResponse = {
+  progress: SellerOnboardingProgress;
+  documents: Array<{
+    id: string;
+    docType: string;
+    filename: string;
+    mimeType: string;
+    sizeBytes: number;
+    status: string;
+    createdAt: string | null;
+    reviewedAt: string | null;
+    reviewerEmail: string | null;
+    reviewerName: string | null;
+    reviewMessage: string | null;
+  }>;
+  showFullPii: boolean;
+};
+
 type SellerDetail = {
   seller: {
     id: string;
@@ -159,6 +204,12 @@ export default function AdminSellerDetailPage() {
     { revalidateOnFocus: false }
   );
 
+  const { data: onboardingData, mutate: mutateOnboarding } = useSWR<OnboardingApiResponse>(
+    data?.seller?.status === 'onboarding' ? `/api/admin/sellers/${sellerIdentifier}/onboarding` : null,
+    fetcher,
+    { revalidateOnFocus: false }
+  );
+
   const [newNote, setNewNote] = useState('');
   const [ticketTitle, setTicketTitle] = useState('');
   const [ticketDesc, setTicketDesc] = useState('');
@@ -176,6 +227,9 @@ export default function AdminSellerDetailPage() {
 
   const [resetOnboardingLoading, setResetOnboardingLoading] = useState(false);
   const [resetOnboardingMessage, setResetOnboardingMessage] = useState('');
+
+  const [activateSellerLoading, setActivateSellerLoading] = useState(false);
+  const [documentReviewLoading, setDocumentReviewLoading] = useState<string | null>(null);
 
   const [impersonationMessage, setImpersonationMessage] = useState('');
   const [impersonationLoading, setImpersonationLoading] = useState(false);
@@ -433,6 +487,64 @@ export default function AdminSellerDetailPage() {
     }
   };
 
+  const reviewDocument = async (documentId: string, action: 'approve' | 'reject', reason?: string) => {
+    if (!seller) return;
+    try {
+      setDocumentReviewLoading(documentId);
+      const res = await fetch(`/api/admin/sellers/${sellerIdentifier}/documents/${documentId}/review`, {
+        method: 'POST',
+        credentials: 'include',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ action, reason }),
+      });
+
+      const payload = await res.json().catch(() => ({}));
+      if (!res.ok) {
+        toast.error(payload?.error || 'Nu am putut procesa documentul');
+        return;
+      }
+
+      toast.success(action === 'approve' ? 'Document aprobat' : 'Document respins');
+      await mutateOnboarding();
+      await mutateActions();
+    } catch (err) {
+      console.error(err);
+      toast.error('Eroare de rețea');
+    } finally {
+      setDocumentReviewLoading(null);
+    }
+  };
+
+  const activateSeller = async () => {
+    if (!seller) return;
+    if (!window.confirm('Sigur vrei să activezi acest seller?')) return;
+
+    try {
+      setActivateSellerLoading(true);
+      const res = await fetch(`/api/admin/sellers/${sellerIdentifier}/activate`, {
+        method: 'POST',
+        credentials: 'include',
+        headers: { 'Content-Type': 'application/json' },
+      });
+
+      const payload = await res.json().catch(() => ({}));
+      if (!res.ok) {
+        toast.error(payload?.error || 'Nu am putut activa sellerul');
+        return;
+      }
+
+      toast.success('Seller activat!');
+      await mutate();
+      await mutateOnboarding();
+      await mutateActions();
+    } catch (err) {
+      console.error(err);
+      toast.error('Eroare de rețea');
+    } finally {
+      setActivateSellerLoading(false);
+    }
+  };
+
   const startImpersonation = async () => {
     if (!seller) return;
     if (impersonationMessage.trim().length < 10) return;
@@ -626,6 +738,186 @@ export default function AdminSellerDetailPage() {
           </div>
         </CardContent>
       </Card>
+
+      {/* Onboarding Progress - Only show for sellers in onboarding status */}
+      {seller?.status === 'onboarding' && (
+        <Card hover={false} className="border-amber-300 dark:border-amber-700 bg-amber-50/50 dark:bg-amber-950/20">
+          <CardHeader className="flex-row items-center justify-between">
+            <div>
+              <CardTitle className="text-xl flex items-center gap-2">
+                <span className="text-amber-600">⏳</span> Onboarding în progres
+              </CardTitle>
+              <p className="text-sm text-slate-600 dark:text-slate-400 mt-1">
+                Acest seller trebuie să completeze procesul de înregistrare
+              </p>
+            </div>
+            <div className="flex items-center gap-2">
+              {onboardingData?.progress?.canActivate && (
+                <Button
+                  onClick={activateSeller}
+                  disabled={activateSellerLoading}
+                  className="bg-green-600 hover:bg-green-700 text-white"
+                >
+                  {activateSellerLoading ? 'Se activează...' : '✓ Activează seller'}
+                </Button>
+              )}
+              <Button variant="outline" size="sm" onClick={() => mutateOnboarding()}>
+                Reîncarcă
+              </Button>
+            </div>
+          </CardHeader>
+          <CardContent>
+            {!onboardingData ? (
+              <div className="text-sm text-slate-500">Se încarcă progresul...</div>
+            ) : (
+              <div className="space-y-6">
+                {/* Progress bar */}
+                <div>
+                  <div className="flex items-center justify-between mb-2">
+                    <span className="text-sm font-medium">Progres total</span>
+                    <span className="text-sm text-slate-600">{onboardingData.progress.overallProgress}%</span>
+                  </div>
+                  <div className="w-full bg-slate-200 dark:bg-slate-700 rounded-full h-2">
+                    <div 
+                      className="bg-amber-500 h-2 rounded-full transition-all duration-500"
+                      style={{ width: `${onboardingData.progress.overallProgress}%` }}
+                    />
+                  </div>
+                </div>
+
+                {/* Blocked reason */}
+                {onboardingData.progress.blockedReason && (
+                  <div className="rounded-lg border border-red-200 dark:border-red-900 bg-red-50 dark:bg-red-950/20 p-3">
+                    <div className="flex items-start gap-2">
+                      <span className="text-red-600">⚠️</span>
+                      <div>
+                        <div className="font-medium text-red-900 dark:text-red-100">Blocat</div>
+                        <div className="text-sm text-red-700 dark:text-red-300">{onboardingData.progress.blockedReason}</div>
+                      </div>
+                    </div>
+                  </div>
+                )}
+
+                {/* Steps */}
+                <div className="space-y-4">
+                  {onboardingData.progress.steps.map((step) => (
+                    <div key={step.step} className="rounded-lg border border-slate-200 dark:border-slate-700 p-4">
+                      <div className="flex items-center justify-between mb-2">
+                        <div className="flex items-center gap-2">
+                          {step.status === 'completed' && <span className="text-green-600">✓</span>}
+                          {step.status === 'in_progress' && <span className="text-amber-600">⏳</span>}
+                          {step.status === 'not_started' && <span className="text-slate-400">○</span>}
+                          {step.status === 'blocked' && <span className="text-red-600">⚠</span>}
+                          <span className="font-medium">{step.label}</span>
+                        </div>
+                        <Badge variant={
+                          step.status === 'completed' ? 'success' as any :
+                          step.status === 'in_progress' ? 'warning' as any :
+                          step.status === 'blocked' ? 'destructive' :
+                          'secondary'
+                        }>
+                          {step.status === 'completed' ? 'Completat' :
+                           step.status === 'in_progress' ? 'În progres' :
+                           step.status === 'blocked' ? 'Blocat' : 'Nepornit'}
+                        </Badge>
+                      </div>
+                      <p className="text-sm text-slate-600 dark:text-slate-400 mb-3">{step.description}</p>
+                      <div className="space-y-1">
+                        {step.requirements.map((req) => (
+                          <div key={req.id} className="flex items-center gap-2 text-sm">
+                            {req.completed ? (
+                              <span className="text-green-600 text-xs">✓</span>
+                            ) : (
+                              <span className="text-slate-400 text-xs">○</span>
+                            )}
+                            <span className={req.completed ? 'text-green-700 dark:text-green-400' : 'text-slate-600 dark:text-slate-400'}>
+                              {req.label}
+                            </span>
+                            {req.blockedReason && !req.completed && (
+                              <span className="text-xs text-amber-600">({req.blockedReason})</span>
+                            )}
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+
+                {/* Documents */}
+                {onboardingData.documents.length > 0 && (
+                  <div className="space-y-3">
+                    <div className="text-sm font-medium">Documente încărcate</div>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                      {onboardingData.documents.filter(d => d.status !== 'superseded').map((doc) => (
+                        <div key={doc.id} className="rounded-lg border border-slate-200 dark:border-slate-700 p-3">
+                          <div className="flex items-start justify-between gap-2">
+                            <div className="flex-1 min-w-0">
+                              <div className="font-medium text-sm truncate">{doc.filename}</div>
+                              <div className="text-xs text-slate-500">{doc.docType}</div>
+                              <div className="text-xs text-slate-500 mt-1">
+                                Încărcat: {doc.createdAt ? new Date(doc.createdAt).toLocaleString('ro-RO') : '—'}
+                              </div>
+                              {doc.reviewedAt && (doc.reviewerName || doc.reviewerEmail) && (
+                                <div className="text-xs text-slate-500">
+                                  Verificat de {doc.reviewerName || doc.reviewerEmail} la {new Date(doc.reviewedAt).toLocaleString('ro-RO')}
+                                </div>
+                              )}
+                              {doc.reviewMessage && (
+                                <div className="text-xs text-red-600 mt-1">Motiv: {doc.reviewMessage}</div>
+                              )}
+                            </div>
+                            <div className="flex flex-col items-end gap-1">
+                              <Badge variant={
+                                doc.status === 'approved' ? 'success' as any :
+                                doc.status === 'rejected' ? 'destructive' :
+                                'secondary'
+                              }>
+                                {doc.status === 'approved' ? 'Aprobat' :
+                                 doc.status === 'rejected' ? 'Respins' : 'În așteptare'}
+                              </Badge>
+                            </div>
+                          </div>
+                          {doc.status === 'uploaded' && (
+                            <div className="flex gap-2 mt-3 pt-3 border-t border-slate-200 dark:border-slate-700">
+                              <Button
+                                variant="outline"
+                                size="sm"
+                                className="text-green-600 border-green-600 hover:bg-green-50"
+                                onClick={() => reviewDocument(doc.id, 'approve')}
+                                disabled={documentReviewLoading === doc.id}
+                              >
+                                {documentReviewLoading === doc.id ? '...' : '✓ Aprobă'}
+                              </Button>
+                              <Button
+                                variant="outline"
+                                size="sm"
+                                className="text-red-600 border-red-600 hover:bg-red-50"
+                                onClick={() => {
+                                  const reason = prompt('Motiv respingere:');
+                                  if (reason) reviewDocument(doc.id, 'reject', reason);
+                                }}
+                                disabled={documentReviewLoading === doc.id}
+                              >
+                                ✕ Respinge
+                              </Button>
+                            </div>
+                          )}
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+                {/* Timeline info */}
+                <div className="text-xs text-slate-500 border-t border-slate-200 dark:border-slate-700 pt-4">
+                  <div>Seller creat: {new Date(onboardingData.progress.createdAt).toLocaleString('ro-RO')}</div>
+                  <div>Ultima actualizare: {new Date(onboardingData.progress.lastUpdatedAt).toLocaleString('ro-RO')}</div>
+                </div>
+              </div>
+            )}
+          </CardContent>
+        </Card>
+      )}
 
       {/* Suspend/Reactivate Seller */}
       <Card hover={false}>
