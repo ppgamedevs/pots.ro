@@ -66,7 +66,7 @@ export async function GET(request: NextRequest) {
 
     return NextResponse.json({
       session_id: sessionId,
-      mode: within ? "human" : "bot",
+      mode: "human",
       notice: within ? null : getOutsideHoursNoticeRo(),
       thread_id: thread?.id ?? null,
       messages,

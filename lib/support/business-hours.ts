@@ -33,10 +33,11 @@ export function getRomaniaTimeParts(now: Date = new Date()): { hour: number; min
 export function isWithinSupportHoursRo(now: Date = new Date()): boolean {
   const { hour, minute } = getRomaniaTimeParts(now);
   const afterStart = hour > SUPPORT_START_HOUR || (hour === SUPPORT_START_HOUR && minute >= 0);
-  const beforeEnd = hour < SUPPORT_END_HOUR || (hour === SUPPORT_END_HOUR && minute === 0);
+  // End-exclusive: 18:00 is considered outside hours.
+  const beforeEnd = hour < SUPPORT_END_HOUR;
   return afterStart && beforeEnd;
 }
 
 export function getOutsideHoursNoticeRo(): string {
-  return `Deoarece sunteți în afara orelor de program (${SUPPORT_HOURS_LABEL}), suportul uman nu este disponibil, dar puteți comunica cu chatbot-ul virtual care vă va ajuta.`;
+  return `Suntem în afara orelor de program (${SUPPORT_HOURS_LABEL}). Lasă-ne mesajul aici — îl vedem și îți răspundem cât mai curând posibil.`;
 }
