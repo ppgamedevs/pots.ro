@@ -383,8 +383,8 @@ export function ChatWidget({ className }: ChatWidgetProps) {
                   </div>
                   <div className="mt-1 flex items-center gap-2 text-[11px] text-white/85">
                     <span className="inline-flex items-center gap-1">
-                      <span className={cn("h-1.5 w-1.5 rounded-full", mode === 'human' ? (supportOnline ? "bg-emerald-300" : "bg-white/40") : "bg-emerald-300")} />
-                        {supportOnline ? 'Online acum' : 'Offline acum'}
+                      <span className={cn("h-1.5 w-1.5 rounded-full", supportOnline ? "bg-emerald-300" : "bg-white/40")} />
+                      {supportOnline ? 'Online acum' : 'Offline acum'}
                     </span>
                     <span className="text-white/45">•</span>
                     <span className="inline-flex items-center gap-1">
