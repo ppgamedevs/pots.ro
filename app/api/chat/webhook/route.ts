@@ -179,6 +179,28 @@ export async function POST(request: NextRequest) {
 
     // Update thread counters/preview (only if this message is new)
     if (didInsertCustomer) {
+      // Preserve open/assigned status while still ensuring that closed/resolved/active
+      // threads move back into the waiting queue when a new customer message arrives.
+      let currentStatus: string | null = null;
+      try {
+        const [threadRow] = await db
+          .select({ status: supportThreads.status })
+          .from(supportThreads)
+          .where(eq(supportThreads.id, threadId))
+          .limit(1);
+        currentStatus = threadRow?.status ?? null;
+      } catch {
+        // If we can't read the current status, we'll fall back to marking as waiting below.
+      }
+
+      const nextStatus =
+        !currentStatus ||
+        currentStatus === "resolved" ||
+        currentStatus === "closed" ||
+        currentStatus === "active"
+          ? "waiting"
+          : currentStatus;
+
       await db
         .update(supportThreads)
         .set({
@@ -186,7 +208,7 @@ export async function POST(request: NextRequest) {
           lastMessagePreview: String(message).slice(0, 200),
           messageCount: sql`${supportThreads.messageCount} + 1`,
           updatedAt: now,
-          status: 'waiting',
+          status: nextStatus,
         })
         .where(eq(supportThreads.id, threadId));
     }

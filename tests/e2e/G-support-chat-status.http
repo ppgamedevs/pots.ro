@@ -1,0 +1,40 @@
+### Scenario: Chat webhook should not revert OPEN thread back to WAITING for inbox
+#
+# Preconditions:
+# - You are authenticated as an admin/support user in this environment.
+# - Replace {{BASE_URL}} and {{SESSION_ID}} / {{CONVERSATION_ID}} as appropriate.
+#
+# Steps:
+# 1) Trigger a webchat message to create a new chatbot thread (status should start as waiting).
+# 2) In the Support Console, click the card so it moves from waiting → open.
+# 3) Send another webchat message for the same conversation.
+# 4) Reload Support Threads with status=open,waiting and verify the card remains OPEN (not flipped back to WAITING),
+#    while still showing any new-message highlight.
+
+### 1) Send initial webchat message (creates/supports chatbot thread)
+POST {{BASE_URL}}/api/chat/webhook
+Content-Type: application/json
+
+{
+  "message": "Test mesaj suport – initial",
+  "session_id": "{{SESSION_ID}}",
+  "conversation_id": "{{CONVERSATION_ID}}",
+  "client_message_id": "{{uuid1}}"
+}
+
+### 2) Manually: in /support inbox, click the new Waiting card so it becomes Open
+
+### 3) Send another webchat message for the same conversation
+POST {{BASE_URL}}/api/chat/webhook
+Content-Type: application/json
+
+{
+  "message": "Test mesaj suport – dupa ce thread-ul este OPEN",
+  "session_id": "{{SESSION_ID}}",
+  "conversation_id": "{{CONVERSATION_ID}}",
+  "client_message_id": "{{uuid2}}"
+}
+
+### 4) Fetch support threads (status=open,waiting) and verify status stays OPEN for that thread id
+GET {{BASE_URL}}/api/admin/support/threads?page=1&limit=25&status=open,waiting
+

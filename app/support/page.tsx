@@ -572,6 +572,15 @@ function InboxTab() {
         status: t.status,
       }));
 
+      // Keep the currently selected thread's status stable across list refreshes
+      // to avoid flickering when backend data is slightly behind our optimistic UI.
+      const selected = selectedThreadRef.current;
+      if (selected) {
+        updatedThreads = updatedThreads.map((t: SupportThread) =>
+          t.id === selected.id ? { ...t, status: selected.status } : t
+        );
+      }
+
       setThreads(updatedThreads);
       setTotal(json.total || 0);
     } catch (e: any) {
