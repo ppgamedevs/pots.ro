@@ -1,5 +1,3 @@
-"use client";
-
 import { useEffect, useRef } from "react";
 import Link from "next/link";
 import Image from "next/image";
@@ -11,10 +9,12 @@ import { UserMenu } from "./UserMenu";
 interface MegaMenuProps {
   categories: Category[];
   isOpen: boolean;
-  onClose: () => void;
+  onClose: unknown;
 }
 
 export function MegaMenu({ categories, isOpen, onClose }: MegaMenuProps) {
+  const onCloseFn: (() => void) | undefined =
+    typeof onClose === 'function' ? (onClose as () => void) : undefined;
   const menuRef = useRef<HTMLDivElement>(null);
   const touchStartY = useRef<number>(0);
   const touchStartX = useRef<number>(0);
@@ -23,7 +23,7 @@ export function MegaMenu({ categories, isOpen, onClose }: MegaMenuProps) {
   useEffect(() => {
     const handleEscape = (e: KeyboardEvent) => {
       if (e.key === "Escape") {
-        onClose();
+        onCloseFn?.();
       }
     };
 
@@ -37,7 +37,7 @@ export function MegaMenu({ categories, isOpen, onClose }: MegaMenuProps) {
         document.removeEventListener("keydown", handleEscape);
       };
     }
-  }, [isOpen, onClose]);
+  }, [isOpen, onCloseFn]);
 
   // Handle swipe gestures for mobile
   const handleTouchStart = (e: React.TouchEvent) => {
@@ -55,9 +55,9 @@ export function MegaMenu({ categories, isOpen, onClose }: MegaMenuProps) {
     
     // Close menu on swipe up or swipe left
     if (Math.abs(deltaY) > Math.abs(deltaX) && deltaY < -50) {
-      onClose();
+      onCloseFn?.();
     } else if (Math.abs(deltaX) > Math.abs(deltaY) && deltaX < -50) {
-      onClose();
+      onCloseFn?.();
     }
   };
 
@@ -68,8 +68,12 @@ export function MegaMenu({ categories, isOpen, onClose }: MegaMenuProps) {
       {/* Backdrop */}
       <div 
         className="fixed inset-0 bg-black/20 z-40"
-        onClick={onClose}
-        onTouchEnd={onClose}
+        onClick={() => {
+          onCloseFn?.();
+        }}
+        onTouchEnd={() => {
+          onCloseFn?.();
+        }}
         style={{ touchAction: 'manipulation' }}
       />
       
@@ -88,7 +92,9 @@ export function MegaMenu({ categories, isOpen, onClose }: MegaMenuProps) {
           <Button
             variant="ghost"
             size="sm"
-            onClick={onClose}
+            onClick={() => {
+              onCloseFn?.();
+            }}
             className="p-3 h-12 w-12 rounded-full bg-white/90 backdrop-blur-sm shadow-lg"
             aria-label="Închide meniul"
             style={{ touchAction: 'manipulation' }}
@@ -101,19 +107,34 @@ export function MegaMenu({ categories, isOpen, onClose }: MegaMenuProps) {
           {/* Mobile Navigation */}
                  <div className="md:hidden mb-8">
                    <div className="grid grid-cols-2 gap-3">
-                     <Link href="/autentificare" onClick={onClose}>
+                     <Link
+                       href="/autentificare"
+                       onClick={() => {
+                         onCloseFn?.();
+                       }}
+                     >
                        <Button variant="outline" className="w-full justify-start h-12 text-sm">
                          <User className="mr-2 h-4 w-4" />
                          Contul meu
                        </Button>
                      </Link>
-                     <Link href="/seller" onClick={onClose}>
+                     <Link
+                       href="/seller"
+                       onClick={() => {
+                         onCloseFn?.();
+                       }}
+                     >
                        <Button variant="outline" className="w-full justify-start h-12 text-sm">
                          <Store className="mr-2 h-4 w-4" />
                          Devino vânzător
                        </Button>
                      </Link>
-                     <Link href="/cos" onClick={onClose}>
+                     <Link
+                       href="/cos"
+                       onClick={() => {
+                         onCloseFn?.();
+                       }}
+                     >
                        <Button variant="outline" className="w-full justify-start h-12 text-sm">
                          <ShoppingCart className="mr-2 h-4 w-4" />
                          Coș de cumpărături
@@ -131,7 +152,9 @@ export function MegaMenu({ categories, isOpen, onClose }: MegaMenuProps) {
                     <Link 
                       href={category.href}
                       className="text-lg font-semibold text-ink hover:text-primary transition-micro block"
-                      onClick={onClose}
+                      onClick={() => {
+                        onCloseFn?.();
+                      }}
                     >
                       {category.name}
                     </Link>
@@ -143,7 +166,9 @@ export function MegaMenu({ categories, isOpen, onClose }: MegaMenuProps) {
                             key={subcategory.id}
                             href={subcategory.href}
                             className="text-sm text-muted hover:text-ink transition-micro block"
-                            onClick={onClose}
+                            onClick={() => {
+                              onCloseFn?.();
+                            }}
                           >
                             {subcategory.name}
                           </Link>

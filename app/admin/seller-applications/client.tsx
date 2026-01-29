@@ -345,7 +345,7 @@ export default function AdminSellerApplicationsClient() {
             <DataTable
               columns={columns}
               rows={rows}
-              rowKey={(r) => r.id}
+              rowKey={(r: Row) => r.id}
             />
           </div>
 

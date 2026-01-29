@@ -219,7 +219,9 @@ export default function ReservedNamesClient() {
       {/* Delete Confirmation */}
       <ConfirmDialog
         open={!!deleteTarget}
-        onOpenChange={(open) => !open && setDeleteTarget(null)}
+        onOpenChange={(open: boolean) => {
+          if (!open) setDeleteTarget(null);
+        }}
         title="Șterge Nume Rezervat"
         description={`Sigur vrei să ștergi "${deleteTarget}" din lista numelor rezervate? Utilizatorii vor putea folosi acest nume.`}
         confirmText="Șterge"

@@ -1,5 +1,3 @@
-"use client";
-
 import { useEffect } from "react";
 import { Button } from "../ui/button";
 import { X } from "lucide-react";
@@ -10,10 +8,12 @@ import type { Cart } from "@/lib/types";
 
 interface MiniCartProps {
   isOpen: boolean;
-  onClose: () => void;
+  onClose: unknown;
 }
 
 export function MiniCart({ isOpen, onClose }: MiniCartProps) {
+  const onCloseFn: (() => void) | undefined =
+    typeof onClose === 'function' ? (onClose as () => void) : undefined;
   // Fetch cart data - disable auto-revalidation to avoid overwriting changes
   const { data: cart, error, isLoading } = useSWR<Cart>('/api/cart', (url: string) =>
     fetch(url, { credentials: 'include', cache: 'no-store' }).then(res => res.json()),
@@ -28,7 +28,7 @@ export function MiniCart({ isOpen, onClose }: MiniCartProps) {
   useEffect(() => {
     const handleEscape = (e: KeyboardEvent) => {
       if (e.key === "Escape") {
-        onClose();
+        onCloseFn?.();
       }
     };
 
@@ -36,7 +36,7 @@ export function MiniCart({ isOpen, onClose }: MiniCartProps) {
       document.addEventListener("keydown", handleEscape);
       return () => document.removeEventListener("keydown", handleEscape);
     }
-  }, [isOpen, onClose]);
+  }, [isOpen, onCloseFn]);
 
   if (!isOpen) return null;
 
@@ -48,7 +48,9 @@ export function MiniCart({ isOpen, onClose }: MiniCartProps) {
       {/* Backdrop */}
       <div 
         className="fixed inset-0 bg-black/20 z-40"
-        onClick={onClose}
+        onClick={() => {
+          onCloseFn?.();
+        }}
       />
       
       {/* Mini Cart */}
@@ -60,7 +62,9 @@ export function MiniCart({ isOpen, onClose }: MiniCartProps) {
             <Button 
               variant="ghost" 
               size="sm"
-              onClick={onClose}
+              onClick={() => {
+                onCloseFn?.();
+              }}
               className="p-1"
               aria-label="Închide coșul de cumpărături"
             >
@@ -79,7 +83,12 @@ export function MiniCart({ isOpen, onClose }: MiniCartProps) {
             <div className="space-y-3 mb-4 max-h-64 overflow-y-auto">
               {cartItems.map((item) => (
                 <div key={item.id} className="flex items-center gap-3">
-                  <Link href={`/p/${item.slug || ''}`} onClick={onClose}>
+                  <Link
+                    href={`/p/${item.slug || ''}`}
+                    onClick={() => {
+                      onCloseFn?.();
+                    }}
+                  >
                     <div className="relative w-12 h-12 bg-bg-soft rounded border border-line flex-shrink-0 overflow-hidden">
                       <Image
                         src={item.imageUrl || '/placeholder.png'}
@@ -91,7 +100,12 @@ export function MiniCart({ isOpen, onClose }: MiniCartProps) {
                     </div>
                   </Link>
                   <div className="flex-1 min-w-0">
-                    <Link href={`/p/${item.slug || ''}`} onClick={onClose}>
+                    <Link
+                      href={`/p/${item.slug || ''}`}
+                      onClick={() => {
+                        onCloseFn?.();
+                      }}
+                    >
                       <p className="text-sm font-medium text-ink truncate hover:text-primary transition-micro">
                         {item.productName}
                       </p>
@@ -123,12 +137,22 @@ export function MiniCart({ isOpen, onClose }: MiniCartProps) {
           {/* Actions */}
           {cartItems.length > 0 && (
             <div className="space-y-2">
-              <Link href="/cos" onClick={onClose}>
+              <Link
+                href="/cos"
+                onClick={() => {
+                  onCloseFn?.();
+                }}
+              >
                 <Button className="w-full transition-micro">
                   Vezi coșul
                 </Button>
               </Link>
-              <Link href="/finalizare" onClick={onClose}>
+              <Link
+                href="/finalizare"
+                onClick={() => {
+                  onCloseFn?.();
+                }}
+              >
                 <Button variant="outline" className="w-full transition-micro">
                   Finalizează
                 </Button>

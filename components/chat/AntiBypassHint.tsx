@@ -15,7 +15,7 @@ import { AlertTriangle, Mail, Phone, MessageSquare, Shield } from 'lucide-react'
 import { toast } from 'sonner';
 
 interface AntiBypassHintProps {
-  onMessageSend: (message: string) => void;
+  onMessageSend: unknown;
   conversationId: string;
   isNewSeller?: boolean;
   className?: string;
@@ -27,6 +27,10 @@ export function AntiBypassHint({
   isNewSeller = false,
   className = ''
 }: AntiBypassHintProps) {
+  const onMessageSendFn: ((message: string) => void) | undefined =
+    typeof onMessageSend === 'function'
+      ? (onMessageSend as (message: string) => void)
+      : undefined;
   const [message, setMessage] = useState('');
   const [hasContactPattern, setHasContactPattern] = useState(false);
   const [maskedMessage, setMaskedMessage] = useState('');
@@ -142,7 +146,7 @@ export function AntiBypassHint({
       return;
     }
 
-    onMessageSend(message.trim());
+    onMessageSendFn?.(message.trim());
     setMessage('');
   };
 

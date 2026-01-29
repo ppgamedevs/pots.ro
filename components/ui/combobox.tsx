@@ -12,7 +12,7 @@ export type ComboboxOption = {
 
 type ComboboxProps = {
   value: string;
-  onValueChange: (value: string) => void;
+  onValueChange: unknown;
   options: ComboboxOption[];
   placeholder?: string;
   emptyText?: string;
@@ -33,6 +33,10 @@ export function Combobox({
   className,
   disabled = false,
 }: ComboboxProps) {
+  const onValueChangeFn: ((value: string) => void) | undefined =
+    typeof onValueChange === 'function'
+      ? (onValueChange as (value: string) => void)
+      : undefined;
   const containerRef = React.useRef<HTMLDivElement>(null);
   const inputRef = React.useRef<HTMLInputElement>(null);
   const [open, setOpen] = React.useState(false);
@@ -64,7 +68,7 @@ export function Combobox({
   }, []);
 
   const clear = () => {
-    onValueChange("");
+    onValueChangeFn?.("");
     setQuery("");
     setOpen(false);
     requestAnimationFrame(() => inputRef.current?.focus());
@@ -125,7 +129,7 @@ export function Combobox({
                 key={opt.value}
                 value={opt.label}
                 onSelect={() => {
-                  onValueChange(opt.value);
+                  onValueChangeFn?.(opt.value);
                   setOpen(false);
                   setQuery(opt.label);
                 }}

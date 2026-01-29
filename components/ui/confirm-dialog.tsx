@@ -1,4 +1,3 @@
-"use client";
 import * as Dialog from "@radix-ui/react-dialog";
 import { AnimatePresence, motion } from "framer-motion";
 import { X, AlertTriangle } from "lucide-react";
@@ -14,8 +13,8 @@ export type ConfirmDialogProps = {
   cancelText?: string;     // ex: "Cancel"
   variant?: "danger" | "destructive" | "default";
   loading?: boolean;
-  onConfirm: () => Promise<void> | void;
-  onOpenChange: (v: boolean) => void;
+  onConfirm: unknown;
+  onOpenChange: unknown;
 };
 
 export function ConfirmDialog({
@@ -29,14 +28,16 @@ export function ConfirmDialog({
   onConfirm,
   onOpenChange,
 }: ConfirmDialogProps) {
+  const onConfirmFn = typeof onConfirm === 'function' ? (onConfirm as () => Promise<void> | void) : undefined;
+  const onOpenChangeFn = typeof onOpenChange === 'function' ? (onOpenChange as (v: boolean) => void) : undefined;
   const [internalLoading, setInternalLoading] = useState(false);
   const isLoading = loading || internalLoading;
 
   const handleConfirm = async () => {
     try {
       setInternalLoading(true);
-      await onConfirm();
-      onOpenChange(false);
+      await onConfirmFn?.();
+      onOpenChangeFn?.(false);
     } finally {
       setInternalLoading(false);
     }
@@ -51,7 +52,7 @@ export function ConfirmDialog({
   );
 
   return (
-    <Dialog.Root open={open} onOpenChange={onOpenChange}>
+    <Dialog.Root open={open} onOpenChange={(v) => onOpenChangeFn?.(v)}>
       <AnimatePresence>
         {open && (
           <Dialog.Portal forceMount>

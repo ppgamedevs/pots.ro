@@ -1,4 +1,3 @@
-"use client";
 import { useMemo, useState } from "react";
 import clsx from "clsx";
 
@@ -14,7 +13,7 @@ export type Column<T> = {
 export type DataTableProps<T> = {
   columns: Column<T>[];
   rows: T[];
-  rowKey: (row: T) => string | number;
+  rowKey: unknown;
   selectable?: boolean;
   onSelectionChange?: (keys: (string | number)[]) => void;
   className?: string;
@@ -30,6 +29,7 @@ export function DataTable<T>({
   onSelectionChange,
   className,
 }: DataTableProps<T>) {
+  const rowKeyFn = typeof rowKey === 'function' ? (rowKey as (row: T) => string | number) : undefined;
   const [sort, setSort] = useState<SortState>({ key: null, dir: "asc" });
   const [selected, setSelected] = useState<Set<string | number>>(new Set());
 
@@ -58,8 +58,11 @@ export function DataTable<T>({
 
   const toggleAll = () => {
     if (!selectable) return;
+    if (!rowKeyFn) {
+      throw new Error('DataTable: rowKey must be a function');
+    }
     const s = new Set<string | number>();
-    if (!allSelected) rows.forEach((r) => s.add(rowKey(r)));
+    if (!allSelected) rows.forEach((r) => s.add(rowKeyFn(r)));
     setSelected(s);
     onSelectionChange?.(Array.from(s));
   };
@@ -141,7 +144,10 @@ export function DataTable<T>({
             </tr>
           ) : (
             sorted.map((row, i) => {
-              const id = rowKey(row);
+              if (!rowKeyFn) {
+                throw new Error('DataTable: rowKey must be a function');
+              }
+              const id = rowKeyFn(row);
               return (
                 <tr
                   key={String(id)}

@@ -281,7 +281,7 @@ export default function SellerProductsClient({
       <DataTable
         columns={columns}
         rows={rows}
-        rowKey={(r) => r.id}
+        rowKey={(r: Row) => r.id}
         selectable
         onSelectionChange={handleSelectionChange}
       />

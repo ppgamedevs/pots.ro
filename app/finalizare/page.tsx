@@ -520,7 +520,9 @@ export default function CheckoutPage() {
                   <Field label="Județ *" error={errors.county?.message as string}>
                     <Combobox
                       value={watch("county")}
-                      onValueChange={(v) => form.setValue("county", v, { shouldValidate: true })}
+                      onValueChange={(v: string) => {
+                        form.setValue("county", v, { shouldValidate: true });
+                      }}
                       options={countyOptions}
                       placeholder="Caută județ…"
                       emptyText="Nu am găsit județul"

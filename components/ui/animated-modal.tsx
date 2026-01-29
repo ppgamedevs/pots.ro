@@ -5,12 +5,14 @@ import { X } from "lucide-react";
 
 export function Modal({ open, onOpenChange, title, children }: { 
   open: boolean; 
-  onOpenChange: (v: boolean) => void; 
+  onOpenChange: unknown; 
   title?: string; 
   children: React.ReactNode; 
 }) {
+  const onOpenChangeFn: (v: boolean) => void =
+    typeof onOpenChange === 'function' ? (onOpenChange as (v: boolean) => void) : () => {};
   return (
-    <Dialog.Root open={open} onOpenChange={onOpenChange}>
+    <Dialog.Root open={open} onOpenChange={onOpenChangeFn}>
       <AnimatePresence>
         {open && (
           <Dialog.Portal forceMount>

@@ -1,5 +1,3 @@
-"use client";
-
 import { useState, useEffect } from "react";
 import { Button } from "../ui/button";
 import { X, Filter } from "lucide-react";
@@ -20,21 +18,22 @@ export interface Facet {
 export interface FiltersBarProps {
   facets: Facet[];
   selected: Record<string, string[]>;
-  onChange: (filters: Record<string, string[]>) => void;
+  onChange: unknown;
 }
 
 export function FiltersBar({ facets, selected, onChange }: FiltersBarProps) {
+  const onChangeFn = typeof onChange === 'function' ? (onChange as (filters: Record<string, string[]>) => void) : undefined;
   const [isOpen, setIsOpen] = useState(false);
   const [localFilters, setLocalFilters] = useState(selected);
 
   // Debounce filter changes
   useEffect(() => {
     const timer = setTimeout(() => {
-      onChange(localFilters);
+      onChangeFn?.(localFilters);
     }, 200);
 
     return () => clearTimeout(timer);
-  }, [localFilters, onChange]);
+  }, [localFilters, onChangeFn]);
 
   const handleFilterChange = (facetKey: string, value: string, checked: boolean) => {
     setLocalFilters(prev => {

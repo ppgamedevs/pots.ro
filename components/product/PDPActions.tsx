@@ -6,11 +6,13 @@ import { Minus, Plus, ShoppingCart } from "lucide-react";
 
 export interface PDPActionsProps {
   quantity: number;
-  onAdd: (qty: number) => void;
+  onAdd: unknown;
   maxQuantity?: number;
 }
 
 export function PDPActions({ quantity, onAdd, maxQuantity = 10 }: PDPActionsProps) {
+  const onAddFn: ((qty: number) => void) | undefined =
+    typeof onAdd === 'function' ? (onAdd as (qty: number) => void) : undefined;
   const [selectedQuantity, setSelectedQuantity] = useState(1);
 
   const handleQuantityChange = (newQuantity: number) => {
@@ -20,7 +22,7 @@ export function PDPActions({ quantity, onAdd, maxQuantity = 10 }: PDPActionsProp
   };
 
   const handleAddToCart = () => {
-    onAdd(selectedQuantity);
+    onAddFn?.(selectedQuantity);
   };
 
   return (

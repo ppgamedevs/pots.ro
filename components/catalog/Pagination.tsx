@@ -1,12 +1,10 @@
-"use client";
-
 import { Button } from "../ui/button";
 import { ChevronLeft, ChevronRight } from "lucide-react";
 
 export interface PaginationProps {
   page: number;
   totalPages: number;
-  onPageChange: (page: number) => void;
+  onPageChange: unknown;
   totalItems?: number;
   itemsPerPage?: number;
 }
@@ -18,6 +16,7 @@ export function Pagination({
   totalItems,
   itemsPerPage = 24 
 }: PaginationProps) {
+  const onPageChangeFn = typeof onPageChange === 'function' ? (onPageChange as (page: number) => void) : undefined;
   if (totalPages <= 1) return null;
 
   const getVisiblePages = () => {
@@ -65,7 +64,7 @@ export function Pagination({
             <Button
               variant="outline"
               size="sm"
-              onClick={() => onPageChange(page - 1)}
+              onClick={() => onPageChangeFn?.(page - 1)}
               disabled={page === 1}
               className="flex items-center gap-1"
             >
@@ -92,7 +91,7 @@ export function Pagination({
                     key={pageNumber}
                     variant={isCurrentPage ? "primary" : "outline"}
                     size="sm"
-                    onClick={() => onPageChange(pageNumber)}
+                    onClick={() => onPageChangeFn?.(pageNumber)}
                     className={`w-10 h-10 p-0 ${
                       isCurrentPage 
                         ? 'bg-primary text-white' 
@@ -109,7 +108,7 @@ export function Pagination({
             <Button
               variant="outline"
               size="sm"
-              onClick={() => onPageChange(page + 1)}
+              onClick={() => onPageChangeFn?.(page + 1)}
               disabled={page === totalPages}
               className="flex items-center gap-1"
             >

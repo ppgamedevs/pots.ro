@@ -22,7 +22,7 @@ export interface ImageItem {
 interface ProductImagesUploaderProps {
   productId: string;
   initialImages: ImageItem[];
-  onChange: (images: ImageItem[]) => void;
+  onChange: unknown;
   maxImages?: number;
   minImages?: number;
 }
@@ -142,6 +142,8 @@ export default function ProductImagesUploader({
   maxImages = 8,
   minImages = 1
 }: ProductImagesUploaderProps) {
+  const onChangeFn: ((images: ImageItem[]) => void) | undefined =
+    typeof onChange === 'function' ? (onChange as (images: ImageItem[]) => void) : undefined;
   const { toast } = useToast();
   const fileInputRef = useRef<HTMLInputElement>(null);
   
@@ -159,8 +161,8 @@ export default function ProductImagesUploader({
   // Update parent when images change
   const updateImages = useCallback((newImages: ImageItem[]) => {
     setImages(newImages);
-    onChange(newImages);
-  }, [onChange]);
+    onChangeFn?.(newImages);
+  }, [onChangeFn]);
 
   // Upload file to presigned URL
   const uploadFile = async (file: File): Promise<{ url: string; alt: string }> => {

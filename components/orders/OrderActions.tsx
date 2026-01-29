@@ -21,10 +21,12 @@ import { AwbLabelButton } from './AwbLabelButton';
 interface OrderActionsProps {
   order: OrderDetail;
   role: 'seller' | 'admin';
-  onOrderUpdate: () => void;
+  onOrderUpdate: unknown;
 }
 
 export function OrderActions({ order, role, onOrderUpdate }: OrderActionsProps) {
+  const onOrderUpdateFn: (() => void) | undefined =
+    typeof onOrderUpdate === 'function' ? (onOrderUpdate as () => void) : undefined;
   const [isLoading, setIsLoading] = useState(false);
   const [cancelReason, setCancelReason] = useState('');
   const [awbNumber, setAwbNumber] = useState('');
@@ -36,7 +38,7 @@ export function OrderActions({ order, role, onOrderUpdate }: OrderActionsProps) 
     try {
       await action();
       toast.success(successMessage);
-      onOrderUpdate();
+      onOrderUpdateFn?.();
     } catch (error) {
       console.error('Action error:', error);
       toast.error('Action failed');

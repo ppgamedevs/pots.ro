@@ -271,7 +271,7 @@ export default function AdminUsersClient() {
           <DataTable<Row>
             columns={columns}
             rows={rows}
-            rowKey={(row) => row.id}
+            rowKey={(row: Row) => row.id}
           />
         )}
       </div>

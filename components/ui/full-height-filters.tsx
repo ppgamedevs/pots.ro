@@ -15,10 +15,10 @@ export type FiltersState = {
 
 export type FullHeightFiltersProps = {
   open: boolean;
-  onOpenChange: (v: boolean) => void;
+  onOpenChange: unknown;
   initial: FiltersState;
-  onApply: (state: FiltersState) => void;
-  onReset?: () => void;
+  onApply: unknown;
+  onReset?: unknown;
   className?: string;
 };
 
@@ -30,6 +30,12 @@ export function FullHeightFilters({
   onReset,
   className,
 }: FullHeightFiltersProps) {
+  const onOpenChangeFn: (v: boolean) => void =
+    typeof onOpenChange === 'function' ? (onOpenChange as (v: boolean) => void) : () => {};
+  const onApplyFn: ((state: FiltersState) => void) | undefined =
+    typeof onApply === 'function' ? (onApply as (state: FiltersState) => void) : undefined;
+  const onResetFn: (() => void) | undefined =
+    typeof onReset === 'function' ? (onReset as () => void) : undefined;
   // local working copy - nu stricăm instant filtrele din URL/UI până la "Aplică"
   const [state, setState] = useState<FiltersState>(initial);
   const [isMobile, setIsMobile] = useState(false);
@@ -74,7 +80,7 @@ export function FullHeightFilters({
       onDragStart={(_, info) => { dragStartY.current = info.point.y; }}
       onDragEnd={(_, info) => {
         const delta = info.point.y - dragStartY.current;
-        if (delta > 120) onOpenChange(false); // swipe down to close
+        if (delta > 120) onOpenChangeFn(false); // swipe down to close
       }}
     >
       {/* Handle pentru swipe (mobil) */}
@@ -94,7 +100,10 @@ export function FullHeightFilters({
         <div className="flex items-center gap-2">
           <button
             className="h-9 px-3 rounded-lg border border-slate-200 dark:border-white/10 bg-white dark:bg-slate-900/60 text-sm hover:shadow-soft"
-            onClick={() => { onReset?.(); setState({}); }}
+            onClick={() => {
+              onResetFn?.();
+              setState({});
+            }}
           >
             Reset
           </button>
@@ -175,7 +184,10 @@ export function FullHeightFilters({
             </button>
           </Dialog.Close>
           <button
-            onClick={() => { onApply(state); onOpenChange(false); }}
+            onClick={() => {
+              onApplyFn?.(state);
+              onOpenChangeFn(false);
+            }}
             className="h-10 px-4 rounded-xl text-sm font-medium bg-brand text-white hover:bg-brand-dark focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand focus-visible:ring-offset-2 ring-offset-white dark:ring-offset-slate-950"
           >
             Aplică filtre
@@ -186,7 +198,7 @@ export function FullHeightFilters({
   );
 
   return (
-    <Dialog.Root open={open} onOpenChange={onOpenChange}>
+    <Dialog.Root open={open} onOpenChange={onOpenChangeFn}>
       <AnimatePresence>
         {open && (
           <Dialog.Portal forceMount>

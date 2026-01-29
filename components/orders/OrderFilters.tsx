@@ -11,7 +11,7 @@ import { SearchIcon, XIcon } from 'lucide-react';
 
 interface OrderFiltersProps {
   role: 'seller' | 'admin';
-  onFiltersChange: (filters: OrderFilters) => void;
+  onFiltersChange: unknown;
 }
 
 const ORDER_STATUSES: { value: OrderStatus; label: string }[] = [
@@ -30,6 +30,10 @@ const CARRIERS = [
 ];
 
 export function OrderFiltersComponent({ role, onFiltersChange }: OrderFiltersProps) {
+  const onFiltersChangeFn: ((filters: OrderFilters) => void) | undefined =
+    typeof onFiltersChange === 'function'
+      ? (onFiltersChange as (filters: OrderFilters) => void)
+      : undefined;
   const router = useRouter();
   const searchParams = useSearchParams();
   
@@ -52,11 +56,11 @@ export function OrderFiltersComponent({ role, onFiltersChange }: OrderFiltersPro
     
     if (filtersChanged) {
       prevFiltersRef.current = filters;
-      onFiltersChange(filters);
+      onFiltersChangeFn?.(filters);
     }
     // Note: onFiltersChange is expected to be stable (useCallback in parent)
     // If it's not stable, this could still cause issues, but it's better than calling on every render
-  }, [filters, onFiltersChange]);
+  }, [filters, onFiltersChangeFn]);
 
   const updateFilters = (newFilters: Partial<OrderFilters>) => {
     const updatedFilters = { ...filters, ...newFilters };

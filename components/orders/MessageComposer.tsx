@@ -9,7 +9,7 @@ import { postMessage } from '@/lib/api/messages';
 
 interface MessageComposerProps {
   conversationId: string;
-  onMessageSent: (message: any) => void;
+  onMessageSent: unknown;
   disabled?: boolean;
 }
 
@@ -17,6 +17,10 @@ const EMAIL_REGEX = /[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}/i;
 const PHONE_REGEX = /(\+?\d[\s\-()]?){7,}/;
 
 export function MessageComposer({ conversationId, onMessageSent, disabled = false }: MessageComposerProps) {
+  const onMessageSentFn: ((message: any) => void) | undefined =
+    typeof onMessageSent === 'function'
+      ? (onMessageSent as (message: any) => void)
+      : undefined;
   const [message, setMessage] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [showContactWarning, setShowContactWarning] = useState(false);
@@ -74,7 +78,7 @@ export function MessageComposer({ conversationId, onMessageSent, disabled = fals
       const response = await postMessage(conversationId, message.trim());
       
       if (response.ok && response.message) {
-        onMessageSent(response.message);
+        onMessageSentFn?.(response.message);
         setMessage('');
         
         if (response.warning) {

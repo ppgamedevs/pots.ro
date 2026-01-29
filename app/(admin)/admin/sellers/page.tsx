@@ -238,7 +238,7 @@ export default function AdminSellersPage() {
               <DataTable
                 columns={columns}
                 rows={items}
-                rowKey={(row) => row.id}
+                rowKey={(row: SellerRow) => row.id}
               />
             </div>
           )}

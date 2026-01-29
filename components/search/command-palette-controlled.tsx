@@ -15,8 +15,10 @@ export function CommandPaletteControlled({
   onOpenChange 
 }: { 
   open: boolean; 
-  onOpenChange: (v: boolean) => void 
+  onOpenChange: unknown 
 }) {
+  const onOpenChangeFn: (v: boolean) => void =
+    typeof onOpenChange === 'function' ? (onOpenChange as (v: boolean) => void) : () => {};
   const [q, setQ] = useState("");
   const router = useRouter();
 
@@ -29,14 +31,14 @@ export function CommandPaletteControlled({
   );
 
   const go = useCallback((href: string) => {
-    onOpenChange(false);
+    onOpenChangeFn(false);
     router.push(href);
-  }, [router, onOpenChange]);
+  }, [router, onOpenChangeFn]);
 
   const { products = [], categories = [], sellers = [] } = data ?? {};
 
   return (
-    <Dialog.Root open={open} onOpenChange={onOpenChange}>
+    <Dialog.Root open={open} onOpenChange={onOpenChangeFn}>
       <Dialog.Portal>
         <Dialog.Overlay className="fixed inset-0 z-50 bg-black/40 backdrop-blur-[2px]" />
         <Dialog.Content 

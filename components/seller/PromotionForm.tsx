@@ -11,7 +11,7 @@ import { toast } from 'sonner';
 import { Loader2 } from 'lucide-react';
 
 interface PromotionFormProps {
-  onSuccess: () => void;
+  onSuccess: unknown;
 }
 
 interface PromotionData {
@@ -26,6 +26,8 @@ interface PromotionData {
 }
 
 export function PromotionForm({ onSuccess }: PromotionFormProps) {
+  const onSuccessFn: (() => void) | undefined =
+    typeof onSuccess === 'function' ? (onSuccess as () => void) : undefined;
   const [loading, setLoading] = useState(false);
   const [formData, setFormData] = useState<PromotionData>({
     title: '',
@@ -82,7 +84,7 @@ export function PromotionForm({ onSuccess }: PromotionFormProps) {
         targetCategorySlug: '',
         targetProductId: '',
       });
-      onSuccess();
+      onSuccessFn?.();
     } catch (error) {
       toast.error(error instanceof Error ? error.message : 'Eroare necunoscută');
     } finally {

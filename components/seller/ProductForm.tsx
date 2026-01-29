@@ -30,8 +30,8 @@ const attributePresets = {
 
 interface ProductFormProps {
   initialData: Partial<SellerProduct>;
-  onSave: (data: SellerProduct, action: "draft" | "publish") => void;
-  onCancel: () => void;
+  onSave: unknown;
+  onCancel: unknown;
   loading?: boolean;
 }
 
@@ -41,6 +41,12 @@ export default function ProductForm({
   onCancel, 
   loading = false 
 }: ProductFormProps) {
+  const onSaveFn: ((data: SellerProduct, action: "draft" | "publish") => void) | undefined =
+    typeof onSave === 'function'
+      ? (onSave as (data: SellerProduct, action: "draft" | "publish") => void)
+      : undefined;
+  const onCancelFn: (() => void) | undefined =
+    typeof onCancel === 'function' ? (onCancel as () => void) : undefined;
   const { toast } = useToast();
   
   const [formData, setFormData] = useState<Partial<SellerProduct>>(initialData);
@@ -124,7 +130,7 @@ export default function ProductForm({
       updatedAt: new Date().toISOString()
     };
 
-    onSave(productData, action);
+    onSaveFn?.(productData, action);
   };
 
   // Add attribute
@@ -302,7 +308,9 @@ export default function ProductForm({
           <Button
             type="button"
             variant="ghost"
-            onClick={onCancel}
+            onClick={() => {
+              onCancelFn?.();
+            }}
             disabled={loading}
           >
             Anulează

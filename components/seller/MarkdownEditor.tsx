@@ -1,5 +1,3 @@
-"use client";
-
 import { useState, useCallback } from "react";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
@@ -28,8 +26,8 @@ interface MarkdownEditorProps {
   initialContent?: string;
   initialSeoTitle?: string;
   initialSeoDescription?: string;
-  onSave: (data: { content: string; seoTitle: string; seoDescription: string }) => Promise<void>;
-  onCancel: () => void;
+  onSave: unknown;
+  onCancel: unknown;
   loading?: boolean;
 }
 
@@ -41,6 +39,12 @@ export default function MarkdownEditor({
   onCancel,
   loading = false
 }: MarkdownEditorProps) {
+  const onSaveFn =
+    typeof onSave === 'function'
+      ? (onSave as (data: { content: string; seoTitle: string; seoDescription: string }) => Promise<void>)
+      : undefined;
+  const onCancelFn: (() => void) | undefined =
+    typeof onCancel === 'function' ? (onCancel as () => void) : undefined;
   const { toast } = useToast();
   const [content, setContent] = useState(initialContent);
   const [seoTitle, setSeoTitle] = useState(initialSeoTitle);
@@ -78,8 +82,13 @@ export default function MarkdownEditor({
       return;
     }
 
+    if (!onSaveFn) {
+      toast("Lipsește handler-ul de salvare.", "error");
+      return;
+    }
+
     try {
-      await onSave({
+      await onSaveFn({
         content: content.trim(),
         seoTitle: seoTitle.trim(),
         seoDescription: seoDescription.trim()
@@ -285,7 +294,9 @@ Pentru mai multe opțiuni, folosește butoanele din toolbar."
       <div className="flex items-center justify-between pt-4 border-t border-slate-200 dark:border-slate-700">
         <Button
           variant="ghost"
-          onClick={onCancel}
+          onClick={() => {
+            onCancelFn?.();
+          }}
           disabled={loading}
         >
           <X className="h-4 w-4 mr-2" />

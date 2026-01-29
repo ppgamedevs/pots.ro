@@ -433,7 +433,7 @@ export default function AdminProductsClient() {
             </label>
             <Combobox
               value=""
-              onValueChange={(value) => {
+              onValueChange={(value: string) => {
                 if (value && !companyFilters.includes(value)) {
                   setCompanyFilters([...companyFilters, value]);
                   setPage(1);
@@ -548,7 +548,7 @@ export default function AdminProductsClient() {
             <DataTable
               columns={columns}
               rows={rows}
-              rowKey={(r) => r.id}
+              rowKey={(r: Row) => r.id}
               selectable
               onSelectionChange={handleSelectionChange}
             />

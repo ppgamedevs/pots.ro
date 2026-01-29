@@ -8,7 +8,7 @@ export interface PDPStickyBarProps {
   price: number;
   oldPrice?: number;
   cta: string;
-  onClick: () => void;
+  onClick: unknown;
   stockLabel: string;
 }
 
@@ -19,6 +19,8 @@ export function PDPStickyBar({
   onClick, 
   stockLabel 
 }: PDPStickyBarProps) {
+  const onClickFn: (() => void) | undefined =
+    typeof onClick === 'function' ? (onClick as () => void) : undefined;
   const [isVisible, setIsVisible] = useState(false);
 
   useEffect(() => {
@@ -61,7 +63,9 @@ export function PDPStickyBar({
           {/* Actions */}
           <div className="flex items-center gap-3">
             <Button
-              onClick={onClick}
+              onClick={() => {
+                onClickFn?.();
+              }}
               className="bg-primary hover:bg-primary/90 text-white font-semibold px-6 py-3 transition-micro"
               aria-label="Adaugă produsul în coș"
             >

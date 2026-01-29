@@ -410,7 +410,7 @@ export default function AdminOrdersClient() {
             <DataTable
               columns={columns}
               rows={rows}
-              rowKey={(r) => r.id}
+              rowKey={(r: Row) => r.id}
             />
           </div>
 

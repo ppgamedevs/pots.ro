@@ -7,7 +7,7 @@ import clsx from "clsx";
 
 export type SheetProps = {
   open: boolean;
-  onOpenChange: (v: boolean) => void;
+  onOpenChange: unknown;
   title?: string;
   description?: string;
   side?: "right" | "left" | "bottom"; // desktop default: right
@@ -26,6 +26,8 @@ export function Sheet({
   children,
   footer,
 }: SheetProps) {
+  const onOpenChangeFn: (v: boolean) => void =
+    typeof onOpenChange === 'function' ? (onOpenChange as (v: boolean) => void) : () => {};
   // detect mobile for bottom sheet by default
   const [isMobile, setIsMobile] = useState(false);
   useEffect(() => {
@@ -52,7 +54,7 @@ export function Sheet({
       : { x: 0, y: 24 };
 
   return (
-    <Dialog.Root open={open} onOpenChange={onOpenChange}>
+    <Dialog.Root open={open} onOpenChange={onOpenChangeFn}>
       <AnimatePresence>
         {open && (
           <Dialog.Portal forceMount>

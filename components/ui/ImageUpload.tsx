@@ -1,13 +1,11 @@
-"use client";
-
 import React, { useCallback, useState } from 'react';
 import { Upload, X, Image as ImageIcon, AlertCircle } from 'lucide-react';
 import { useImageUpload } from '@/lib/hooks/useImageUpload';
 import { cn } from '@/lib/utils';
 
 interface ImageUploadProps {
-  onUpload: (url: string) => void;
-  onRemove?: () => void;
+  onUpload: unknown;
+  onRemove?: unknown;
   currentImage?: string;
   className?: string;
   maxFileSize?: number;
@@ -26,6 +24,8 @@ export function ImageUpload({
   placeholder = "Trage și plasează o imagine sau click pentru a selecta",
   disabled = false,
 }: ImageUploadProps) {
+  const onUploadFn = typeof onUpload === 'function' ? (onUpload as (url: string) => void) : undefined;
+  const onRemoveFn = typeof onRemove === 'function' ? (onRemove as () => void) : undefined;
   const [isDragOver, setIsDragOver] = useState(false);
   const [preview, setPreview] = useState<string | null>(currentImage || null);
 
@@ -34,7 +34,7 @@ export function ImageUpload({
     allowedTypes,
     onSuccess: (result) => {
       setPreview(result.url);
-      onUpload(result.url);
+      onUploadFn?.(result.url);
       reset();
     },
     onError: () => {
@@ -86,8 +86,8 @@ export function ImageUpload({
 
   const handleRemove = useCallback(() => {
     setPreview(null);
-    onRemove?.();
-  }, [onRemove]);
+    onRemoveFn?.();
+  }, [onRemoveFn]);
 
   return (
     <div className={cn('w-full', className)}>
@@ -166,7 +166,7 @@ export function ImageUpload({
 
 // Componentă pentru upload multiple
 interface MultipleImageUploadProps {
-  onUpload: (urls: string[]) => void;
+  onUpload: unknown;
   maxFiles?: number;
   className?: string;
 }
@@ -176,6 +176,8 @@ export function MultipleImageUpload({
   maxFiles = 5,
   className,
 }: MultipleImageUploadProps) {
+  const onUploadFn: ((urls: string[]) => void) | undefined =
+    typeof onUpload === 'function' ? (onUpload as (urls: string[]) => void) : undefined;
   const [previews, setPreviews] = useState<string[]>([]);
   const { uploadMultiple, isUploading, error } = useImageUpload({
     onSuccess: (result) => {
@@ -195,10 +197,10 @@ export function MultipleImageUpload({
   return (
     <div className={cn('space-y-4', className)}>
       <ImageUpload
-        onUpload={(url) => {
+        onUpload={(url: string) => {
           const newPreviews = [...previews, url];
           setPreviews(newPreviews);
-          onUpload(newPreviews);
+          onUploadFn?.(newPreviews);
         }}
         placeholder={`Adaugă imagini (${previews.length}/${maxFiles})`}
         disabled={previews.length >= maxFiles || isUploading}
@@ -218,7 +220,7 @@ export function MultipleImageUpload({
                 onClick={() => {
                   const newPreviews = previews.filter((_, i) => i !== index);
                   setPreviews(newPreviews);
-                  onUpload(newPreviews);
+                  onUploadFn?.(newPreviews);
                 }}
                 className="absolute top-2 right-2 p-1 bg-red-500 text-white rounded-full hover:bg-red-600 transition-colors"
               >
