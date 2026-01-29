@@ -4,6 +4,7 @@ import { useState, useEffect, useCallback, useRef, useMemo } from "react";
 import Link from "next/link";
 import { toast } from "sonner";
 import { useUser } from "@/lib/hooks/useUser";
+import { captureException } from "@/lib/sentry";
 import { useSupportThreadChat, isIncomingMessage } from "@/lib/support-thread-chat-context";
 import { AdminPageWrapper } from "@/components/admin/AdminPageWrapper";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -369,7 +370,6 @@ function InboxTab() {
 
   // Thread detail
   const [selectedThread, setSelectedThread] = useState<SupportThread | null>(null);
-  const [detailThread, setDetailThread] = useState<SupportThread | null>(null);
   const [threadMessages, setThreadMessages] = useState<ThreadMessage[]>([]);
   const [threadNotes, setThreadNotes] = useState<ThreadNote[]>([]);
   const [loadingMessages, setLoadingMessages] = useState(false);
@@ -489,7 +489,6 @@ function InboxTab() {
 
   const clearSelection = useCallback(() => {
     setSelectedThread(null);
-    setDetailThread(null);
     setThreadMessages([]);
     setThreadNotes([]);
   }, []);
@@ -603,7 +602,6 @@ function InboxTab() {
 
   useEffect(() => {
     setSelectedThread(null);
-    setDetailThread(null);
     setThreadMessages([]);
     setThreadNotes([]);
     prevThreadsSnapshotRef.current = null;
@@ -630,7 +628,6 @@ function InboxTab() {
       if (!detailRes.ok) return;
       if (threadDetailRequestIdRef.current !== requestId) return;
       if (selectedThreadRef.current?.id !== threadId) return;
-      const sel = selectedThreadRef.current;
       const nextMessages: ThreadMessage[] = detailJson.messages || [];
       const newIncoming = nextMessages.filter(
         (m) => !prevIds.has(m.id) && isIncomingMessage(m)
@@ -646,42 +643,6 @@ function InboxTab() {
         setUnreadMessageIds((u) => [...new Set([...u, ...newIncomingIds])]);
       }
       setThreadMessages(nextMessages);
-      let nextDetail: SupportThread = detailJson.thread
-        ? { ...sel, ...detailJson.thread }
-        : sel;
-      const optPriority = priorityOptimisticUntilRef.current;
-      if (
-        optPriority?.threadId === sel.id &&
-        Date.now() < optPriority.until &&
-        nextDetail
-      ) {
-        nextDetail = { ...nextDetail, priority: optPriority.priority };
-      }
-      const optAssignee = assigneeOptimisticUntilRef.current;
-      if (
-        optAssignee?.threadId === sel.id &&
-        Date.now() < optAssignee.until &&
-        nextDetail
-      ) {
-        nextDetail = {
-          ...nextDetail,
-          assignedToUserId: optAssignee.assignedToUserId,
-          assignedToEmail: optAssignee.assignedToEmail,
-          assignedToName: null,
-        };
-      }
-      const optStatus = statusOptimisticUntilRef.current;
-      if (
-        optStatus?.threadId === sel.id &&
-        Date.now() < optStatus.until &&
-        nextDetail
-      ) {
-        nextDetail = { ...nextDetail, status: optStatus.status };
-        if (detailJson.thread?.status === optStatus.status) {
-          statusOptimisticUntilRef.current = null;
-        }
-      }
-      setDetailThread(nextDetail);
       if (notesRes.ok) setThreadNotes(notesJson.notes || []);
     } catch {
       /* ignore */
@@ -740,7 +701,6 @@ function InboxTab() {
 
   const loadThreadMessages = async (thread: SupportThread) => {
     prepareSupportSound();
-    setDetailThread(null);
     setThreadNotes([]);
     setThreadMessages([]);
     setLoadingMessages(true);
@@ -803,28 +763,6 @@ function InboxTab() {
       if (threadDetailRequestIdRef.current !== requestId) return;
       if (selectedThreadRef.current?.id !== workingThread.id) return;
       setThreadMessages(detailJson.messages || []);
-      // Merge server thread data but keep the optimistic status/assignee from workingThread
-      let nextDetail: SupportThread = detailJson.thread
-        ? { ...(detailJson.thread as SupportThread), ...workingThread }
-        : workingThread;
-      const optPriority = priorityOptimisticUntilRef.current;
-      if (optPriority?.threadId === thread.id && Date.now() < optPriority.until) {
-        nextDetail = { ...nextDetail, priority: optPriority.priority };
-      }
-      const optAssignee = assigneeOptimisticUntilRef.current;
-      if (optAssignee?.threadId === thread.id && Date.now() < optAssignee.until) {
-        nextDetail = {
-          ...nextDetail,
-          assignedToUserId: optAssignee.assignedToUserId,
-          assignedToEmail: optAssignee.assignedToEmail,
-          assignedToName: null,
-        };
-      }
-      const optStatus = statusOptimisticUntilRef.current;
-      if (optStatus?.threadId === thread.id && Date.now() < optStatus.until) {
-        nextDetail = { ...nextDetail, status: optStatus.status };
-      }
-      setDetailThread(nextDetail);
       setThreadNotes(notesRes.ok ? notesJson.notes || [] : []);
       setNoteBody("");
       setLoadingMessages(false);
@@ -864,7 +802,6 @@ function InboxTab() {
     });
     if (stillMatches && wasSelected) {
       setSelectedThread((t) => (t ? { ...t, status: s } : null));
-      setDetailThread((t) => (t ? { ...t, status: s } : null));
     } else if (!stillMatches && wasSelected) {
       // If we are reopening a closed/resolved thread to OPEN while viewing the
       // Closed/Resolved filter, keep the conversation panel open instead of
@@ -882,10 +819,30 @@ function InboxTab() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ status }),
       });
-      const json = await res.json();
+      let json: { error?: string } | null = null;
+      try {
+        json = await res.json();
+      } catch {
+        json = null;
+      }
       if (!res.ok) {
         statusOptimisticUntilRef.current = null;
-        throw new Error(json?.error || "Failed");
+        const err = new Error(json?.error || "Failed");
+        (err as Error & { status?: number; body?: unknown }).status = res.status;
+        (err as Error & { status?: number; body?: unknown }).body = json;
+        console.error("[support] Status PATCH failed", {
+          threadId,
+          status: res.status,
+          body: json,
+          attemptedStatus: status,
+        });
+        captureException(err, {
+          threadId,
+          status: res.status,
+          body: json,
+          attemptedStatus: status,
+        });
+        throw err;
       }
       statusOptimisticUntilRef.current = null;
       toast.success("Status updated");
@@ -904,7 +861,8 @@ function InboxTab() {
 
       markInteraction();
       scheduleRefresh({ list: true, thread: true });
-    } catch (e: any) {
+    } catch (e: unknown) {
+      const err = e as Error & { status?: number; body?: unknown };
       statusOptimisticUntilRef.current = null;
       if (typeof prev !== "undefined" && thread) {
         const reverted = { ...thread, status: prev };
@@ -921,7 +879,23 @@ function InboxTab() {
         });
         if (wasSelected) void loadThreadMessages(reverted);
       }
-      toast.error(e?.message || "Error");
+      if (err?.status == null) {
+        console.error("[support] Status PATCH error (network or parse)", {
+          threadId,
+          message: err?.message,
+          attemptedStatus: status,
+        });
+        captureException(
+          err instanceof Error ? err : new Error(String(err)),
+          { threadId, attemptedStatus: status }
+        );
+      }
+      toast.error("Could not update status. Please try again.", {
+        action: {
+          label: "Retry",
+          onClick: () => handlePatchStatus(threadId, status),
+        },
+      });
     }
   };
 
@@ -962,9 +936,6 @@ function InboxTab() {
     });
     if (stillMatches && wasSelected) {
       setSelectedThread((t) =>
-        t ? { ...t, assignedToUserId: isUnassign ? null : resolvedAssigneeId, assignedToName: null, assignedToEmail: isUnassign ? null : resolvedAssigneeEmail } : null
-      );
-      setDetailThread((t) =>
         t ? { ...t, assignedToUserId: isUnassign ? null : resolvedAssigneeId, assignedToName: null, assignedToEmail: isUnassign ? null : resolvedAssigneeEmail } : null
       );
     } else if (!stillMatches && wasSelected) {
@@ -1060,7 +1031,6 @@ function InboxTab() {
       });
       if (stillMatches && wasSelected) {
         setSelectedThread((t) => (t ? { ...t, priority: p } : null));
-        setDetailThread((t) => (t ? { ...t, priority: p } : null));
       } else if (!stillMatches && wasSelected) {
         clearSelection();
       }
@@ -1376,7 +1346,8 @@ function InboxTab() {
           <div className="flex items-center justify-between">
             <CardTitle className="text-lg">Conversație</CardTitle>
             {(() => {
-              const t = detailThread ?? selectedThread;
+              const card = threads.find((t) => t.id === selectedThread?.id) ?? selectedThread;
+              const t = card;
               if (!t || !t.assignedToUserId || !t.assignedToEmail) return null;
               return (
                 <span className="inline-flex items-center rounded-full border px-2.5 py-0.5 font-semibold transition-colors focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 border-transparent hover:bg-primary/80 text-xs bg-emerald-100 text-emerald-800 dark:bg-emerald-900/40 dark:text-emerald-300">
@@ -1397,7 +1368,8 @@ function InboxTab() {
           ) : (
             <div className="flex-1 flex flex-col min-h-0">
               {(() => {
-                const t = detailThread ?? selectedThread;
+                const card = threads.find((t) => t.id === selectedThread?.id) ?? selectedThread;
+                const t = card;
                 return t ? (
                   <>
                     <div className="flex flex-wrap gap-2 px-4 pt-4 pb-2 border-b border-slate-200 dark:border-white/10 shrink-0">
