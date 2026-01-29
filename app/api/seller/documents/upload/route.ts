@@ -57,23 +57,29 @@ export async function POST(req: NextRequest) {
     }
 
     // Validate and normalize upload (size + magic-byte sniffing + filename sanitization)
-    let normalized:
-      | { buffer: Buffer; mimeType: 'application/pdf' | 'image/jpeg' | 'image/png'; safeFilename: string; sizeBytes: number }
-      | null = null;
-    try {
-      normalized = await validateKycUploadFile(file);
-    } catch (e) {
-      const code = e instanceof Error ? e.message : 'INVALID_UPLOAD';
-      if (code === 'FILE_TOO_LARGE') {
-        return NextResponse.json({ error: 'Fișierul este prea mare (max 10MB)' }, { status: 400 });
+    const validatedOrResponse = await (async () => {
+      try {
+        return await validateKycUploadFile(file);
+      } catch (e) {
+        const code = e instanceof Error ? e.message : 'INVALID_UPLOAD';
+        if (code === 'FILE_TOO_LARGE') {
+          return NextResponse.json({ error: 'Fișierul este prea mare (max 10MB)' }, { status: 400 });
+        }
+        if (code === 'INVALID_FILE_TYPE' || code === 'DISALLOWED_BINARY') {
+          return NextResponse.json(
+            { error: 'Tip de fișier invalid. Acceptăm doar PDF, JPG și PNG.' },
+            { status: 400 }
+          );
+        }
+        return NextResponse.json({ error: 'Fișier invalid' }, { status: 400 });
       }
-      if (code === 'INVALID_FILE_TYPE' || code === 'DISALLOWED_BINARY') {
-        return NextResponse.json({
-          error: 'Tip de fișier invalid. Acceptăm doar PDF, JPG și PNG.'
-        }, { status: 400 });
-      }
-      return NextResponse.json({ error: 'Fișier invalid' }, { status: 400 });
+    })();
+
+    if (validatedOrResponse instanceof Response) {
+      return validatedOrResponse;
     }
+
+    const validated = validatedOrResponse;
 
     // Mark existing documents of this type as superseded
     await db
@@ -87,8 +93,8 @@ export async function POST(req: NextRequest) {
         )
       );
 
-    const fileHash = createHash('sha256').update(normalized.buffer).digest('hex');
-    const encrypted = encryptKycDocument(normalized.buffer);
+    const fileHash = createHash('sha256').update(validated.buffer).digest('hex');
+    const encrypted = encryptKycDocument(validated.buffer);
 
     // Save document record
     const [document] = await db
@@ -96,9 +102,9 @@ export async function POST(req: NextRequest) {
       .values({
         sellerId: seller.id,
         docType: docType,
-        filename: normalized.safeFilename,
-        mimeType: normalized.mimeType,
-        sizeBytes: normalized.sizeBytes,
+        filename: validated.safeFilename,
+        mimeType: validated.mimeType,
+        sizeBytes: validated.sizeBytes,
         encryptedData: encrypted.ciphertext,
         encryptionIv: encrypted.iv,
         encryptionTag: encrypted.tag,
