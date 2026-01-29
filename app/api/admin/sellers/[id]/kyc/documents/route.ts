@@ -5,12 +5,10 @@ import { sellerActions, sellerKycDocuments } from '@/db/schema/core';
 import { getCurrentUser } from '@/lib/auth-helpers';
 import { resolveSellerId } from '@/lib/server/resolve-seller-id';
 import { encryptKycDocument } from '@/lib/kyc/crypto';
+import { validateKycUploadFile } from '@/lib/kyc/upload-validation';
 
 export const dynamic = 'force-dynamic';
 export const runtime = 'nodejs';
-
-const allowedMimeTypes = new Set(['application/pdf', 'image/jpeg', 'image/png', 'image/webp']);
-const maxBytes = 10 * 1024 * 1024; // 10MB
 
 const metaSchema = z.object({
   docType: z.string().min(2).max(80),
@@ -42,25 +40,32 @@ export async function POST(req: Request, { params }: { params: { id: string } })
       return NextResponse.json({ error: 'file is required' }, { status: 400 });
     }
 
-    if (!allowedMimeTypes.has(file.type)) {
-      return NextResponse.json({ error: 'Invalid file type' }, { status: 400 });
+    let normalized:
+      | { buffer: Buffer; mimeType: 'application/pdf' | 'image/jpeg' | 'image/png' | 'image/webp'; safeFilename: string; sizeBytes: number }
+      | null = null;
+    try {
+      normalized = await validateKycUploadFile(file, { allowWebp: true });
+    } catch (e) {
+      const code = e instanceof Error ? e.message : 'INVALID_UPLOAD';
+      if (code === 'FILE_TOO_LARGE') {
+        return NextResponse.json({ error: 'File too large (max 10MB)' }, { status: 400 });
+      }
+      if (code === 'INVALID_FILE_TYPE' || code === 'DISALLOWED_BINARY') {
+        return NextResponse.json({ error: 'Invalid file type' }, { status: 400 });
+      }
+      return NextResponse.json({ error: 'Invalid file' }, { status: 400 });
     }
 
-    if (file.size > maxBytes) {
-      return NextResponse.json({ error: 'File too large (max 10MB)' }, { status: 400 });
-    }
-
-    const buf = Buffer.from(await file.arrayBuffer());
-    const encrypted = encryptKycDocument(buf);
+    const encrypted = encryptKycDocument(normalized.buffer);
 
     const [created] = await db
       .insert(sellerKycDocuments)
       .values({
         sellerId,
         docType: parsed.docType,
-        filename: file.name,
-        mimeType: file.type,
-        sizeBytes: file.size,
+        filename: normalized.safeFilename,
+        mimeType: normalized.mimeType,
+        sizeBytes: normalized.sizeBytes,
         encryptedData: encrypted.ciphertext,
         encryptionIv: encrypted.iv,
         encryptionTag: encrypted.tag,
@@ -81,8 +86,8 @@ export async function POST(req: Request, { params }: { params: { id: string } })
       await db.insert(sellerActions).values({
         sellerId,
         action: 'kyc_doc_upload',
-        message: parsed.message?.trim() || `Uploaded ${parsed.docType}: ${file.name}`,
-        meta: { docType: parsed.docType, filename: file.name, mimeType: file.type, sizeBytes: file.size },
+        message: parsed.message?.trim() || `Uploaded ${parsed.docType}: ${normalized.safeFilename}`,
+        meta: { docType: parsed.docType, filename: normalized.safeFilename, mimeType: normalized.mimeType, sizeBytes: normalized.sizeBytes },
         adminUserId: user.id,
       });
     } catch (err) {

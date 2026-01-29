@@ -3,18 +3,12 @@ import { getSession } from '@/lib/auth/session';
 import { db } from '@/db';
 import { sellers, sellerKycDocuments } from '@/db/schema/core';
 import { eq, and, ne } from 'drizzle-orm';
-import { randomBytes, createCipheriv } from 'crypto';
+import { createHash } from 'node:crypto';
+import { encryptKycDocument } from '@/lib/kyc/crypto';
+import { validateKycUploadFile } from '@/lib/kyc/upload-validation';
+import { checkRateLimit } from '@/lib/middleware/rate-limit';
 
-// Maximum file size: 10MB
-const MAX_FILE_SIZE = 10 * 1024 * 1024;
-
-// Allowed MIME types
-const ALLOWED_TYPES = [
-  'application/pdf',
-  'image/jpeg',
-  'image/jpg',
-  'image/png',
-];
+export const runtime = 'nodejs';
 
 // Valid document types
 const VALID_DOC_TYPES = [
@@ -24,30 +18,11 @@ const VALID_DOC_TYPES = [
   'iban_proof',
 ];
 
-// Get encryption key from environment
-function getEncryptionKey(): Buffer {
-  const key = process.env.DOCUMENT_ENCRYPTION_KEY;
-  if (!key) {
-    throw new Error('DOCUMENT_ENCRYPTION_KEY not configured');
-  }
-  // Ensure key is 32 bytes for AES-256
-  return Buffer.from(key, 'hex').slice(0, 32);
-}
-
-// Encrypt document data
-function encryptDocument(data: Buffer): { encrypted: Buffer; iv: Buffer; tag: Buffer } {
-  const key = getEncryptionKey();
-  const iv = randomBytes(16);
-  const cipher = createCipheriv('aes-256-gcm', key, iv);
-  
-  const encrypted = Buffer.concat([cipher.update(data), cipher.final()]);
-  const tag = cipher.getAuthTag();
-  
-  return { encrypted, iv, tag };
-}
-
 export async function POST(req: NextRequest) {
   try {
+    const rl = await checkRateLimit(req, 'seller_kyc_upload');
+    if (!rl.allowed) return rl.response!;
+
     const session = await getSession();
     if (!session?.user?.id) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
@@ -70,10 +45,10 @@ export async function POST(req: NextRequest) {
 
     // Parse form data
     const formData = await req.formData();
-    const file = formData.get('file') as File | null;
+    const file = formData.get('file');
     const docType = formData.get('docType') as string | null;
 
-    if (!file) {
+    if (!(file instanceof File)) {
       return NextResponse.json({ error: 'Fișierul lipsește' }, { status: 400 });
     }
 
@@ -81,16 +56,23 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'Tip de document invalid' }, { status: 400 });
     }
 
-    // Validate file size
-    if (file.size > MAX_FILE_SIZE) {
-      return NextResponse.json({ error: 'Fișierul este prea mare (max 10MB)' }, { status: 400 });
-    }
-
-    // Validate file type
-    if (!ALLOWED_TYPES.includes(file.type)) {
-      return NextResponse.json({ 
-        error: 'Tip de fișier invalid. Acceptăm doar PDF, JPG și PNG.' 
-      }, { status: 400 });
+    // Validate and normalize upload (size + magic-byte sniffing + filename sanitization)
+    let normalized:
+      | { buffer: Buffer; mimeType: 'application/pdf' | 'image/jpeg' | 'image/png'; safeFilename: string; sizeBytes: number }
+      | null = null;
+    try {
+      normalized = await validateKycUploadFile(file);
+    } catch (e) {
+      const code = e instanceof Error ? e.message : 'INVALID_UPLOAD';
+      if (code === 'FILE_TOO_LARGE') {
+        return NextResponse.json({ error: 'Fișierul este prea mare (max 10MB)' }, { status: 400 });
+      }
+      if (code === 'INVALID_FILE_TYPE' || code === 'DISALLOWED_BINARY') {
+        return NextResponse.json({
+          error: 'Tip de fișier invalid. Acceptăm doar PDF, JPG și PNG.'
+        }, { status: 400 });
+      }
+      return NextResponse.json({ error: 'Fișier invalid' }, { status: 400 });
     }
 
     // Mark existing documents of this type as superseded
@@ -105,9 +87,8 @@ export async function POST(req: NextRequest) {
         )
       );
 
-    // Read and encrypt file data
-    const fileBuffer = Buffer.from(await file.arrayBuffer());
-    const { encrypted, iv, tag } = encryptDocument(fileBuffer);
+    const fileHash = createHash('sha256').update(normalized.buffer).digest('hex');
+    const encrypted = encryptKycDocument(normalized.buffer);
 
     // Save document record
     const [document] = await db
@@ -115,12 +96,12 @@ export async function POST(req: NextRequest) {
       .values({
         sellerId: seller.id,
         docType: docType,
-        filename: file.name,
-        mimeType: file.type,
-        sizeBytes: file.size,
-        encryptedData: encrypted,
-        encryptionIv: iv,
-        encryptionTag: tag,
+        filename: normalized.safeFilename,
+        mimeType: normalized.mimeType,
+        sizeBytes: normalized.sizeBytes,
+        encryptedData: encrypted.ciphertext,
+        encryptionIv: encrypted.iv,
+        encryptionTag: encrypted.tag,
         status: 'uploaded',
         uploadedBy: session.user.id,
         createdAt: new Date(),
@@ -128,7 +109,7 @@ export async function POST(req: NextRequest) {
       })
       .returning();
 
-    console.log(`[KYC Upload] Seller ${seller.id} uploaded ${docType}: ${document.id}`);
+    console.log(`[KYC Upload] Seller ${seller.id} uploaded ${docType}: ${document.id} sha256=${fileHash}`);
 
     return NextResponse.json({
       success: true,

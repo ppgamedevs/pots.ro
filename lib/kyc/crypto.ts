@@ -1,23 +1,37 @@
 import crypto from 'node:crypto';
 
 function getRawKey(): Buffer {
+  // Prefer base64 key (recommended)
   const keyB64 = process.env.KYC_DOCS_ENCRYPTION_KEY;
-  if (!keyB64) {
-    throw new Error('KYC_DOCS_ENCRYPTION_KEY is not set');
+  if (keyB64) {
+    let key: Buffer;
+    try {
+      key = Buffer.from(keyB64, 'base64');
+    } catch {
+      throw new Error('KYC_DOCS_ENCRYPTION_KEY must be base64');
+    }
+    if (key.length !== 32) {
+      throw new Error('KYC_DOCS_ENCRYPTION_KEY must decode to 32 bytes (AES-256)');
+    }
+    return key;
   }
 
-  let key: Buffer;
-  try {
-    key = Buffer.from(keyB64, 'base64');
-  } catch {
-    throw new Error('KYC_DOCS_ENCRYPTION_KEY must be base64');
+  // Backwards-compatible fallback (hex)
+  const keyHex = process.env.DOCUMENT_ENCRYPTION_KEY;
+  if (keyHex) {
+    let key: Buffer;
+    try {
+      key = Buffer.from(keyHex, 'hex');
+    } catch {
+      throw new Error('DOCUMENT_ENCRYPTION_KEY must be hex');
+    }
+    if (key.length !== 32) {
+      throw new Error('DOCUMENT_ENCRYPTION_KEY must decode to 32 bytes (64 hex chars)');
+    }
+    return key;
   }
 
-  if (key.length !== 32) {
-    throw new Error('KYC_DOCS_ENCRYPTION_KEY must decode to 32 bytes (AES-256)');
-  }
-
-  return key;
+  throw new Error('Missing encryption key: set KYC_DOCS_ENCRYPTION_KEY (base64) or DOCUMENT_ENCRYPTION_KEY (hex)');
 }
 
 export function encryptKycDocument(plain: Buffer): { ciphertext: Buffer; iv: Buffer; tag: Buffer } {

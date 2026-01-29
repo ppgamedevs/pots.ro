@@ -46,6 +46,14 @@ const RATE_LIMITS: Record<string, RateLimitConfig> = {
       return `admin_exports:${userId}`;
     },
   },
+
+  // Seller onboarding / KYC document uploads
+  // Protects the DB (encrypted bytea storage) from abuse.
+  seller_kyc_upload: {
+    windowMs: 10 * 60 * 1000, // 10 minutes
+    maxRequests: 12, // 12 uploads / 10 min / IP
+    keyGenerator: (req) => `seller_kyc_upload:${getClientIPFromHeaders(req.headers)}`,
+  },
 };
 
 type AbuseLists = {
