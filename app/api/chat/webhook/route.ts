@@ -11,6 +11,11 @@ import {
   getOutsideHoursNoticeRo,
   isWithinSupportHoursRo,
 } from '@/lib/support/business-hours';
+import { supportEventEmitter } from '@/lib/support/event-emitter';
+
+// Ensure Node.js runtime for event emitter compatibility (SSE requires same runtime)
+export const runtime = 'nodejs';
+export const dynamic = 'force-dynamic';
 
 const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
 
@@ -231,6 +236,72 @@ export async function POST(request: NextRequest) {
           status: nextStatus,
         })
         .where(eq(supportThreads.id, threadId));
+
+      // Emit event to notify connected SSE clients about the new message
+      // This triggers instant refresh of the Support Threads list
+      // Emit for ALL new messages regardless of status to ensure list refreshes
+      // Minimal delay (50ms) ensures DB transaction commits and is visible to subsequent queries
+      const webhookStartTime = Date.now();
+      const dbUpdateTime = Date.now();
+      console.log('[Webhook] Preparing to emit SSE event:', {
+        threadId,
+        status: nextStatus,
+        messagePreview: String(message).slice(0, 50),
+        timestamp: dbUpdateTime,
+        subscriberCountBefore: supportEventEmitter.getSubscriberCount()
+      });
+      
+      setTimeout(() => {
+        // Ensure threadId and nextStatus are defined (should always be at this point, but TypeScript needs this check)
+        if (!threadId || !nextStatus) {
+          console.error('[Webhook] Cannot emit SSE event - threadId or nextStatus is undefined/null', { threadId, nextStatus });
+          return;
+        }
+        const subscriberCount = supportEventEmitter.getSubscriberCount();
+        const emitTime = Date.now();
+        const delayFromDbUpdate = emitTime - dbUpdateTime;
+        
+        console.log('[Webhook] About to emit SSE event:', {
+          threadId,
+          status: nextStatus,
+          subscribers: subscriberCount,
+          dbUpdateTime,
+          emitTime,
+          delayFromDbUpdate,
+          totalDelayFromWebhook: emitTime - webhookStartTime
+        });
+        
+        supportEventEmitter.emit(threadId, nextStatus);
+        
+        const afterEmitTime = Date.now();
+        console.log('[Webhook] SSE event emitted:', {
+          threadId,
+          status: nextStatus,
+          subscribers: subscriberCount,
+          emitTime,
+          afterEmitTime,
+          emitDuration: afterEmitTime - emitTime,
+          totalDelayFromWebhook: afterEmitTime - webhookStartTime
+        });
+        
+        // Warn if no subscribers (SSE connection might not be established)
+        if (subscriberCount === 0) {
+          console.warn('[Webhook] No SSE subscribers connected. Event was emitted but no clients will receive it.', {
+            threadId,
+            status: nextStatus,
+            suggestion: 'Ensure the Support Threads page (/support) is open and SSE connection is established',
+            runtime: 'nodejs',
+            eventEmitterType: 'in-memory'
+          });
+        } else {
+          console.log('[Webhook] Event should be delivered to clients:', {
+            threadId,
+            status: nextStatus,
+            subscriberCount,
+            expectedDeliveryTime: afterEmitTime + 50 // Immediate refresh (minimal delay)
+          });
+        }
+      }, 50); // 50ms delay to ensure DB transaction commits and is visible (minimal delay for immediate refresh)
     }
 
     // Always route to human support (chatbot disabled).
