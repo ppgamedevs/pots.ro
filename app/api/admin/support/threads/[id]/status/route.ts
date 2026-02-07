@@ -68,6 +68,13 @@ export async function PATCH(request: NextRequest, context: Params) {
       }
     }
 
+    // When changing to "open" from "resolved" or "closed", assign to current user and clear closed/resolved by fields
+    if (status === "open" && (thread.status === "closed" || thread.status === "resolved")) {
+      nextFields.assignedToUserId = user.id;
+      nextFields.closedByUserId = null;
+      nextFields.resolvedByUserId = null;
+    }
+
     await db
       .update(supportThreads)
       .set(nextFields)

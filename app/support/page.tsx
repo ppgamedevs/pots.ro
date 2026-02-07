@@ -384,6 +384,7 @@ function InboxTab() {
   const selectedThreadRef = useRef<SupportThread | null>(null);
   const pendingRefreshRef = useRef<{ list: boolean; thread: boolean }>({ list: false, thread: false });
   const refreshTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const isReopeningRef = useRef<boolean>(false);
   const threadMessagesRef = useRef<ThreadMessage[]>([]);
   const soundRepeatTimerRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const prevThreadsSnapshotRef = useRef<{ id: string; status: string }[] | null>(null);
@@ -391,6 +392,12 @@ function InboxTab() {
   const threadDetailRequestIdRef = useRef(0);
   const reopenRedirectThreadIdRef = useRef<string | null>(null);
   const FM_SUPPORT_SOUND_KEY = "fm_support_sound_enabled";
+  const lastSSEEventTimeRef = useRef<number | null>(null);
+  const fallbackPollIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const isLoadingThreadsRef = useRef<boolean>(false);
+  const newMessagePollIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const lastCheckedWaitingCountRef = useRef<number>(0);
+  const isUpdatingStatusRef = useRef<boolean>(false);
 
   const closedResolvedUsers = useMemo(() => {
     const map = new Map<string, { id: string; label: string }>();
@@ -492,15 +499,33 @@ function InboxTab() {
     setSelectedThread(null);
     setThreadMessages([]);
     setThreadNotes([]);
+    // Synchronously update ref to prevent race conditions
+    selectedThreadRef.current = null;
   }, []);
 
-  const loadThreads = useCallback(async (opts?: { silent?: boolean }) => {
+  const loadThreads = useCallback(async (opts?: { silent?: boolean; overrideStatusFilter?: string; overridePage?: number }) => {
+    // Prevent concurrent calls - if already loading, skip this call
+    if (isLoadingThreadsRef.current) {
+      console.log('[loadThreads] Skipping - already loading');
+      return;
+    }
+    
+    // Skip if page is not visible (user switched tabs/window)
+    if (typeof document !== "undefined" && document.visibilityState !== "visible") {
+      console.log('[loadThreads] Skipping - page not visible');
+      return;
+    }
+    
+    isLoadingThreadsRef.current = true;
     try {
       if (!opts?.silent) setLoading(true);
       const params = new URLSearchParams();
-      params.set("page", String(page));
+      // Use override values if provided, otherwise use state values
+      const effectivePage = opts?.overridePage !== undefined ? opts.overridePage : page;
+      const effectiveStatusFilter = opts?.overrideStatusFilter !== undefined ? opts.overrideStatusFilter : statusFilter;
+      params.set("page", String(effectivePage));
       params.set("limit", "25");
-      if (statusFilter && statusFilter !== "all") params.set("status", statusFilter === "open" ? "open,waiting" : statusFilter);
+      if (effectiveStatusFilter && effectiveStatusFilter !== "all") params.set("status", effectiveStatusFilter === "open" ? "open,waiting" : effectiveStatusFilter);
       if (sourceFilter && sourceFilter !== "all_sources") params.set("source", sourceFilter);
       if (closedResolvedByFilter && closedResolvedByFilter !== "all_closed_resolved_by") {
         params.set("closedResolvedByUserId", closedResolvedByFilter);
@@ -514,8 +539,25 @@ function InboxTab() {
         url = `/api/admin/support/threads?${params}`;
       }
 
+      const fetchStartTime = Date.now();
+      console.log('[loadThreads] Fetching threads:', { url, silent: opts?.silent, timestamp: fetchStartTime });
       const res = await fetch(url, { credentials: "include", cache: "no-store" });
+      const fetchEndTime = Date.now();
+      console.log('[loadThreads] Fetch completed:', { 
+        url, 
+        status: res.status, 
+        duration: fetchEndTime - fetchStartTime,
+        timestamp: fetchEndTime
+      });
       const json = await res.json();
+      const parseEndTime = Date.now();
+      console.log('[loadThreads] Response parsed:', {
+        threadCount: json.data?.length || 0,
+        total: json.total,
+        waitingCount: json.data?.filter((t: SupportThread) => t.status === 'waiting').length || 0,
+        parseDuration: parseEndTime - fetchEndTime,
+        timestamp: parseEndTime
+      });
       if (!res.ok) throw new Error(json?.error || "Failed to load");
       let updatedThreads = json.data || [];
       const optPriority = priorityOptimisticUntilRef.current;
@@ -560,7 +602,29 @@ function InboxTab() {
         }
         reopenRedirectThreadIdRef.current = null;
       }
-      updatedThreads = updatedThreads.filter((t: SupportThread) => threadMatchesFilters(t));
+      // Use effective filter values (override if provided, otherwise state) for filtering
+      // This ensures that when override values are provided, we filter using those instead of current state
+      const effectiveStatusFilterForFiltering = opts?.overrideStatusFilter !== undefined ? opts.overrideStatusFilter : statusFilter;
+      const filterFunction = (t: SupportThread) => {
+        if (effectiveStatusFilterForFiltering && effectiveStatusFilterForFiltering !== "all") {
+          const allowed =
+            effectiveStatusFilterForFiltering === "open"
+              ? (["open", "waiting"] as const)
+              : effectiveStatusFilterForFiltering.split(",").map((s) => s.trim()).filter(Boolean);
+          if (allowed.length > 0 && !(allowed as readonly string[]).includes(t.status)) return false;
+        }
+        if (sourceFilter && sourceFilter !== "all_sources") {
+          if (t.source !== sourceFilter) return false;
+        }
+        if (closedResolvedByFilter && closedResolvedByFilter !== "all_closed_resolved_by") {
+          const selectedId = closedResolvedByFilter;
+          const closedId = t.closedBy?.id ?? null;
+          const resolvedId = t.resolvedBy?.id ?? null;
+          if (closedId !== selectedId && resolvedId !== selectedId) return false;
+        }
+        return true;
+      };
+      updatedThreads = updatedThreads.filter(filterFunction);
 
       const prev = prevThreadsSnapshotRef.current;
       if (prev !== null && soundEnabled) {
@@ -588,27 +652,82 @@ function InboxTab() {
       // For other filters (e.g. Closed/Resolved), we trust the backend and do not
       // overwrite statuses, so explicit changes like Open -> Closed/Resolved stick.
       const selected = selectedThreadRef.current;
+      // Use effectiveStatusFilter (already defined above) for the check
       if (
         selected &&
-        statusFilter === "open" &&
+        effectiveStatusFilter === "open" &&
         (selected.status === "open" || selected.status === "waiting")
       ) {
-        updatedThreads = updatedThreads.map((t: SupportThread) =>
-          t.id === selected.id ? { ...t, status: selected.status } : t
-        );
+        // Only overwrite if the thread actually exists in the fetched results
+        // This prevents overwriting threads that were changed to closed/resolved
+        const threadExistsInResults = updatedThreads.some((t: SupportThread) => t.id === selected.id);
+        if (threadExistsInResults) {
+          // Check if there's an optimistic status update that should take precedence
+          const optStatus = statusOptimisticUntilRef.current;
+          const hasRecentStatusChange = optStatus && 
+            optStatus.threadId === selected.id && 
+            Date.now() < optStatus.until &&
+            (optStatus.status === "closed" || optStatus.status === "resolved");
+          
+          // Don't overwrite if there's a recent status change to closed/resolved
+          if (!hasRecentStatusChange) {
+            updatedThreads = updatedThreads.map((t: SupportThread) =>
+              t.id === selected.id ? { ...t, status: selected.status } : t
+            );
+          }
+        }
       }
 
       setThreads(updatedThreads);
       setTotal(json.total || 0);
+      
+      // Initialize waiting message count for polling detection
+      // This helps detect new messages when user is on resolved/closed status
+      if (effectiveStatusFilter === "open" || effectiveStatusFilter === "all") {
+        // Count waiting threads in the current results
+        const waitingCount = updatedThreads.filter((t: SupportThread) => t.status === "waiting").length;
+        // If we're on page 1 and have results, use the total from API for accuracy
+        if (effectivePage === 1 && json.total !== undefined) {
+          // For open filter, we need to count waiting threads separately
+          // Since open filter shows both open and waiting, we need to check the total waiting count
+          // We'll use a separate API call or estimate based on current results
+          // For now, use the count from current page results as baseline
+          lastCheckedWaitingCountRef.current = waitingCount;
+        } else {
+          // For subsequent pages, accumulate or use current count
+          lastCheckedWaitingCountRef.current = Math.max(lastCheckedWaitingCountRef.current, waitingCount);
+        }
+      }
     } catch (e: any) {
       if (!opts?.silent) toast.error(e?.message || "Error loading threads");
     } finally {
       if (!opts?.silent) setLoading(false);
+      isLoadingThreadsRef.current = false;
     }
   }, [page, statusFilter, sourceFilter, closedResolvedByFilter, searchQuery, threadMatchesFilters, soundEnabled]);
 
   useEffect(() => {
-    loadThreads();
+    // Skip automatic loadThreads if we're in the middle of a reopen operation
+    // (to avoid duplicate API calls - reopen already calls loadThreads explicitly)
+    if (isReopeningRef.current) {
+      // Don't reset flag here - it will be reset after state updates are processed
+      // in handlePatchStatus after setStatusFilter/setPage are called
+      return;
+    }
+    // Skip if we're updating a status (to prevent reverting optimistic updates)
+    if (isUpdatingStatusRef.current) {
+      return;
+    }
+    // Skip if page is not visible
+    if (typeof document !== "undefined" && document.visibilityState !== "visible") {
+      return;
+    }
+    // Debounce rapid callback changes to prevent multiple simultaneous calls
+    // Note: We allow loads for all statuses including resolved/closed when user explicitly changes filter
+    const timeoutId = setTimeout(() => {
+      loadThreads();
+    }, 100);
+    return () => clearTimeout(timeoutId);
   }, [loadThreads]);
 
   useEffect(() => {
@@ -655,38 +774,73 @@ function InboxTab() {
           lastPlayedForThreadRef.current = { id: threadId, at: Date.now() };
         }
         setUnreadMessageIds((u) => [...new Set([...u, ...newIncomingIds])]);
+        // Trigger thread list refresh when incoming messages detected
+        // Skip if viewing resolved/closed status (new messages don't affect these views)
+        if (statusFilter !== "resolved" && statusFilter !== "closed") {
+          loadThreads({ silent: true });
+        }
       }
       setThreadMessages(nextMessages);
       if (notesRes.ok) setThreadNotes(notesJson.notes || []);
     } catch {
       /* ignore */
     }
-  }, [soundEnabled]);
+  }, [soundEnabled, loadThreads]);
 
   const runRefreshJob = useCallback(() => {
     const pending = pendingRefreshRef.current;
     pendingRefreshRef.current = { list: false, thread: false };
     refreshTimeoutRef.current = null;
-    if (pending.list) loadThreads({ silent: true });
+    // Skip list refresh if viewing resolved/closed status (new messages don't affect these views)
+    if (pending.list && statusFilter !== "resolved" && statusFilter !== "closed") {
+      loadThreads({ silent: true });
+    }
     if (pending.thread && selectedThreadRef.current) refreshThreadMessagesSilent();
-  }, [loadThreads, refreshThreadMessagesSilent]);
+  }, [loadThreads, refreshThreadMessagesSilent, statusFilter]);
 
   const scheduleRefresh = useCallback((opts: { list?: boolean; thread?: boolean }) => {
+    // Skip scheduling refresh if we're in the middle of a reopen operation
+    // (reopen has its own 1-second delayed refresh)
+    if (isReopeningRef.current) {
+      return;
+    }
+    // Skip scheduling refresh if we're updating a status (to prevent reverting optimistic updates)
+    if (isUpdatingStatusRef.current && opts.list) {
+      // Only skip list refresh, allow thread refresh
+      if (opts.thread) {
+        pendingRefreshRef.current = { ...pendingRefreshRef.current, thread: true };
+        if (refreshTimeoutRef.current) clearTimeout(refreshTimeoutRef.current);
+        refreshTimeoutRef.current = setTimeout(() => {
+          refreshTimeoutRef.current = null;
+          if (pendingRefreshRef.current.thread && selectedThreadRef.current) {
+            refreshThreadMessagesSilent();
+          }
+          pendingRefreshRef.current = { list: false, thread: false };
+        }, 280);
+      }
+      return;
+    }
     if (opts.list) pendingRefreshRef.current = { ...pendingRefreshRef.current, list: true };
     if (opts.thread) pendingRefreshRef.current = { ...pendingRefreshRef.current, thread: true };
     if (refreshTimeoutRef.current) clearTimeout(refreshTimeoutRef.current);
     refreshTimeoutRef.current = setTimeout(runRefreshJob, 280);
-  }, [runRefreshJob]);
+  }, [runRefreshJob, refreshThreadMessagesSilent]);
 
   useEffect(() => {
     const onVisible = () => {
       if (typeof document !== "undefined" && document.visibilityState === "visible") {
-        scheduleRefresh({ list: true, thread: true });
+        // Skip refresh if viewing resolved/closed status (new messages don't affect these views)
+        if (statusFilter !== "resolved" && statusFilter !== "closed") {
+          scheduleRefresh({ list: true, thread: true });
+        } else {
+          // Only refresh thread messages, not the list
+          scheduleRefresh({ list: false, thread: true });
+        }
       }
     };
     document.addEventListener("visibilitychange", onVisible);
     return () => document.removeEventListener("visibilitychange", onVisible);
-  }, [scheduleRefresh]);
+  }, [scheduleRefresh, statusFilter]);
 
   useEffect(() => {
     return () => {
@@ -698,6 +852,335 @@ function InboxTab() {
     };
   }, []);
 
+  // Subscribe to Server-Sent Events for real-time thread list updates
+  useEffect(() => {
+    // Only attempt SSE connection if user is authenticated and has proper role
+    if (!user || !['admin', 'support'].includes(user.role)) {
+      console.warn('[SSE Frontend] Skipping SSE connection - user not authenticated or insufficient role:', {
+        hasUser: !!user,
+        userRole: user?.role,
+        timestamp: Date.now()
+      });
+      return;
+    }
+
+    console.log('[SSE Frontend] useEffect triggered - setting up SSE connection', {
+      userId: user.id,
+      userRole: user.role,
+      timestamp: Date.now()
+    });
+    
+    let eventSource: EventSource | null = null;
+    let reconnectTimeout: ReturnType<typeof setTimeout> | null = null;
+    let reconnectAttempts = 0;
+    const maxReconnectAttempts = 10;
+    const baseReconnectDelay = 1000; // Start with 1 second
+
+    const connectSSE = () => {
+      try {
+        console.log('[SSE Frontend] Attempting to connect...', { 
+          attempt: reconnectAttempts + 1,
+          maxAttempts: maxReconnectAttempts,
+          userId: user.id,
+          userRole: user.role,
+          timestamp: Date.now()
+        });
+        
+        // EventSource automatically includes credentials (cookies) for same-origin requests
+        eventSource = new EventSource('/api/admin/support/threads/events');
+        
+        console.log('[SSE Frontend] EventSource created:', {
+          url: '/api/admin/support/threads/events',
+          readyState: eventSource.readyState,
+          timestamp: Date.now()
+        });
+
+        eventSource.onmessage = (event) => {
+          try {
+            const data = JSON.parse(event.data);
+            if (data.type === 'new_message') {
+              const eventReceivedAt = Date.now();
+              const delayFromEvent = eventReceivedAt - data.timestamp;
+              console.log('[SSE Frontend] Received new_message event:', { 
+                threadId: data.threadId, 
+                status: data.status, 
+                timestamp: data.timestamp,
+                eventReceivedAt,
+                delayFromEvent,
+                totalDelayFromWebhook: delayFromEvent
+              });
+              // Update last SSE event time for fallback polling detection
+              lastSSEEventTimeRef.current = eventReceivedAt;
+              // Reset reconnect attempts on successful message
+              reconnectAttempts = 0;
+              // Skip refresh if we're in the middle of a reopen operation
+              // (reopen has its own half-second delayed refresh)
+              if (isReopeningRef.current) {
+                console.log('[SSE Frontend] Skipping loadThreads - reopen in progress');
+                return;
+              }
+              // If viewing resolved or closed status, play sound but don't refresh list
+              // New messages change thread status to waiting/open, which don't match these filters
+              // User can manually switch to "open" status to see new messages
+              if (statusFilter === "resolved" || statusFilter === "closed") {
+                console.log('[SSE Frontend] New message detected while on resolved/closed - playing sound only');
+                if (soundEnabled) {
+                  prepareSupportSound();
+                  playNewMessageAlert();
+                }
+                return;
+              }
+              // Clear any pending refresh to prevent duplicate calls
+              if (refreshTimeoutRef.current) {
+                clearTimeout(refreshTimeoutRef.current);
+                refreshTimeoutRef.current = null;
+              }
+              pendingRefreshRef.current = { list: false, thread: false };
+              // Trigger thread list refresh immediately for webhook-triggered events
+              // This ensures all online support users see new messages as quickly as possible
+              const refreshStartTime = Date.now();
+              console.log('[SSE Frontend] Calling loadThreads immediately:', {
+                threadId: data.threadId,
+                delayFromEvent,
+                totalDelayFromWebhook: refreshStartTime - data.timestamp
+              });
+              loadThreads({ silent: true }).then(() => {
+                const refreshCompleteTime = Date.now();
+                console.log('[SSE Frontend] loadThreads completed:', {
+                  threadId: data.threadId,
+                  refreshDuration: refreshCompleteTime - refreshStartTime,
+                  totalDelayFromWebhook: refreshCompleteTime - data.timestamp
+                });
+              }).catch((error) => {
+                console.error('[SSE Frontend] loadThreads failed:', {
+                  threadId: data.threadId,
+                  error: error instanceof Error ? error.message : String(error),
+                  totalDelayFromWebhook: Date.now() - data.timestamp
+                });
+              });
+            } else if (data.type === 'connected') {
+              console.log('[SSE] Connection confirmed:', { timestamp: data.timestamp });
+              // Connection confirmed, reset reconnect attempts
+              reconnectAttempts = 0;
+              // Mark SSE as active by updating last event time
+              lastSSEEventTimeRef.current = Date.now();
+            }
+          } catch (error) {
+            console.error('[SSE] Error parsing event data:', error, { eventData: event.data });
+          }
+        };
+
+        eventSource.onerror = (error) => {
+          const readyState = eventSource?.readyState;
+          // EventSource readyState: 0 = CONNECTING, 1 = OPEN, 2 = CLOSED
+          console.error('[SSE Frontend] Connection error:', { 
+            readyState,
+            readyStateText: readyState === 0 ? 'CONNECTING' : readyState === 1 ? 'OPEN' : 'CLOSED',
+            attempt: reconnectAttempts + 1,
+            maxAttempts: maxReconnectAttempts,
+            error,
+            timestamp: Date.now()
+          });
+          
+          // If connection was closed (readyState === 2), it might be an auth error
+          if (readyState === 2) {
+            console.error('[SSE Frontend] Connection closed - possible authentication/authorization error. Check server logs.');
+          }
+          
+          if (eventSource) {
+            eventSource.close();
+            eventSource = null;
+          }
+
+          // Exponential backoff for reconnection
+          if (reconnectAttempts < maxReconnectAttempts) {
+            const delay = baseReconnectDelay * Math.pow(2, reconnectAttempts);
+            reconnectAttempts++;
+            console.log('[SSE Frontend] Scheduling reconnection:', { delay, attempt: reconnectAttempts });
+            reconnectTimeout = setTimeout(() => {
+              connectSSE();
+            }, delay);
+          } else {
+            console.error('[SSE Frontend] Max reconnection attempts reached. SSE connection disabled. Will retry on page refresh.', {
+              totalAttempts: reconnectAttempts,
+              lastReadyState: readyState
+            });
+            // Reset attempts after a longer delay to allow retry
+            setTimeout(() => {
+              reconnectAttempts = 0;
+            }, 60_000); // Reset after 1 minute
+          }
+        };
+
+        eventSource.onopen = () => {
+          const openTime = Date.now();
+          console.log('[SSE Frontend] Connection opened successfully:', {
+            readyState: eventSource?.readyState,
+            timestamp: openTime
+          });
+          // Connection opened successfully, reset reconnect attempts
+          reconnectAttempts = 0;
+          // Mark SSE as active by updating last event time
+          lastSSEEventTimeRef.current = openTime;
+        };
+      } catch (error) {
+        console.error('[SSE Frontend] Error creating EventSource:', error, {
+          errorMessage: error instanceof Error ? error.message : String(error),
+          timestamp: Date.now()
+        });
+      }
+    };
+
+    // Start SSE connection
+    console.log('[SSE Frontend] Initializing SSE connection...');
+    connectSSE();
+
+    // Fallback polling mechanism: if SSE events haven't been received for 10 seconds,
+    // start polling every 5 seconds as a fallback
+    const startFallbackPolling = () => {
+      // Clear any existing fallback polling
+      if (fallbackPollIntervalRef.current) {
+        clearInterval(fallbackPollIntervalRef.current);
+        fallbackPollIntervalRef.current = null;
+      }
+
+      const checkSSEHealth = () => {
+        const now = Date.now();
+        const lastEventTime = lastSSEEventTimeRef.current;
+        const timeSinceLastEvent = lastEventTime ? now - lastEventTime : Infinity;
+
+        // If SSE hasn't received events for more than 10 seconds, start polling
+        if (timeSinceLastEvent > 10_000) {
+          console.warn('[SSE Frontend] SSE events not received for', timeSinceLastEvent, 'ms. Starting fallback polling.');
+          // Poll every 5 seconds - run continuously regardless of statusFilter
+          fallbackPollIntervalRef.current = setInterval(() => {
+            if (!isReopeningRef.current) {
+              // If on resolved/closed, check for new messages but don't refresh list
+              if (statusFilter === "resolved" || statusFilter === "closed") {
+                // Check for new waiting messages silently
+                fetch('/api/admin/support/threads?status=waiting&limit=1', { 
+                  credentials: "include", 
+                  cache: "no-store" 
+                })
+                  .then(res => res.json())
+                  .then(data => {
+                    if (data.threads && data.threads.length > 0 && soundEnabled) {
+                      // New waiting message detected - play sound
+                      prepareSupportSound();
+                      playNewMessageAlert();
+                    }
+                  })
+                  .catch(() => {
+                    // Ignore errors
+                  });
+              } else {
+                // On open status, refresh threads list normally
+                console.log('[SSE Frontend] Fallback polling: refreshing threads list');
+                loadThreads({ silent: true });
+              }
+            }
+          }, 5_000);
+        } else if (fallbackPollIntervalRef.current) {
+          // SSE is healthy, stop fallback polling
+          console.log('[SSE Frontend] SSE events received, stopping fallback polling');
+          clearInterval(fallbackPollIntervalRef.current);
+          fallbackPollIntervalRef.current = null;
+        }
+      };
+
+      // Check SSE health every 5 seconds
+      const healthCheckInterval = setInterval(checkSSEHealth, 5_000);
+      
+      return () => {
+        clearInterval(healthCheckInterval);
+        if (fallbackPollIntervalRef.current) {
+          clearInterval(fallbackPollIntervalRef.current);
+          fallbackPollIntervalRef.current = null;
+        }
+      };
+    };
+
+    const cleanupFallback = startFallbackPolling();
+
+    // Continuous polling for new waiting messages - runs independently every 5 seconds
+    // This ensures we detect new messages even when SSE is working, especially when user is on resolved/closed
+    const startNewMessagePolling = () => {
+      // Clear any existing polling
+      if (newMessagePollIntervalRef.current) {
+        clearInterval(newMessagePollIntervalRef.current);
+        newMessagePollIntervalRef.current = null;
+      }
+
+      // Poll every 5 seconds for new waiting messages
+      newMessagePollIntervalRef.current = setInterval(async () => {
+        // Skip if reopening or page not visible
+        if (isReopeningRef.current || (typeof document !== "undefined" && document.visibilityState !== "visible")) {
+          return;
+        }
+
+        try {
+          // Check for new waiting messages
+          const res = await fetch('/api/admin/support/threads?status=waiting&limit=1', {
+            credentials: "include",
+            cache: "no-store"
+          });
+          
+          if (!res.ok) return;
+          
+          const data = await res.json();
+          const currentWaitingCount = data.total || 0;
+          
+          // Initialize count on first check if not set
+          if (lastCheckedWaitingCountRef.current === 0 && currentWaitingCount > 0) {
+            lastCheckedWaitingCountRef.current = currentWaitingCount;
+            return;
+          }
+          
+          // If we have more waiting messages than before, play sound
+          // This works regardless of current statusFilter
+          if (currentWaitingCount > lastCheckedWaitingCountRef.current && soundEnabled) {
+            // Only play if user is on resolved/closed (on open status, SSE handles it)
+            if (statusFilter === "resolved" || statusFilter === "closed") {
+              prepareSupportSound();
+              playNewMessageAlert();
+            }
+          }
+          
+          // Update count even if we didn't play sound (to track baseline)
+          lastCheckedWaitingCountRef.current = currentWaitingCount;
+        } catch (error) {
+          // Ignore errors - polling will retry next interval
+          console.error('[New Message Poll] Error checking for new messages:', error);
+        }
+      }, 5_000);
+
+      return () => {
+        if (newMessagePollIntervalRef.current) {
+          clearInterval(newMessagePollIntervalRef.current);
+          newMessagePollIntervalRef.current = null;
+        }
+      };
+    };
+
+    const cleanupNewMessagePolling = startNewMessagePolling();
+
+    // Cleanup on unmount
+    return () => {
+      console.log('[SSE Frontend] Cleaning up SSE connection on unmount');
+      if (reconnectTimeout) {
+        clearTimeout(reconnectTimeout);
+        reconnectTimeout = null;
+      }
+      if (eventSource) {
+        console.log('[SSE Frontend] Closing EventSource');
+        eventSource.close();
+        eventSource = null;
+      }
+      cleanupFallback();
+      cleanupNewMessagePolling();
+    };
+  }, [loadThreads, user, statusFilter, soundEnabled]);
+
   const pollIntervalMs = 5_000;
   useEffect(() => {
     if (!selectedThread) return;
@@ -705,13 +1188,6 @@ function InboxTab() {
     return () => clearInterval(t);
   }, [selectedThread?.id, refreshThreadMessagesSilent]);
 
-  // Periodic refresh for thread list to surface new/updated threads near real-time
-  useEffect(() => {
-    const t = setInterval(() => {
-      loadThreads({ silent: true });
-    }, 5_000);
-    return () => clearInterval(t);
-  }, [loadThreads]);
 
   const loadThreadMessages = async (thread: SupportThread) => {
     prepareSupportSound();
@@ -721,7 +1197,7 @@ function InboxTab() {
     const requestId = ++threadDetailRequestIdRef.current;
     let workingThread: SupportThread = thread;
     try {
-      // On first open of a waiting + (optionally) unassigned thread, move to open
+      // On first open of a waiting thread, move to open
       if (workingThread.status === "waiting") {
         const statusRes = await fetch(`/api/admin/support/threads/${workingThread.id}/status`, {
           method: "PATCH",
@@ -738,6 +1214,7 @@ function InboxTab() {
       }
 
       // Auto-assign to current user if thread is open and unassigned
+      // This handles both waiting->open transitions and direct clicks on open threads
       if (workingThread.status === "open" && !workingThread.assignedToUserId && user?.id) {
         const assigneeRes = await fetch(`/api/admin/support/threads/${workingThread.id}/assignee`, {
           method: "PATCH",
@@ -802,6 +1279,9 @@ function InboxTab() {
 
 
   const handlePatchStatus = async (threadId: string, status: string) => {
+    // Set flag to prevent automatic refresh from reverting optimistic update
+    isUpdatingStatusRef.current = true;
+    
     const prev = threads.find((t) => t.id === threadId)?.status;
     const s = status as SupportThread["status"];
     const thread = threads.find((t) => t.id === threadId);
@@ -809,11 +1289,23 @@ function InboxTab() {
     const stillMatches = updatedThread ? threadMatchesFilters(updatedThread) : false;
     const wasSelected = selectedThread?.id === threadId;
 
+    // Detect if this is a reopen operation (closed/resolved → open)
+    const isReopenFromClosedOrResolved = s === "open" && (prev === "closed" || prev === "resolved");
+
     statusOptimisticUntilRef.current = { threadId, status: s, until: Date.now() + 4000 };
     setThreads((prevList) => {
       const updated = prevList.map((t) =>
         t.id === threadId
-          ? s === "open"
+          ? s === "open" && (prev === "closed" || prev === "resolved")
+            ? { 
+                ...t, 
+                status: s, 
+                closedBy: null, 
+                resolvedBy: null,
+                assignedToUserId: user?.id || t.assignedToUserId,
+                assignedToEmail: user?.email || t.assignedToEmail
+              }
+            : s === "open"
             ? { ...t, status: s, closedBy: null, resolvedBy: null }
             : { ...t, status: s }
           : t
@@ -821,23 +1313,37 @@ function InboxTab() {
       return updated.filter((t) => threadMatchesFilters(t));
     });
     if (stillMatches && wasSelected) {
-      setSelectedThread((t) =>
-        t ? (s === "open" ? { ...t, status: s, closedBy: null, resolvedBy: null } : { ...t, status: s }) : null
-      );
+      const updatedSelected = selectedThread 
+        ? (s === "open" && (prev === "closed" || prev === "resolved")
+          ? { 
+              ...selectedThread, 
+              status: s, 
+              closedBy: null, 
+              resolvedBy: null,
+              assignedToUserId: user?.id || selectedThread.assignedToUserId,
+              assignedToEmail: user?.email || selectedThread.assignedToEmail
+            }
+          : s === "open"
+          ? { ...selectedThread, status: s, closedBy: null, resolvedBy: null }
+          : { ...selectedThread, status: s })
+        : null;
+      setSelectedThread(updatedSelected);
+      // Synchronously update ref to prevent race conditions
+      selectedThreadRef.current = updatedSelected;
     }
     let didReopenRedirect = false;
     if (!stillMatches && wasSelected) {
-      const isReopenFromClosedOrResolved =
-        s === "open" && (prev === "closed" || prev === "resolved");
       if (isReopenFromClosedOrResolved) {
         didReopenRedirect = true;
-        setSelectedThread((t) =>
-          t && t.id === threadId ? { ...t, status: "open", closedBy: null, resolvedBy: null } : t
-        );
+        const reopenedSelected = selectedThread && selectedThread.id === threadId ? { ...selectedThread, status: "open" as const, closedBy: null, resolvedBy: null } : selectedThread;
+        setSelectedThread(reopenedSelected);
+        // Synchronously update ref to prevent race conditions
+        selectedThreadRef.current = reopenedSelected;
         reopenRedirectThreadIdRef.current = threadId;
-        setStatusFilter("open");
-        setPage(1);
-        setClosedResolvedByFilter("all_closed_resolved_by");
+        // Set flag BEFORE any state changes to prevent useEffect from triggering duplicate loadThreads call
+        isReopeningRef.current = true;
+        // Don't update state filters yet - we'll do that after loadThreads completes
+        // This prevents loadThreads from using old filter values and avoids triggering useEffect
       } else {
         clearSelection();
       }
@@ -857,6 +1363,8 @@ function InboxTab() {
       }
       if (!res.ok) {
         statusOptimisticUntilRef.current = null;
+        isReopeningRef.current = false; // Reset flag on error
+        isUpdatingStatusRef.current = false; // Reset flag on error
         const err = new Error(json?.error || "Failed");
         (err as Error & { status?: number; body?: unknown }).status = res.status;
         (err as Error & { status?: number; body?: unknown }).body = json;
@@ -877,23 +1385,81 @@ function InboxTab() {
       statusOptimisticUntilRef.current = null;
       toast.success("Status updated");
 
-      // If we reopened a closed/resolved, unassigned thread, auto-assign to current user
-      const originalThread = threads.find((t) => t.id === threadId);
-      if (
-        status === "open" &&
-        (prev === "closed" || prev === "resolved") &&
-        originalThread &&
-        !originalThread.assignedToUserId &&
-        user?.id
-      ) {
-        await handlePatchAssignee(threadId, "me");
+      markInteraction();
+
+      // Update selectedThreadRef synchronously if thread is still selected
+      // This ensures the ref reflects the latest status change
+      // Only update if the thread still matches filters (wasn't cleared)
+      const currentSelected = selectedThreadRef.current;
+      if (currentSelected && currentSelected.id === threadId && stillMatches) {
+        selectedThreadRef.current = { ...currentSelected, status: s };
       }
 
-      markInteraction();
-      scheduleRefresh({ list: !didReopenRedirect, thread: true });
+      // Reset flag after successful update - allow refresh now
+      isUpdatingStatusRef.current = false;
+
+      // If reopening from closed/resolved to open, refresh the thread list and clear selection
+      if (isReopenFromClosedOrResolved) {
+        // Clear any pending refreshes to prevent duplicate calls
+        if (refreshTimeoutRef.current) {
+          clearTimeout(refreshTimeoutRef.current);
+          refreshTimeoutRef.current = null;
+        }
+        pendingRefreshRef.current = { list: false, thread: false };
+        
+        // Update state filters immediately
+        setStatusFilter("open");
+        setPage(1);
+        setClosedResolvedByFilter("all_closed_resolved_by");
+        clearSelection(); // Clear thread selection
+        
+        // Set flag to prevent useEffect and scheduleRefresh from triggering duplicate calls
+        isReopeningRef.current = true;
+        
+        // Schedule loadThreads to run after half a second
+        refreshTimeoutRef.current = setTimeout(() => {
+          refreshTimeoutRef.current = null;
+          loadThreads({ 
+            silent: false, 
+            overrideStatusFilter: "open", 
+            overridePage: 1 
+          });
+          // Keep the flag true for an additional 500ms after loadThreads completes
+          // to prevent other triggers (useEffect, SSE) from firing immediately
+          setTimeout(() => {
+            isReopeningRef.current = false;
+          }, 500);
+        }, 500);
+        
+        // When reopening from closed/resolved to open, the API automatically assigns to current user
+        // The optimistic update above already reflects this, so no need for separate assignee call
+      } else {
+        // Detect if we're closing/resolving a thread while on "open" status filter
+        // In this case, don't refresh the list because the thread no longer matches filters
+        // and has already been removed from the list by the filter operation above
+        const isClosingOrResolving = (s === "closed" || s === "resolved") && 
+                                     (prev === "open" || prev === "waiting") &&
+                                     statusFilter === "open";
+        
+        if (isClosingOrResolving) {
+          // Thread was removed from list by filter, no need to refresh list
+          // Only refresh thread messages if it was selected
+          if (wasSelected) {
+            scheduleRefresh({ list: false, thread: true });
+          }
+          // Don't refresh list - thread already removed by filter
+        } else {
+          // Normal status change - refresh both list and thread
+          // But delay slightly to ensure server has processed the update
+          setTimeout(() => {
+            scheduleRefresh({ list: !didReopenRedirect, thread: true });
+          }, 100);
+        }
+      }
     } catch (e: unknown) {
       const err = e as Error & { status?: number; body?: unknown };
       statusOptimisticUntilRef.current = null;
+      isUpdatingStatusRef.current = false; // Reset flag on error
       if (typeof prev !== "undefined" && thread) {
         const reverted = { ...thread, status: prev };
         setThreads((prevList) => {
@@ -1115,9 +1681,12 @@ function InboxTab() {
   };
 
   const runRefreshNow = useCallback(() => {
-    loadThreads();
+    // Skip if viewing resolved/closed status (new messages don't affect these views)
+    if (statusFilter !== "resolved" && statusFilter !== "closed") {
+      loadThreads();
+    }
     if (selectedThreadRef.current) refreshThreadMessagesSilent();
-  }, [loadThreads, refreshThreadMessagesSilent]);
+  }, [loadThreads, refreshThreadMessagesSilent, statusFilter]);
 
   return (
     <div className="space-y-3">
