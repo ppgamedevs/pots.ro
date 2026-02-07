@@ -30,27 +30,39 @@ export async function startTyping(threadId: string, userId: string, userName?: s
 
   // Set timeout to auto-stop typing
   const timeoutId = setTimeout(() => {
-    stopTyping(threadId, userId);
+    stopTyping(threadId, userId).catch((error) => {
+      console.error('[TypingService] Error in auto-stop typing:', error);
+    });
   }, TYPING_TIMEOUT_MS);
 
   typingState.set(key, { threadId, userId, timeoutId });
 
   // Update database
-  await db
-    .insert(typingIndicators)
-    .values({
-      threadId,
-      userId,
-      isTyping: true,
-      updatedAt: now,
-    })
-    .onConflictDoUpdate({
-      target: [typingIndicators.threadId, typingIndicators.userId],
-      set: {
+  try {
+    await db
+      .insert(typingIndicators)
+      .values({
+        threadId,
+        userId,
         isTyping: true,
         updatedAt: now,
-      },
+      })
+      .onConflictDoUpdate({
+        target: [typingIndicators.threadId, typingIndicators.userId],
+        set: {
+          isTyping: true,
+          updatedAt: now,
+        },
+      });
+  } catch (error) {
+    console.error('[TypingService] Error starting typing:', {
+      message: error instanceof Error ? error.message : String(error),
+      stack: error instanceof Error ? error.stack : undefined,
+      threadId,
+      userId,
     });
+    throw error;
+  }
 
   // Emit event
   supportEventEmitter.emitChat({
@@ -74,19 +86,33 @@ export async function stopTyping(threadId: string, userId: string): Promise<void
     typingState.delete(key);
   }
 
-  // Update database
-  await db
-    .update(typingIndicators)
-    .set({
-      isTyping: false,
-      updatedAt: new Date(),
-    })
-    .where(
-      and(
-        eq(typingIndicators.threadId, threadId),
-        eq(typingIndicators.userId, userId)
-      )
-    );
+  // Update database - UPDATE with no matching rows is not an error, it just affects 0 rows
+  // This is safe to call even if the row doesn't exist
+  const now = new Date();
+  try {
+    await db
+      .update(typingIndicators)
+      .set({
+        isTyping: false,
+        updatedAt: now,
+      })
+      .where(
+        and(
+          eq(typingIndicators.threadId, threadId),
+          eq(typingIndicators.userId, userId)
+        )
+      );
+    // Note: If no rows match, the UPDATE succeeds but affects 0 rows, which is fine
+  } catch (error) {
+    // Only log and rethrow if it's an actual error (not just "no rows affected")
+    console.error('[TypingService] Error stopping typing:', {
+      message: error instanceof Error ? error.message : String(error),
+      stack: error instanceof Error ? error.stack : undefined,
+      threadId,
+      userId,
+    });
+    throw error;
+  }
 
   // Emit event
   supportEventEmitter.emitChat({
