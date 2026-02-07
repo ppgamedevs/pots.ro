@@ -53,6 +53,8 @@ import {
   playNewMessageAlert,
   prepareSupportSound,
 } from "@/lib/support-notification-sound";
+import { useChatRealtime, type ChatEvent } from '@/lib/hooks/useChatRealtime';
+import { TypingIndicator } from '@/components/chat/TypingIndicator';
 
 // Types
 interface SupportThread {
@@ -378,6 +380,7 @@ function InboxTab() {
   const [unreadMessageIds, setUnreadMessageIds] = useState<string[]>([]);
   const [lastInteractionAt, setLastInteractionAt] = useState<number | null>(null);
   const [soundEnabled, setSoundEnabled] = useState(true);
+  const [typingUsers, setTypingUsers] = useState<Array<{ userId: string; userName?: string }>>([]);
   const priorityOptimisticUntilRef = useRef<{ threadId: string; priority: SupportThread["priority"]; until: number } | null>(null);
   const assigneeOptimisticUntilRef = useRef<{ threadId: string; assignedToUserId: string | null; assignedToEmail: string | null; until: number } | null>(null);
   const statusOptimisticUntilRef = useRef<{ threadId: string; status: SupportThread["status"]; until: number } | null>(null);
@@ -913,21 +916,24 @@ function InboxTab() {
               lastSSEEventTimeRef.current = eventReceivedAt;
               // Reset reconnect attempts on successful message
               reconnectAttempts = 0;
+              // Play sound for ALL new messages, regardless of filter or page
+              if (soundEnabled) {
+                prepareSupportSound();
+                playNewMessageAlert();
+              }
+              
               // Skip refresh if we're in the middle of a reopen operation
               // (reopen has its own half-second delayed refresh)
               if (isReopeningRef.current) {
                 console.log('[SSE Frontend] Skipping loadThreads - reopen in progress');
                 return;
               }
-              // If viewing resolved or closed status, play sound but don't refresh list
+              
+              // If viewing resolved or closed status, don't refresh list
               // New messages change thread status to waiting/open, which don't match these filters
               // User can manually switch to "open" status to see new messages
               if (statusFilter === "resolved" || statusFilter === "closed") {
-                console.log('[SSE Frontend] New message detected while on resolved/closed - playing sound only');
-                if (soundEnabled) {
-                  prepareSupportSound();
-                  playNewMessageAlert();
-                }
+                console.log('[SSE Frontend] New message detected while on resolved/closed - sound played, skipping list refresh');
                 return;
               }
               // Clear any pending refresh to prevent duplicate calls
@@ -1064,11 +1070,17 @@ function InboxTab() {
                 })
                   .then(res => res.json())
                   .then(data => {
-                    if (data.threads && data.threads.length > 0 && soundEnabled) {
-                      // New waiting message detected - play sound
+                    const currentWaitingCount = data.total || 0;
+                    if (lastCheckedWaitingCountRef.current === 0 && currentWaitingCount > 0) {
+                      lastCheckedWaitingCountRef.current = currentWaitingCount;
+                      return;
+                    }
+                    // Play sound for new waiting messages regardless of filter
+                    if (currentWaitingCount > lastCheckedWaitingCountRef.current && soundEnabled) {
                       prepareSupportSound();
                       playNewMessageAlert();
                     }
+                    lastCheckedWaitingCountRef.current = currentWaitingCount;
                   })
                   .catch(() => {
                     // Ignore errors
@@ -1137,13 +1149,10 @@ function InboxTab() {
           }
           
           // If we have more waiting messages than before, play sound
-          // This works regardless of current statusFilter
+          // Play sound for ALL new messages regardless of filter
           if (currentWaitingCount > lastCheckedWaitingCountRef.current && soundEnabled) {
-            // Only play if user is on resolved/closed (on open status, SSE handles it)
-            if (statusFilter === "resolved" || statusFilter === "closed") {
-              prepareSupportSound();
-              playNewMessageAlert();
-            }
+            prepareSupportSound();
+            playNewMessageAlert();
           }
           
           // Update count even if we didn't play sound (to track baseline)
@@ -1189,11 +1198,12 @@ function InboxTab() {
   }, [selectedThread?.id, refreshThreadMessagesSilent]);
 
 
-  const loadThreadMessages = async (thread: SupportThread) => {
+  const loadThreadMessages = useCallback(async (thread: SupportThread) => {
     prepareSupportSound();
     setThreadNotes([]);
     setThreadMessages([]);
     setLoadingMessages(true);
+    setTypingUsers([]); // Clear typing indicators when switching threads
     const requestId = ++threadDetailRequestIdRef.current;
     let workingThread: SupportThread = thread;
     try {
@@ -1262,7 +1272,31 @@ function InboxTab() {
       toast.error(e?.message || "Error loading messages");
       setLoadingMessages(false);
     }
-  };
+  }, [user?.id]);
+
+  // Real-time chat events for selected thread
+  useChatRealtime({
+    threadId: selectedThread?.id,
+    enabled: !!selectedThread,
+    onEvent: useCallback((event: ChatEvent) => {
+      if (!selectedThread) return;
+      
+      if (event.type === 'new_message' && event.threadId === selectedThread.id) {
+        // Reload messages when new message arrives
+        loadThreadMessages(selectedThread);
+      } else if (event.type === 'typing_start' && event.userId && event.userId !== user?.id) {
+        // Someone is typing
+        setTypingUsers((prev) => {
+          const existing = prev.find((u) => u.userId === event.userId);
+          if (existing) return prev;
+          return [...prev, { userId: event.userId!, userName: event.userName }];
+        });
+      } else if (event.type === 'typing_stop' && event.userId) {
+        // Stop typing
+        setTypingUsers((prev) => prev.filter((u) => u.userId !== event.userId));
+      }
+    }, [selectedThread, user?.id, loadThreadMessages]),
+  });
 
   const fetchNotes = async () => {
     if (!selectedThread) return;
@@ -2069,71 +2103,79 @@ function InboxTab() {
                 {threadMessages.length === 0 ? (
                   <p className="text-sm text-muted-foreground">No messages</p>
                 ) : (
-                threadMessages.map((msg) => {
-                  const unread = isIncomingMessage(msg) && unreadMessageIds.includes(msg.id);
-                  return (
-                  <div
-                    key={msg.id}
-                    className={`p-3 rounded-lg text-sm ${
-                      msg.moderation?.status === "hidden" ||
-                      msg.moderation?.status === "deleted"
-                        ? "bg-red-50 border border-red-200 dark:bg-red-950/30 dark:border-red-900/50"
-                        : msg.moderation?.status === "redacted"
-                        ? "bg-yellow-50 border border-yellow-200 dark:bg-yellow-950/30 dark:border-yellow-900/50"
-                        : unread
-                        ? "bg-blue-50 dark:bg-blue-950/30 border-l-4 border-l-primary animate-unread-pulse"
-                        : "bg-muted"
-                    }`}
-                  >
-                    <div className="flex items-center justify-between mb-1">
-                      <span className="font-medium text-xs">
-                        {msg.authorDisplayLabel ?? msg.senderName ?? msg.senderEmail?.split("@")[0] ?? "—"}
-                      </span>
-                      <span className="text-xs text-muted-foreground">
-                        {formatDate(msg.createdAt)}
-                      </span>
-                    </div>
-                    <p className="whitespace-pre-wrap">{msg.displayBody}</p>
-                    {msg.moderation?.status && msg.moderation.status !== "visible" && (
-                      <p className="mt-1 text-xs text-muted-foreground">
-                        {msg.moderation.status === "hidden" && "Hidden"}
-                        {msg.moderation.status === "deleted" && "Deleted"}
-                        {msg.moderation.status === "redacted" && "Redacted"}
-                        {" by "}
-                        {msg.moderation.moderator?.name || msg.moderation.moderator?.email || "—"}
-                        {msg.moderation.moderatedAt && ` on ${formatDate(msg.moderation.moderatedAt)}`}
-                      </p>
-                    )}
-                    {msg.moderation?.isInternalNote && msg.moderation.internalNoteBody && (
-                      <div className="mt-2 p-2 bg-blue-50 dark:bg-blue-950/30 rounded text-xs text-blue-800 dark:text-blue-200">
-                        <strong>Internal Note:</strong> {msg.moderation.internalNoteBody}
+                  <>
+                    {threadMessages.map((msg) => {
+                      const unread = isIncomingMessage(msg) && unreadMessageIds.includes(msg.id);
+                      return (
+                        <div
+                          key={msg.id}
+                          className={`p-3 rounded-lg text-sm ${
+                            msg.moderation?.status === "hidden" ||
+                            msg.moderation?.status === "deleted"
+                              ? "bg-red-50 border border-red-200 dark:bg-red-950/30 dark:border-red-900/50"
+                              : msg.moderation?.status === "redacted"
+                              ? "bg-yellow-50 border border-yellow-200 dark:bg-yellow-950/30 dark:border-yellow-900/50"
+                              : unread
+                              ? "bg-blue-50 dark:bg-blue-950/30 border-l-4 border-l-primary animate-unread-pulse"
+                              : "bg-muted"
+                          }`}
+                        >
+                          <div className="flex items-center justify-between mb-1">
+                            <span className="font-medium text-xs">
+                              {msg.authorDisplayLabel ?? msg.senderName ?? msg.senderEmail?.split("@")[0] ?? "—"}
+                            </span>
+                            <span className="text-xs text-muted-foreground">
+                              {formatDate(msg.createdAt)}
+                            </span>
+                          </div>
+                          <p className="whitespace-pre-wrap">{msg.displayBody}</p>
+                          {msg.moderation?.status && msg.moderation.status !== "visible" && (
+                            <p className="mt-1 text-xs text-muted-foreground">
+                              {msg.moderation.status === "hidden" && "Hidden"}
+                              {msg.moderation.status === "deleted" && "Deleted"}
+                              {msg.moderation.status === "redacted" && "Redacted"}
+                              {" by "}
+                              {msg.moderation.moderator?.name || msg.moderation.moderator?.email || "—"}
+                              {msg.moderation.moderatedAt && ` on ${formatDate(msg.moderation.moderatedAt)}`}
+                            </p>
+                          )}
+                          {msg.moderation?.isInternalNote && msg.moderation.internalNoteBody && (
+                            <div className="mt-2 p-2 bg-blue-50 dark:bg-blue-950/30 rounded text-xs text-blue-800 dark:text-blue-200">
+                              <strong>Internal Note:</strong> {msg.moderation.internalNoteBody}
+                            </div>
+                          )}
+                          {selectedThread.source === "buyer_seller" && (
+                            <div className="mt-2 flex flex-wrap items-center gap-2">
+                              {!["hidden", "deleted", "redacted"].includes(msg.moderation?.status ?? "") && (
+                                <PIIQuickActions
+                                  messageId={msg.id}
+                                  onSuccess={() => {
+                                    markInteraction();
+                                    scheduleRefresh({ thread: true });
+                                  }}
+                                />
+                              )}
+                              <MessageModerationActions
+                                messageId={msg.id}
+                                currentModeration={msg.moderation}
+                                onModerationSuccess={() => {
+                                  markInteraction();
+                                  scheduleRefresh({ thread: true });
+                                }}
+                              />
+                            </div>
+                          )}
+                        </div>
+                      );
+                    })}
+                    {/* Typing Indicator */}
+                    {typingUsers.length > 0 && (
+                      <div className="p-3 rounded-lg text-sm bg-muted">
+                        <TypingIndicator userName={typingUsers[0]?.userName} />
                       </div>
                     )}
-                    {selectedThread.source === "buyer_seller" && (
-                      <div className="mt-2 flex flex-wrap items-center gap-2">
-                        {!["hidden", "deleted", "redacted"].includes(msg.moderation?.status ?? "") && (
-                          <PIIQuickActions
-                            messageId={msg.id}
-                            onSuccess={() => {
-                              markInteraction();
-                              scheduleRefresh({ thread: true });
-                            }}
-                          />
-                        )}
-                        <MessageModerationActions
-                          messageId={msg.id}
-                          currentModeration={msg.moderation}
-                          onModerationSuccess={() => {
-                            markInteraction();
-                            scheduleRefresh({ thread: true });
-                          }}
-                        />
-                      </div>
-                    )}
-                  </div>
-                  );
-                })
-              )}
+                  </>
+                )}
               </div>
             </div>
           )}

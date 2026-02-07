@@ -1,6 +1,7 @@
 /**
  * Event Emitter for Support Threads
  * Broadcasts events when new messages arrive to all connected SSE clients
+ * Enhanced with typing indicators, presence, and message state updates
  */
 
 export type SupportEventData = {
@@ -9,10 +10,21 @@ export type SupportEventData = {
   timestamp: number;
 };
 
+export type ChatEventData = 
+  | { type: 'new_message'; threadId: string; messageId: string; status: string; timestamp: number }
+  | { type: 'message_delivered'; threadId: string; messageId: string; timestamp: number }
+  | { type: 'message_read'; threadId: string; messageId: string; timestamp: number }
+  | { type: 'typing_start'; threadId: string; userId: string; userName?: string; timestamp: number }
+  | { type: 'typing_stop'; threadId: string; userId: string; timestamp: number }
+  | { type: 'presence_update'; threadId: string; userId: string; status: 'online' | 'offline' | 'away'; timestamp: number }
+  | { type: 'thread_status_change'; threadId: string; status: string; timestamp: number };
+
 type EventCallback = (data: SupportEventData) => void;
+type ChatEventCallback = (data: ChatEventData) => void;
 
 class SupportEventEmitter {
   private listeners = new Set<EventCallback>();
+  private chatListeners = new Set<ChatEventCallback>();
 
   /**
    * Subscribe to events
@@ -22,6 +34,14 @@ class SupportEventEmitter {
   subscribe(callback: EventCallback): () => void {
     this.listeners.add(callback);
     return () => this.listeners.delete(callback);
+  }
+
+  /**
+   * Subscribe to chat events (messages, typing, presence)
+   */
+  subscribeChat(callback: ChatEventCallback): () => void {
+    this.chatListeners.add(callback);
+    return () => this.chatListeners.delete(callback);
   }
 
   /**
@@ -45,10 +65,30 @@ class SupportEventEmitter {
   }
 
   /**
+   * Emit a chat event (message, typing, presence)
+   */
+  emitChat(event: ChatEventData): void {
+    this.chatListeners.forEach((cb) => {
+      try {
+        cb(event);
+      } catch (error) {
+        console.error('[SupportEventEmitter] Error in chat event handler:', error);
+      }
+    });
+  }
+
+  /**
    * Get the number of active subscribers
    */
   getSubscriberCount(): number {
     return this.listeners.size;
+  }
+
+  /**
+   * Get the number of active chat subscribers
+   */
+  getChatSubscriberCount(): number {
+    return this.chatListeners.size;
   }
 }
 

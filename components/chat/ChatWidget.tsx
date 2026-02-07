@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, useCallback } from 'react';
 import { usePathname } from 'next/navigation';
 import { MessageCircle, X, Send, Clock, Loader2 } from 'lucide-react';
 import { useSupportThreadChat } from '@/lib/support-thread-chat-context';
@@ -9,6 +9,10 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card, CardContent } from '@/components/ui/card';
 import { cn } from '@/lib/utils';
+import { useChatRealtime, type ChatEvent } from '@/lib/hooks/useChatRealtime';
+import { MessageStatusIndicator, type MessageStatus } from '@/components/chat/MessageStatusIndicator';
+import { TypingIndicator } from '@/components/chat/TypingIndicator';
+import { ConnectionStatusIndicator } from '@/components/chat/ConnectionStatus';
 
 const SUPPORT_AGENT_NAME = 'Elena S.';
 const SUPPORT_AGENT_INITIALS = 'ES';
@@ -58,6 +62,8 @@ interface ChatMessage {
   sender: 'user' | 'bot';
   timestamp: Date;
   order_id?: string;
+  status?: MessageStatus;
+  clientMessageId?: string; // For optimistic updates
 }
 
 interface ChatWidgetProps {
@@ -125,6 +131,52 @@ export function ChatWidget({ className }: ChatWidgetProps) {
   const [noticeShown, setNoticeShown] = useState(false);
   const [humanAckShown, setHumanAckShown] = useState(false);
   const [userId, setUserId] = useState<string | null>(null);
+  const [typingUsers, setTypingUsers] = useState<Array<{ userId: string; userName?: string }>>([]);
+  const [messageStates, setMessageStates] = useState<Map<string, MessageStatus>>(new Map());
+  const typingTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+  const messageObserverRef = useRef<Map<string, IntersectionObserver>>(new Map());
+  const messageElementsRef = useRef<Map<string, HTMLDivElement>>(new Map());
+  
+  // Get thread ID for real-time connection
+  const threadId = supportMode ? snapshot.selectedThread?.id : null;
+  
+  // Real-time chat connection
+  const { connectionStatus, isConnected } = useChatRealtime({
+    threadId: threadId || undefined,
+    enabled: isOpen,
+    onEvent: useCallback((event: ChatEvent) => {
+      if (event.type === 'new_message' && event.messageId) {
+        // New message received - refresh messages
+        if (isOpen) {
+          loadChatHistory();
+        }
+      } else if (event.type === 'message_delivered' && event.messageId) {
+        // Message delivered - update status
+        setMessageStates((prev) => {
+          const next = new Map(prev);
+          next.set(event.messageId!, 'delivered');
+          return next;
+        });
+      } else if (event.type === 'message_read' && event.messageId) {
+        // Message read - update status
+        setMessageStates((prev) => {
+          const next = new Map(prev);
+          next.set(event.messageId!, 'read');
+          return next;
+        });
+      } else if (event.type === 'typing_start' && event.userId && event.userId !== userId) {
+        // Someone is typing
+        setTypingUsers((prev) => {
+          const existing = prev.find((u) => u.userId === event.userId);
+          if (existing) return prev;
+          return [...prev, { userId: event.userId!, userName: event.userName }];
+        });
+      } else if (event.type === 'typing_stop' && event.userId) {
+        // Stop typing
+        setTypingUsers((prev) => prev.filter((u) => u.userId !== event.userId));
+      }
+    }, [isOpen, userId]),
+  });
 
   // Fetch current user when chat opens (for Vizitator vs role display in support)
   useEffect(() => {
@@ -135,10 +187,31 @@ export function ChatWidget({ className }: ChatWidgetProps) {
       .then((data) => {
         if (cancelled || !data?.user?.id) return;
         setUserId(data.user.id);
+        
+        // Update presence when chat opens
+        if (threadId && data.user.id) {
+          fetch('/api/chat/presence', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ threadId, status: 'online' }),
+            credentials: 'include',
+          }).catch(() => {});
+        }
       })
       .catch(() => {});
-    return () => { cancelled = true; };
-  }, [isOpen]);
+    return () => {
+      cancelled = true;
+      // Update presence when chat closes
+      if (threadId && userId) {
+        fetch('/api/chat/presence', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ threadId, status: 'offline' }),
+          credentials: 'include',
+        }).catch(() => {});
+      }
+    };
+  }, [isOpen, threadId, userId]);
 
   // Auto-scroll to bottom when new messages arrive
   useEffect(() => {
@@ -266,6 +339,96 @@ export function ChatWidget({ className }: ChatWidgetProps) {
     setMessages(prev => [...prev, newMessage]);
   };
 
+  // Handle typing indicators
+  const handleTyping = useCallback(async (action: 'start' | 'stop') => {
+    if (!threadId || !userId) return;
+    
+    try {
+      await fetch('/api/chat/typing', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ threadId, action }),
+        credentials: 'include',
+      });
+    } catch (error) {
+      console.error('Error updating typing indicator:', error);
+    }
+  }, [threadId, userId]);
+
+  // Debounced typing detection
+  useEffect(() => {
+    if (!isOpen || !threadId || !userId) return;
+
+    if (typingTimeoutRef.current) {
+      clearTimeout(typingTimeoutRef.current);
+    }
+
+    if (inputValue.trim()) {
+      // Start typing
+      handleTyping('start');
+      
+      // Stop typing after 2 seconds of inactivity
+      typingTimeoutRef.current = setTimeout(() => {
+        handleTyping('stop');
+      }, 2000);
+    } else {
+      // Stop typing immediately if input is empty
+      handleTyping('stop');
+    }
+
+    return () => {
+      if (typingTimeoutRef.current) {
+        clearTimeout(typingTimeoutRef.current);
+      }
+    };
+  }, [inputValue, isOpen, threadId, userId, handleTyping]);
+
+  // Cleanup typing on unmount
+  useEffect(() => {
+    return () => {
+      if (typingTimeoutRef.current) {
+        clearTimeout(typingTimeoutRef.current);
+      }
+      if (threadId && userId) {
+        handleTyping('stop');
+      }
+    };
+  }, [threadId, userId, handleTyping]);
+
+  // Read receipt detection using Intersection Observer
+  useEffect(() => {
+    if (!isOpen || !threadId || !userId || supportMode) return;
+
+    const observer = new IntersectionObserver(
+      (entries) => {
+        entries.forEach((entry) => {
+          if (entry.isIntersecting && entry.target) {
+            const messageId = entry.target.getAttribute('data-message-id');
+            if (messageId) {
+              // Mark as read
+              fetch(`/api/chat/messages/${messageId}/read`, {
+                method: 'POST',
+                credentials: 'include',
+              }).catch((error) => {
+                console.error('Error marking message as read:', error);
+              });
+            }
+          }
+        });
+      },
+      { threshold: 0.5 }
+    );
+
+    // Observe all message elements
+    messageElementsRef.current.forEach((element) => {
+      observer.observe(element);
+    });
+
+    return () => {
+      observer.disconnect();
+    };
+  }, [isOpen, threadId, userId, messages, supportMode]);
+
   const sendMessage = async () => {
     if (!inputValue.trim() || isLoading) return;
 
@@ -273,13 +436,29 @@ export function ChatWidget({ className }: ChatWidgetProps) {
     setInputValue('');
     setIsLoading(true);
 
+    // Stop typing
+    if (threadId && userId) {
+      handleTyping('stop');
+    }
+
     const clientMessageId = newUuid();
 
-    // Add user message immediately
-    setMessages((prev) => [
-      ...prev,
-      { id: clientMessageId, text: userMessage, sender: 'user', timestamp: new Date() },
-    ]);
+    // Add user message immediately with sending status
+    const optimisticMessage: ChatMessage = {
+      id: clientMessageId,
+      text: userMessage,
+      sender: 'user',
+      timestamp: new Date(),
+      status: 'sending',
+      clientMessageId,
+    };
+
+    setMessages((prev) => [...prev, optimisticMessage]);
+    setMessageStates((prev) => {
+      const next = new Map(prev);
+      next.set(clientMessageId, 'sending');
+      return next;
+    });
 
     try {
       const response = await fetch('/api/chat/webhook', {
@@ -299,6 +478,38 @@ export function ChatWidget({ className }: ChatWidgetProps) {
 
       if (response.ok) {
         const data = await response.json();
+
+        // Update message status to sent
+        setMessageStates((prev) => {
+          const next = new Map(prev);
+          next.set(clientMessageId, 'sent');
+          return next;
+        });
+
+        // Update message in list if server returned a different ID
+        const serverMessageId = typeof data?.message_id === 'string' ? data.message_id : null;
+        if (serverMessageId && serverMessageId !== clientMessageId) {
+          setMessages((prev) =>
+            prev.map((m) =>
+              m.id === clientMessageId
+                ? { ...m, id: serverMessageId, status: 'sent' }
+                : m
+            )
+          );
+          setMessageStates((prev) => {
+            const next = new Map(prev);
+            next.delete(clientMessageId);
+            next.set(serverMessageId, 'sent');
+            return next;
+          });
+        } else {
+          // Update status to sent
+          setMessages((prev) =>
+            prev.map((m) =>
+              m.id === clientMessageId ? { ...m, status: 'sent' } : m
+            )
+          );
+        }
 
         const serverNotice = typeof data?.notice === 'string' ? data.notice : null;
         if (serverNotice && !noticeShown) {
@@ -325,10 +536,32 @@ export function ChatWidget({ className }: ChatWidgetProps) {
           setHumanAckShown(true);
         }
       } else {
+        // Mark message as failed
+        setMessageStates((prev) => {
+          const next = new Map(prev);
+          next.set(clientMessageId, 'failed');
+          return next;
+        });
+        setMessages((prev) =>
+          prev.map((m) =>
+            m.id === clientMessageId ? { ...m, status: 'failed' } : m
+          )
+        );
         addMessage('Ne pare rău, a apărut o problemă. Te rugăm să încerci din nou.', 'bot');
       }
     } catch (error) {
       console.error('Error sending message:', error);
+      // Mark message as failed
+      setMessageStates((prev) => {
+        const next = new Map(prev);
+        next.set(clientMessageId, 'failed');
+        return next;
+      });
+      setMessages((prev) =>
+        prev.map((m) =>
+          m.id === clientMessageId ? { ...m, status: 'failed' } : m
+        )
+      );
       addMessage('Ne pare rău, a apărut o problemă. Te rugăm să încerci din nou.', 'bot');
     } finally {
       setIsLoading(false);
@@ -488,40 +721,67 @@ export function ChatWidget({ className }: ChatWidgetProps) {
                     </div>
                   )}
 
-                  {messages.map((message) => (
-                    <div
-                      key={message.id}
-                      className={cn(
-                        "flex gap-2",
-                        message.sender === 'user' ? 'justify-end' : 'justify-start'
-                      )}
-                    >
-                      {message.sender === 'bot' && (
-                        <div className="flex-shrink-0 w-9 h-9 rounded-full bg-white ring-1 ring-black/5 shadow-sm flex items-center justify-center text-[11px] font-semibold text-primary">
-                          {SUPPORT_AGENT_INITIALS}
-                        </div>
-                      )}
-                      
-                      <div className={cn("max-w-[82%]", message.sender === 'user' ? 'items-end' : 'items-start')}>
-                        <div
-                          className={cn(
-                            "rounded-2xl px-3.5 py-2.5 text-sm leading-relaxed shadow-sm ring-1",
-                            message.sender === 'user'
-                              ? "bg-primary text-white ring-black/5"
-                              : "bg-white text-ink ring-black/5"
-                          )}
-                        >
-                          {message.text}
-                        </div>
-                        <div className={cn(
-                          "mt-1 text-[11px] text-subink",
-                          message.sender === 'user' ? 'text-right' : 'text-left'
-                        )}>
-                          {formatTimeRo(message.timestamp)}
+                  {messages.map((message) => {
+                    const messageStatus = messageStates.get(message.id) || message.status || 'sent';
+                    const messageRef = (el: HTMLDivElement | null) => {
+                      if (el) {
+                        messageElementsRef.current.set(message.id, el);
+                        el.setAttribute('data-message-id', message.id);
+                      } else {
+                        messageElementsRef.current.delete(message.id);
+                      }
+                    };
+
+                    return (
+                      <div
+                        key={message.id}
+                        ref={messageRef}
+                        className={cn(
+                          "flex gap-2",
+                          message.sender === 'user' ? 'justify-end' : 'justify-start'
+                        )}
+                      >
+                        {message.sender === 'bot' && (
+                          <div className="flex-shrink-0 w-9 h-9 rounded-full bg-white ring-1 ring-black/5 shadow-sm flex items-center justify-center text-[11px] font-semibold text-primary">
+                            {SUPPORT_AGENT_INITIALS}
+                          </div>
+                        )}
+                        
+                        <div className={cn("max-w-[82%]", message.sender === 'user' ? 'items-end' : 'items-start')}>
+                          <div
+                            className={cn(
+                              "rounded-2xl px-3.5 py-2.5 text-sm leading-relaxed shadow-sm ring-1",
+                              message.sender === 'user'
+                                ? "bg-primary text-white ring-black/5"
+                                : "bg-white text-ink ring-black/5",
+                              messageStatus === 'failed' && "opacity-50"
+                            )}
+                          >
+                            {message.text}
+                          </div>
+                          <div className={cn(
+                            "mt-1 flex items-center gap-1 text-[11px] text-subink",
+                            message.sender === 'user' ? 'justify-end' : 'justify-start'
+                          )}>
+                            <span>{formatTimeRo(message.timestamp)}</span>
+                            {message.sender === 'user' && (
+                              <MessageStatusIndicator status={messageStatus} />
+                            )}
+                          </div>
                         </div>
                       </div>
+                    );
+                  })}
+                  
+                  {/* Typing Indicator */}
+                  {typingUsers.length > 0 && (
+                    <div className="flex gap-2 justify-start">
+                      <div className="flex-shrink-0 w-9 h-9 rounded-full bg-white ring-1 ring-black/5 shadow-sm flex items-center justify-center text-[11px] font-semibold text-primary">
+                        {SUPPORT_AGENT_INITIALS}
+                      </div>
+                      <TypingIndicator userName={typingUsers[0]?.userName} />
                     </div>
-                  ))}
+                  )}
                   
                   {isLoading && (
                     <div className="flex gap-2 justify-start">

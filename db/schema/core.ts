@@ -1741,10 +1741,52 @@ export const supportThreadMessages = pgTable(
     authorRole: text("author_role").notNull(), // 'customer' | 'support' | 'bot' | 'system'
     body: text("body").notNull(),
     createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
+    // Enhanced message tracking fields
+    deliveredAt: timestamp("delivered_at", { withTimezone: true }),
+    readAt: timestamp("read_at", { withTimezone: true }),
+    editedAt: timestamp("edited_at", { withTimezone: true }),
+    replyToMessageId: uuid("reply_to_message_id"), // Self-reference - FK constraint added in migration
+    messageType: text("message_type").notNull().default("text").$type<'text' | 'image' | 'file' | 'system'>(),
+    metadata: jsonb("metadata").$type<Record<string, any>>(), // For attachments, rich content, etc.
   },
   (table) => ({
     supportThreadMessagesThreadIdx: index("support_thread_messages_thread_idx").on(table.threadId),
     supportThreadMessagesCreatedIdx: index("support_thread_messages_created_idx").on(table.threadId, table.createdAt),
+    supportThreadMessagesReplyIdx: index("support_thread_messages_reply_idx").on(table.replyToMessageId),
+  })
+);
+
+// Message delivery status tracking (per recipient)
+export const messageDeliveryStatus = pgTable(
+  "message_delivery_status",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    messageId: uuid("message_id").notNull().references(() => supportThreadMessages.id, { onDelete: "cascade" }),
+    recipientId: uuid("recipient_id").notNull().references(() => users.id, { onDelete: "cascade" }),
+    status: text("status").notNull().$type<'sent' | 'delivered' | 'read'>(),
+    statusAt: timestamp("status_at", { withTimezone: true }).defaultNow().notNull(),
+  },
+  (table) => ({
+    messageDeliveryStatusMessageIdx: index("message_delivery_status_message_idx").on(table.messageId),
+    messageDeliveryStatusRecipientIdx: index("message_delivery_status_recipient_idx").on(table.recipientId),
+    messageDeliveryStatusUnique: uniqueIndex("message_delivery_status_unique").on(table.messageId, table.recipientId),
+  })
+);
+
+// Typing indicators for real-time feedback
+export const typingIndicators = pgTable(
+  "typing_indicators",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    threadId: uuid("thread_id").notNull().references(() => supportThreads.id, { onDelete: "cascade" }),
+    userId: uuid("user_id").notNull().references(() => users.id, { onDelete: "cascade" }),
+    isTyping: boolean("is_typing").notNull().default(false),
+    updatedAt: timestamp("updated_at", { withTimezone: true }).defaultNow().notNull(),
+  },
+  (table) => ({
+    typingIndicatorsThreadIdx: index("typing_indicators_thread_idx").on(table.threadId),
+    typingIndicatorsUserIdx: index("typing_indicators_user_idx").on(table.userId),
+    typingIndicatorsUnique: uniqueIndex("typing_indicators_unique").on(table.threadId, table.userId),
   })
 );
 
@@ -1916,6 +1958,10 @@ export const createTriggersAndIndexes = sql`
   -- Add foreign key constraint for categories self-reference
   ALTER TABLE categories ADD CONSTRAINT fk_categories_parent 
     FOREIGN KEY (parent_id) REFERENCES categories(id) ON DELETE SET NULL;
+
+  -- Add foreign key constraint for support_thread_messages self-reference (reply_to_message_id)
+  ALTER TABLE support_thread_messages ADD CONSTRAINT fk_support_thread_messages_reply 
+    FOREIGN KEY (reply_to_message_id) REFERENCES support_thread_messages(id) ON DELETE SET NULL;
 
   -- Add cart constraints
   ALTER TABLE carts ADD CONSTRAINT carts_who 

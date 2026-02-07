@@ -181,6 +181,7 @@ export async function POST(request: NextRequest) {
 
     const insertedCustomer = await customerInsert.returning({ id: supportThreadMessages.id });
     const didInsertCustomer = Boolean(insertedCustomer?.[0]?.id);
+    const messageId = insertedCustomer?.[0]?.id || clientMessageId;
 
     // Update thread counters/preview (only if this message is new)
     if (didInsertCustomer) {
@@ -273,10 +274,23 @@ export async function POST(request: NextRequest) {
         
         supportEventEmitter.emit(threadId, nextStatus);
         
+        // Also emit chat event for real-time message updates
+        const messageIdForEvent = insertedCustomer?.[0]?.id || clientMessageId;
+        if (messageIdForEvent) {
+          supportEventEmitter.emitChat({
+            type: 'new_message',
+            threadId,
+            messageId: messageIdForEvent,
+            status: nextStatus,
+            timestamp: Date.now(),
+          });
+        }
+        
         const afterEmitTime = Date.now();
         console.log('[Webhook] SSE event emitted:', {
           threadId,
           status: nextStatus,
+          messageId,
           subscribers: subscriberCount,
           emitTime,
           afterEmitTime,
