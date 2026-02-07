@@ -6,7 +6,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { db } from '@/db';
 import { chatbotQueue, supportThreadMessages, supportThreads } from '@/db/schema/core';
-import { and, desc, eq, inArray, not, sql } from 'drizzle-orm';
+import { and, desc, eq, inArray, not, sql, ne, or } from 'drizzle-orm';
 import {
   getOutsideHoursNoticeRo,
   isWithinSupportHoursRo,
@@ -69,7 +69,8 @@ export async function POST(request: NextRequest) {
           and(
             eq(supportThreads.source, 'chatbot'),
             eq(supportThreads.buyerId, user_id),
-            not(inArray(supportThreads.status, ['closed', 'resolved']))
+            ne(supportThreads.status, 'closed'),
+            ne(supportThreads.status, 'resolved')
           )
         )
         .orderBy(desc(supportThreads.lastMessageAt))
@@ -80,7 +81,7 @@ export async function POST(request: NextRequest) {
         conversationId = openThread.sourceId;
       } else {
         conversationId = crypto.randomUUID();
-        const [newThread] = await db
+        const newThreadResult = await db
           .insert(supportThreads)
           .values({
             source: 'chatbot',
@@ -95,6 +96,10 @@ export async function POST(request: NextRequest) {
             updatedAt: now,
           })
           .returning({ id: supportThreads.id });
+        const [newThread] = newThreadResult;
+        if (!newThread?.id) {
+          throw new Error('Failed to create new support thread');
+        }
         threadId = newThread.id;
       }
     } else {
@@ -114,7 +119,7 @@ export async function POST(request: NextRequest) {
 
       if (existingThread && (existingThread.status === 'closed' || existingThread.status === 'resolved')) {
         conversationId = crypto.randomUUID();
-        const [newThread] = await db
+        const newThreadResult = await db
           .insert(supportThreads)
           .values({
             source: 'chatbot',
@@ -129,13 +134,17 @@ export async function POST(request: NextRequest) {
             updatedAt: now,
           })
           .returning({ id: supportThreads.id });
+        const [newThread] = newThreadResult;
+        if (!newThread?.id) {
+          throw new Error('Failed to create new support thread');
+        }
         threadId = newThread.id;
       } else if (existingThread) {
         threadId = existingThread.id;
         conversationId = existingThread.sourceId;
       } else {
         conversationId = clientId;
-        const [newThread] = await db
+        const newThreadResult = await db
           .insert(supportThreads)
           .values({
             source: 'chatbot',
@@ -150,6 +159,10 @@ export async function POST(request: NextRequest) {
             updatedAt: now,
           })
           .returning({ id: supportThreads.id });
+        const [newThread] = newThreadResult;
+        if (!newThread?.id) {
+          throw new Error('Failed to create new support thread');
+        }
         threadId = newThread.id;
       }
     }
@@ -159,27 +172,30 @@ export async function POST(request: NextRequest) {
     }
 
     // Store customer message in thread transcript (idempotent if client_message_id is provided)
-    const customerInsert = clientMessageId
-      ? db
-          .insert(supportThreadMessages)
-          .values({
-            id: clientMessageId,
-            threadId,
-            authorId: isUserIdUuid ? user_id : null,
-            authorRole: 'customer',
-            body: String(message),
-            createdAt: now,
-          })
-          .onConflictDoNothing({ target: supportThreadMessages.id })
-      : db.insert(supportThreadMessages).values({
-          threadId,
-          authorId: isUserIdUuid ? user_id : null,
-          authorRole: 'customer',
-          body: String(message),
-          createdAt: now,
-        });
-
-    const insertedCustomer = await customerInsert.returning({ id: supportThreadMessages.id });
+    let insertedCustomer;
+    try {
+      // Use raw SQL to insert only columns that exist in the database
+      // This is a temporary workaround until the migration adds the new columns
+      if (clientMessageId) {
+        const result = await db.execute(sql`
+          INSERT INTO support_thread_messages (id, thread_id, author_id, author_role, body, created_at)
+          VALUES (${clientMessageId}, ${threadId}, ${isUserIdUuid ? user_id : null}, 'customer', ${String(message)}, ${now})
+          ON CONFLICT (id) DO NOTHING
+          RETURNING id
+        `);
+        insertedCustomer = result.rows.map((row: any) => ({ id: row.id }));
+      } else {
+        const result = await db.execute(sql`
+          INSERT INTO support_thread_messages (thread_id, author_id, author_role, body, created_at)
+          VALUES (${threadId}, ${isUserIdUuid ? user_id : null}, 'customer', ${String(message)}, ${now})
+          RETURNING id
+        `);
+        insertedCustomer = result.rows.map((row: any) => ({ id: row.id }));
+      }
+    } catch (dbError) {
+      console.error('[Webhook] Database insert error:', dbError);
+      throw new Error(`Failed to insert message: ${dbError instanceof Error ? dbError.message : String(dbError)}`);
+    }
     const didInsertCustomer = Boolean(insertedCustomer?.[0]?.id);
     const messageId = insertedCustomer?.[0]?.id || clientMessageId;
 
@@ -376,6 +392,14 @@ export async function POST(request: NextRequest) {
 
   } catch (error) {
     console.error('Web chat error:', error);
-    return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
+    console.error('Error details:', {
+      message: error instanceof Error ? error.message : String(error),
+      stack: error instanceof Error ? error.stack : undefined,
+      name: error instanceof Error ? error.name : undefined,
+    });
+    return NextResponse.json({ 
+      error: 'Internal server error',
+      details: error instanceof Error ? error.message : String(error)
+    }, { status: 500 });
   }
 }

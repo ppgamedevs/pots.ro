@@ -1028,6 +1028,63 @@ async function ensureSupportConsoleSchema(sql) {
     await sql`CREATE INDEX IF NOT EXISTS support_thread_messages_thread_idx ON support_thread_messages(thread_id)`;
     await sql`CREATE INDEX IF NOT EXISTS support_thread_messages_created_idx ON support_thread_messages(thread_id, created_at)`;
 
+    // Add enhanced message tracking columns if they don't exist
+    await sql`
+      DO $$
+      BEGIN
+        -- Add delivered_at column
+        IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name = 'support_thread_messages' AND column_name = 'delivered_at') THEN
+          ALTER TABLE support_thread_messages ADD COLUMN delivered_at timestamptz;
+        END IF;
+        
+        -- Add read_at column
+        IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name = 'support_thread_messages' AND column_name = 'read_at') THEN
+          ALTER TABLE support_thread_messages ADD COLUMN read_at timestamptz;
+        END IF;
+        
+        -- Add edited_at column
+        IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name = 'support_thread_messages' AND column_name = 'edited_at') THEN
+          ALTER TABLE support_thread_messages ADD COLUMN edited_at timestamptz;
+        END IF;
+        
+        -- Add reply_to_message_id column
+        IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name = 'support_thread_messages' AND column_name = 'reply_to_message_id') THEN
+          ALTER TABLE support_thread_messages ADD COLUMN reply_to_message_id uuid;
+        END IF;
+        
+        -- Add message_type column with default
+        IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name = 'support_thread_messages' AND column_name = 'message_type') THEN
+          ALTER TABLE support_thread_messages ADD COLUMN message_type text NOT NULL DEFAULT 'text';
+        END IF;
+        
+        -- Add metadata column
+        IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name = 'support_thread_messages' AND column_name = 'metadata') THEN
+          ALTER TABLE support_thread_messages ADD COLUMN metadata jsonb;
+        END IF;
+      END $$;
+    `;
+
+    -- Add foreign key constraint for reply_to_message_id if it doesn't exist
+    await sql`
+      DO $$
+      BEGIN
+        IF NOT EXISTS (
+          SELECT 1 FROM information_schema.table_constraints 
+          WHERE constraint_name = 'fk_support_thread_messages_reply' 
+          AND table_name = 'support_thread_messages'
+        ) THEN
+          ALTER TABLE support_thread_messages 
+          ADD CONSTRAINT fk_support_thread_messages_reply 
+          FOREIGN KEY (reply_to_message_id) 
+          REFERENCES support_thread_messages(id) 
+          ON DELETE SET NULL;
+        END IF;
+      END $$;
+    `;
+
+    -- Add index for reply_to_message_id if it doesn't exist
+    await sql`CREATE INDEX IF NOT EXISTS support_thread_messages_reply_idx ON support_thread_messages(reply_to_message_id)`;
+
     // Message moderation overlay table
     await sql`
       CREATE TABLE IF NOT EXISTS message_moderation (
