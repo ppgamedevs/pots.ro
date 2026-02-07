@@ -91,6 +91,11 @@ async function addMissingColumns() {
   }
   
     console.log('✅ Done!');
+    process.exit(0);
+  } catch (error) {
+    console.error('❌ Error in fix-orders-schema.js:', error);
+    console.error('Error stack:', error.stack);
+    process.exit(1);
   } finally {
     if (sql) {
       try {
@@ -100,7 +105,6 @@ async function addMissingColumns() {
       }
     }
   }
-  process.exit(0);
 }
 
 addMissingColumns().catch((error) => {
