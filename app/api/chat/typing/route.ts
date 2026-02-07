@@ -109,6 +109,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Update typing indicator with error handling
+    // Note: Typing indicators are non-critical, so we log errors but don't fail the request
     try {
       if (action === 'start') {
         await startTyping(threadId, user.id, user.name || undefined);
@@ -116,18 +117,47 @@ export async function POST(request: NextRequest) {
         await stopTyping(threadId, user.id);
       }
     } catch (typingError) {
-      console.error('[Typing API] Typing service error:', {
+      // Log detailed error information (always log, not just in dev)
+      const errorDetails: any = {
         message: typingError instanceof Error ? typingError.message : String(typingError),
-        stack: typingError instanceof Error ? typingError.stack : undefined,
-        name: typingError instanceof Error ? typingError.name : undefined,
+        name: typingError instanceof Error ? typingError.name : typeof typingError,
         threadId: requestContext.threadId,
         userId: requestContext.userId,
         action: requestContext.action,
+      };
+      
+      // Add PostgreSQL-specific error details if available
+      if (typingError && typeof typingError === 'object' && 'code' in typingError) {
+        errorDetails.code = (typingError as any).code;
+        errorDetails.detail = (typingError as any).detail;
+        errorDetails.hint = (typingError as any).hint;
+        errorDetails.table = (typingError as any).table;
+        errorDetails.schema = (typingError as any).schema;
+      }
+      
+      if (typingError instanceof Error) {
+        errorDetails.stack = typingError.stack;
+      }
+      
+      console.error('[Typing API] Typing service error:', errorDetails);
+      
+      // Check if it's a table-not-found error (42P01) or similar non-critical errors
+      const isTableMissing = typingError && typeof typingError === 'object' && 
+        ('code' in typingError && (typingError as any).code === '42P01');
+      
+      // For table missing errors, return success but log the issue
+      // For other errors, still return success since typing indicators are non-critical
+      // but log the error for investigation
+      if (isTableMissing) {
+        console.warn('[Typing API] Typing indicators table not found - feature disabled');
+      }
+      
+      // Return success even if typing update failed (non-critical feature)
+      // This prevents the API from failing when typing indicators aren't available
+      return NextResponse.json({ 
+        success: true,
+        warning: 'Typing indicator update failed but request succeeded',
       });
-      return NextResponse.json(
-        { error: 'Failed to update typing indicator', details: process.env.NODE_ENV === 'development' ? (typingError instanceof Error ? typingError.message : String(typingError)) : undefined },
-        { status: 500 }
-      );
     }
 
     return NextResponse.json({ success: true });

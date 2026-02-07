@@ -55,12 +55,30 @@ export async function startTyping(threadId: string, userId: string, userName?: s
         },
       });
   } catch (error) {
-    console.error('[TypingService] Error starting typing:', {
+    // Log detailed error information for debugging
+    const errorDetails: any = {
       message: error instanceof Error ? error.message : String(error),
-      stack: error instanceof Error ? error.stack : undefined,
+      name: error instanceof Error ? error.name : typeof error,
       threadId,
       userId,
-    });
+    };
+    
+    // Add PostgreSQL-specific error details if available
+    if (error && typeof error === 'object' && 'code' in error) {
+      errorDetails.code = (error as any).code;
+      errorDetails.detail = (error as any).detail;
+      errorDetails.hint = (error as any).hint;
+      errorDetails.table = (error as any).table;
+      errorDetails.schema = (error as any).schema;
+    }
+    
+    if (error instanceof Error) {
+      errorDetails.stack = error.stack;
+    }
+    
+    console.error('[TypingService] Error starting typing:', errorDetails);
+    
+    // Re-throw to let caller handle (they may want to fail gracefully)
     throw error;
   }
 
@@ -104,13 +122,30 @@ export async function stopTyping(threadId: string, userId: string): Promise<void
       );
     // Note: If no rows match, the UPDATE succeeds but affects 0 rows, which is fine
   } catch (error) {
-    // Only log and rethrow if it's an actual error (not just "no rows affected")
-    console.error('[TypingService] Error stopping typing:', {
+    // Log detailed error information for debugging
+    const errorDetails: any = {
       message: error instanceof Error ? error.message : String(error),
-      stack: error instanceof Error ? error.stack : undefined,
+      name: error instanceof Error ? error.name : typeof error,
       threadId,
       userId,
-    });
+    };
+    
+    // Add PostgreSQL-specific error details if available
+    if (error && typeof error === 'object' && 'code' in error) {
+      errorDetails.code = (error as any).code;
+      errorDetails.detail = (error as any).detail;
+      errorDetails.hint = (error as any).hint;
+      errorDetails.table = (error as any).table;
+      errorDetails.schema = (error as any).schema;
+    }
+    
+    if (error instanceof Error) {
+      errorDetails.stack = error.stack;
+    }
+    
+    console.error('[TypingService] Error stopping typing:', errorDetails);
+    
+    // Re-throw to let caller handle (they may want to fail gracefully)
     throw error;
   }
 
