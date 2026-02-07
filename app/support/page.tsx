@@ -389,6 +389,7 @@ function InboxTab() {
   const prevThreadsSnapshotRef = useRef<{ id: string; status: string }[] | null>(null);
   const lastPlayedForThreadRef = useRef<{ id: string; at: number } | null>(null);
   const threadDetailRequestIdRef = useRef(0);
+  const reopenRedirectThreadIdRef = useRef<string | null>(null);
   const FM_SUPPORT_SOUND_KEY = "fm_support_sound_enabled";
 
   const closedResolvedUsers = useMemo(() => {
@@ -549,6 +550,16 @@ function InboxTab() {
           return t;
         });
       }
+      const reopenId = reopenRedirectThreadIdRef.current;
+      if (reopenId != null && selectedThreadRef.current?.id === reopenId) {
+        const reopened = selectedThreadRef.current;
+        const exists = updatedThreads.some((t: SupportThread) => t.id === reopenId);
+        if (!exists && reopened) {
+          const withOpen = { ...reopened, status: "open" as const, closedBy: null, resolvedBy: null };
+          updatedThreads = [withOpen, ...updatedThreads];
+        }
+        reopenRedirectThreadIdRef.current = null;
+      }
       updatedThreads = updatedThreads.filter((t: SupportThread) => threadMatchesFilters(t));
 
       const prev = prevThreadsSnapshotRef.current;
@@ -601,9 +612,12 @@ function InboxTab() {
   }, [loadThreads]);
 
   useEffect(() => {
-    setSelectedThread(null);
-    setThreadMessages([]);
-    setThreadNotes([]);
+    const reopening = reopenRedirectThreadIdRef.current != null;
+    if (!reopening) {
+      setSelectedThread(null);
+      setThreadMessages([]);
+      setThreadNotes([]);
+    }
     prevThreadsSnapshotRef.current = null;
     if (soundRepeatTimerRef.current) {
       clearInterval(soundRepeatTimerRef.current);
@@ -797,18 +811,34 @@ function InboxTab() {
 
     statusOptimisticUntilRef.current = { threadId, status: s, until: Date.now() + 4000 };
     setThreads((prevList) => {
-      const updated = prevList.map((t) => (t.id === threadId ? { ...t, status: s } : t));
+      const updated = prevList.map((t) =>
+        t.id === threadId
+          ? s === "open"
+            ? { ...t, status: s, closedBy: null, resolvedBy: null }
+            : { ...t, status: s }
+          : t
+      );
       return updated.filter((t) => threadMatchesFilters(t));
     });
     if (stillMatches && wasSelected) {
-      setSelectedThread((t) => (t ? { ...t, status: s } : null));
-    } else if (!stillMatches && wasSelected) {
-      // If we are reopening a closed/resolved thread to OPEN while viewing the
-      // Closed/Resolved filter, keep the conversation panel open instead of
-      // clearing it immediately when the list refresh drops this thread.
+      setSelectedThread((t) =>
+        t ? (s === "open" ? { ...t, status: s, closedBy: null, resolvedBy: null } : { ...t, status: s }) : null
+      );
+    }
+    let didReopenRedirect = false;
+    if (!stillMatches && wasSelected) {
       const isReopenFromClosedOrResolved =
         s === "open" && (prev === "closed" || prev === "resolved");
-      if (!isReopenFromClosedOrResolved) {
+      if (isReopenFromClosedOrResolved) {
+        didReopenRedirect = true;
+        setSelectedThread((t) =>
+          t && t.id === threadId ? { ...t, status: "open", closedBy: null, resolvedBy: null } : t
+        );
+        reopenRedirectThreadIdRef.current = threadId;
+        setStatusFilter("open");
+        setPage(1);
+        setClosedResolvedByFilter("all_closed_resolved_by");
+      } else {
         clearSelection();
       }
     }
@@ -860,7 +890,7 @@ function InboxTab() {
       }
 
       markInteraction();
-      scheduleRefresh({ list: true, thread: true });
+      scheduleRefresh({ list: !didReopenRedirect, thread: true });
     } catch (e: unknown) {
       const err = e as Error & { status?: number; body?: unknown };
       statusOptimisticUntilRef.current = null;
