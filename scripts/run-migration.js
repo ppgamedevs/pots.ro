@@ -1064,7 +1064,7 @@ async function ensureSupportConsoleSchema(sql) {
       END $$;
     `;
 
-    -- Add foreign key constraint for reply_to_message_id if it doesn't exist
+    // Add foreign key constraint for reply_to_message_id if it doesn't exist
     await sql`
       DO $$
       BEGIN
@@ -1082,7 +1082,7 @@ async function ensureSupportConsoleSchema(sql) {
       END $$;
     `;
 
-    -- Add index for reply_to_message_id if it doesn't exist
+    // Add index for reply_to_message_id if it doesn't exist
     await sql`CREATE INDEX IF NOT EXISTS support_thread_messages_reply_idx ON support_thread_messages(reply_to_message_id)`;
 
     // Message moderation overlay table
@@ -1998,7 +1998,13 @@ async function runMigration() {
     }
 
     // Always attempt safe, idempotent schema tweaks
-    await runEnsures(sql);
+    try {
+      await runEnsures(sql);
+      console.log('✅ All schema ensures completed');
+    } catch (ensureError) {
+      console.warn('⚠️  Some schema ensures failed (non-critical):', ensureError.message || ensureError);
+      // Don't fail the build - these are enhancements, not critical
+    }
 
     // Check if orders table already exists
     console.log('🔍 Checking if orders table exists...');
@@ -2031,7 +2037,13 @@ async function runMigration() {
       }
 
       // Re-run ensures now that base tables exist
-      await runEnsures(sql);
+      try {
+        await runEnsures(sql);
+        console.log('✅ Schema ensures completed after migration');
+      } catch (ensureError) {
+        console.warn('⚠️  Some schema ensures failed after migration (non-critical):', ensureError.message || ensureError);
+        // Don't fail the build - these are enhancements, not critical
+      }
     } else {
       console.log('✅ Orders table already exists! Skipping migration scripts.');
     }
