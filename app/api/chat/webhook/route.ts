@@ -181,25 +181,45 @@ export async function POST(request: NextRequest) {
     if (didInsertCustomer) {
       // Preserve open/assigned status while still ensuring that closed/resolved/active
       // threads move back into the waiting queue when a new customer message arrives.
+      // However, respect a grace period to prevent race conditions where delayed webhooks
+      // overwrite recent status changes (e.g., admin just closed/resolved the thread).
       let currentStatus: string | null = null;
+      let threadUpdatedAt: Date | null = null;
       try {
         const [threadRow] = await db
-          .select({ status: supportThreads.status })
+          .select({ 
+            status: supportThreads.status,
+            updatedAt: supportThreads.updatedAt,
+          })
           .from(supportThreads)
           .where(eq(supportThreads.id, threadId))
           .limit(1);
         currentStatus = threadRow?.status ?? null;
+        threadUpdatedAt = threadRow?.updatedAt ?? null;
       } catch {
         // If we can't read the current status, we'll fall back to marking as waiting below.
       }
 
-      const nextStatus =
-        !currentStatus ||
-        currentStatus === "resolved" ||
-        currentStatus === "closed" ||
-        currentStatus === "active"
-          ? "waiting"
-          : currentStatus;
+      // Grace period: if thread was recently updated (within 10 seconds) and is closed/resolved,
+      // preserve the status to prevent race conditions with delayed webhooks overwriting recent status changes.
+      const GRACE_PERIOD_MS = 10_000; // 10 seconds
+      const isRecentlyUpdated = threadUpdatedAt && 
+        (now.getTime() - threadUpdatedAt.getTime()) < GRACE_PERIOD_MS;
+      const isClosedOrResolved = currentStatus === "closed" || currentStatus === "resolved";
+      
+      // Only change status if:
+      // 1. Thread is not closed/resolved, OR
+      // 2. Thread is closed/resolved but was NOT recently updated (allowing legitimate reopen)
+      const shouldChangeStatus = !isClosedOrResolved || !isRecentlyUpdated;
+
+      const nextStatus = shouldChangeStatus
+        ? (!currentStatus ||
+           currentStatus === "resolved" ||
+           currentStatus === "closed" ||
+           currentStatus === "active"
+             ? "waiting"
+             : currentStatus)
+        : currentStatus; // Preserve current status if recently updated
 
       await db
         .update(supportThreads)
