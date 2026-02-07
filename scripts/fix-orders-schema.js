@@ -2,21 +2,23 @@ require('dotenv').config({path:'.env.local'});
 const postgres = require('postgres');
 
 async function addMissingColumns() {
-  const DATABASE_URL = 
-    process.env.POSTGRES_DATABASE_URL ||
-    process.env.POSTGRES_DATABASE_URL_UNPOOLED ||
-    process.env.POSTGRES_POSTGRES_URL ||
-    process.env.POSTGRES_POSTGRES_URL_NON_POOLING ||
-    process.env.DATABASE_URL ||
-    process.env.POSTGRES_URL_NON_POOLING ||
-    process.env.POSTGRES_URL;
+  let sql;
+  try {
+    const DATABASE_URL = 
+      process.env.POSTGRES_DATABASE_URL ||
+      process.env.POSTGRES_DATABASE_URL_UNPOOLED ||
+      process.env.POSTGRES_POSTGRES_URL ||
+      process.env.POSTGRES_POSTGRES_URL_NON_POOLING ||
+      process.env.DATABASE_URL ||
+      process.env.POSTGRES_URL_NON_POOLING ||
+      process.env.POSTGRES_URL;
 
-  if (!DATABASE_URL) {
-    console.error('❌ No DATABASE_URL found');
-    process.exit(1);
-  }
+    if (!DATABASE_URL) {
+      console.error('❌ No DATABASE_URL found');
+      process.exit(1);
+    }
 
-  const sql = postgres(DATABASE_URL);
+    sql = postgres(DATABASE_URL);
   
   console.log('🔄 Adding missing columns to orders table...');
   
@@ -56,13 +58,14 @@ async function addMissingColumns() {
     console.log('⚠️ Update error (may be ok if no rows):', err.message);
   }
   
-  // Set NOT NULL constraint
+  // Set NOT NULL constraint (non-blocking - may fail if NULL values exist)
   console.log('🔄 Setting order_number as NOT NULL...');
   try {
     await sql`ALTER TABLE orders ALTER COLUMN order_number SET NOT NULL`;
     console.log('✅ Set NOT NULL constraint');
   } catch (err) {
-    console.log('⚠️', err.message);
+    console.log('⚠️ Could not set NOT NULL constraint (this is ok if column has NULL values):', err.message);
+    // Don't fail the build - this is a non-critical operation
   }
   
   // Add unique constraint
@@ -87,8 +90,21 @@ async function addMissingColumns() {
     console.log('⚠️', err.message);
   }
   
-  console.log('✅ Done!');
-  await sql.end();
+    console.log('✅ Done!');
+  } finally {
+    if (sql) {
+      try {
+        await sql.end();
+      } catch (err) {
+        console.warn('⚠️ Error closing database connection:', err.message);
+      }
+    }
+  }
+  process.exit(0);
 }
 
-addMissingColumns();
+addMissingColumns().catch((error) => {
+  console.error('❌ Fatal error in fix-orders-schema.js:', error);
+  console.error('Error stack:', error.stack);
+  process.exit(1);
+});
