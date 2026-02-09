@@ -109,6 +109,13 @@ export default async function AdminDashboardPage() {
       color: "bg-emerald-600",
     },
     {
+      title: "SmartBill",
+      description: "SmartBill API configuration and status",
+      href: "/admin/smartbill",
+      icon: FileText,
+      color: "bg-indigo-600",
+    },
+    {
       title: "Webhooks",
       description: "Webhook events (payload redacted + replay/escalate)",
       href: "/admin/webhooks",
