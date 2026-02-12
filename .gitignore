@@ -30,6 +30,10 @@ drizzle/
 *.swp
 *.swo
 
+# Vercel
+.vercel/
+!.vercel/project.json
+
 # OS
 .DS_Store
 Thumbs.db

@@ -15,41 +15,41 @@ export const dynamic = 'force-dynamic';
  * - Basic API connectivity works
  */
 export async function POST(request: NextRequest) {
+  // Get series from query params or use default (never use SMARTBILL_SERIES for receipts)
+  // Defined outside try-catch so it's available in error handling
+  const { searchParams } = new URL(request.url);
+  const series = searchParams.get('series') || process.env.SMARTBILL_RECEIPT_SERIES || 'CH';
+  
+  // Create minimal test payload - defined outside try-catch for error handling
+  const testPayload = {
+    companyVatNumber: process.env.COMPANY_VAT_NUMBER || 'RO12345678',
+    seriesName: series,
+    currency: 'RON' as 'RON' | 'EUR',
+    language: 'RO',
+    client: {
+      name: 'Test Client',
+      email: 'test@example.com',
+    },
+    products: [
+      {
+        name: 'Produs Test',
+        quantity: 1,
+        price: 100.00,
+        vatRate: 19,
+      },
+    ],
+  };
+  
   try {
     // Require admin role
     await requireRole(request, ['admin']);
 
-    // Get series from query params or use default (never use SMARTBILL_SERIES for receipts)
-    const { searchParams } = new URL(request.url);
-    const series = searchParams.get('series') || process.env.SMARTBILL_RECEIPT_SERIES || 'CH';
-    
     console.log('[SmartBill Test] Series determination', {
       queryParam: searchParams.get('series'),
       envReceiptSeries: process.env.SMARTBILL_RECEIPT_SERIES,
       envInvoiceSeries: process.env.SMARTBILL_SERIES,
       finalSeries: series,
     });
-
-    // Create minimal test payload
-    // This is the absolute minimum required by SmartBill API
-    const testPayload = {
-      companyVatNumber: process.env.COMPANY_VAT_NUMBER || 'RO12345678',
-      seriesName: series,
-      currency: 'RON',
-      language: 'RO',
-      client: {
-        name: 'Test Client',
-        email: 'test@example.com',
-      },
-      products: [
-        {
-          name: 'Produs Test',
-          quantity: 1,
-          price: 100.00,
-          vatRate: 19,
-        },
-      ],
-    };
 
     console.log('[SmartBill Test] Attempting minimal receipt creation with payload:', JSON.stringify(testPayload, null, 2));
     console.log('[SmartBill Test] Configuration check', {
@@ -147,10 +147,10 @@ export async function POST(request: NextRequest) {
       },
       testPayload: testPayload,
       receiptInputFields: {
-        series: receiptInput.series,
-        paymentMethod: receiptInput.paymentMethod,
-        paymentRef: receiptInput.paymentRef,
-        orderNumber: receiptInput.orderNumber,
+        series: series,
+        paymentMethod: 'card',
+        paymentRef: 'TEST-' + Date.now(),
+        orderNumber: 'TEST-ORDER-001',
         note: 'Receipt-specific fields (issueDate, paymentDate, isDraft) are added automatically',
       },
       errorStack: error instanceof Error ? error.stack : undefined,

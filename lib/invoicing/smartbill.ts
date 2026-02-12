@@ -239,9 +239,12 @@ export class SmartBillProvider implements InvoiceProvider {
         lastError = error instanceof Error ? error : new Error(String(error));
         
         // Don't retry on 4xx errors (client errors)
-        if (error instanceof Error && error.message.includes('400') || error.message.includes('401') || error.message.includes('403') || error.message.includes('404')) {
-          console.error(`[SmartBill] Client error, not retrying:`, error.message);
-          throw error;
+        if (error instanceof Error) {
+          const errorMessage = error.message;
+          if (errorMessage.includes('400') || errorMessage.includes('401') || errorMessage.includes('403') || errorMessage.includes('404')) {
+            console.error(`[SmartBill] Client error, not retrying:`, errorMessage);
+            throw error;
+          }
         }
 
         // Don't retry on timeout errors (they're likely network issues)
@@ -590,9 +593,10 @@ export class SmartBillProvider implements InvoiceProvider {
     const cleanedPayload = this.cleanPayload(payload);
     
     // #region agent log
-    const log3 = {location:'smartbill.ts:252',message:'Final payload before send',data:{cleanedPayload:JSON.stringify(cleanedPayload),hasClient:!!cleanedPayload.client,hasAddress:!!cleanedPayload.client?.address,addressValue:cleanedPayload.client?.address,productsCount:cleanedPayload.products?.length},timestamp:Date.now(),runId:'debug4',hypothesisId:'H3'};
-    fetch('http://127.0.0.1:7242/ingest/4d9ef734-4941-42c7-9197-e66e14aa4710',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(log3)}).catch(()=>{});
-    this.writeDebugLog(log3).catch(()=>{});
+    // TEMPORAR: Comentat pentru build Vercel
+    // const log3 = {location:'smartbill.ts:252',message:'Final payload before send',data:{cleanedPayload:JSON.stringify(cleanedPayload),hasClient:!!cleanedPayload.client,hasAddress:!!cleanedPayload.client?.address,addressValue:cleanedPayload.client?.address,productsCount:cleanedPayload.products?.length},timestamp:Date.now(),runId:'debug4',hypothesisId:'H3'};
+    // fetch('http://127.0.0.1:7242/ingest/4d9ef734-4941-42c7-9197-e66e14aa4710',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(log3)}).catch(()=>{});
+    // this.writeDebugLog(log3).catch(()=>{});
     // #endregion
 
     const controller = new AbortController();
@@ -668,9 +672,10 @@ export class SmartBillProvider implements InvoiceProvider {
       });
       
       // #region agent log
-      const log4 = {location:'smartbill.ts:285',message:'SmartBill response received',data:{status:response.status,statusText:response.statusText,ok:response.ok},timestamp:Date.now(),runId:'debug4',hypothesisId:'H3'};
-      fetch('http://127.0.0.1:7242/ingest/4d9ef734-4941-42c7-9197-e66e14aa4710',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(log4)}).catch(()=>{});
-      this.writeDebugLog(log4).catch(()=>{});
+      // TEMPORAR: Comentat pentru build Vercel
+      // const log4 = {location:'smartbill.ts:285',message:'SmartBill response received',data:{status:response.status,statusText:response.statusText,ok:response.ok},timestamp:Date.now(),runId:'debug4',hypothesisId:'H3'};
+      // fetch('http://127.0.0.1:7242/ingest/4d9ef734-4941-42c7-9197-e66e14aa4710',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(log4)}).catch(()=>{});
+      // this.writeDebugLog(log4).catch(()=>{});
       // #endregion
 
       clearTimeout(timeoutId);
@@ -832,6 +837,7 @@ export class SmartBillProvider implements InvoiceProvider {
           errorMessage,
           isHTML,
           errorDetails: errorDetails?.substring ? errorDetails.substring(0, 500) : errorDetails,
+          status: response.status,
           fullPayloadJSON: JSON.stringify(cleanedPayload, null, 2),
           payloadComparison: {
             receiptFields: receiptFieldsForError,
@@ -839,13 +845,6 @@ export class SmartBillProvider implements InvoiceProvider {
             receiptSpecificFields: receiptSpecificFieldsForError.filter(f => cleanedPayload[f] !== undefined),
             receiptOnlyFields: receiptFieldsForError.filter(f => !invoiceFieldsForError.includes(f)),
           },
-          payloadStructure: {
-            topLevelKeys: receiptFieldsForError,
-            clientKeys: cleanedPayload.client ? Object.keys(cleanedPayload.client) : [],
-            productStructure: cleanedPayload.products?.[0] ? Object.keys(cleanedPayload.products[0]) : [],
-          },
-          status: response.status,
-          fullPayloadJSON: JSON.stringify(cleanedPayload, null, 2),
           payloadStructure: {
             hasCompanyVatNumber: !!cleanedPayload.companyVatNumber,
             companyVatNumber: cleanedPayload.companyVatNumber,
@@ -947,12 +946,12 @@ export class SmartBillProvider implements InvoiceProvider {
         throw new Error(`Invalid SmartBill API response: missing required fields (number: ${!!data.number}, pdfUrl: ${!!data.pdfUrl})`);
       }
 
-      const result = {
+      const result: InvoiceResult = {
         series: data.seriesName || data.series || receiptInput.series || this.series,
         number: data.number,
         pdfUrl: data.pdfUrl,
         total: data.total || data.totalAmount || 0,
-        issuer: 'smartbill',
+        issuer: 'smartbill' as const,
       };
       
       console.log('[SmartBill] _createReceiptAttempt SUCCESS', {

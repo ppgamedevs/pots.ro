@@ -211,7 +211,7 @@ export async function fetchReceiptData(orderId: string): Promise<ReceiptData> {
   // We pass the unit price as stored (which may include or exclude VAT depending on system design)
   // Smartbill will calculate VAT based on the vatRate provided
   const defaultVatRate = parseFloat(process.env.INVOICE_DEFAULT_VAT || '19');
-  const items: ReceiptItem[] = orderItemsResult.map((row) => {
+  const items: ReceiptItem[] = orderItemsResult.map((row: typeof orderItemsResult[0]) => {
     const unitPrice = row.orderItem.unitPriceCents / 100;
     const quantity = row.orderItem.qty;
     const discountCents = row.orderItem.discountCents || 0;
@@ -237,9 +237,9 @@ export async function fetchReceiptData(orderId: string): Promise<ReceiptData> {
   });
 
   // Calculate totals for validation
-  const itemsSubtotal = items.reduce((sum, item) => sum + (item.unitPrice * item.quantity), 0);
-  const itemsDiscount = orderItemsResult.reduce((sum, row) => sum + (row.orderItem.discountCents || 0), 0) / 100;
-  const itemsVat = items.reduce((sum, item) => sum + item.vatAmount, 0);
+  const itemsSubtotal = items.reduce((sum: number, item) => sum + (item.unitPrice * item.quantity), 0);
+  const itemsDiscount = orderItemsResult.reduce((sum: number, row: typeof orderItemsResult[0]) => sum + (row.orderItem.discountCents || 0), 0) / 100;
+  const itemsVat = items.reduce((sum: number, item) => sum + item.vatAmount, 0);
   const shipping = order.shippingFeeCents / 100;
   const shippingVat = (shipping * defaultVatRate) / (100 + defaultVatRate);
   const discount = order.totalDiscountCents / 100;

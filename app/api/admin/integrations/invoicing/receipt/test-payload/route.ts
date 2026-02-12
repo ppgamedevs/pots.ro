@@ -14,14 +14,15 @@ export const dynamic = 'force-dynamic';
  * - Optimal payload structure for receipts
  */
 export async function POST(request: NextRequest) {
+  // Get series from query params or use default
+  // Defined outside try-catch so it's available in error handling
+  const { searchParams } = new URL(request.url);
+  const series = searchParams.get('series') || process.env.SMARTBILL_RECEIPT_SERIES || 'CH';
+  
   try {
     // Require admin role
     await requireRole(request, ['admin']);
 
-    // Get series from query params or use default
-    const { searchParams } = new URL(request.url);
-    const series = searchParams.get('series') || process.env.SMARTBILL_RECEIPT_SERIES || 'CH';
-    
     console.log('[SmartBill Test Payload] Series determination', {
       queryParam: searchParams.get('series'),
       envReceiptSeries: process.env.SMARTBILL_RECEIPT_SERIES,
