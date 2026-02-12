@@ -13,7 +13,11 @@ import {
   FileText,
   Clock,
   ExternalLink,
+  Receipt,
+  Loader2,
 } from 'lucide-react';
+import { toast } from 'sonner';
+import { formatCurrency } from '@/lib/money';
 
 interface EnvVarStatus {
   configured: boolean;
@@ -62,6 +66,15 @@ interface InvoicingStatus {
   }>;
 }
 
+type PaidOrderRow = {
+  id: string;
+  orderNumber: string;
+  status: string;
+  currency: string;
+  totalCents: number;
+  createdAt: string;
+};
+
 export default function InvoicingIntegrationPage() {
   const [status, setStatus] = useState<InvoicingStatus | null>(null);
   const [loading, setLoading] = useState(true);
@@ -70,6 +83,9 @@ export default function InvoicingIntegrationPage() {
   const [actionResult, setActionResult] = useState<{ type: 'success' | 'error'; message: string } | null>(null);
   const [showRotateConfirm, setShowRotateConfirm] = useState(false);
   const [testResult, setTestResult] = useState<{ success: boolean; message: string; latencyMs: number } | null>(null);
+  const [paidOrders, setPaidOrders] = useState<PaidOrderRow[]>([]);
+  const [paidOrdersLoading, setPaidOrdersLoading] = useState(false);
+  const [generatingReceipt, setGeneratingReceipt] = useState<string | null>(null);
 
   const fetchStatus = async () => {
     try {
@@ -91,7 +107,59 @@ export default function InvoicingIntegrationPage() {
 
   useEffect(() => {
     fetchStatus();
+    fetchPaidOrders();
   }, []);
+
+  const fetchPaidOrders = async () => {
+    try {
+      setPaidOrdersLoading(true);
+      const res = await fetch('/api/admin/payments?status=paid&pageSize=50', { credentials: 'include' });
+      const data = await res.json();
+      console.log('Paid orders API response:', { res: { ok: res.ok, status: res.status }, data });
+      if (res.ok && data.data) {
+        console.log('Setting paid orders:', data.data.length, 'orders');
+        setPaidOrders(data.data || []);
+      } else {
+        console.error('Failed to fetch paid orders:', data.error || 'Unknown error');
+        setPaidOrders([]);
+      }
+    } catch (err) {
+      console.error('Failed to fetch paid orders:', err);
+      setPaidOrders([]);
+    } finally {
+      setPaidOrdersLoading(false);
+    }
+  };
+
+  const handleGenerateReceipt = async (orderId: string) => {
+    try {
+      setGeneratingReceipt(orderId);
+      const res = await fetch('/api/admin/integrations/invoicing/receipt', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ orderId }),
+        credentials: 'include',
+      });
+      const data = await res.json();
+      
+      if (!res.ok || !data.ok) {
+        throw new Error(data.error || 'Failed to generate receipt');
+      }
+
+      // Open receipt PDF in new tab
+      if (data.receipt?.pdfUrl) {
+        window.open(data.receipt.pdfUrl, '_blank');
+        toast.success(`Receipt ${data.receipt.series}-${data.receipt.number} generated successfully`);
+      } else {
+        toast.success('Receipt generated successfully');
+      }
+    } catch (err: any) {
+      console.error('Receipt generation error:', err);
+      toast.error(err?.message || 'Failed to generate receipt');
+    } finally {
+      setGeneratingReceipt(null);
+    }
+  };
 
   const handleTestConnection = async () => {
     setActionLoading('test');
@@ -461,6 +529,87 @@ export default function InvoicingIntegrationPage() {
             )}
           </div>
         </div>
+      </div>
+
+      {/* Paid Orders Table */}
+      <div className="mt-6 bg-white border border-gray-200 rounded-lg p-6">
+        <div className="flex items-center justify-between mb-4">
+          <h2 className="text-lg font-semibold flex items-center gap-2">
+            <Receipt className="h-5 w-5 text-gray-500" />
+            Plăți Finalizate (Paid Orders)
+          </h2>
+          <button
+            onClick={fetchPaidOrders}
+            disabled={paidOrdersLoading}
+            className="inline-flex items-center gap-2 px-3 py-2 text-sm border border-gray-300 rounded-lg hover:bg-gray-50 disabled:opacity-50"
+          >
+            <RefreshCw className={`h-4 w-4 ${paidOrdersLoading ? 'animate-spin' : ''}`} />
+            Refresh
+          </button>
+        </div>
+        {paidOrdersLoading ? (
+          <div className="py-8 text-center text-gray-500">
+            <Loader2 className="h-6 w-6 animate-spin mx-auto mb-2" />
+            <p className="text-sm">Se încarcă...</p>
+          </div>
+        ) : paidOrders.length === 0 ? (
+          <p className="text-sm text-gray-500 italic">Nu există comenzi plătite</p>
+        ) : (
+          <div className="overflow-x-auto">
+            <table className="w-full text-sm">
+              <thead>
+                <tr className="border-b border-gray-200">
+                  <th className="text-left py-2 px-2 font-medium text-gray-600">Număr comandă</th>
+                  <th className="text-left py-2 px-2 font-medium text-gray-600">Status</th>
+                  <th className="text-left py-2 px-2 font-medium text-gray-600">Sumă</th>
+                  <th className="text-left py-2 px-2 font-medium text-gray-600">Acțiuni</th>
+                </tr>
+              </thead>
+              <tbody>
+                {paidOrders.map((order) => (
+                  <tr key={order.id} className="border-b border-gray-100 last:border-0">
+                    <td className="py-2 px-2">
+                      <Link 
+                        href={`/admin/orders/${order.id}`} 
+                        className="text-blue-600 hover:underline font-mono text-xs"
+                      >
+                        {order.orderNumber}
+                      </Link>
+                      <span className="text-xs text-gray-500 ml-2">({order.id.slice(-8)})</span>
+                    </td>
+                    <td className="py-2 px-2">
+                      <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-xs bg-green-100 text-green-800">
+                        {order.status}
+                      </span>
+                    </td>
+                    <td className="py-2 px-2">
+                      {formatCurrency((order.totalCents || 0) / 100, order.currency || 'RON')}
+                    </td>
+                    <td className="py-2 px-2">
+                      <button
+                        onClick={() => handleGenerateReceipt(order.id)}
+                        disabled={generatingReceipt === order.id}
+                        className="inline-flex items-center gap-1 px-3 py-1.5 text-xs bg-blue-600 text-white rounded hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed"
+                      >
+                        {generatingReceipt === order.id ? (
+                          <>
+                            <Loader2 className="h-3 w-3 animate-spin" />
+                            Generare...
+                          </>
+                        ) : (
+                          <>
+                            <Receipt className="h-3 w-3" />
+                            Generează chitanță
+                          </>
+                        )}
+                      </button>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        )}
       </div>
 
       {/* Recent Errors */}

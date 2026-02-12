@@ -1187,10 +1187,11 @@ export const messages = pgTable("messages", {
 // - 'commission' - factura de comision emisă de platformă
 // - 'seller' - factura principală emisă de vânzător (atașată manual)
 // - 'platform' - factura pentru produsele proprii ale platformei (emise automat)
+// - 'receipt' - chitanță emisă pentru plăți efectuate
 export const invoices = pgTable("invoices", {
   id: uuid("id").primaryKey().defaultRandom(),
   orderId: uuid("order_id").notNull().references(() => orders.id, { onDelete: "cascade" }),
-  type: text("type").notNull().$type<'commission' | 'seller' | 'platform'>().default('commission'),
+  type: text("type").notNull().$type<'commission' | 'seller' | 'platform' | 'receipt'>().default('commission'),
   series: text("series").notNull(),
   number: text("number").notNull(),
   pdfUrl: text("pdf_url").notNull(),

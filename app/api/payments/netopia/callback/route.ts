@@ -212,6 +212,32 @@ export async function POST(request: NextRequest) {
       } catch (invoiceError) {
         console.error('Error creating platform invoice:', invoiceError);
       }
+
+      // Create SmartBill receipt for customer
+      // Always uses SmartBill provider regardless of INVOICE_PROVIDER setting
+      try {
+        const receiptResp = await fetch(`${baseUrl}/api/internal/receipt-create`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ orderId: callbackData.orderId }),
+        });
+        
+        if (!receiptResp.ok) {
+          const errorText = await receiptResp.text();
+          console.error('[Netopia] Error creating SmartBill receipt:', errorText);
+          // Don't throw - receipt creation failure shouldn't fail payment processing
+        } else {
+          const receiptData = await receiptResp.json();
+          if (receiptData.ok && receiptData.receipt) {
+            console.log(`[Netopia] SmartBill receipt created successfully: ${receiptData.receipt.series}-${receiptData.receipt.number} for order ${callbackData.orderId}`);
+          } else {
+            console.log(`[Netopia] SmartBill receipt response: ${JSON.stringify(receiptData)}`);
+          }
+        }
+      } catch (receiptError) {
+        console.error('[Netopia] Error creating SmartBill receipt:', receiptError);
+        // Don't throw - receipt creation failure shouldn't fail payment processing
+      }
     }
 
     // Return success response to Netopia

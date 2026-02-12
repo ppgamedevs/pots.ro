@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { db } from '@/db';
-import { orders } from '@/db/schema/core';
-import { and, count, desc, eq, gte, ilike, lte, or } from 'drizzle-orm';
+import { orders, invoices } from '@/db/schema/core';
+import { and, count, desc, eq, gte, ilike, inArray, lte, or } from 'drizzle-orm';
 import { requireRole } from '@/lib/authz';
 
 export const dynamic = 'force-dynamic';
@@ -84,7 +84,43 @@ export async function GET(req: NextRequest) {
       .limit(pageSize)
       .offset(offset);
 
-    return NextResponse.json({ data: rows, total, page, pageSize, provider: 'netopia' });
+    // Fetch receipts for all orders
+    const orderIds = rows.map((r: any) => r.id);
+    const receiptsResult = orderIds.length > 0 
+      ? await db
+          .select({
+            orderId: invoices.orderId,
+            id: invoices.id,
+            series: invoices.series,
+            number: invoices.number,
+            pdfUrl: invoices.pdfUrl,
+            status: invoices.status,
+          })
+          .from(invoices)
+          .where(
+            and(
+              inArray(invoices.orderId, orderIds),
+              eq(invoices.type, 'receipt')
+            )
+          )
+      : [];
+
+    // Create map for quick lookup
+    const receiptsByOrderId = new Map(
+      receiptsResult.map((r: any) => [r.orderId, r])
+    );
+
+    // Add receipt info to response
+    return NextResponse.json({ 
+      data: rows.map((row: any) => ({
+        ...row,
+        receipt: receiptsByOrderId.get(row.id) || null,
+      })), 
+      total, 
+      page, 
+      pageSize, 
+      provider: 'netopia' 
+    });
   } catch (error) {
     const message = error instanceof Error ? error.message : 'Unknown error';
     const status = message === 'Unauthorized' ? 401 : message === 'Forbidden' ? 403 : 500;

@@ -1431,6 +1431,12 @@ async function ensureInvoicesSchema(sql) {
     await sql`
       DO $$
       BEGIN
+        -- Add type column if it doesn't exist (required for receipt support)
+        IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name = 'invoices' AND column_name = 'type') THEN
+          ALTER TABLE invoices ADD COLUMN type text NOT NULL DEFAULT 'commission';
+          -- Update existing rows to have default type
+          UPDATE invoices SET type = 'commission' WHERE type IS NULL;
+        END IF;
         IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name = 'invoices' AND column_name = 'error_message') THEN
           ALTER TABLE invoices ADD COLUMN error_message text;
         END IF;
@@ -1448,6 +1454,30 @@ async function ensureInvoicesSchema(sql) {
         END IF;
         IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name = 'invoices' AND column_name = 'updated_at') THEN
           ALTER TABLE invoices ADD COLUMN updated_at timestamptz DEFAULT now();
+        END IF;
+        -- Add seller invoice columns if they don't exist
+        IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name = 'invoices' AND column_name = 'seller_invoice_number') THEN
+          ALTER TABLE invoices ADD COLUMN seller_invoice_number text;
+        END IF;
+        IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name = 'invoices' AND column_name = 'uploaded_by') THEN
+          ALTER TABLE invoices ADD COLUMN uploaded_by uuid REFERENCES users(id) ON DELETE SET NULL;
+        END IF;
+        IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name = 'invoices' AND column_name = 'uploaded_at') THEN
+          ALTER TABLE invoices ADD COLUMN uploaded_at timestamptz;
+        END IF;
+      END $$;
+    `;
+
+    // Create unique index on (order_id, type) if it doesn't exist
+    await sql`
+      DO $$
+      BEGIN
+        IF NOT EXISTS (
+          SELECT 1 FROM pg_indexes 
+          WHERE tablename = 'invoices' 
+          AND indexname = 'invoices_order_unique'
+        ) THEN
+          CREATE UNIQUE INDEX invoices_order_unique ON invoices(order_id, type);
         END IF;
       END $$;
     `;

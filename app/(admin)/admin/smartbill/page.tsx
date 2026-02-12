@@ -9,7 +9,11 @@ import {
   AlertTriangle,
   RefreshCw,
   FileText,
+  Receipt,
+  Loader2,
 } from 'lucide-react';
+import { toast } from 'sonner';
+import { formatCurrency } from '@/lib/money';
 
 interface EnvVarStatus {
   configured: boolean;
@@ -31,10 +35,29 @@ interface SmartBillStatus {
   };
 }
 
+type PaidOrderRow = {
+  id: string;
+  orderNumber: string;
+  status: string;
+  currency: string;
+  totalCents: number;
+  createdAt: string;
+  receipt: {
+    id: string;
+    series: string;
+    number: string;
+    pdfUrl: string;
+    status: string;
+  } | null;
+};
+
 export default function SmartBillPage() {
   const [status, setStatus] = useState<SmartBillStatus | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [paidOrders, setPaidOrders] = useState<PaidOrderRow[]>([]);
+  const [paidOrdersLoading, setPaidOrdersLoading] = useState(false);
+  const [generatingReceipt, setGeneratingReceipt] = useState<string | null>(null);
 
   const fetchStatus = async () => {
     try {
@@ -56,7 +79,56 @@ export default function SmartBillPage() {
 
   useEffect(() => {
     fetchStatus();
+    fetchPaidOrders();
   }, []);
+
+  const fetchPaidOrders = async () => {
+    try {
+      setPaidOrdersLoading(true);
+      const res = await fetch('/api/admin/payments?status=paid&pageSize=50', { credentials: 'include' });
+      const data = await res.json();
+      console.log('Paid orders API response:', { res: { ok: res.ok, status: res.status }, data });
+      if (res.ok && data.data) {
+        console.log('Setting paid orders:', data.data.length, 'orders');
+        setPaidOrders(data.data || []);
+      } else {
+        console.error('Failed to fetch paid orders:', data.error || 'Unknown error');
+        setPaidOrders([]);
+      }
+    } catch (err) {
+      console.error('Failed to fetch paid orders:', err);
+      setPaidOrders([]);
+    } finally {
+      setPaidOrdersLoading(false);
+    }
+  };
+
+  const handleGenerateReceipt = async (orderId: string) => {
+    try {
+      setGeneratingReceipt(orderId);
+      const res = await fetch('/api/admin/integrations/invoicing/receipt', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ orderId }),
+        credentials: 'include',
+      });
+      const data = await res.json();
+      
+      if (!res.ok || !data.ok) {
+        throw new Error(data.error || 'Failed to generate receipt');
+      }
+
+      toast.success(`Chitanță ${data.receipt.series}-${data.receipt.number} generată cu succes`);
+      
+      // Refresh list to display the newly generated receipt
+      await fetchPaidOrders();
+    } catch (err: any) {
+      console.error('Receipt generation error:', err);
+      toast.error(err?.message || 'Failed to generate receipt');
+    } finally {
+      setGeneratingReceipt(null);
+    }
+  };
 
   if (loading) {
     return (
@@ -221,6 +293,107 @@ export default function SmartBillPage() {
             ))}
           </div>
         </div>
+      </div>
+
+      {/* Paid Orders Table */}
+      <div className="mt-6 bg-white border border-gray-200 rounded-lg p-6">
+        <div className="flex items-center justify-between mb-4">
+          <h2 className="text-lg font-semibold flex items-center gap-2">
+            <Receipt className="h-5 w-5 text-gray-500" />
+            Plăți Finalizate (Paid Orders)
+          </h2>
+          <button
+            onClick={fetchPaidOrders}
+            disabled={paidOrdersLoading}
+            className="inline-flex items-center gap-2 px-3 py-2 text-sm border border-gray-300 rounded-lg hover:bg-gray-50 disabled:opacity-50"
+          >
+            <RefreshCw className={`h-4 w-4 ${paidOrdersLoading ? 'animate-spin' : ''}`} />
+            Refresh
+          </button>
+        </div>
+        {paidOrdersLoading ? (
+          <div className="py-8 text-center text-gray-500">
+            <Loader2 className="h-6 w-6 animate-spin mx-auto mb-2" />
+            <p className="text-sm">Se încarcă...</p>
+          </div>
+        ) : paidOrders.length === 0 ? (
+          <p className="text-sm text-gray-500 italic">Nu există comenzi plătite</p>
+        ) : (
+          <div className="overflow-x-auto">
+            <table className="w-full text-sm">
+              <thead>
+                <tr className="border-b border-gray-200">
+                  <th className="text-left py-2 px-2 font-medium text-gray-600">Număr comandă</th>
+                  <th className="text-left py-2 px-2 font-medium text-gray-600">Status</th>
+                  <th className="text-left py-2 px-2 font-medium text-gray-600">Sumă</th>
+                  <th className="text-left py-2 px-2 font-medium text-gray-600">Chitanță</th>
+                  <th className="text-left py-2 px-2 font-medium text-gray-600">Acțiuni</th>
+                </tr>
+              </thead>
+              <tbody>
+                {paidOrders.map((order) => (
+                  <tr key={order.id} className="border-b border-gray-100 last:border-0">
+                    <td className="py-2 px-2">
+                      <Link 
+                        href={`/admin/orders/${order.id}`} 
+                        className="text-blue-600 hover:underline font-mono text-xs"
+                      >
+                        {order.orderNumber}
+                      </Link>
+                      <span className="text-xs text-gray-500 ml-2">({order.id.slice(-8)})</span>
+                    </td>
+                    <td className="py-2 px-2">
+                      <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-xs bg-green-100 text-green-800">
+                        {order.status}
+                      </span>
+                    </td>
+                    <td className="py-2 px-2">
+                      {formatCurrency((order.totalCents || 0) / 100, order.currency || 'RON')}
+                    </td>
+                    <td className="py-2 px-2">
+                      {order.receipt ? (
+                        <div className="flex flex-col gap-1">
+                          <span className="text-xs text-gray-600">
+                            {order.receipt.series}-{order.receipt.number}
+                          </span>
+                          <a
+                            href={`/api/invoices/${order.receipt.id}/pdf`}
+                            download
+                            className="inline-flex items-center gap-1 px-2 py-1 text-xs bg-green-600 text-white rounded hover:bg-green-700"
+                          >
+                            <FileText className="h-3 w-3" />
+                            Descarcă PDF
+                          </a>
+                        </div>
+                      ) : (
+                        <button
+                          onClick={() => handleGenerateReceipt(order.id)}
+                          disabled={generatingReceipt === order.id}
+                          className="inline-flex items-center gap-1 px-3 py-1.5 text-xs bg-blue-600 text-white rounded hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed"
+                        >
+                          {generatingReceipt === order.id ? (
+                            <>
+                              <Loader2 className="h-3 w-3 animate-spin" />
+                              Generare...
+                            </>
+                          ) : (
+                            <>
+                              <Receipt className="h-3 w-3" />
+                              Generează chitanță
+                            </>
+                          )}
+                        </button>
+                      )}
+                    </td>
+                    <td className="py-2 px-2">
+                      {/* Acțiuni column - can be used for other actions if needed */}
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        )}
       </div>
     </div>
   );
