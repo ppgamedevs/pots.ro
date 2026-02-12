@@ -4,6 +4,7 @@ import { orders, invoices, webhookLogs } from "@/db/schema/core";
 import { eq, and } from "drizzle-orm";
 import { requireRole } from "@/lib/authz";
 import { SmartBillProvider, ReceiptInput } from "@/lib/invoicing/smartbill";
+import { InvoiceResult } from "@/lib/invoicing";
 import { fetchReceiptData, validateReceiptData } from "@/lib/services/receipt-service";
 import { join } from "path";
 import { checkRateLimit, rateLimitExceededResponse } from "@/lib/admin/rate-limit";
