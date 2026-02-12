@@ -702,15 +702,15 @@ export class SmartBillProvider implements InvoiceProvider {
           
           // TEMPORAR: Comentat pentru build Vercel - salvare erori în fișiere
           // Save full error response to file for detailed analysis
+          // TODO: Re-activează când contul de test SmartBill este configurat
+          /*
           try {
-            // TEMPORAR: Comentat pentru a permite build-ul Vercel
-            // const errorLogPath = join(process.cwd(), '.cursor', `smartbill-error-${Date.now()}.log`);
+            const errorLogPath = join(process.cwd(), '.cursor', `smartbill-error-${Date.now()}.log`);
             const receiptFields = Object.keys(cleanedPayload);
             const receiptSpecificFields = ['issueDate', 'paymentDate', 'isDraft', 'paymentMethod', 'paymentRef', 'observations'];
             const invoiceFields = ['companyVatNumber', 'seriesName', 'currency', 'language', 'client', 'products'];
             
-            // TEMPORAR: Comentat writeFile pentru build Vercel
-            // await writeFile(errorLogPath, JSON.stringify({
+            await writeFile(errorLogPath, JSON.stringify({
               timestamp: new Date().toISOString(),
               documentType: 'RECEIPT',
               request: {
@@ -747,10 +747,11 @@ export class SmartBillProvider implements InvoiceProvider {
                 hasObservations: !!cleanedPayload.observations,
               },
             }, null, 2), 'utf8');
-            // console.log(`[SmartBill] Full error details saved to: ${errorLogPath}`);
+            console.log(`[SmartBill] Full error details saved to: ${errorLogPath}`);
           } catch (fileError) {
             // Ignore file write errors
           }
+          */
           
           // Detect HTML error pages (Tomcat error pages)
           isHTML = !contentType.includes('application/json') && 
